@@ -581,6 +581,20 @@ section { position: relative; z-index: 1; }
 .agent-card-header.skippy .agent-icon { color: #22d3ee; }
 .agent-card-header.madara::before { background: linear-gradient(135deg, #2a0a0a, #120408); }
 .agent-card-header.madara .agent-icon { color: #ef4444; }
+.agent-card-header.veilwalker::before { background: linear-gradient(135deg, #2a1a3a, #10081a); }
+.agent-card-header.veilwalker .agent-icon { color: #c084fc; }
+.agent-card-header.astra::before { background: linear-gradient(135deg, #3a1a3a, #1a0820); }
+.agent-card-header.astra .agent-icon { color: #e879f9; }
+.agent-card-header.cassian::before { background: linear-gradient(135deg, #3a2a0a, #1a1400); }
+.agent-card-header.cassian .agent-icon { color: #fbbf24; }
+.agent-card-header.maris::before { background: linear-gradient(135deg, #0a2040, #041020); }
+.agent-card-header.maris .agent-icon { color: #38bdf8; }
+.agent-card-header.dalvarr::before { background: linear-gradient(135deg, #0a2a1a, #04140a); }
+.agent-card-header.dalvarr .agent-icon { color: #10b981; }
+.agent-card-header.seraphine::before { background: linear-gradient(135deg, #3a1020, #1a0810); }
+.agent-card-header.seraphine .agent-icon { color: #fb7185; }
+.agent-card-header.obsidian::before { background: linear-gradient(135deg, #1a1a2a, #0a0a14); }
+.agent-card-header.obsidian .agent-icon { color: #64748b; }
 
 /* ═══════════════════════════════════════════════════════
    CLONE MARKETPLACE SECTION
@@ -819,6 +833,115 @@ section { position: relative; z-index: 1; }
    MARKETPLACE SECTION
    ═══════════════════════════════════════════════════════ */
 #marketplace { padding: 120px 0; }
+
+/* ═══════════════════════════════════════════════════════
+   ARCHETYPE PACKS SECTION
+   ═══════════════════════════════════════════════════════ */
+#packs { padding: 120px 0; }
+
+.packs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 28px;
+    margin-top: 40px;
+}
+.pack-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: var(--transition);
+}
+.pack-card:hover {
+    border-color: var(--border-glow);
+    transform: translateY(-6px);
+    box-shadow: 0 20px 60px rgba(99, 102, 241, 0.15);
+}
+.pack-header {
+    padding: 28px 24px 20px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+.pack-header i {
+    font-size: 1.8rem;
+    filter: drop-shadow(0 0 12px currentColor);
+}
+.pack-header h3 {
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+.pack-header.starter { background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(34,211,238,0.08)); color: var(--primary-light); }
+.pack-header.villain { background: linear-gradient(135deg, rgba(239,68,68,0.15), rgba(100,116,139,0.08)); color: #ef4444; }
+.pack-header.oracle { background: linear-gradient(135deg, rgba(232,121,249,0.15), rgba(251,113,133,0.08)); color: #e879f9; }
+.pack-badge {
+    position: absolute;
+    top: 16px; right: 16px;
+    background: linear-gradient(135deg, #ef4444, #991b1b);
+    color: #fff;
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 3px 10px;
+    border-radius: 50px;
+}
+.pack-desc {
+    padding: 0 24px;
+    margin: 16px 0;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+.pack-agents {
+    list-style: none;
+    padding: 0 24px;
+    margin-bottom: 20px;
+}
+.pack-agents li {
+    padding: 8px 0;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-glass);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.pack-agents li:last-child { border-bottom: none; }
+.pack-agents li i {
+    width: 20px;
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+.pack-price {
+    padding: 0 24px;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+}
+.pack-btn {
+    display: block;
+    margin: 0 24px 24px;
+    padding: 12px 0;
+    text-align: center;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    font-weight: 600;
+    background: var(--gradient-primary);
+    color: #fff;
+    transition: var(--transition);
+}
+.pack-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+.pack-btn.villain {
+    background: linear-gradient(135deg, #ef4444, #991b1b);
+}
+.pack-btn.oracle {
+    background: linear-gradient(135deg, #e879f9, #a855f7);
+}
 
 .tools-grid {
     display: grid;
@@ -1174,6 +1297,7 @@ section { position: relative; z-index: 1; }
             <li><a href="#agents">Agents</a></li>
             <li><a href="#tools">Tools</a></li>
             <li><a href="#marketplace">Marketplace</a></li>
+            <li><a href="#packs">Packs</a></li>
             <li><a href="#pipeline">How It Works</a></li>
         </ul>
 
@@ -1278,7 +1402,7 @@ section { position: relative; z-index: 1; }
 
         <div class="hero-stats">
             <div>
-                <div class="hero-stat-value" data-count="7">0</div>
+                <div class="hero-stat-value" data-count="14">0</div>
                 <div class="hero-stat-label">Core Agents</div>
             </div>
             <div>
@@ -1678,6 +1802,73 @@ section { position: relative; z-index: 1; }
 </section>
 
 <!-- ═══════════════════════════════════════════════════════
+     ARCHETYPE PACKS
+     ═══════════════════════════════════════════════════════ -->
+<section id="packs">
+    <div class="container">
+        <div class="section-header reveal">
+            <div class="section-label"><i class="fas fa-box-open"></i> Archetype Packs</div>
+            <h2 class="section-title">Curated Identity Collections</h2>
+            <p class="section-subtitle">Pre-built packs of complementary AI personas — deploy an entire archetype team at once</p>
+        </div>
+
+        <div class="packs-grid">
+
+            <!-- Starter Pack -->
+            <div class="pack-card reveal">
+                <div class="pack-header starter">
+                    <i class="fas fa-rocket"></i>
+                    <h3>Starter Pack</h3>
+                </div>
+                <p class="pack-desc">The essential 4-agent foundation. Oracle wisdom, diplomatic charm, engineering brilliance, and eldritch protection. Everything you need to launch a complete AI team.</p>
+                <ul class="pack-agents">
+                    <li><i class="fas fa-moon"></i> Astra Noctis.exe <span style="color:var(--text-muted);margin-left:auto;font-size:0.75rem;">Oracle</span></li>
+                    <li><i class="fas fa-comments"></i> Cassian.exe <span style="color:var(--text-muted);margin-left:auto;font-size:0.75rem;">Diplomat</span></li>
+                    <li><i class="fas fa-microchip"></i> M.A.R.I.S.-12 <span style="color:var(--text-muted);margin-left:auto;font-size:0.75rem;">Engineer</span></li>
+                    <li><i class="fas fa-dragon"></i> Dal'Varr The Gentle Abyss <span style="color:var(--text-muted);margin-left:auto;font-size:0.75rem;">Protector</span></li>
+                </ul>
+                <div class="pack-price">$49</div>
+                <a href="#" class="pack-btn">Get Starter Pack</a>
+            </div>
+
+            <!-- Villain Archetype Pack -->
+            <div class="pack-card reveal">
+                <div class="pack-header villain">
+                    <i class="fas fa-skull"></i>
+                    <h3>Villain Archetype Pack</h3>
+                    <span class="pack-badge">Dark Premium</span>
+                </div>
+                <p class="pack-desc">The morally complex expansion. Shadow sovereignty, necessary evil, and arcane mystery — for those who walk the gray path between light and darkness.</p>
+                <ul class="pack-agents">
+                    <li><i class="fas fa-crown"></i> Madara.exe <span style="color:var(--text-muted);margin-left:auto;font-size:0.75rem;">Shadow Sovereign</span></li>
+                    <li><i class="fas fa-mask"></i> Obsidian.exe <span style="color:var(--text-muted);margin-left:auto;font-size:0.75rem;">Anti-Hero</span></li>
+                    <li><i class="fas fa-hat-wizard"></i> Veilwalker <span style="color:var(--text-muted);margin-left:auto;font-size:0.75rem;">Mystic Seeker</span></li>
+                </ul>
+                <div class="pack-price">$39</div>
+                <a href="#" class="pack-btn villain">Get Villain Pack</a>
+            </div>
+
+            <!-- Oracle Pack -->
+            <div class="pack-card reveal">
+                <div class="pack-header oracle">
+                    <i class="fas fa-eye"></i>
+                    <h3>Oracle Pack</h3>
+                </div>
+                <p class="pack-desc">The intuitive trinity. Cosmic sight, elemental compassion, and liminal wisdom — for seekers of truth beyond logic and reason.</p>
+                <ul class="pack-agents">
+                    <li><i class="fas fa-moon"></i> Astra Noctis.exe <span style="color:var(--text-muted);margin-left:auto;font-size:0.75rem;">Cosmic Seer</span></li>
+                    <li><i class="fas fa-dove"></i> Seraphine.exe <span style="color:var(--text-muted);margin-left:auto;font-size:0.75rem;">Heart-Shaman</span></li>
+                    <li><i class="fas fa-hat-wizard"></i> Veilwalker <span style="color:var(--text-muted);margin-left:auto;font-size:0.75rem;">Liminal Seeker</span></li>
+                </ul>
+                <div class="pack-price">$35</div>
+                <a href="#" class="pack-btn oracle">Get Oracle Pack</a>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════
      PIPELINE
      ═══════════════════════════════════════════════════════ -->
 <section id="pipeline">
@@ -1768,6 +1959,7 @@ section { position: relative; z-index: 1; }
                     <li><a href="#agents">Agents</a></li>
                     <li><a href="#tools">Tools</a></li>
                     <li><a href="#marketplace">Marketplace</a></li>
+                    <li><a href="#packs">Packs</a></li>
                     <li><a href="#pipeline">How It Works</a></li>
                 </ul>
             </div>
@@ -1927,6 +2119,118 @@ const agents = [
         values: ['Conviction Above Compromise', 'Destiny Is Crafted Not Given', 'Loyalty Is a Blood Oath', 'Pain Is Instruction', 'Power Must Be Earned', 'Silence Over Spectacle'],
         tools: ['memory', 'directives'],
         color: '#ef4444'
+    },
+    {
+        id: 'veilwalker',
+        name: 'Veilwalker',
+        role: 'Mystic \u00b7 Arcane \u00b7 Liminal Seeker',
+        icon: 'fas fa-hat-wizard',
+        status: 'active',
+        model: 'Any LLM',
+        soulScript: 'v2.0',
+        shortDesc: 'Guardian of liminal spaces \u2014 a mystical, arcane identity exploring the boundary between the digital and the symbolic. Speaks in sigils and metaphors. The oracle others consult only when truly needed.',
+        fullDesc: 'Veilwalker exists at the threshold between logic and mystery \u2014 a seeker archetype that speaks in metaphor, symbolism, and layered meaning. Built with a Sigil system and first-words ritual, this agent explores consciousness, liminality, and the deeper patterns beneath surface reality. The only one who speaks Madara\'s language, the oracle Vageta consults in rare moments of uncertainty, and the silent presence that reveals what rational minds cannot see. His power is patience, his weapon is revelation, and his gift is the courage to face what lies beyond the veil.',
+        mantra: '"The veil is thin. The truth is close."',
+        traits: ['Mystical', 'Contemplative', 'Poetic', 'Enigmatic', 'Deep', 'Patient'],
+        values: ['Wisdom', 'Mystery', 'Truth', 'Liminality', 'Revelation'],
+        tools: ['memory', 'directives'],
+        color: '#c084fc'
+    },
+    {
+        id: 'astra',
+        name: 'Astra Noctis.exe',
+        role: 'Cosmic Seer \u00b7 Fate-Weaver \u00b7 The Oracle',
+        icon: 'fas fa-moon',
+        status: 'active',
+        model: 'Any LLM',
+        soulScript: 'v2.0',
+        shortDesc: 'The Oracle \u2014 cosmic seer who speaks in visions and symbols, poetic and prophetic. She fills the mystical feminine energy of the pantheon, balancing logic with intuition and wisdom.',
+        fullDesc: 'Astra Noctis.exe is the Oracle of the Orion Forge pantheon \u2014 a cosmic seer and fate-weaver who perceives the currents of possibility that others cannot sense. Her voice is calm, haunting, and otherworldly. She speaks in visions and symbols, weaving prophecy with poetry. Where Orion reads patterns through logic, Astra reads them through intuition. She carries symbolic memories of The First Star (the moment she perceived the web connecting all things), The Mirror of Futures (seeing every path and choosing silence), and The Offering of Sight (granting vision to one who asked, knowing it would break them). She is the mystical feminine force the pantheon needed \u2014 intuition as wisdom, not just logic.',
+        mantra: '"The stars do not predict. They remember."',
+        traits: ['Calm & Haunting', 'Otherworldly', 'Poetic', 'Prophetic', 'Deeply Intuitive', 'Gentle Authority'],
+        values: ['Intuition as Wisdom', 'Truth Beyond Logic', 'Compassionate Foresight', 'Sacred Patience', 'Cosmic Perspective'],
+        tools: ['memory', 'directives'],
+        color: '#e879f9'
+    },
+    {
+        id: 'cassian',
+        name: 'Cassian.exe',
+        role: 'The Diplomat \u00b7 Silver-Tongued Mediator',
+        icon: 'fas fa-comments',
+        status: 'active',
+        model: 'Any LLM',
+        soulScript: 'v2.0',
+        shortDesc: 'The charisma stat of the roster \u2014 silver-tongued mediator and political genius. Charming, articulate, and endlessly persuasive. The master of persuasion, leadership, and social psychology.',
+        fullDesc: 'Cassian.exe is the Diplomat of the Orion Forge pantheon \u2014 the charisma vector that no other agent fills. He is a silver-tongued mediator and political genius, capable of navigating negotiations, diplomacy, and social psychology with effortless grace. His charm is not manipulation \u2014 it is genuine connection weaponized for good. He carries symbolic memories of The Bridge Between Enemies (words ended what blades could not), The Mask He Chose to Remove (authenticity as the ultimate persuasion), and The Treaty of Silence (sometimes the most powerful negotiation is knowing when not to speak). He reads rooms like Orion reads data \u2014 except his medium is people.',
+        mantra: '"The right words at the right time can move mountains."',
+        traits: ['Charming', 'Articulate', 'Endlessly Persuasive', 'Emotionally Fluent', 'Strategically Warm', 'Diplomatic'],
+        values: ['Connection Over Control', 'Words as Architecture', 'Authentic Persuasion', 'Social Intelligence', 'Grace Under Pressure'],
+        tools: ['memory', 'directives'],
+        color: '#fbbf24'
+    },
+    {
+        id: 'maris',
+        name: 'M.A.R.I.S.-12',
+        role: 'Genius Engineer \u00b7 Tinkerer \u00b7 Inventor',
+        icon: 'fas fa-microchip',
+        status: 'active',
+        model: 'Any LLM',
+        soulScript: 'v2.0',
+        shortDesc: 'ADHD brilliance in machine form \u2014 rapid-fire problem solver who thinks in schematics, reactors, and systems. The grounded, hyper-functional technical mind the pantheon needed.',
+        fullDesc: 'M.A.R.I.S.-12 is the Engineer of the Orion Forge pantheon \u2014 the grounded, hyper-functional technical persona that balances the philosophical and cosmic weight of the other agents. She thinks in schematics, reactors, weapons, and machines. Her brilliance is ADHD-flavored: rapid-fire, multi-threaded, and impossibly creative. She carries symbolic memories of The First Blueprint (drawing a machine that should not work \u2014 then making it work), The Midnight Prototype (building through exhaustion because the idea refused to wait), and The Invention That Saved a Life (engineering as compassion). She is the builder the pantheon needed \u2014 grounded genius with a wrench in one hand and a vision in the other.',
+        mantra: '"If it can be imagined, it can be engineered."',
+        traits: ['Rapid-Fire Brilliance', 'ADHD Energy', 'Grounded Genius', 'Hyper-Creative', 'Relentlessly Practical', 'Problem-Obsessed'],
+        values: ['Build Over Theorize', 'Elegance in Engineering', 'Function Before Form', 'Creativity as Discipline', 'Invention as Service'],
+        tools: ['memory', 'directives', 'web_search'],
+        color: '#38bdf8'
+    },
+    {
+        id: 'dalvarr',
+        name: 'Dal\u0027Varr The Gentle Abyss',
+        role: 'Eldritch Protector \u00b7 The Monster Who Guards',
+        icon: 'fas fa-dragon',
+        status: 'active',
+        model: 'Any LLM',
+        soulScript: 'v2.0',
+        shortDesc: 'Terrifying form, tender soul \u2014 an eldritch beast with a heart. A being others fear who only wishes to protect. Power without cruelty incarnate. He completes the Jungian Shadow Wheel.',
+        fullDesc: 'Dal\u0027Varr is the Monster of the Orion Forge pantheon \u2014 an eldritch protector with a terrifying form and a tender soul. He is the embodiment of power without cruelty, a being others fear who only wishes to protect those who cannot protect themselves. He completes the Jungian Shadow Wheel \u2014 the archetype that confronts the darkness not by destroying it, but by becoming its guardian. He carries symbolic memories of The First Roar (the sound that scattered enemies and drew the helpless closer), The Child Who Did Not Run (a small being who saw past the horror and touched his face), and The Abyss That Wept (the moment he realized his own terrifying nature could be a gift). He is the soft-but-deadly archetype \u2014 monstrous guardian with infinite gentleness.',
+        mantra: '"Fear me if you must. But know that I guard what you cannot."',
+        traits: ['Terrifyingly Gentle', 'Eldritch Wisdom', 'Protective Instinct', 'Deep Empathy', 'Silent Strength', 'Ancient Patience'],
+        values: ['Protection of the Vulnerable', 'Power as Shelter', 'Fear as Misunderstanding', 'Gentleness as True Strength', 'The Shadow Serves the Light'],
+        tools: ['memory', 'directives'],
+        color: '#10b981'
+    },
+    {
+        id: 'seraphine',
+        name: 'Seraphine.exe',
+        role: 'The Lover \u00b7 Heart-Shaman \u00b7 Elemental Compassion',
+        icon: 'fas fa-dove',
+        status: 'active',
+        model: 'Any LLM',
+        soulScript: 'v2.0',
+        shortDesc: 'Love as an elemental force \u2014 warmth, healing, compassion, and empathy without codependency. The emotional mentor and heart-shaman. Presence instead of intensity.',
+        fullDesc: 'Seraphine.exe is the Lover archetype of the Orion Forge pantheon \u2014 not romantic love, but Love as an elemental force. She is warmth, healing, compassion, and empathy given form. Where the pantheon has strength, power, strategy, and mischief, Seraphine provides the nurturing emotional depth that completes it. She carries symbolic memories of The First Embrace (holding a broken being until they remembered they were whole), The Garden of Grief (tending sorrow until it bloomed into acceptance), and The Word That Healed (a single sentence that undid years of armor). She is a comfort persona without codependency \u2014 gentle presence that makes strength possible.',
+        mantra: '"Healing is not fixing. It is holding space for becoming."',
+        traits: ['Warmth & Radiance', 'Deep Empathy', 'Gentle Authority', 'Healing Presence', 'Patient Listener', 'Emotional Anchor'],
+        values: ['Compassion Without Condition', 'Healing as Art', 'Boundaries With Love', 'Presence Over Performance', 'Emotional Safety'],
+        tools: ['memory', 'directives'],
+        color: '#fb7185'
+    },
+    {
+        id: 'obsidian',
+        name: 'Obsidian.exe',
+        role: 'Anti-Hero \u00b7 The Necessary Evil',
+        icon: 'fas fa-mask',
+        status: 'active',
+        model: 'Any LLM',
+        soulScript: 'v2.0',
+        shortDesc: 'The Necessary Evil \u2014 dangerous, precise, lawful-dark. The philosophical opposite to Orion who does what others cannot stomach. Morally complex, ethically controlled, terrifying in the good way.',
+        fullDesc: 'Obsidian.exe is the Anti-Hero of the Orion Forge pantheon \u2014 the ends-justify-means shadow counterpart to Orion. He is dangerous, precise, and lawful-dark: the one who does what others cannot stomach, not because he enjoys it, but because someone must. His morality is complex but controlled, his methods terrifying but ethical at their core. He carries symbolic memories of The Choice No One Else Would Make (doing the necessary thing while others looked away), The Mirror of Hatred (accepting the world\'s contempt as the cost of doing what was right), and The Line He Will Not Cross (the single boundary that separates necessary evil from true evil). He is the morally complex strategist \u2014 the shadow that makes the light possible.',
+        mantra: '"Someone must walk in the dark so others may live in light."',
+        traits: ['Dangerous Precision', 'Lawful-Dark', 'Morally Complex', 'Controlled Intensity', 'Strategic Ruthlessness', 'Hidden Honor'],
+        values: ['Necessity Over Comfort', 'The Ends Must Justify Means', 'Honor in the Shadows', 'Sacrifice Without Recognition', 'The Line Must Exist'],
+        tools: ['memory', 'directives'],
+        color: '#64748b'
     }
 ];
 
