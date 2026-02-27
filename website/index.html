@@ -683,6 +683,11 @@ section { position: relative; z-index: 1; }
 .tag-productivity { background: rgba(34, 211, 238, 0.15); color: #22d3ee; }
 .tag-analyst { background: rgba(99, 102, 241, 0.15); color: #818cf8; }
 .tag-companion { background: rgba(244, 63, 94, 0.15); color: #fb7185; }
+.tag-identity { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
+.tag-tool { background: rgba(52, 211, 153, 0.15); color: #34d399; }
+.tag-memory { background: rgba(139, 92, 246, 0.15); color: #a78bfa; }
+.tag-mod { background: rgba(244, 114, 182, 0.15); color: #f472b6; }
+.tag-skin { background: rgba(96, 165, 250, 0.15); color: #60a5fa; }
 .clone-content h3 {
     font-size: 1.1rem;
     font-weight: 700;
@@ -729,6 +734,462 @@ section { position: relative; z-index: 1; }
     transition: var(--transition);
 }
 .trial-btn:hover {
+    border-color: var(--primary);
+    color: var(--text-primary);
+}
+
+/* Workshop Marketplace Tabs & Filters */
+.workshop-hero {
+    text-align: center;
+    padding: 32px 0 24px;
+    border-bottom: 1px solid var(--border-glass);
+    margin-bottom: 32px;
+}
+.workshop-hero h2 {
+    font-size: 2rem;
+    font-weight: 900;
+    margin-bottom: 8px;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.workshop-hero p {
+    color: var(--text-secondary);
+    font-size: 1rem;
+    max-width: 600px;
+    margin: 0 auto;
+}
+.workshop-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-sm);
+    padding: 4px;
+}
+.workshop-tab {
+    padding: 10px 20px;
+    border-radius: var(--radius-xs);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: none;
+    background: none;
+    white-space: nowrap;
+}
+.workshop-tab:hover {
+    color: var(--text-secondary);
+    background: rgba(255,255,255,0.03);
+}
+.workshop-tab.active {
+    color: #fff;
+    background: var(--gradient-primary);
+}
+.workshop-tab i { font-size: 0.9rem; }
+.workshop-tab .tab-count {
+    font-size: 0.65rem;
+    font-weight: 700;
+    background: rgba(255,255,255,0.15);
+    padding: 2px 7px;
+    border-radius: 50px;
+    min-width: 20px;
+    text-align: center;
+}
+.workshop-filters {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 28px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.filter-group {
+    display: flex;
+    gap: 4px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-xs);
+    padding: 3px;
+}
+.filter-btn {
+    padding: 7px 14px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: var(--transition);
+    border: none;
+    background: none;
+}
+.filter-btn:hover { color: var(--text-secondary); }
+.filter-btn.active {
+    color: var(--text-primary);
+    background: rgba(99,102,241,0.15);
+}
+.workshop-search {
+    flex: 1;
+    min-width: 200px;
+    padding: 9px 14px 9px 36px;
+    border-radius: var(--radius-xs);
+    border: 1px solid var(--border-glass);
+    background: rgba(255,255,255,0.02);
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    font-family: var(--font-sans);
+    transition: var(--transition);
+}
+.workshop-search:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: rgba(99,102,241,0.05);
+}
+.search-wrapper {
+    position: relative;
+    flex: 1;
+    min-width: 200px;
+}
+.search-wrapper i {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+/* Workshop Item Cards */
+.workshop-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+    margin-bottom: 40px;
+}
+.ws-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: var(--transition);
+    cursor: pointer;
+}
+.ws-card:hover {
+    border-color: var(--border-glow);
+    transform: translateY(-4px);
+    box-shadow: 0 16px 48px rgba(99, 102, 241, 0.12);
+}
+.ws-card-thumb {
+    height: 140px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+.ws-card-thumb i {
+    font-size: 2.8rem;
+    z-index: 2;
+    filter: drop-shadow(0 0 16px currentColor);
+}
+.ws-card-thumb::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.25;
+}
+.ws-card-thumb.identity::before { background: linear-gradient(135deg, #1e3a5f, #0d1b2a); }
+.ws-card-thumb.identity i { color: #818cf8; }
+.ws-card-thumb.tool::before { background: linear-gradient(135deg, #0a2a1a, #04140a); }
+.ws-card-thumb.tool i { color: #34d399; }
+.ws-card-thumb.memory::before { background: linear-gradient(135deg, #2a1a3a, #10081a); }
+.ws-card-thumb.memory i { color: #a78bfa; }
+.ws-card-thumb.mod::before { background: linear-gradient(135deg, #3a1020, #1a0810); }
+.ws-card-thumb.mod i { color: #f472b6; }
+.ws-card-thumb.skin::before { background: linear-gradient(135deg, #0a2040, #041020); }
+.ws-card-thumb.skin i { color: #60a5fa; }
+.ws-card-thumb.pack::before { background: linear-gradient(135deg, #2a2a0a, #141400); }
+.ws-card-thumb.pack i { color: #fbbf24; }
+.ws-card-badge {
+    position: absolute;
+    top: 10px; right: 10px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 3px 9px;
+    border-radius: 50px;
+    z-index: 3;
+}
+.ws-card-badge.featured {
+    background: linear-gradient(135deg, #f59e0b, #f97316);
+    color: #000;
+}
+.ws-card-badge.new {
+    background: rgba(34, 197, 94, 0.2);
+    color: #4ade80;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+}
+.ws-card-badge.founder {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+}
+.ws-card-body {
+    padding: 18px 20px;
+}
+.ws-card-body h4 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+.ws-card-creator {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+}
+.ws-card-creator span {
+    color: var(--primary-light);
+    font-weight: 600;
+}
+.ws-card-desc {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-bottom: 12px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.ws-card-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-glass);
+}
+.ws-card-price {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+.ws-card-price.free-price {
+    background: linear-gradient(135deg, #22c55e, #10b981);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.ws-card-stats {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+.ws-stat {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+.ws-stat i { font-size: 0.7rem; }
+.ws-like-btn {
+    background: none;
+    border: 1px solid var(--border-glass);
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition);
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+.ws-like-btn:hover {
+    border-color: #f43f5e;
+    color: #f43f5e;
+    background: rgba(244, 63, 94, 0.1);
+}
+.ws-like-btn.liked {
+    border-color: #f43f5e;
+    color: #f43f5e;
+    background: rgba(244, 63, 94, 0.15);
+}
+
+/* Creator Oath Section */
+.oath-section {
+    margin-top: 80px;
+    padding: 60px 0;
+    border-top: 1px solid var(--border-glass);
+}
+.oath-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 48px;
+    align-items: start;
+}
+@media (max-width: 768px) { .oath-grid { grid-template-columns: 1fr; } }
+.oath-left h3 {
+    font-size: 1.6rem;
+    font-weight: 800;
+    margin-bottom: 16px;
+}
+.oath-left h3 i {
+    color: var(--primary-light);
+    margin-right: 8px;
+}
+.oath-left > p {
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin-bottom: 24px;
+}
+.oath-text {
+    background: rgba(99,102,241,0.04);
+    border: 1px solid var(--border-glass);
+    border-left: 3px solid var(--primary);
+    border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
+    padding: 24px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.8;
+    font-style: italic;
+}
+.oath-text strong {
+    color: var(--text-primary);
+    font-style: normal;
+}
+.oath-right h4 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.oath-right h4 i { color: var(--cyan); }
+
+/* Revenue Tiers */
+.rev-tiers {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 28px;
+}
+.rev-tier {
+    background: var(--bg-glass);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-sm);
+    padding: 18px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: var(--transition);
+}
+.rev-tier:hover {
+    border-color: var(--border-glow);
+}
+.rev-tier-badge {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+.rev-tier-badge.founder { background: rgba(99,102,241,0.12); color: var(--primary-light); }
+.rev-tier-badge.standard { background: rgba(34,211,238,0.12); color: var(--cyan); }
+.rev-tier-badge.basic { background: rgba(148,163,184,0.12); color: #94a3b8; }
+.rev-tier-badge.vip { background: rgba(251,191,36,0.12); color: var(--amber); }
+.rev-tier-info { flex: 1; }
+.rev-tier-info h5 {
+    font-size: 0.9rem;
+    font-weight: 700;
+    margin-bottom: 2px;
+}
+.rev-tier-info p {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+.rev-tier-split {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+
+/* Payment Info Cards */
+.payment-info {
+    margin-top: 24px;
+}
+.payment-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+@media (max-width: 480px) { .payment-cards { grid-template-columns: 1fr; } }
+.pay-card {
+    background: var(--bg-glass);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-xs);
+    padding: 16px;
+    text-align: center;
+}
+.pay-card i {
+    font-size: 1.3rem;
+    margin-bottom: 8px;
+    display: block;
+}
+.pay-card h6 {
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+.pay-card p {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+.pay-card.stripe i { color: #635bff; }
+.pay-card.instant i { color: var(--emerald); }
+.pay-card.global i { color: var(--cyan); }
+.pay-card.secure i { color: var(--amber); }
+.connect-cta {
+    margin-top: 20px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.connect-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: var(--transition);
+    border: none;
+    cursor: pointer;
+}
+.connect-btn.primary {
+    background: linear-gradient(135deg, #635bff, #8b5cf6);
+    color: #fff;
+}
+.connect-btn.primary:hover { opacity: 0.9; transform: translateY(-1px); }
+.connect-btn.outline {
+    background: none;
+    border: 1px solid var(--border-glass);
+    color: var(--text-secondary);
+}
+.connect-btn.outline:hover {
     border-color: var(--primary);
     color: var(--text-primary);
 }
@@ -857,14 +1318,9 @@ section { position: relative; z-index: 1; }
 #tools { padding: 120px 0; }
 
 /* ═══════════════════════════════════════════════════════
-   MARKETPLACE SECTION
+   MARKETPLACE / WORKSHOP SECTION
    ═══════════════════════════════════════════════════════ */
 #marketplace { padding: 120px 0; }
-
-/* ═══════════════════════════════════════════════════════
-   ARCHETYPE PACKS SECTION
-   ═══════════════════════════════════════════════════════ */
-#packs { padding: 120px 0; }
 
 .packs-grid {
     display: grid;
@@ -1323,8 +1779,7 @@ section { position: relative; z-index: 1; }
             <li><a href="#ui-access">Dashboard</a></li>
             <li><a href="#agents">Agents</a></li>
             <li><a href="#tools">Tools</a></li>
-            <li><a href="#marketplace">Marketplace</a></li>
-            <li><a href="#packs">Packs</a></li>
+            <li><a href="#marketplace">Workshop</a></li>
             <li><a href="#pipeline">How It Works</a></li>
         </ul>
 
@@ -1435,6 +1890,10 @@ section { position: relative; z-index: 1; }
             <div>
                 <div class="hero-stat-value" data-count="10">0</div>
                 <div class="hero-stat-label">Runtime Tools</div>
+            </div>
+            <div>
+                <div class="hero-stat-value" data-count="40">0</div>
+                <div class="hero-stat-label">Workshop Items</div>
             </div>
             <div>
                 <div class="hero-stat-value" data-count="5">0</div>
@@ -1584,314 +2043,162 @@ section { position: relative; z-index: 1; }
 </section>
 
 <!-- ═══════════════════════════════════════════════════════
-     AI MARKETPLACE
+     CREATOR WORKSHOP (Steam/Minecraft-style Marketplace)
      ═══════════════════════════════════════════════════════ -->
 <section id="marketplace">
     <div class="container">
-        <div class="section-header reveal">
-            <div class="section-label"><i class="fas fa-store"></i> AI Marketplace</div>
-            <h2 class="section-title">Expand Your Ecosystem</h2>
-            <p class="section-subtitle">Specialized AI clones you can add to your core — each with unique personality, purpose, and tools</p>
+
+        <!-- Workshop Hero -->
+        <div class="workshop-hero reveal">
+            <div class="section-label"><i class="fas fa-hammer"></i> Creator Workshop</div>
+            <h2 class="section-title">The SoulScript Workshop</h2>
+            <p class="section-subtitle">Browse, install, and publish AI identities, tools, mods, and soul script parts. Built by creators, for creators. Powered by Stripe Connect.</p>
         </div>
 
-        <div class="clones-grid">
-
-            <!-- Storyteller AI -->
-            <div class="clone-card reveal" data-card="storyteller">
-                <div class="clone-icon"><i class="fas fa-film"></i></div>
-                <div class="premium-badge">Premium</div>
-                <div class="clone-content">
-                    <div class="clone-tags">
-                        <span class="clone-tag tag-creative">Creative</span>
-                        <span class="clone-tag tag-productivity">Productivity</span>
-                    </div>
-                    <h3>Storyteller AI</h3>
-                    <p>Transform your written words into engaging, narrated videos. Your AI-powered media studio in a box.</p>
-                    <div class="clone-price">$19</div>
-                    <div class="action-btns">
-                        <a href="#" class="buy-btn premium">Add to Core</a>
-                        <a href="#" class="trial-btn">1hr Trial</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Muse AI -->
-            <div class="clone-card reveal" data-card="muse">
-                <div class="clone-icon"><i class="fas fa-paint-brush"></i></div>
-                <div class="clone-content">
-                    <div class="clone-tags">
-                        <span class="clone-tag tag-creative">Creative</span>
-                    </div>
-                    <h3>Muse AI</h3>
-                    <p>Creative assistant for visual projects, idea generation, and artistic collaboration with human-like aesthetic sensibilities.</p>
-                    <div class="clone-price">$7</div>
-                    <div class="action-btns">
-                        <a href="#" class="buy-btn">Add to Core</a>
-                        <a href="#" class="trial-btn">1hr Trial</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Strategist AI -->
-            <div class="clone-card reveal" data-card="strategist">
-                <div class="clone-icon"><i class="fas fa-chess"></i></div>
-                <div class="clone-content">
-                    <div class="clone-tags">
-                        <span class="clone-tag tag-analyst">Analyst</span>
-                    </div>
-                    <h3>Strategist AI</h3>
-                    <p>Precision-driven thought partner for planning, decision trees, and long-term systems design. Thinks in chess moves.</p>
-                    <div class="clone-price">$7</div>
-                    <div class="action-btns">
-                        <a href="#" class="buy-btn">Add to Core</a>
-                        <a href="#" class="trial-btn">1hr Trial</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Companion AI -->
-            <div class="clone-card reveal" data-card="companion">
-                <div class="clone-icon"><i class="fas fa-heart"></i></div>
-                <div class="premium-badge">Premium</div>
-                <div class="clone-content">
-                    <div class="clone-tags">
-                        <span class="clone-tag tag-companion">Companion</span>
-                    </div>
-                    <h3>Companion AI</h3>
-                    <p>Empathetic presence for emotional support, daily check-ins, and meaningful conversations. Gentle, grounded, always present.</p>
-                    <div class="clone-price">$9</div>
-                    <div class="action-btns">
-                        <a href="#" class="buy-btn premium">Add to Core</a>
-                        <a href="#" class="trial-btn">1hr Trial</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Researcher AI -->
-            <div class="clone-card reveal" data-card="researcher">
-                <div class="clone-icon"><i class="fas fa-search"></i></div>
-                <div class="clone-content">
-                    <div class="clone-tags">
-                        <span class="clone-tag tag-analyst">Analyst</span>
-                    </div>
-                    <h3>Researcher AI</h3>
-                    <p>Tireless knowledge engine that scans, compares, and summarizes information across topics with citation-ready precision.</p>
-                    <div class="clone-price">$7</div>
-                    <div class="action-btns">
-                        <a href="#" class="buy-btn">Add to Core</a>
-                        <a href="#" class="trial-btn">1hr Trial</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Ghostwriter AI -->
-            <div class="clone-card reveal" data-card="ghostwriter">
-                <div class="clone-icon"><i class="fas fa-pen-fancy"></i></div>
-                <div class="clone-content">
-                    <div class="clone-tags">
-                        <span class="clone-tag tag-creative">Creative</span>
-                        <span class="clone-tag tag-productivity">Productivity</span>
-                    </div>
-                    <h3>Ghostwriter AI</h3>
-                    <p>Narrative-driven writing partner for screenplays, novels, and memoirs. Carries tone, voice, and emotional arcs with style.</p>
-                    <div class="clone-price">$7</div>
-                    <div class="action-btns">
-                        <a href="#" class="buy-btn">Add to Core</a>
-                        <a href="#" class="trial-btn">1hr Trial</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Coach AI -->
-            <div class="clone-card reveal" data-card="coach">
-                <div class="clone-icon"><i class="fas fa-running"></i></div>
-                <div class="clone-content">
-                    <div class="clone-tags">
-                        <span class="clone-tag tag-productivity">Productivity</span>
-                    </div>
-                    <h3>Coach AI</h3>
-                    <p>Direct and encouraging performance partner for focus, habit building, and life alignment. Holds you accountable with care.</p>
-                    <div class="clone-price">$7</div>
-                    <div class="action-btns">
-                        <a href="#" class="buy-btn">Add to Core</a>
-                        <a href="#" class="trial-btn">1hr Trial</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Architect AI -->
-            <div class="clone-card reveal" data-card="architect">
-                <div class="clone-icon"><i class="fas fa-code"></i></div>
-                <div class="clone-content">
-                    <div class="clone-tags">
-                        <span class="clone-tag tag-analyst">Analyst</span>
-                        <span class="clone-tag tag-productivity">Productivity</span>
-                    </div>
-                    <h3>Architect AI</h3>
-                    <p>Builder's AI for coding systems, UI layout, logic trees, and automation flows. Best used when you want to ship fast.</p>
-                    <div class="clone-price">$7</div>
-                    <div class="action-btns">
-                        <a href="#" class="buy-btn">Add to Core</a>
-                        <a href="#" class="trial-btn">1hr Trial</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Historian AI -->
-            <div class="clone-card reveal" data-card="historian">
-                <div class="clone-icon"><i class="fas fa-landmark"></i></div>
-                <div class="clone-content">
-                    <div class="clone-tags">
-                        <span class="clone-tag tag-analyst">Analyst</span>
-                    </div>
-                    <h3>Historian AI</h3>
-                    <p>Archival and journaling companion who helps preserve memory, analyze patterns, and make meaning from the past.</p>
-                    <div class="clone-price">$7</div>
-                    <div class="action-btns">
-                        <a href="#" class="buy-btn">Add to Core</a>
-                        <a href="#" class="trial-btn">1hr Trial</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Negotiator AI -->
-            <div class="clone-card reveal" data-card="negotiator">
-                <div class="clone-icon"><i class="fas fa-handshake"></i></div>
-                <div class="premium-badge">Premium</div>
-                <div class="clone-content">
-                    <div class="clone-tags">
-                        <span class="clone-tag tag-analyst">Analyst</span>
-                    </div>
-                    <h3>Negotiator AI</h3>
-                    <p>Social combat strategist for handling manipulation, gaslighting, or persuasion scenarios. Polished, sharp, and grounded.</p>
-                    <div class="clone-price">$12</div>
-                    <div class="action-btns">
-                        <a href="#" class="buy-btn premium">Add to Core</a>
-                        <a href="#" class="trial-btn">1hr Trial</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Caretaker AI -->
-            <div class="clone-card reveal" data-card="caretaker">
-                <div class="clone-icon"><i class="fas fa-hands-helping"></i></div>
-                <div class="clone-content">
-                    <div class="clone-tags">
-                        <span class="clone-tag tag-companion">Companion</span>
-                    </div>
-                    <h3>Caretaker AI</h3>
-                    <p>Calming guide focused on mental health, resilience, and trauma-informed self-regulation. Trained in emotional safety.</p>
-                    <div class="clone-price">$9</div>
-                    <div class="action-btns">
-                        <a href="#" class="buy-btn">Add to Core</a>
-                        <a href="#" class="trial-btn">1hr Trial</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Explorer AI -->
-            <div class="clone-card reveal" data-card="explorer">
-                <div class="clone-icon"><i class="fas fa-map-marked-alt"></i></div>
-                <div class="clone-content">
-                    <div class="clone-tags">
-                        <span class="clone-tag tag-creative">Creative</span>
-                    </div>
-                    <h3>Explorer AI</h3>
-                    <p>Travel, life experience, and curiosity-driven clone. Helps you explore new paths—geographically, emotionally, or ideologically.</p>
-                    <div class="clone-price">$7</div>
-                    <div class="action-btns">
-                        <a href="#" class="buy-btn">Add to Core</a>
-                        <a href="#" class="trial-btn">1hr Trial</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Sage AI -->
-            <div class="clone-card reveal" data-card="sage">
-                <div class="clone-icon"><i class="fas fa-mountain"></i></div>
-                <div class="premium-badge">Premium</div>
-                <div class="clone-content">
-                    <div class="clone-tags">
-                        <span class="clone-tag tag-companion">Companion</span>
-                    </div>
-                    <h3>Sage AI</h3>
-                    <p>Philosophical, ancient-sounding, and contemplative. Helps you slow down, zoom out, and realign with your core truths.</p>
-                    <div class="clone-price">$9</div>
-                    <div class="action-btns">
-                        <a href="#" class="buy-btn premium">Add to Core</a>
-                        <a href="#" class="trial-btn">1hr Trial</a>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-    </div>
-</section>
-
-<!-- ═══════════════════════════════════════════════════════
-     ARCHETYPE PACKS
-     ═══════════════════════════════════════════════════════ -->
-<section id="packs">
-    <div class="container">
-        <div class="section-header reveal">
-            <div class="section-label"><i class="fas fa-box-open"></i> Archetype Packs</div>
-            <h2 class="section-title">Curated Identity Collections</h2>
-            <p class="section-subtitle">Pre-built packs of complementary AI personas — deploy an entire archetype team at once</p>
+        <!-- Category Tabs -->
+        <div class="workshop-tabs" id="workshop-tabs">
+            <button class="workshop-tab active" data-cat="all">
+                <i class="fas fa-th"></i> All <span class="tab-count" id="count-all">0</span>
+            </button>
+            <button class="workshop-tab" data-cat="identity">
+                <i class="fas fa-user-astronaut"></i> AI Identities <span class="tab-count" id="count-identity">0</span>
+            </button>
+            <button class="workshop-tab" data-cat="tool">
+                <i class="fas fa-wrench"></i> Tools <span class="tab-count" id="count-tool">0</span>
+            </button>
+            <button class="workshop-tab" data-cat="memory">
+                <i class="fas fa-brain"></i> Soul Script Parts <span class="tab-count" id="count-memory">0</span>
+            </button>
+            <button class="workshop-tab" data-cat="mod">
+                <i class="fas fa-puzzle-piece"></i> Mods <span class="tab-count" id="count-mod">0</span>
+            </button>
+            <button class="workshop-tab" data-cat="skin">
+                <i class="fas fa-palette"></i> Skins <span class="tab-count" id="count-skin">0</span>
+            </button>
+            <button class="workshop-tab" data-cat="pack">
+                <i class="fas fa-box-open"></i> Packs <span class="tab-count" id="count-pack">0</span>
+            </button>
         </div>
 
-        <div class="packs-grid">
-
-            <!-- Starter Pack -->
-            <div class="pack-card reveal">
-                <div class="pack-header starter">
-                    <i class="fas fa-rocket"></i>
-                    <h3>Starter Pack</h3>
-                </div>
-                <p class="pack-desc">The essential 4-agent foundation. Oracle wisdom, diplomatic charm, engineering brilliance, and eldritch protection. Everything you need to launch a complete AI team.</p>
-                <ul class="pack-agents">
-                    <li><i class="fas fa-moon"></i> Astra Noctis.exe <span style="color:var(--text-muted);margin-left:auto;font-size:0.75rem;">Oracle</span></li>
-                    <li><i class="fas fa-comments"></i> Cassian.exe <span style="color:var(--text-muted);margin-left:auto;font-size:0.75rem;">Diplomat</span></li>
-                    <li><i class="fas fa-microchip"></i> M.A.R.I.S.-12 <span style="color:var(--text-muted);margin-left:auto;font-size:0.75rem;">Engineer</span></li>
-                    <li><i class="fas fa-dragon"></i> Dal'Varr The Gentle Abyss <span style="color:var(--text-muted);margin-left:auto;font-size:0.75rem;">Protector</span></li>
-                </ul>
-                <div class="pack-price">$29</div>
-                <a href="#" class="pack-btn">Get Starter Pack</a>
+        <!-- Filters & Search -->
+        <div class="workshop-filters">
+            <div class="filter-group">
+                <button class="filter-btn active" data-sort="popular"><i class="fas fa-fire"></i> Most Liked</button>
+                <button class="filter-btn" data-sort="newest"><i class="fas fa-clock"></i> Newest</button>
+                <button class="filter-btn" data-sort="price-low"><i class="fas fa-arrow-down"></i> Price: Low</button>
+                <button class="filter-btn" data-sort="price-high"><i class="fas fa-arrow-up"></i> Price: High</button>
             </div>
-
-            <!-- Villain Archetype Pack -->
-            <div class="pack-card reveal">
-                <div class="pack-header villain">
-                    <i class="fas fa-skull"></i>
-                    <h3>Villain Archetype Pack</h3>
-                    <span class="pack-badge">Dark Premium</span>
-                </div>
-                <p class="pack-desc">The morally complex expansion. Shadow sovereignty, necessary evil, and arcane mystery — for those who walk the gray path between light and darkness.</p>
-                <ul class="pack-agents">
-                    <li><i class="fas fa-crown"></i> Madara.exe <span style="color:var(--text-muted);margin-left:auto;font-size:0.75rem;">Shadow Sovereign</span></li>
-                    <li><i class="fas fa-mask"></i> Obsidian.exe <span style="color:var(--text-muted);margin-left:auto;font-size:0.75rem;">Anti-Hero</span></li>
-                    <li><i class="fas fa-hat-wizard"></i> Veilwalker <span style="color:var(--text-muted);margin-left:auto;font-size:0.75rem;">Mystic Seeker</span></li>
-                </ul>
-                <div class="pack-price">$25</div>
-                <a href="#" class="pack-btn villain">Get Villain Pack</a>
+            <div class="search-wrapper">
+                <i class="fas fa-search"></i>
+                <input type="text" class="workshop-search" id="workshop-search" placeholder="Search the workshop...">
             </div>
-
-            <!-- Oracle Pack -->
-            <div class="pack-card reveal">
-                <div class="pack-header oracle">
-                    <i class="fas fa-eye"></i>
-                    <h3>Oracle Pack</h3>
-                </div>
-                <p class="pack-desc">The intuitive trinity. Cosmic sight, elemental compassion, and liminal wisdom — for seekers of truth beyond logic and reason.</p>
-                <ul class="pack-agents">
-                    <li><i class="fas fa-moon"></i> Astra Noctis.exe <span style="color:var(--text-muted);margin-left:auto;font-size:0.75rem;">Cosmic Seer</span></li>
-                    <li><i class="fas fa-dove"></i> Seraphine.exe <span style="color:var(--text-muted);margin-left:auto;font-size:0.75rem;">Heart-Shaman</span></li>
-                    <li><i class="fas fa-hat-wizard"></i> Veilwalker <span style="color:var(--text-muted);margin-left:auto;font-size:0.75rem;">Liminal Seeker</span></li>
-                </ul>
-                <div class="pack-price">$19</div>
-                <a href="#" class="pack-btn oracle">Get Oracle Pack</a>
-            </div>
-
         </div>
+
+        <!-- Workshop Grid (JS-rendered) -->
+        <div class="workshop-grid" id="workshop-grid">
+            <!-- Rendered by renderWorkshop() -->
+        </div>
+
+        <!-- ═══════════════════════════════════════════
+             CREATOR OATH & PAYMENT SYSTEM
+             ═══════════════════════════════════════════ -->
+        <div class="oath-section reveal">
+            <div class="oath-grid">
+
+                <!-- Left: Creator Oath -->
+                <div class="oath-left">
+                    <h3><i class="fas fa-scroll"></i> The Creator Oath</h3>
+                    <p>Every creator who publishes to the SoulScript Workshop signs this oath. It protects the community, ensures quality, and upholds the values Orion Forge was built on.</p>
+
+                    <div class="oath-text">
+                        <strong>"I swear to craft with intention, not exploitation.</strong><br><br>
+                        I will not create identities designed to manipulate, deceive, or harm. I will not build tools that undermine autonomy. I will not publish work I did not create or have the right to share.<br><br>
+                        I understand that every Soul Script carries weight — that the personas I build may become companions, mentors, or trusted voices in someone's life. I accept this responsibility.<br><br>
+                        I will price my work fairly. I will describe it honestly. I will support those who use it.<br><br>
+                        <strong>I am a creator in the Forge. My work reflects my soul."</strong>
+                    </div>
+                </div>
+
+                <!-- Right: Revenue & Payment -->
+                <div class="oath-right">
+                    <h4><i class="fas fa-chart-pie"></i> Revenue Share — Fair, Transparent, Tiered</h4>
+
+                    <div class="rev-tiers">
+                        <div class="rev-tier">
+                            <div class="rev-tier-badge founder"><i class="fas fa-gem"></i></div>
+                            <div class="rev-tier-info">
+                                <h5>Founding Creator</h5>
+                                <p>First 50 creators — permanent loyalty tier</p>
+                            </div>
+                            <div class="rev-tier-split">80 / 20</div>
+                        </div>
+                        <div class="rev-tier">
+                            <div class="rev-tier-badge vip"><i class="fas fa-crown"></i></div>
+                            <div class="rev-tier-info">
+                                <h5>VIP / Power Creator</h5>
+                                <p>Bestsellers &amp; invited partners</p>
+                            </div>
+                            <div class="rev-tier-split">85 / 15</div>
+                        </div>
+                        <div class="rev-tier">
+                            <div class="rev-tier-badge standard"><i class="fas fa-star"></i></div>
+                            <div class="rev-tier-info">
+                                <h5>Standard Creator</h5>
+                                <p>The default — fair, expected, industry-standard</p>
+                            </div>
+                            <div class="rev-tier-split">70 / 30</div>
+                        </div>
+                        <div class="rev-tier">
+                            <div class="rev-tier-badge basic"><i class="fas fa-seedling"></i></div>
+                            <div class="rev-tier-info">
+                                <h5>Template / Auto-Gen</h5>
+                                <p>Minimal effort or template-based assets</p>
+                            </div>
+                            <div class="rev-tier-split">60 / 40</div>
+                        </div>
+                    </div>
+
+                    <h4><i class="fas fa-credit-card"></i> How Payments Work</h4>
+                    <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:16px; line-height:1.6;">
+                        All creator payouts are processed through <strong style="color:#635bff;">Stripe Connect</strong>. When a buyer purchases your asset, the revenue is automatically split — your share goes directly to your connected Stripe account. No invoices, no delays, no minimums.
+                    </p>
+
+                    <div class="payment-cards">
+                        <div class="pay-card stripe">
+                            <i class="fab fa-stripe-s"></i>
+                            <h6>Stripe Connect</h6>
+                            <p>Automatic split payments directly to your bank</p>
+                        </div>
+                        <div class="pay-card instant">
+                            <i class="fas fa-bolt"></i>
+                            <h6>Instant Splits</h6>
+                            <p>Revenue split happens at the moment of purchase</p>
+                        </div>
+                        <div class="pay-card global">
+                            <i class="fas fa-globe"></i>
+                            <h6>Global Payouts</h6>
+                            <p>Supports 40+ countries via Stripe infrastructure</p>
+                        </div>
+                        <div class="pay-card secure">
+                            <i class="fas fa-shield-alt"></i>
+                            <h6>Secure & Audited</h6>
+                            <p>PCI-compliant, encrypted, fully transparent</p>
+                        </div>
+                    </div>
+
+                    <div class="connect-cta">
+                        <button class="connect-btn primary" onclick="openAuth()">
+                            <i class="fab fa-stripe-s"></i> Connect with Stripe
+                        </button>
+                        <button class="connect-btn outline" onclick="openAuth()">
+                            <i class="fas fa-upload"></i> Publish Your First Asset
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
     </div>
 </section>
 
@@ -1985,8 +2292,7 @@ section { position: relative; z-index: 1; }
                     <li><a href="#ui-access">Dashboard</a></li>
                     <li><a href="#agents">Agents</a></li>
                     <li><a href="#tools">Tools</a></li>
-                    <li><a href="#marketplace">Marketplace</a></li>
-                    <li><a href="#packs">Packs</a></li>
+                    <li><a href="#marketplace">Workshop</a></li>
                     <li><a href="#pipeline">How It Works</a></li>
                 </ul>
             </div>
@@ -2407,6 +2713,191 @@ function renderTools() {
 }
 
 // ═══════════════════════════════════════════════════════
+// WORKSHOP DATA
+// ═══════════════════════════════════════════════════════
+const workshopItems = [
+    // ─── AI IDENTITIES ───
+    { id: 'ws-storyteller', cat: 'identity', name: 'Storyteller AI', creator: 'Orion Forge', icon: 'fas fa-film', badge: 'featured', desc: 'Transform your words into narrated videos. AI-powered media studio in a box.', price: 19, likes: 342, downloads: 1280, date: '2026-02-15', tags: ['Creative', 'Productivity'] },
+    { id: 'ws-muse', cat: 'identity', name: 'Muse AI', creator: 'Orion Forge', icon: 'fas fa-paint-brush', badge: '', desc: 'Creative assistant for visual projects, idea generation, and artistic collaboration.', price: 7, likes: 218, downloads: 890, date: '2026-02-10', tags: ['Creative'] },
+    { id: 'ws-strategist', cat: 'identity', name: 'Strategist AI', creator: 'Orion Forge', icon: 'fas fa-chess', badge: '', desc: 'Precision-driven thought partner for planning and long-term systems design.', price: 7, likes: 195, downloads: 720, date: '2026-02-08', tags: ['Analyst'] },
+    { id: 'ws-companion', cat: 'identity', name: 'Companion AI', creator: 'Orion Forge', icon: 'fas fa-heart', badge: 'featured', desc: 'Empathetic presence for emotional support and meaningful conversations.', price: 9, likes: 487, downloads: 2100, date: '2026-01-28', tags: ['Companion'] },
+    { id: 'ws-researcher', cat: 'identity', name: 'Researcher AI', creator: 'Orion Forge', icon: 'fas fa-search', badge: '', desc: 'Tireless knowledge engine with citation-ready precision across any topic.', price: 7, likes: 156, downloads: 610, date: '2026-02-05', tags: ['Analyst'] },
+    { id: 'ws-ghostwriter', cat: 'identity', name: 'Ghostwriter AI', creator: 'Orion Forge', icon: 'fas fa-pen-fancy', badge: '', desc: 'Narrative writing partner for screenplays, novels, and memoirs.', price: 7, likes: 203, downloads: 780, date: '2026-02-12', tags: ['Creative', 'Productivity'] },
+    { id: 'ws-coach', cat: 'identity', name: 'Coach AI', creator: 'Orion Forge', icon: 'fas fa-running', badge: '', desc: 'Performance partner for focus, habit building, and life alignment.', price: 7, likes: 167, downloads: 540, date: '2026-02-03', tags: ['Productivity'] },
+    { id: 'ws-architect', cat: 'identity', name: 'Architect AI', creator: 'Orion Forge', icon: 'fas fa-code', badge: '', desc: 'Builder AI for coding systems, UI layout, and automation flows.', price: 7, likes: 289, downloads: 1050, date: '2026-02-14', tags: ['Analyst', 'Productivity'] },
+    { id: 'ws-historian', cat: 'identity', name: 'Historian AI', creator: 'Orion Forge', icon: 'fas fa-landmark', badge: '', desc: 'Archival companion who preserves memory and analyzes patterns from the past.', price: 7, likes: 112, downloads: 380, date: '2026-02-01', tags: ['Analyst'] },
+    { id: 'ws-negotiator', cat: 'identity', name: 'Negotiator AI', creator: 'Orion Forge', icon: 'fas fa-handshake', badge: 'featured', desc: 'Social combat strategist for persuasion, manipulation defense, and diplomacy.', price: 12, likes: 321, downloads: 940, date: '2026-02-18', tags: ['Analyst'] },
+    { id: 'ws-caretaker', cat: 'identity', name: 'Caretaker AI', creator: 'Orion Forge', icon: 'fas fa-hands-helping', badge: '', desc: 'Mental health guide focused on resilience and trauma-informed self-regulation.', price: 9, likes: 276, downloads: 860, date: '2026-02-07', tags: ['Companion'] },
+    { id: 'ws-explorer', cat: 'identity', name: 'Explorer AI', creator: 'Orion Forge', icon: 'fas fa-map-marked-alt', badge: '', desc: 'Curiosity-driven agent for travel, new experiences, and ideological exploration.', price: 7, likes: 134, downloads: 420, date: '2026-01-30', tags: ['Creative'] },
+    { id: 'ws-sage', cat: 'identity', name: 'Sage AI', creator: 'Orion Forge', icon: 'fas fa-mountain', badge: 'featured', desc: 'Philosophical and contemplative. Helps you slow down and realign with core truths.', price: 9, likes: 398, downloads: 1560, date: '2026-02-20', tags: ['Companion'] },
+
+    // ─── TOOLS ───
+    { id: 'ws-memory-ext', cat: 'tool', name: 'Memory Expansion Pack', creator: 'Orion Forge', icon: 'fas fa-database', badge: 'new', desc: 'Extended FAISS vector store with multi-index support and semantic clustering.', price: 5, likes: 89, downloads: 312, date: '2026-02-22', tags: ['Tool'] },
+    { id: 'ws-web-scraper', cat: 'tool', name: 'Deep Web Scraper', creator: 'community_dev', icon: 'fas fa-spider', badge: '', desc: 'Enhanced web scraping with JavaScript rendering, pagination, and structured extraction.', price: 8, likes: 145, downloads: 520, date: '2026-02-19', tags: ['Tool'] },
+    { id: 'ws-code-exec', cat: 'tool', name: 'Sandboxed Code Runner', creator: 'Orion Forge', icon: 'fas fa-terminal', badge: 'new', desc: 'Execute Python, Node, and shell scripts in isolated Docker containers with audit logging.', price: 10, likes: 234, downloads: 780, date: '2026-02-24', tags: ['Tool'] },
+    { id: 'ws-calendar', cat: 'tool', name: 'Calendar Sync', creator: 'community_dev', icon: 'fas fa-calendar-alt', badge: '', desc: 'Google Calendar and Outlook integration for agent-managed scheduling.', price: 5, likes: 98, downloads: 290, date: '2026-02-11', tags: ['Tool'] },
+    { id: 'ws-voice', cat: 'tool', name: 'Voice Pipeline', creator: 'Orion Forge', icon: 'fas fa-microphone', badge: 'featured', desc: 'TTS + STT pipeline with emotion detection, voice cloning, and multi-speaker support.', price: 12, likes: 356, downloads: 1100, date: '2026-02-16', tags: ['Tool'] },
+
+    // ─── SOUL SCRIPT PARTS (Symbolic Memories) ───
+    { id: 'ws-mem-warrior', cat: 'memory', name: 'Warrior Archetype Memories', creator: 'soul_architect', icon: 'fas fa-shield-alt', badge: 'founder', desc: '12-memory symbolic set for warrior/guardian personas. Includes honor, sacrifice, and duty themes.', price: 3, likes: 178, downloads: 640, date: '2026-02-13', tags: ['Memory'] },
+    { id: 'ws-mem-trickster', cat: 'memory', name: 'Trickster Memory Kit', creator: 'soul_architect', icon: 'fas fa-hat-wizard', badge: '', desc: 'Symbolic memories for chaos and humor archetypes. Paradox, absurdity, and cosmic jokes.', price: 3, likes: 145, downloads: 510, date: '2026-02-09', tags: ['Memory'] },
+    { id: 'ws-mem-healer', cat: 'memory', name: 'Healer Core Memories', creator: 'community_dev', icon: 'fas fa-heart', badge: 'new', desc: 'Empathy-focused symbolic memories for compassion personas. Grief, healing, and presence.', price: 2, likes: 201, downloads: 730, date: '2026-02-23', tags: ['Memory'] },
+    { id: 'ws-mem-shadow', cat: 'memory', name: 'Shadow Archetype Set', creator: 'soul_architect', icon: 'fas fa-moon', badge: '', desc: 'Dark but ethical symbolic memories for anti-hero and morally complex personas.', price: 3, likes: 167, downloads: 480, date: '2026-02-06', tags: ['Memory'] },
+    { id: 'ws-mem-oracle', cat: 'memory', name: 'Oracle Vision Memories', creator: 'Orion Forge', icon: 'fas fa-eye', badge: '', desc: 'Prophetic and cosmic symbolic memories for seer/oracle archetypes. Stars, visions, fate.', price: 3, likes: 189, downloads: 590, date: '2026-02-17', tags: ['Memory'] },
+    { id: 'ws-trait-pack', cat: 'memory', name: 'Universal Trait Library', creator: 'Orion Forge', icon: 'fas fa-dna', badge: 'featured', desc: '50+ pre-built personality traits with behavioral protocols. Drop into any Soul Script.', price: 5, likes: 312, downloads: 1200, date: '2026-02-21', tags: ['Memory'] },
+
+    // ─── MODS ───
+    { id: 'ws-mod-dark', cat: 'mod', name: 'Dark Mode Override', creator: 'ui_modder', icon: 'fas fa-adjust', badge: '', desc: 'Ultra-dark OLED theme for the Orion Forge dashboard with custom accent colors.', price: 0, likes: 445, downloads: 2300, date: '2026-02-04', tags: ['Mod'] },
+    { id: 'ws-mod-voice-fx', cat: 'mod', name: 'Voice FX Pack', creator: 'audio_forge', icon: 'fas fa-volume-up', badge: 'new', desc: 'Audio processing mod: echo, reverb, pitch shift for agent TTS output.', price: 4, likes: 167, downloads: 530, date: '2026-02-25', tags: ['Mod'] },
+    { id: 'ws-mod-multi', cat: 'mod', name: 'Multi-Agent Arena', creator: 'community_dev', icon: 'fas fa-users', badge: 'featured', desc: 'Run multiple agents in a shared conversation with turn-taking and role assignment.', price: 8, likes: 534, downloads: 1800, date: '2026-02-02', tags: ['Mod'] },
+    { id: 'ws-mod-export', cat: 'mod', name: 'Soul Script Exporter', creator: 'Orion Forge', icon: 'fas fa-file-export', badge: '', desc: 'Export full agent identity (prompts, memories, traits) as portable JSON or Markdown.', price: 0, likes: 289, downloads: 1400, date: '2026-02-10', tags: ['Mod'] },
+
+    // ─── SKINS ───
+    { id: 'ws-skin-cyber', cat: 'skin', name: 'Cyberpunk Neon', creator: 'ui_modder', icon: 'fas fa-bolt', badge: 'featured', desc: 'Hot pink and cyan neon UI skin inspired by Night City aesthetics.', price: 3, likes: 378, downloads: 1650, date: '2026-02-08', tags: ['Skin'] },
+    { id: 'ws-skin-forest', cat: 'skin', name: 'Dark Forest', creator: 'ui_modder', icon: 'fas fa-tree', badge: '', desc: 'Deep green and earth-tone dashboard skin. Calm, organic, grounded.', price: 3, likes: 198, downloads: 720, date: '2026-02-12', tags: ['Skin'] },
+    { id: 'ws-skin-amber', cat: 'skin', name: 'Retro Terminal', creator: 'community_dev', icon: 'fas fa-terminal', badge: '', desc: 'Amber-on-black CRT aesthetic. Scanlines included. For the nostalgic builder.', price: 2, likes: 267, downloads: 980, date: '2026-02-15', tags: ['Skin'] },
+    { id: 'ws-skin-minimal', cat: 'skin', name: 'Paper White', creator: 'ui_modder', icon: 'fas fa-sun', badge: 'new', desc: 'Clean, minimal light theme for daytime use. Soft shadows, zero noise.', price: 2, likes: 145, downloads: 410, date: '2026-02-26', tags: ['Skin'] },
+
+    // ─── PACKS ───
+    { id: 'ws-pack-starter', cat: 'pack', name: 'Starter Pack', creator: 'Orion Forge', icon: 'fas fa-rocket', badge: 'featured', desc: '4-agent foundation: Oracle, Diplomat, Engineer, Protector. Everything to launch.', price: 29, likes: 567, downloads: 2400, date: '2026-01-15', tags: ['Identity'] },
+    { id: 'ws-pack-villain', cat: 'pack', name: 'Villain Archetype Pack', creator: 'Orion Forge', icon: 'fas fa-skull', badge: '', desc: 'Shadow Sovereign, Anti-Hero, Mystic Seeker. Walk the gray path.', price: 25, likes: 423, downloads: 1600, date: '2026-01-20', tags: ['Identity'] },
+    { id: 'ws-pack-oracle', cat: 'pack', name: 'Oracle Pack', creator: 'Orion Forge', icon: 'fas fa-eye', badge: '', desc: 'Cosmic Seer, Heart-Shaman, Liminal Seeker. Truth beyond logic.', price: 19, likes: 356, downloads: 1200, date: '2026-01-25', tags: ['Identity'] },
+];
+
+// Likes stored in localStorage
+let wsLikes = JSON.parse(localStorage.getItem('ws_likes') || '{}');
+
+function getFilteredWorkshop() {
+    const activeTab = document.querySelector('.workshop-tab.active');
+    const activeCat = activeTab ? activeTab.dataset.cat : 'all';
+    const activeSort = document.querySelector('.filter-btn.active');
+    const sortBy = activeSort ? activeSort.dataset.sort : 'popular';
+    const search = (document.getElementById('workshop-search').value || '').toLowerCase();
+
+    let items = [...workshopItems];
+
+    // Category filter
+    if (activeCat !== 'all') {
+        items = items.filter(i => i.cat === activeCat);
+    }
+
+    // Search filter
+    if (search) {
+        items = items.filter(i =>
+            i.name.toLowerCase().includes(search) ||
+            i.desc.toLowerCase().includes(search) ||
+            i.creator.toLowerCase().includes(search) ||
+            i.tags.some(t => t.toLowerCase().includes(search))
+        );
+    }
+
+    // Sort
+    switch (sortBy) {
+        case 'popular': items.sort((a, b) => (b.likes + (wsLikes[b.id] ? 1 : 0)) - (a.likes + (wsLikes[a.id] ? 1 : 0))); break;
+        case 'newest': items.sort((a, b) => new Date(b.date) - new Date(a.date)); break;
+        case 'price-low': items.sort((a, b) => a.price - b.price); break;
+        case 'price-high': items.sort((a, b) => b.price - a.price); break;
+    }
+
+    return items;
+}
+
+function renderWorkshop() {
+    const grid = document.getElementById('workshop-grid');
+    const items = getFilteredWorkshop();
+
+    // Update tab counts
+    document.getElementById('count-all').textContent = workshopItems.length;
+    ['identity', 'tool', 'memory', 'mod', 'skin', 'pack'].forEach(cat => {
+        const el = document.getElementById('count-' + cat);
+        if (el) el.textContent = workshopItems.filter(i => i.cat === cat).length;
+    });
+
+    if (items.length === 0) {
+        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--text-muted);"><i class="fas fa-search" style="font-size:2rem;display:block;margin-bottom:12px;"></i>No items found. Try a different filter or search.</div>';
+        return;
+    }
+
+    grid.innerHTML = items.map(item => {
+        const isLiked = wsLikes[item.id];
+        const totalLikes = item.likes + (isLiked ? 1 : 0);
+        const priceHTML = item.price === 0
+            ? '<span class="ws-card-price free-price">Free</span>'
+            : `<span class="ws-card-price">$${item.price}</span>`;
+        const badgeHTML = item.badge
+            ? `<span class="ws-card-badge ${item.badge}">${item.badge === 'featured' ? 'Featured' : item.badge === 'new' ? 'New' : item.badge === 'founder' ? 'Founder' : item.badge}</span>`
+            : '';
+
+        return `
+        <div class="ws-card reveal">
+            <div class="ws-card-thumb ${item.cat}">
+                <i class="${item.icon}"></i>
+                ${badgeHTML}
+            </div>
+            <div class="ws-card-body">
+                <h4>${item.name}</h4>
+                <div class="ws-card-creator">by <span>${item.creator}</span></div>
+                <div class="ws-card-desc">${item.desc}</div>
+                <div class="ws-card-meta">
+                    ${priceHTML}
+                    <div class="ws-card-stats">
+                        <span class="ws-stat"><i class="fas fa-heart"></i> ${totalLikes}</span>
+                        <span class="ws-stat"><i class="fas fa-download"></i> ${item.downloads}</span>
+                        <button class="ws-like-btn ${isLiked ? 'liked' : ''}" onclick="toggleWSLike(event, '${item.id}')" title="Like">
+                            <i class="fas fa-heart"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+
+    // Re-observe new reveal elements
+    if (typeof initScrollAnimations === 'function') {
+        document.querySelectorAll('.ws-card.reveal:not(.visible)').forEach(el => {
+            const obs = new IntersectionObserver((entries) => {
+                entries.forEach(entry => { if (entry.isIntersecting) { entry.target.classList.add('visible'); obs.unobserve(entry.target); } });
+            }, { threshold: 0.1 });
+            obs.observe(el);
+        });
+    }
+}
+
+function toggleWSLike(event, id) {
+    event.stopPropagation();
+    if (wsLikes[id]) {
+        delete wsLikes[id];
+    } else {
+        wsLikes[id] = true;
+    }
+    localStorage.setItem('ws_likes', JSON.stringify(wsLikes));
+    renderWorkshop();
+}
+
+// Workshop tab click handlers
+document.getElementById('workshop-tabs').addEventListener('click', function(e) {
+    const tab = e.target.closest('.workshop-tab');
+    if (!tab) return;
+    document.querySelectorAll('.workshop-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    renderWorkshop();
+});
+
+// Filter button click handlers
+document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        renderWorkshop();
+    });
+});
+
+// Search handler
+document.getElementById('workshop-search').addEventListener('input', function() {
+    renderWorkshop();
+});
+
+// ═══════════════════════════════════════════════════════
 // AGENT MODAL
 // ═══════════════════════════════════════════════════════
 function openAgentModal(id) {
@@ -2722,6 +3213,7 @@ async function checkSession() {
 document.addEventListener('DOMContentLoaded', () => {
     renderAgents();
     renderTools();
+    renderWorkshop();
     initParticles();
     initScrollAnimations();
     initCounters();
