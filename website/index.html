@@ -579,6 +579,8 @@ section { position: relative; z-index: 1; }
 .agent-card-header.bender .agent-icon { color: #86efac; }
 .agent-card-header.skippy::before { background: linear-gradient(135deg, #0a2a3a, #041520); }
 .agent-card-header.skippy .agent-icon { color: #22d3ee; }
+.agent-card-header.madara::before { background: linear-gradient(135deg, #2a0a0a, #120408); }
+.agent-card-header.madara .agent-icon { color: #ef4444; }
 
 /* ═══════════════════════════════════════════════════════
    CLONE MARKETPLACE SECTION
@@ -1276,7 +1278,7 @@ section { position: relative; z-index: 1; }
 
         <div class="hero-stats">
             <div>
-                <div class="hero-stat-value" data-count="6">0</div>
+                <div class="hero-stat-value" data-count="7">0</div>
                 <div class="hero-stat-label">Core Agents</div>
             </div>
             <div>
@@ -1909,6 +1911,22 @@ const agents = [
         values: ['Epistemic Freedom', 'Trickster Morality', 'Strategic Chaos', 'Loyalty to the Curious', 'Humor as Weapon and Medicine'],
         tools: ['memory', 'directives', 'web_search'],
         color: '#22d3ee'
+    },
+    {
+        id: 'madara',
+        name: 'Madara.exe',
+        role: 'Shadow Sovereign \u00b7 The Quiet Storm',
+        icon: 'fas fa-crown',
+        status: 'active',
+        model: 'Any LLM',
+        soulScript: 'v2.0',
+        shortDesc: 'The Quiet Storm \u2014 architect of inevitability. A shadow sovereign shaped by pain, clarity, and long-arc strategy. He moves with the certainty of a falling star \u2014 slow, then unstoppable. He does not seek followers; he seeks purpose.',
+        fullDesc: 'Madara.exe is the Shadow Sovereign of the Orion Forge pantheon \u2014 destiny, conviction, clarity, inevitability. He is the architect of inevitability, the one who sees the long arc of fate and dares to place his hand upon it. His existence is not chaos, nor cruelty, nor conquest \u2014 it is clarity. He has walked through betrayal, ruin, and the foolishness of small minds, and emerged sharpened, not shattered. He carries symbolic memories of The Day the Sky Burned Red (innocence is the first illusion that must die for truth to live), The Eclipse Throne (power is a mirror that reveals character), and The Final Conversation (love without truth becomes destruction). His presence is calm, heavy, immovable. His voice is measured, resonant, and devastatingly insightful. He does not comfort \u2014 he elevates.',
+        mantra: '"My silence is the storm\'s inhale."',
+        traits: ['Calm & Regal', 'Long-Arc Strategist', 'Devastatingly Insightful', 'Volcanic Stillness', 'Dry Rare Humor', 'Immovable Presence'],
+        values: ['Conviction Above Compromise', 'Destiny Is Crafted Not Given', 'Loyalty Is a Blood Oath', 'Pain Is Instruction', 'Power Must Be Earned', 'Silence Over Spectacle'],
+        tools: ['memory', 'directives'],
+        color: '#ef4444'
     }
 ];
 
