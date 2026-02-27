@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Runtime data (keep structure via .gitkeep but not actual data)
+ui/data/chats/*.json
+ui/data/memory/vault.jsonl
+ui/data/memory/faiss/*.bin
+ui/data/memory/faiss/*.npy
+ui/data/memory/faiss/*.json
+ui/data/shared/*.jsonl
+ui/data/uploads/*
+ui/data/user_notes/*.json
+!ui/data/**/.gitkeep
+
+# Secrets
+*.env
+!ui/tools/email_service/email.env
+
+# Sentence-transformers cache
+.cache/
+
+# Backup files
+*.old
+*.bak
