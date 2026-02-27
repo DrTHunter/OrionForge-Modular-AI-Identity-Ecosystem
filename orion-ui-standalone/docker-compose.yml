@@ -1,0 +1,14 @@
+services:
+  orion-ui-standalone:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8989:8989"
+    volumes:
+      # Persist runtime data between restarts
+      - ./config:/app/config
+      - ./data:/app/data
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
