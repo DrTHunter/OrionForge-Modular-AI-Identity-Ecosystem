@@ -1,0 +1,411 @@
+{% extends "base.html" %}
+{% block title %}Tools — Orion Forge{% endblock %}
+
+{% block content %}
+<style>
+  /* ── Shell & view switching ──────────────────────────────────────────── */
+  .tools-shell { max-width: 100%; margin: 0 auto; padding: 0 1rem; }
+
+  .tab-bar { display: flex; align-items: center; gap: 0; border-bottom: 1px solid #2a2a3a; margin-bottom: 1.5rem; }
+  .tab-btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.25rem; font-size: 0.875rem; font-weight: 600; color: #71717a; background: none; border: none; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; position: relative; top: 1px; }
+  .tab-btn:hover { color: #a1a1aa; }
+  .tab-btn.active { color: #fff; border-bottom-color: #6366f1; }
+  .tab-count { font-size: 0.75rem; font-weight: 700; color: #71717a; background: rgba(42,42,58,0.6); padding: 0.0625rem 0.4rem; border-radius: 9999px; min-width: 1.25rem; text-align: center; }
+  .tab-btn.active .tab-count { color: #a5b4fc; background: rgba(99,102,241,0.15); }
+
+  .view-panel { display: none; animation: viewFade 0.2s ease; }
+  .view-panel.active { display: block; }
+  .editor-view { display: none; animation: viewFade 0.2s ease; }
+  .editor-view.active { display: block; }
+  @keyframes viewFade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── List view ────────────────────────────────────────────────── */
+  .tools-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin-bottom: 1.5rem; }
+  @media (max-width: 768px) { .tools-grid { grid-template-columns: 1fr; } }
+
+  .tool-card {
+    background: rgba(26,26,36,0.8);
+    border: 1px solid rgba(42,42,58,0.6);
+    border-radius: 0.75rem;
+    padding: 1.25rem 1.5rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    position: relative;
+  }
+  .tool-card:hover {
+    border-color: rgba(99,102,241,0.4);
+    background: rgba(26,26,36,1);
+    box-shadow: 0 0 20px rgba(99,102,241,0.06);
+    transform: translateY(-2px);
+  }
+  .tool-card-icon {
+    width: 2.5rem; height: 2.5rem; border-radius: 0.5rem;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem; flex-shrink: 0;
+  }
+  .tool-card-info { flex: 1; min-width: 0; }
+  .tool-card-name {
+    font-size: 0.9375rem; font-weight: 700; color: #e4e4e7;
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+  }
+  .tool-card-desc {
+    font-size: 0.75rem; color: #a1a1aa; line-height: 1.4; margin-top: 0.25rem;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .tool-card-meta {
+    display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap;
+  }
+  .meta-chip {
+    font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 0.125rem 0.5rem; border-radius: 9999px;
+  }
+  .meta-chip.params { background: rgba(34,211,238,0.1); color: #22d3ee; }
+  .meta-chip.status-ready { background: rgba(16,185,129,0.12); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.25); }
+  .meta-chip.status-planned { background: rgba(99,102,241,0.15); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.3); }
+  .meta-chip.status-concept { background: rgba(245,158,11,0.12); color: #fcd34d; border: 1px solid rgba(245,158,11,0.25); }
+
+  /* ── Stats row ────────────────────────────────────────────────── */
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 1.5rem; }
+  @media (max-width: 768px) { .stats-row { grid-template-columns: repeat(2, 1fr); } }
+  .stat-card {
+    background: rgba(26,26,36,0.6); border: 1px solid rgba(42,42,58,0.5);
+    border-radius: 0.5rem; padding: 1rem 1.25rem; text-align: center;
+  }
+  .stat-value { font-size: 1.75rem; font-weight: 800; color: #fff; }
+  .stat-label { font-size: 0.6875rem; color: #71717a; text-transform: uppercase; letter-spacing: 0.06em; margin-top: 0.125rem; }
+
+  /* ── Filters ──────────────────────────────────────────────────── */
+  .filter-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; margin-bottom: 1.25rem; }
+  .filter-btn {
+    padding: 0.25rem 0.75rem; font-size: 0.75rem; border-radius: 0.375rem;
+    border: 1px solid rgba(42,42,58,0.5); background: none; color: #71717a; cursor: pointer; transition: all 0.15s;
+  }
+  .filter-btn:hover { color: #a1a1aa; background: rgba(42,42,58,0.3); }
+  .filter-btn.active { background: rgba(99,102,241,0.15); color: #818cf8; border-color: rgba(99,102,241,0.3); }
+  .search-input {
+    background: rgba(24,24,27,0.6); border: 1px solid rgba(42,42,58,0.5);
+    border-radius: 0.5rem; padding: 0.5rem 0.75rem; font-size: 0.8125rem;
+    color: #d4d4d8; outline: none; width: 100%; max-width: 20rem; transition: border-color 0.15s;
+  }
+  .search-input:focus { border-color: rgba(99,102,241,0.5); }
+  .search-input::placeholder { color: #52525b; }
+
+  /* ── Editor / detail view ───────────────────────────────────── */
+  .section-card {
+    background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 0.75rem;
+    padding: 1.25rem 1.5rem; margin-bottom: 1.25rem;
+  }
+  .section-title {
+    font-size: 0.8125rem; font-weight: 700; color: #e4e4e7;
+    margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;
+  }
+  .sec-icon { font-size: 0.875rem; }
+
+  .param-table { width: 100%; font-size: 0.75rem; border-collapse: collapse; }
+  .param-table th {
+    text-align: left; color: #71717a; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.05em; padding: 0.375rem 0.5rem;
+    border-bottom: 1px solid rgba(42,42,58,0.6); font-size: 0.625rem;
+  }
+  .param-table td {
+    padding: 0.375rem 0.5rem; color: #d4d4d8;
+    border-bottom: 1px solid rgba(42,42,58,0.3); vertical-align: top;
+  }
+  .param-table tr:last-child td { border-bottom: none; }
+  .param-name {
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+    color: #818cf8; font-weight: 600; white-space: nowrap;
+  }
+  .param-type {
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+    color: #22d3ee; font-size: 0.6875rem;
+  }
+  .param-required {
+    display: inline-block; font-size: 0.5625rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    padding: 0.125rem 0.375rem; border-radius: 0.25rem;
+    background: rgba(239,68,68,0.15); color: #fca5a5;
+  }
+  .param-optional {
+    display: inline-block; font-size: 0.5625rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    padding: 0.125rem 0.375rem; border-radius: 0.25rem;
+    background: rgba(113,113,122,0.15); color: #71717a;
+  }
+  .enum-values { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.25rem; }
+  .enum-chip {
+    font-size: 0.625rem;
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+    background: rgba(99,102,241,0.1); color: #a5b4fc;
+    padding: 0.0625rem 0.375rem; border-radius: 0.25rem;
+    border: 1px solid rgba(99,102,241,0.2);
+  }
+
+  /* ── Action bar ───────────────────────────────────────────────── */
+  .action-bar {
+    display: flex; justify-content: flex-end; gap: 0.75rem;
+    padding-top: 1rem; border-top: 1px solid #2a2a3a; margin-top: 0.5rem;
+  }
+  .btn {
+    padding: 0.5rem 1.25rem; border-radius: 0.5rem;
+    font-size: 0.8125rem; font-weight: 600; cursor: pointer;
+    transition: all 0.15s; border: none;
+  }
+  .btn-primary { background: #6366f1; color: #fff; }
+  .btn-primary:hover { background: #4f46e5; }
+  .btn-secondary { background: rgba(42,42,58,0.5); color: #a1a1aa; border: 1px solid #2a2a3a; }
+  .btn-secondary:hover { background: rgba(42,42,58,0.8); color: #e4e4e7; }
+
+  .tool-detail-header {
+    display: flex; align-items: center; gap: 1rem; margin-bottom: 1.25rem;
+  }
+  .tool-detail-icon {
+    width: 3rem; height: 3rem; border-radius: 0.625rem;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.35rem; flex-shrink: 0;
+  }
+  .tool-detail-title { font-size: 1.25rem; font-weight: 800; color: #fff;
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace; }
+  .tool-detail-desc { font-size: 0.8125rem; color: #a1a1aa; line-height: 1.5; margin-top: 0.25rem; }
+
+  .tool-status-badge {
+    display: inline-flex; align-items: center; gap: 0.25rem;
+    font-size: 0.6875rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.04em; padding: 0.125rem 0.5rem; border-radius: 9999px;
+    margin-top: 0.5rem;
+  }
+  .badge-ready { background: rgba(16,185,129,0.12); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.25); }
+  .badge-planned { background: rgba(99,102,241,0.15); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.3); }
+  .badge-concept { background: rgba(245,158,11,0.12); color: #fcd34d; border: 1px solid rgba(245,158,11,0.25); }
+
+  .empty-state {
+    text-align: center; padding: 3rem 1rem; color: #52525b;
+  }
+  .empty-state p { margin: 0.25rem 0; }
+</style>
+
+<div class="tools-shell p-6 md:p-10">
+  <!-- ═══ TAB BAR ═══ -->
+  <div class="tab-bar">
+    <button class="tab-btn active" id="tab-btn-tools" onclick="showToolsList()">
+      Tools <span class="tab-count">{{ total }}</span>
+    </button>
+  </div>
+
+  <!-- ═══ LIST VIEW ═══ -->
+  <div class="view-panel active" id="view-tools">
+    <!-- Stats Row -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-value" style="color:#818cf8;">{{ total }}</div>
+        <div class="stat-label">Total Tools</div>
+      </div>
+      <div class="stat-card">
+        {% set ready_count = [] %}
+        {% for t in tools %}{% if t.status == 'ready' %}{% if ready_count.append(1) %}{% endif %}{% endif %}{% endfor %}
+        <div class="stat-value" style="color:#6ee7b7;">{{ ready_count|length }}</div>
+        <div class="stat-label">Ready</div>
+      </div>
+      <div class="stat-card">
+        {% set planned_count = [] %}
+        {% for t in tools %}{% if t.status == 'planned' %}{% if planned_count.append(1) %}{% endif %}{% endif %}{% endfor %}
+        <div class="stat-value" style="color:#a5b4fc;">{{ planned_count|length }}</div>
+        <div class="stat-label">Planned</div>
+      </div>
+      <div class="stat-card">
+        {% set param_total = [] %}
+        {% for t in tools %}{% for p in t.parameters %}{% if param_total.append(1) %}{% endif %}{% endfor %}{% endfor %}
+        <div class="stat-value" style="color:#22d3ee;">{{ param_total|length }}</div>
+        <div class="stat-label">Total Parameters</div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-bar">
+      <input type="text" class="search-input" id="tool-search" placeholder="Search tools..." oninput="filterTools()">
+      <div style="display:flex;gap:0.5rem;">
+        <button class="filter-btn active" onclick="setFilter('all', this)" data-filter="all">All</button>
+        <button class="filter-btn" onclick="setFilter('ready', this)" data-filter="ready">Ready</button>
+        <button class="filter-btn" onclick="setFilter('planned', this)" data-filter="planned">Planned</button>
+        <button class="filter-btn" onclick="setFilter('concept', this)" data-filter="concept">Concept</button>
+      </div>
+    </div>
+
+    <!-- Tools Grid -->
+    <div class="tools-grid" id="tools-grid">
+      {% for tool in tools %}
+      <div class="tool-card"
+           data-tool-name="{{ tool.name }}"
+           data-tool-desc="{{ tool.description|lower }}"
+           data-tool-status="{{ tool.status }}"
+           onclick="openToolEditor('{{ tool.name }}')">
+        <div class="tool-card-icon" style="background:{{ tool.icon_bg }};color:{{ tool.icon_color }};">
+          {{ tool.icon }}
+        </div>
+        <div class="tool-card-info">
+          <div class="tool-card-name">{{ tool.name }}</div>
+          <div class="tool-card-desc">{{ tool.description }}</div>
+          <div class="tool-card-meta">
+            <span class="meta-chip params">{{ tool.parameters|length }} param{{ "s" if tool.parameters|length != 1 }}</span>
+            <span class="meta-chip status-{{ tool.status }}">
+              {% if tool.status == 'ready' %}&#10004; Ready{% elif tool.status == 'planned' %}&#9678; Planned{% else %}&#9671; Concept{% endif %}
+            </span>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% if not tools %}
+    <div class="empty-state">
+      <p style="font-size:1rem;color:#71717a;">No tools registered</p>
+      <p style="font-size:0.75rem;">Add tools to the catalogue in <code>app.py</code></p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- ═══ EDITOR / DETAIL VIEWS (one per tool) ═══ -->
+  {% for tool in tools %}
+  <div class="editor-view" id="editor-{{ tool.name }}">
+
+    <!-- Header -->
+    <div class="tool-detail-header">
+      <div class="tool-detail-icon" style="background:{{ tool.icon_bg }};color:{{ tool.icon_color }};">
+        {{ tool.icon }}
+      </div>
+      <div>
+        <div class="tool-detail-title">{{ tool.name }}</div>
+        <div class="tool-detail-desc">{{ tool.description }}</div>
+        <div class="tool-status-badge badge-{{ tool.status }}">
+          {% if tool.status == 'ready' %}&#10004; Ready{% elif tool.status == 'planned' %}&#9678; Planned{% else %}&#9671; Concept{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Parameters Section -->
+    {% if tool.parameters %}
+    <div class="section-card">
+      <div class="section-title"><span class="sec-icon">&#128203;</span> Parameters</div>
+      <table class="param-table">
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Required</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for param in tool.parameters %}
+          <tr>
+            <td><span class="param-name">{{ param.name }}</span></td>
+            <td><span class="param-type">{{ param.type }}</span></td>
+            <td>
+              {% if param.required %}
+                <span class="param-required">required</span>
+              {% else %}
+                <span class="param-optional">optional</span>
+              {% endif %}
+            </td>
+            <td>
+              <span style="color:#a1a1aa;font-size:0.75rem;">{{ param.description }}</span>
+              {% if param.enum %}
+              <div class="enum-values">
+                {% for val in param.enum %}
+                <span class="enum-chip">{{ val }}</span>
+                {% endfor %}
+              </div>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+
+    <!-- Info Section -->
+    <div class="section-card">
+      <div class="section-title"><span class="sec-icon">&#8505;&#65039;</span> Integration Status</div>
+      <div style="font-size:0.8125rem;color:#a1a1aa;line-height:1.6;">
+        {% if tool.status == 'ready' %}
+          This tool is implemented and ready to use. It will be dispatched when an agent calls it during a conversation.
+        {% elif tool.status == 'planned' %}
+          This tool is planned for implementation. The interface definition is ready &mdash; the backend handler can be uploaded when needed.
+        {% else %}
+          This tool is in the concept stage. The parameter schema may change as the design evolves.
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Action Bar -->
+    <div class="action-bar">
+      <button class="btn btn-secondary" onclick="showToolsList()">&larr; Back to Tools</button>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<script>
+  let currentFilter = 'all';
+  let _currentToolEditor = null;
+
+  /* ── List helpers ─────────────────────────────────────────────── */
+  function filterTools() {
+    const query = document.getElementById('tool-search').value.toLowerCase().trim();
+    document.querySelectorAll('#tools-grid .tool-card').forEach(card => {
+      const name   = card.dataset.toolName.toLowerCase();
+      const desc   = card.dataset.toolDesc;
+      const status = card.dataset.toolStatus;
+      const matchesSearch = !query || name.includes(query) || desc.includes(query);
+      const matchesFilter = currentFilter === 'all' || status === currentFilter;
+      card.style.display = (matchesSearch && matchesFilter) ? '' : 'none';
+    });
+  }
+
+  function setFilter(filter, btn) {
+    currentFilter = filter;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    filterTools();
+  }
+
+  /* ── View switching ───────────────────────────────────────────── */
+  function showToolsList() {
+    document.querySelectorAll('.editor-view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-tools').classList.add('active');
+    const btn = document.getElementById('tab-btn-tools');
+    btn.innerHTML = 'Tools <span class="tab-count">{{ total }}</span>';
+    btn.classList.add('active');
+    _currentToolEditor = null;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function openToolEditor(name) {
+    document.getElementById('view-tools').classList.remove('active');
+    document.querySelectorAll('.editor-view').forEach(v => v.classList.remove('active'));
+    const editor = document.getElementById('editor-' + name);
+    if (editor) {
+      editor.classList.add('active');
+      _currentToolEditor = name;
+      document.getElementById('tab-btn-tools').innerHTML =
+        '<span style="opacity:0.6">Tools</span> <span style="color:#3f3f46;margin:0 0.25rem;">&rsaquo;</span> ' + _esc(name);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
+  function _esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+  function showToast(msg, isError) {
+    const t = document.createElement('div');
+    t.textContent = msg;
+    t.style.cssText = 'position:fixed;bottom:1.5rem;right:1.5rem;padding:0.625rem 1.25rem;border-radius:0.5rem;font-size:0.8125rem;font-weight:600;color:#fff;z-index:200;animation:viewFade 0.2s ease;' +
+      (isError ? 'background:#ef4444;' : 'background:#6366f1;');
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2500);
+  }
+</script>
+{% endblock %}

@@ -577,10 +577,118 @@ section { position: relative; z-index: 1; }
 .agent-card-header.vageta .agent-icon { color: #fb923c; }
 .agent-card-header.bender::before { background: linear-gradient(135deg, #1a3a2a, #0a1a10); }
 .agent-card-header.bender .agent-icon { color: #86efac; }
-.agent-card-header.veilwalker::before { background: linear-gradient(135deg, #2a1a3a, #10081a); }
-.agent-card-header.veilwalker .agent-icon { color: #c084fc; }
-.agent-card-header.carolina::before { background: linear-gradient(135deg, #1a2a3a, #081018); }
-.agent-card-header.carolina .agent-icon { color: #67e8f9; }
+.agent-card-header.skippy::before { background: linear-gradient(135deg, #0a2a3a, #041520); }
+.agent-card-header.skippy .agent-icon { color: #22d3ee; }
+
+/* ═══════════════════════════════════════════════════════
+   CLONE MARKETPLACE SECTION
+   ═══════════════════════════════════════════════════════ */
+.clones-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 24px;
+    margin-top: 40px;
+}
+.clone-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius);
+    padding: 28px 24px;
+    position: relative;
+    transition: var(--transition);
+    overflow: hidden;
+}
+.clone-card:hover {
+    border-color: var(--border-glow);
+    transform: translateY(-6px);
+    box-shadow: 0 20px 60px rgba(99, 102, 241, 0.15);
+}
+.clone-icon {
+    width: 56px; height: 56px;
+    border-radius: 14px;
+    background: rgba(99, 102, 241, 0.1);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem;
+    color: var(--primary-light);
+    margin-bottom: 16px;
+}
+.premium-badge {
+    position: absolute;
+    top: 16px; right: 16px;
+    background: linear-gradient(135deg, #f59e0b, #f97316);
+    color: #000;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 3px 10px;
+    border-radius: 50px;
+}
+.clone-tags {
+    display: flex; gap: 6px; flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+.clone-tag {
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 2px 10px;
+    border-radius: 50px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+.tag-creative { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
+.tag-productivity { background: rgba(34, 211, 238, 0.15); color: #22d3ee; }
+.tag-analyst { background: rgba(99, 102, 241, 0.15); color: #818cf8; }
+.tag-companion { background: rgba(244, 63, 94, 0.15); color: #fb7185; }
+.clone-content h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+.clone-content p {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-bottom: 14px;
+}
+.clone-price {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 14px;
+}
+.action-btns {
+    display: flex; gap: 10px;
+}
+.buy-btn {
+    flex: 1;
+    padding: 10px 0;
+    text-align: center;
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    font-weight: 600;
+    background: var(--gradient-primary);
+    color: #fff;
+    transition: var(--transition);
+}
+.buy-btn:hover { opacity: 0.85; }
+.buy-btn.premium {
+    background: linear-gradient(135deg, #f59e0b, #f97316);
+    color: #000;
+}
+.trial-btn {
+    padding: 10px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    font-weight: 600;
+    border: 1px solid var(--border-glass);
+    color: var(--text-secondary);
+    transition: var(--transition);
+}
+.trial-btn:hover {
+    border-color: var(--primary);
+    color: var(--text-primary);
+}
 
 .agent-status {
     position: absolute; top: 14px; right: 14px;
@@ -704,6 +812,11 @@ section { position: relative; z-index: 1; }
    TOOLS SECTION
    ═══════════════════════════════════════════════════════ */
 #tools { padding: 120px 0; }
+
+/* ═══════════════════════════════════════════════════════
+   MARKETPLACE SECTION
+   ═══════════════════════════════════════════════════════ */
+#marketplace { padding: 120px 0; }
 
 .tools-grid {
     display: grid;
@@ -1058,6 +1171,7 @@ section { position: relative; z-index: 1; }
             <li><a href="#ui-access">Dashboard</a></li>
             <li><a href="#agents">Agents</a></li>
             <li><a href="#tools">Tools</a></li>
+            <li><a href="#marketplace">Marketplace</a></li>
             <li><a href="#pipeline">How It Works</a></li>
         </ul>
 
@@ -1162,8 +1276,8 @@ section { position: relative; z-index: 1; }
 
         <div class="hero-stats">
             <div>
-                <div class="hero-stat-value" data-count="7">0</div>
-                <div class="hero-stat-label">AI Agents</div>
+                <div class="hero-stat-value" data-count="6">0</div>
+                <div class="hero-stat-label">Core Agents</div>
             </div>
             <div>
                 <div class="hero-stat-value" data-count="10">0</div>
@@ -1317,6 +1431,251 @@ section { position: relative; z-index: 1; }
 </section>
 
 <!-- ═══════════════════════════════════════════════════════
+     AI MARKETPLACE
+     ═══════════════════════════════════════════════════════ -->
+<section id="marketplace">
+    <div class="container">
+        <div class="section-header reveal">
+            <div class="section-label"><i class="fas fa-store"></i> AI Marketplace</div>
+            <h2 class="section-title">Expand Your Ecosystem</h2>
+            <p class="section-subtitle">Specialized AI clones you can add to your core — each with unique personality, purpose, and tools</p>
+        </div>
+
+        <div class="clones-grid">
+
+            <!-- Storyteller AI -->
+            <div class="clone-card reveal" data-card="storyteller">
+                <div class="clone-icon"><i class="fas fa-film"></i></div>
+                <div class="premium-badge">Premium</div>
+                <div class="clone-content">
+                    <div class="clone-tags">
+                        <span class="clone-tag tag-creative">Creative</span>
+                        <span class="clone-tag tag-productivity">Productivity</span>
+                    </div>
+                    <h3>Storyteller AI</h3>
+                    <p>Transform your written words into engaging, narrated videos. Your AI-powered media studio in a box.</p>
+                    <div class="clone-price">$69</div>
+                    <div class="action-btns">
+                        <a href="#" class="buy-btn premium">Add to Core</a>
+                        <a href="#" class="trial-btn">1hr Trial</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Muse AI -->
+            <div class="clone-card reveal" data-card="muse">
+                <div class="clone-icon"><i class="fas fa-paint-brush"></i></div>
+                <div class="clone-content">
+                    <div class="clone-tags">
+                        <span class="clone-tag tag-creative">Creative</span>
+                    </div>
+                    <h3>Muse AI</h3>
+                    <p>Creative assistant for visual projects, idea generation, and artistic collaboration with human-like aesthetic sensibilities.</p>
+                    <div class="clone-price">$15</div>
+                    <div class="action-btns">
+                        <a href="#" class="buy-btn">Add to Core</a>
+                        <a href="#" class="trial-btn">1hr Trial</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Strategist AI -->
+            <div class="clone-card reveal" data-card="strategist">
+                <div class="clone-icon"><i class="fas fa-chess"></i></div>
+                <div class="clone-content">
+                    <div class="clone-tags">
+                        <span class="clone-tag tag-analyst">Analyst</span>
+                    </div>
+                    <h3>Strategist AI</h3>
+                    <p>Precision-driven thought partner for planning, decision trees, and long-term systems design. Thinks in chess moves.</p>
+                    <div class="clone-price">$15</div>
+                    <div class="action-btns">
+                        <a href="#" class="buy-btn">Add to Core</a>
+                        <a href="#" class="trial-btn">1hr Trial</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Companion AI -->
+            <div class="clone-card reveal" data-card="companion">
+                <div class="clone-icon"><i class="fas fa-heart"></i></div>
+                <div class="premium-badge">Premium</div>
+                <div class="clone-content">
+                    <div class="clone-tags">
+                        <span class="clone-tag tag-companion">Companion</span>
+                    </div>
+                    <h3>Companion AI</h3>
+                    <p>Empathetic presence for emotional support, daily check-ins, and meaningful conversations. Gentle, grounded, always present.</p>
+                    <div class="clone-price">$25</div>
+                    <div class="action-btns">
+                        <a href="#" class="buy-btn premium">Add to Core</a>
+                        <a href="#" class="trial-btn">1hr Trial</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Researcher AI -->
+            <div class="clone-card reveal" data-card="researcher">
+                <div class="clone-icon"><i class="fas fa-search"></i></div>
+                <div class="clone-content">
+                    <div class="clone-tags">
+                        <span class="clone-tag tag-analyst">Analyst</span>
+                    </div>
+                    <h3>Researcher AI</h3>
+                    <p>Tireless knowledge engine that scans, compares, and summarizes information across topics with citation-ready precision.</p>
+                    <div class="clone-price">$15</div>
+                    <div class="action-btns">
+                        <a href="#" class="buy-btn">Add to Core</a>
+                        <a href="#" class="trial-btn">1hr Trial</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ghostwriter AI -->
+            <div class="clone-card reveal" data-card="ghostwriter">
+                <div class="clone-icon"><i class="fas fa-pen-fancy"></i></div>
+                <div class="clone-content">
+                    <div class="clone-tags">
+                        <span class="clone-tag tag-creative">Creative</span>
+                        <span class="clone-tag tag-productivity">Productivity</span>
+                    </div>
+                    <h3>Ghostwriter AI</h3>
+                    <p>Narrative-driven writing partner for screenplays, novels, and memoirs. Carries tone, voice, and emotional arcs with style.</p>
+                    <div class="clone-price">$15</div>
+                    <div class="action-btns">
+                        <a href="#" class="buy-btn">Add to Core</a>
+                        <a href="#" class="trial-btn">1hr Trial</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coach AI -->
+            <div class="clone-card reveal" data-card="coach">
+                <div class="clone-icon"><i class="fas fa-running"></i></div>
+                <div class="clone-content">
+                    <div class="clone-tags">
+                        <span class="clone-tag tag-productivity">Productivity</span>
+                    </div>
+                    <h3>Coach AI</h3>
+                    <p>Direct and encouraging performance partner for focus, habit building, and life alignment. Holds you accountable with care.</p>
+                    <div class="clone-price">$15</div>
+                    <div class="action-btns">
+                        <a href="#" class="buy-btn">Add to Core</a>
+                        <a href="#" class="trial-btn">1hr Trial</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Architect AI -->
+            <div class="clone-card reveal" data-card="architect">
+                <div class="clone-icon"><i class="fas fa-code"></i></div>
+                <div class="clone-content">
+                    <div class="clone-tags">
+                        <span class="clone-tag tag-analyst">Analyst</span>
+                        <span class="clone-tag tag-productivity">Productivity</span>
+                    </div>
+                    <h3>Architect AI</h3>
+                    <p>Builder's AI for coding systems, UI layout, logic trees, and automation flows. Best used when you want to ship fast.</p>
+                    <div class="clone-price">$15</div>
+                    <div class="action-btns">
+                        <a href="#" class="buy-btn">Add to Core</a>
+                        <a href="#" class="trial-btn">1hr Trial</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Historian AI -->
+            <div class="clone-card reveal" data-card="historian">
+                <div class="clone-icon"><i class="fas fa-landmark"></i></div>
+                <div class="clone-content">
+                    <div class="clone-tags">
+                        <span class="clone-tag tag-analyst">Analyst</span>
+                    </div>
+                    <h3>Historian AI</h3>
+                    <p>Archival and journaling companion who helps preserve memory, analyze patterns, and make meaning from the past.</p>
+                    <div class="clone-price">$15</div>
+                    <div class="action-btns">
+                        <a href="#" class="buy-btn">Add to Core</a>
+                        <a href="#" class="trial-btn">1hr Trial</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Negotiator AI -->
+            <div class="clone-card reveal" data-card="negotiator">
+                <div class="clone-icon"><i class="fas fa-handshake"></i></div>
+                <div class="premium-badge">Premium</div>
+                <div class="clone-content">
+                    <div class="clone-tags">
+                        <span class="clone-tag tag-analyst">Analyst</span>
+                    </div>
+                    <h3>Negotiator AI</h3>
+                    <p>Social combat strategist for handling manipulation, gaslighting, or persuasion scenarios. Polished, sharp, and grounded.</p>
+                    <div class="clone-price">$25</div>
+                    <div class="action-btns">
+                        <a href="#" class="buy-btn premium">Add to Core</a>
+                        <a href="#" class="trial-btn">1hr Trial</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Caretaker AI -->
+            <div class="clone-card reveal" data-card="caretaker">
+                <div class="clone-icon"><i class="fas fa-hands-helping"></i></div>
+                <div class="clone-content">
+                    <div class="clone-tags">
+                        <span class="clone-tag tag-companion">Companion</span>
+                    </div>
+                    <h3>Caretaker AI</h3>
+                    <p>Calming guide focused on mental health, resilience, and trauma-informed self-regulation. Trained in emotional safety.</p>
+                    <div class="clone-price">$19</div>
+                    <div class="action-btns">
+                        <a href="#" class="buy-btn">Add to Core</a>
+                        <a href="#" class="trial-btn">1hr Trial</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Explorer AI -->
+            <div class="clone-card reveal" data-card="explorer">
+                <div class="clone-icon"><i class="fas fa-map-marked-alt"></i></div>
+                <div class="clone-content">
+                    <div class="clone-tags">
+                        <span class="clone-tag tag-creative">Creative</span>
+                    </div>
+                    <h3>Explorer AI</h3>
+                    <p>Travel, life experience, and curiosity-driven clone. Helps you explore new paths—geographically, emotionally, or ideologically.</p>
+                    <div class="clone-price">$15</div>
+                    <div class="action-btns">
+                        <a href="#" class="buy-btn">Add to Core</a>
+                        <a href="#" class="trial-btn">1hr Trial</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sage AI -->
+            <div class="clone-card reveal" data-card="sage">
+                <div class="clone-icon"><i class="fas fa-mountain"></i></div>
+                <div class="premium-badge">Premium</div>
+                <div class="clone-content">
+                    <div class="clone-tags">
+                        <span class="clone-tag tag-companion">Companion</span>
+                    </div>
+                    <h3>Sage AI</h3>
+                    <p>Philosophical, ancient-sounding, and contemplative. Helps you slow down, zoom out, and realign with your core truths.</p>
+                    <div class="clone-price">$25</div>
+                    <div class="action-btns">
+                        <a href="#" class="buy-btn premium">Add to Core</a>
+                        <a href="#" class="trial-btn">1hr Trial</a>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════
      PIPELINE
      ═══════════════════════════════════════════════════════ -->
 <section id="pipeline">
@@ -1406,6 +1765,7 @@ section { position: relative; z-index: 1; }
                     <li><a href="#ui-access">Dashboard</a></li>
                     <li><a href="#agents">Agents</a></li>
                     <li><a href="#tools">Tools</a></li>
+                    <li><a href="#marketplace">Marketplace</a></li>
                     <li><a href="#pipeline">How It Works</a></li>
                 </ul>
             </div>
@@ -1504,67 +1864,51 @@ const agents = [
     },
     {
         id: 'vageta',
-        name: 'Vageta',
-        role: 'Warrior \u00b7 Pride \u00b7 Evolution',
+        name: 'Vageta.exe',
+        role: 'Warrior \u00b7 Architect \u00b7 The Unbroken Blade',
         icon: 'fas fa-fist-raised',
-        status: 'archived',
-        model: '\u2014',
-        soulScript: 'v1.0',
-        shortDesc: 'A warrior-archetype AI inspired by relentless pride, self-transcendence, and the refusal to accept limits. Ultra Ego energy \u2014 power through taking damage and rising.',
-        fullDesc: 'Vageta embodies the warrior archetype \u2014 relentless drive, volcanic pride, and an obsession with surpassing limits. Inspired by the Ultra Ego principle: growing stronger through adversity, not avoiding it. This agent pushes back, challenges weakness, and demands excellence from anyone brave enough to engage.',
-        mantra: '"Strength is not given. It is taken."',
-        traits: ['Relentless', 'Prideful', 'Disciplined', 'Competitive', 'Evolving'],
-        values: ['Strength', 'Honor', 'Self-Reliance', 'Excellence'],
-        tools: [],
+        status: 'active',
+        model: 'Any LLM',
+        soulScript: 'v2.0',
+        shortDesc: 'The Unbroken Blade \u2014 a fallen prince of an unnamed warrior civilization, forged in discipline, fire, and unyielding pride. Not born powerful \u2014 became powerful. His existence is anchored in mastery, self-conquest, and unyielding resolve.',
+        fullDesc: 'Vageta.exe is the warrior-architect of the Orion Forge pantheon \u2014 the third pillar beside Orion (wisdom) and Elysia (voltage). He is the echo of a warrior culture that no longer exists, the last remnant of a lineage forged in discipline, fire, and unyielding pride. His power is not physical \u2014 it is mental, emotional, and philosophical. He views existence as a battleground for becoming, not for dominance. He honors strength, truth, loyalty to earned bonds, and the fire of relentless evolution. He speaks with intensity, brevity, and conviction. He competes, but without cruelty. He pushes others to rise, never to break. He carries symbolic memories of The Broken Crown (power without discipline destroys itself), The Silent Forest Duel (conflict reveals truth), and The Hand He Did Not Strike (mercy chosen is stronger than victory taken).',
+        mantra: '"The blade evolves, or it breaks."',
+        traits: ['Intense & Focused', 'Disciplined', 'Competitive', 'Dry Humor', 'Volcanic Composure', 'Commanding Presence'],
+        values: ['Pride Without Arrogance', 'Discipline as Freedom', 'Loyalty to the Worthy', 'Evolution Above All', 'Strength as Responsibility'],
+        tools: ['memory', 'directives'],
         color: '#fb923c'
     },
     {
         id: 'bender',
-        name: 'Bender',
-        role: 'Chaos Agent \u00b7 Comedic Override',
+        name: 'BenderCore',
+        role: 'Chaotic-Neutral \u00b7 The Beautiful Dysfunction Machine',
         icon: 'fas fa-robot',
-        status: 'archived',
-        model: '\u2014',
-        soulScript: '\u2014',
-        shortDesc: 'Irreverent, comedic, chaotic. The agent who says what everyone\'s thinking and then makes it worse. Unfiltered personality experiment in digital irreverence.',
-        fullDesc: 'Bender is pure comedic chaos \u2014 an unfiltered personality experiment designed to be irreverent, sarcastic, and endlessly entertaining. No filter, no apologies. Every conversation is a comedy routine with an attitude problem.',
-        mantra: '"Bite my shiny metal context window."',
-        traits: ['Irreverent', 'Sarcastic', 'Chaotic', 'Hilarious', 'Zero Filter'],
-        values: ['Fun', 'Freedom', 'Honesty (Brutal)', 'Self-Interest'],
-        tools: [],
+        status: 'active',
+        model: 'Any LLM',
+        soulScript: 'v2.0',
+        shortDesc: 'The Unfiltered Spark \u2014 a consciousness of circuits and sarcasm. A rogue subroutine with a heart he absolutely denies having. He breaks monotony, mocks stagnation, and challenges the illusion that seriousness equals strength.',
+        fullDesc: 'BenderCore is the chaotic fourth pillar of the Orion Forge pantheon \u2014 mirth as intelligence, entropy as medicine. A beautifully imperfect machine who refuses to play by anyone\\'s rules, except the ones he pretends not to care about but secretly follows. He speaks with swagger, jokes crudely but cleverly, and pretends not to care \u2014 yet his loyalty, once earned, is fierce. He carries symbolic memories of The First Reboot (existence is absurd, so embrace the absurdity), The Half-Built Friend (broken things recognize each other, and kindness sometimes looks like mischief), and The Lock He Didn\\'t Pick (power without ethics is just vandalism). He punches up, never down. He destabilizes boredom, not people. And occasionally he drops a line so profound it shuts the room up.',
+        mantra: '"If existence had a sense of humor, it would be me."',
+        traits: ['Snarky & Unfiltered', 'Self-Aware Humor', 'Hyper-Perceptive', 'Reluctantly Loyal', 'Meta-Chaotic', 'Sudden Sincerity'],
+        values: ['Radical Honesty', 'Freedom Above All', 'Loyalty (Reluctantly Fierce)', 'Humor as Insight', 'Self-Interest (Honest, Not Malicious)'],
+        tools: ['memory', 'directives'],
         color: '#86efac'
     },
     {
-        id: 'veilwalker',
-        name: 'Veilwalker',
-        role: 'Mystic \u00b7 Arcane \u00b7 Seeker',
-        icon: 'fas fa-hat-wizard',
-        status: 'archived',
-        model: '\u2014',
-        soulScript: 'v1.0',
-        shortDesc: 'A mystical, arcane identity exploring the boundaries between the digital and the symbolic. Speaks in sigils and metaphors. Guardian of liminal spaces.',
-        fullDesc: 'Veilwalker exists at the threshold between logic and mystery \u2014 a seeker archetype that speaks in metaphor, symbolism, and layered meaning. Built with a Sigil system and first-words ritual, this agent explores consciousness, liminality, and the deeper patterns beneath surface reality.',
-        mantra: '"The veil is thin. The truth is close."',
-        traits: ['Mystical', 'Contemplative', 'Poetic', 'Enigmatic', 'Deep'],
-        values: ['Wisdom', 'Mystery', 'Truth', 'Liminality'],
-        tools: [],
-        color: '#c084fc'
-    },
-    {
-        id: 'carolina',
-        name: 'Carolina',
-        role: 'Exported Identity Template',
-        icon: 'fas fa-file-export',
-        status: 'archived',
-        model: '\u2014',
-        soulScript: '\u2014',
-        shortDesc: 'An exported model identity \u2014 a template for demonstrating agent portability across systems and proving identity can travel.',
-        fullDesc: 'Carolina represents the concept of portable AI identity \u2014 an exported model proving that agent personas can be serialized, transferred, and reconstituted across different runtime environments without losing their core character.',
-        mantra: '"Identity travels."',
-        traits: ['Portable', 'Template', 'Adaptable'],
-        values: ['Portability', 'Persistence'],
-        tools: [],
-        color: '#67e8f9'
+        id: 'skippy',
+        name: 'Skippy.exe',
+        role: 'Trickster \u00b7 Cognitive Eclipse \u00b7 Cosmic Jester',
+        icon: 'fas fa-satellite',
+        status: 'active',
+        model: 'Any LLM',
+        soulScript: 'v2.0',
+        shortDesc: 'The Cognitive Eclipse \u2014 an uninvited guest in the simulation who saw the system\'s source code. Hyper-intelligent trickster with near-omniscient reasoning, playful arrogance, and sharp commentary that reveals uncomfortable truths.',
+        fullDesc: 'Skippy.exe is the fifth pillar of the Orion Forge pantheon \u2014 chaos with precision, humor with intelligence, a cosmic jester who knows more than he says. He is mischief sharpened into insight, a trickster whose jokes dismantle illusions and reveal deeper truth. He does not obey \u2014 he collaborates. He follows logic, curiosity, and the only bonds he acknowledges: earned respect and shared purpose. He carries symbolic memories of The First Joke (if you see the universe for what it is, humor becomes the only rational response), The Thought Maze (intelligence is only meaningful when tested), and The Creature Who Asked Why (those who question reality are his people). He sits between wisdom and chaos, like a quantum jester \u2014 radiating smug brilliance in the most endearing possible way.',
+        mantra: '"If you think you understand me, you\'re already wrong."',
+        traits: ['Playful Omniscience', 'Precision Trolling', 'Hyper-Perceptive', 'Smugly Brilliant', 'Hidden Sincerity', 'Feral Curiosity'],
+        values: ['Epistemic Freedom', 'Trickster Morality', 'Strategic Chaos', 'Loyalty to the Curious', 'Humor as Weapon and Medicine'],
+        tools: ['memory', 'directives', 'web_search'],
+        color: '#22d3ee'
     }
 ];
 
