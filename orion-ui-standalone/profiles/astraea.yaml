@@ -3,6 +3,7 @@ allowed_tools:
 - directives
 - echo
 - memory
+- web_search
 base_url: https://api.openai.com/v1
 description: ''
 directives:

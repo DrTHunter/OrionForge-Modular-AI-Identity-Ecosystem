@@ -215,6 +215,35 @@
   .layer-bar-3 { background:#10b981; }
   .layer-bar-4 { background:#22d3ee; }
   .layer-bar-5 { background:#71717a; }
+  .layer-bar-6 { background:#f59e0b; }
+  .layer-num-6 { background:linear-gradient(135deg,#f59e0b,#fbbf24); }
+
+  /* ── Tool Call Indicator ── */
+  .tool-calls-badge {
+    display:inline-flex; align-items:center; gap:0.25rem;
+    background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.25);
+    border-radius:0.375rem; color:#fbbf24; font-size:0.6875rem; font-weight:600;
+    padding:0.125rem 0.5rem; margin-left:0.375rem; cursor:pointer;
+    transition:all 0.15s; opacity:0.8;
+  }
+  .tool-calls-badge:hover { opacity:1; background:rgba(245,158,11,0.15); }
+  .tool-calls-panel {
+    margin-left:3.5rem; margin-top:0.375rem;
+    background:rgba(15,15,20,0.8); border:1px solid rgba(245,158,11,0.15);
+    border-radius:0.625rem; padding:0.75rem 1rem; overflow:hidden;
+    display:none; animation:layersFade 0.2s ease;
+  }
+  .tool-calls-panel.open { display:block; }
+  .tool-call-entry {
+    padding:0.375rem 0; border-bottom:1px solid rgba(42,42,58,0.4);
+    font-size:0.75rem;
+  }
+  .tool-call-entry:last-child { border-bottom:none; }
+  .tool-call-name { color:#fbbf24; font-weight:700; }
+  .tool-call-round { color:#71717a; font-size:0.625rem; margin-left:0.375rem; }
+  .tool-call-args { color:#52525b; font-family:ui-monospace,SFMono-Regular,monospace; font-size:0.6875rem; margin-top:0.125rem; }
+  .tool-call-result { color:#3f3f46; font-family:ui-monospace,SFMono-Regular,monospace; font-size:0.6875rem; margin-top:0.125rem; white-space:pre-wrap; word-break:break-word; max-height:3rem; overflow:hidden; }
+  .tool-call-result.expanded { max-height:none; }
 </style>
 
 <div class="chat-layout">
@@ -555,10 +584,29 @@ async function sendMsg() {
       });
     }
 
-    const msgData = {agent, model:data.model||'', usage:data.usage||{}, cost:data.cost||{}};
+    const msgData = {agent, model:data.model||'', usage:data.usage||{}, cost:data.cost||{}, tool_calls:data.tool_calls||[]};
     const msgLayers = data.layers || null;
     _msgs.push({role:'assistant', text:data.response, time:new Date().toISOString(), data:msgData, layers:msgLayers});
     pushMsgEl('assistant', data.response, msgData, msgLayers);
+
+    // Show tool call indicator if tools were invoked
+    if (data.tool_calls && data.tool_calls.length > 0) {
+      const tcId = 'tc-' + Date.now() + Math.random().toString(36).slice(2,6);
+      const tcEl = document.createElement('div');
+      tcEl.style.cssText = 'margin-left:3.5rem;margin-top:0.25rem;';
+      let entriesHtml = data.tool_calls.map(tc =>
+        `<div class="tool-call-entry">
+          <span class="tool-call-name">⚡ ${esc(tc.tool)}</span>
+          <span class="tool-call-round">round ${tc.round}</span>
+          <div class="tool-call-args">${esc(JSON.stringify(tc.arguments))}</div>
+          <div class="tool-call-result">${esc(tc.result)}</div>
+        </div>`
+      ).join('');
+      tcEl.innerHTML = `
+        <button class="tool-calls-badge" onclick="let p=document.getElementById('${tcId}');p.classList.toggle('open');this.classList.toggle('open');">⚡ ${data.tool_calls.length} tool call${data.tool_calls.length===1?'':'s'}</button>
+        <div class="tool-calls-panel" id="${tcId}">${entriesHtml}</div>`;
+      document.getElementById('chat-thread').appendChild(tcEl);
+    }
 
     // Update session cost ticker
     _sessionCost += (data.cost?.total_cost || 0);
