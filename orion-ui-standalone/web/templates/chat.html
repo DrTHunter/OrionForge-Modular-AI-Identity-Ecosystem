@@ -236,6 +236,7 @@
           <h1 id="chat-title" class="text-lg font-bold text-white">Agent Chat</h1>
           <span id="session-status" class="badge badge-scope text-xs">idle</span>
         </div>
+        <div id="cost-ticker" style="display:none; font-size:0.75rem; color:#71717a; font-family:ui-monospace,SFMono-Regular,'SF Mono',Menlo,monospace; margin-left:auto; padding:0.25rem 0.75rem; background:rgba(19,19,26,0.6); border:1px solid #2a2a3a; border-radius:0.375rem;"></div>
       </div>
 
       <div class="chat-thread" id="chat-thread">
@@ -287,6 +288,18 @@ const _avatarMap = {{ avatar_map | tojson }};
 const _agentColors = {
   codex_animus:'#6366f1', astraea:'#ec4899', callum:'#10b981',
 };
+let _sessionCost = 0;
+let _sessionTokens = 0;
+
+function updateCostTicker() {
+  const el = document.getElementById('cost-ticker');
+  if (!el) return;
+  const costStr = _sessionCost > 0.01
+    ? '$' + _sessionCost.toFixed(4)
+    : '$' + _sessionCost.toFixed(6);
+  el.innerHTML = `<span style="opacity:0.5;">Session:</span> ${costStr} <span style="opacity:0.4;">·</span> ${_sessionTokens.toLocaleString()} tok`;
+  el.style.display = '';
+}
 
 // ═══════════════════════════════════════════
 //  SIDEBAR
@@ -315,6 +328,10 @@ function toggleSidebar() {
 async function newChat() {
   _chatId = null;
   _msgs = [];
+  _sessionCost = 0;
+  _sessionTokens = 0;
+  const ticker = document.getElementById('cost-ticker');
+  if (ticker) ticker.style.display = 'none';
   renderThread();
   renderSidebar();
   document.getElementById('chat-title').textContent = 'Agent Chat';
@@ -326,6 +343,14 @@ async function loadChat(id) {
     const data = await resp.json();
     _chatId = data.id;
     _msgs = data.messages || [];
+    // Recalculate session cost from history
+    _sessionCost = 0; _sessionTokens = 0;
+    _msgs.forEach(m => {
+      if (m.data?.cost?.total_cost) _sessionCost += m.data.cost.total_cost;
+      if (m.data?.usage) _sessionTokens += (m.data.usage.prompt_tokens||0) + (m.data.usage.completion_tokens||0);
+    });
+    if (_sessionCost > 0) updateCostTicker();
+    else { const t = document.getElementById('cost-ticker'); if (t) t.style.display = 'none'; }
     document.getElementById('chat-title').textContent = data.title || 'Chat';
     renderThread();
     renderSidebar();
@@ -389,8 +414,11 @@ function pushMsgEl(role, text, data, layers) {
       : `<div class="msg-avatar" style="background:${color};">${agent.charAt(0).toUpperCase()}</div>`;
     const model = data?.model || '';
     const usage = data?.usage || {};
+    const cost = data?.cost || {};
     const tokens = (usage.prompt_tokens||0) + (usage.completion_tokens||0);
-    const metaHtml = model ? `<div class="msg-meta">${model}${tokens ? ' · '+tokens+' tok' : ''}</div>` : '';
+    const totalCost = cost.total_cost || 0;
+    const costStr = totalCost > 0 ? ' · $' + totalCost.toFixed(6) : '';
+    const metaHtml = model ? `<div class="msg-meta">${model}${tokens ? ' · '+tokens+' tok' : ''}${costStr}</div>` : '';
 
     // Prompt layers inspector
     const layerId = 'layers-' + Date.now() + Math.random().toString(36).slice(2,6);
@@ -527,10 +555,15 @@ async function sendMsg() {
       });
     }
 
-    const msgData = {agent, model:data.model||'', usage:data.usage||{}};
+    const msgData = {agent, model:data.model||'', usage:data.usage||{}, cost:data.cost||{}};
     const msgLayers = data.layers || null;
     _msgs.push({role:'assistant', text:data.response, time:new Date().toISOString(), data:msgData, layers:msgLayers});
     pushMsgEl('assistant', data.response, msgData, msgLayers);
+
+    // Update session cost ticker
+    _sessionCost += (data.cost?.total_cost || 0);
+    _sessionTokens += ((data.usage?.prompt_tokens||0) + (data.usage?.completion_tokens||0));
+    updateCostTicker();
 
     // Show memory-saved indicator if memories were extracted
     if (data.saved_memories && data.saved_memories.length > 0) {

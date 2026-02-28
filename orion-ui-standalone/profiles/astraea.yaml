@@ -19,7 +19,7 @@ memory:
   - shared
   - astraea
   similarity_threshold: 0.85
-model: gpt-5.1
+model: ''
 name: astraea
 policy:
   max_iterations: 25

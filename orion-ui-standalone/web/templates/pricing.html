@@ -1,0 +1,585 @@
+{% extends "base.html" %}
+{% block title %}Token Pricing — SoulScript Engine{% endblock %}
+
+{% block content %}
+<style>
+  .pricing-shell { max-width: 100%; margin: 0 auto; padding: 0 1rem; }
+
+  /* ── Cost Overview Cards ── */
+  .cost-overview { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 2rem; }
+  @media (max-width: 768px) { .cost-overview { grid-template-columns: 1fr; } }
+  .cost-card {
+    background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 0.75rem;
+    padding: 1.125rem 1.25rem;
+  }
+  .cost-card-label { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #52525b; margin-bottom: 0.25rem; }
+  .cost-card-value { font-size: 1.5rem; font-weight: 800; color: #fff; font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace; }
+  .cost-card-sub { font-size: 0.75rem; color: #52525b; margin-top: 0.25rem; }
+  .cost-accent { color: #10b981; }
+  .cost-warn { color: #f59e0b; }
+
+  /* ── Section Headers ── */
+  .section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+  .section-header h2 { font-size: 1.125rem; font-weight: 700; color: #fff; }
+
+  /* ── Provider Tabs ── */
+  .provider-tabs { display: flex; gap: 0; border-bottom: 1px solid #2a2a3a; margin-bottom: 1.25rem; }
+  .prov-tab {
+    padding: 0.625rem 1.25rem; font-size: 0.8125rem; font-weight: 600;
+    color: #71717a; background: none; border: none; cursor: pointer;
+    border-bottom: 2px solid transparent; transition: all 0.15s;
+    position: relative; top: 1px; text-transform: capitalize;
+  }
+  .prov-tab:hover { color: #a1a1aa; }
+  .prov-tab.active { color: #fff; border-bottom-color: #6366f1; }
+  .prov-tab .prov-count {
+    font-size: 0.6875rem; font-weight: 700; color: #52525b;
+    background: rgba(42,42,58,0.6); padding: 0.0625rem 0.375rem;
+    border-radius: 9999px; margin-left: 0.375rem;
+  }
+  .prov-tab.active .prov-count { color: #a5b4fc; background: rgba(99,102,241,0.15); }
+
+  /* ── Pricing Table ── */
+  .pricing-table-wrap {
+    background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 0.75rem;
+    overflow: hidden; margin-bottom: 1.5rem;
+  }
+  .pricing-table {
+    width: 100%; border-collapse: collapse;
+    font-size: 0.8125rem;
+  }
+  .pricing-table thead th {
+    padding: 0.75rem 1rem; text-align: left;
+    font-size: 0.6875rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.05em; color: #52525b; border-bottom: 1px solid #2a2a3a;
+    background: rgba(19,19,26,0.4);
+  }
+  .pricing-table thead th:not(:first-child) { text-align: right; }
+  .pricing-table tbody tr { border-bottom: 1px solid rgba(42,42,58,0.5); transition: background 0.1s; }
+  .pricing-table tbody tr:hover { background: rgba(99,102,241,0.04); }
+  .pricing-table tbody tr:last-child { border-bottom: none; }
+  .pricing-table td {
+    padding: 0.625rem 1rem; color: #d4d4d8;
+    vertical-align: middle;
+  }
+  .pricing-table td:not(:first-child) { text-align: right; }
+  .model-name {
+    font-weight: 600; color: #e4e4e7;
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+    font-size: 0.8125rem;
+  }
+  .model-provider { font-size: 0.6875rem; color: #52525b; text-transform: capitalize; }
+  .model-default-tag {
+    font-size: 0.5625rem; font-weight: 700; color: #818cf8;
+    background: rgba(99,102,241,0.1); padding: 0.0625rem 0.375rem;
+    border-radius: 0.25rem; margin-left: 0.375rem; text-transform: uppercase;
+  }
+
+  /* ── Price Inputs ── */
+  .price-input {
+    width: 7rem; text-align: right; background: transparent;
+    border: 1px solid transparent; border-radius: 0.25rem;
+    color: #d4d4d8; font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+    font-size: 0.8125rem; padding: 0.25rem 0.5rem; outline: none;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .price-input:hover { border-color: #2a2a3a; }
+  .price-input:focus { border-color: #6366f1; background: rgba(19,19,26,0.6); }
+  .price-input::placeholder { color: #3f3f46; }
+  .price-prefix { color: #52525b; font-size: 0.75rem; margin-right: 0.125rem; }
+
+  /* ── Action Buttons ── */
+  .btn { padding: 0.5rem 1.25rem; border-radius: 0.5rem; font-size: 0.8125rem;
+    font-weight: 600; cursor: pointer; transition: all 0.15s; border: none; }
+  .btn-primary { background: #6366f1; color: #fff; }
+  .btn-primary:hover { background: #4f46e5; }
+  .btn-secondary { background: rgba(42,42,58,0.5); color: #a1a1aa; border: 1px solid #2a2a3a; }
+  .btn-secondary:hover { background: rgba(42,42,58,0.8); color: #e4e4e7; }
+  .btn-sm { padding: 0.375rem 0.875rem; font-size: 0.75rem; }
+  .btn-success { background: #10b981; color: #fff; }
+  .btn-success:hover { background: #059669; }
+  .btn-danger { background: rgba(239,68,68,0.1); color: #fca5a5; border: 1px solid rgba(239,68,68,0.2); }
+  .btn-danger:hover { background: rgba(239,68,68,0.2); }
+
+  .refresh-btn {
+    display: inline-flex; align-items: center; gap: 0.375rem;
+    padding: 0.4rem 1rem; border-radius: 0.5rem;
+    background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.2);
+    color: #818cf8; font-size: 0.8125rem; font-weight: 600;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .refresh-btn:hover { background: rgba(99,102,241,0.16); border-color: #6366f1; }
+
+  /* ── Add Model Row ── */
+  .add-model-row {
+    display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem;
+    background: rgba(19,19,26,0.3); border-top: 1px solid #2a2a3a;
+  }
+  .add-input {
+    flex: 1; background: #13131a; border: 1px solid #2a2a3a; border-radius: 0.375rem;
+    color: #d4d4d8; font-size: 0.8125rem; padding: 0.375rem 0.625rem; outline: none;
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+    transition: border-color 0.15s;
+  }
+  .add-input:focus { border-color: #6366f1; }
+  .add-input::placeholder { color: #3f3f46; }
+
+  /* ── Empty State ── */
+  .empty-pricing {
+    padding: 3rem; text-align: center; color: #3f3f46;
+    font-size: 0.875rem;
+  }
+  .empty-pricing-icon { font-size: 2rem; margin-bottom: 0.75rem; display: block; }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed; bottom: 1.5rem; right: 1.5rem; padding: 0.625rem 1.25rem;
+    border-radius: 0.5rem; font-size: 0.8125rem; font-weight: 600; color: #fff;
+    z-index: 200; animation: toastIn 0.2s ease;
+  }
+  @keyframes toastIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── Status bar ── */
+  .status-bar {
+    display: flex; align-items: center; gap: 0.75rem; padding: 0.625rem 1rem;
+    background: rgba(16,185,129,0.06); border: 1px solid rgba(16,185,129,0.15);
+    border-radius: 0.5rem; margin-bottom: 1.25rem; font-size: 0.8125rem; color: #6ee7b7;
+  }
+  .status-bar.warn { background: rgba(245,158,11,0.06); border-color: rgba(245,158,11,0.15); color: #fcd34d; }
+  .status-dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; flex-shrink: 0; }
+  .status-dot.ok { background: #10b981; }
+  .status-dot.warn { background: #f59e0b; }
+
+  /* ── Row actions ── */
+  .row-actions { display: flex; gap: 0.375rem; justify-content: flex-end; }
+  .row-action-btn {
+    background: none; border: none; color: #52525b; cursor: pointer;
+    font-size: 0.75rem; padding: 0.125rem 0.25rem; transition: color 0.15s;
+  }
+  .row-action-btn:hover { color: #fff; }
+  .row-action-btn.danger:hover { color: #fca5a5; }
+</style>
+
+<div class="pricing-shell">
+
+  <!-- ── Cost Overview ── -->
+  <div class="cost-overview">
+    <div class="cost-card">
+      <div class="cost-card-label">Today</div>
+      <div class="cost-card-value cost-accent" id="cost-today">
+        ${{ "%.6f" | format(cost_stats.today.get('total_cost', 0)) }}
+      </div>
+      <div class="cost-card-sub" id="cost-today-calls">{{ cost_stats.today.get('num_calls', 0) }} API calls</div>
+    </div>
+    <div class="cost-card">
+      <div class="cost-card-label">This Month (30d)</div>
+      <div class="cost-card-value" id="cost-month">
+        ${{ "%.6f" | format(cost_stats.this_month.get('total_cost', 0)) }}
+      </div>
+      <div class="cost-card-sub" id="cost-month-calls">{{ cost_stats.this_month.get('num_calls', 0) }} API calls</div>
+    </div>
+    <div class="cost-card">
+      <div class="cost-card-label">All Time</div>
+      <div class="cost-card-value" id="cost-all">
+        ${{ "%.6f" | format(cost_stats.all_time.get('total_cost', 0)) }}
+      </div>
+      <div class="cost-card-sub" id="cost-all-calls">{{ cost_stats.all_time.get('num_calls', 0) }} API calls · {{ "{:,}".format(cost_stats.all_time.get('total_tokens', 0)) }} tokens</div>
+    </div>
+  </div>
+
+  <!-- ── Status bar ── -->
+  {% if connections %}
+  <div class="status-bar">
+    <span class="status-dot ok"></span>
+    {{ connections | length }} connection{{ 's' if connections | length != 1 else '' }} active — prices auto-applied to all chat messages
+  </div>
+  {% else %}
+  <div class="status-bar warn">
+    <span class="status-dot warn"></span>
+    No API connections configured. <a href="/settings" style="color:#818cf8; text-decoration:underline;">Add one in Settings</a> to see models.
+  </div>
+  {% endif %}
+
+  <!-- ── Section: Model Pricing ── -->
+  <div class="section-header">
+    <h2>Model Pricing</h2>
+    <div style="display:flex; gap:0.5rem;">
+      <button class="refresh-btn" onclick="refreshModels()">↻ Refresh Models</button>
+      <button class="btn btn-primary btn-sm" onclick="saveAllPricing()">Save All</button>
+    </div>
+  </div>
+
+  <!-- Provider Tabs -->
+  <div class="provider-tabs" id="provider-tabs"></div>
+
+  <!-- Pricing Table -->
+  <div class="pricing-table-wrap" id="pricing-table-wrap">
+    <table class="pricing-table">
+      <thead>
+        <tr>
+          <th style="min-width:14rem;">Model</th>
+          <th>Input<br><span style="font-weight:400;text-transform:none;color:#3f3f46;">$ / 1M tokens</span></th>
+          <th>Cached Input<br><span style="font-weight:400;text-transform:none;color:#3f3f46;">$ / 1M tokens</span></th>
+          <th>Output<br><span style="font-weight:400;text-transform:none;color:#3f3f46;">$ / 1M tokens</span></th>
+          <th>Training<br><span style="font-weight:400;text-transform:none;color:#3f3f46;">$ / 1M tokens</span></th>
+          <th style="width:4rem;"></th>
+        </tr>
+      </thead>
+      <tbody id="pricing-tbody"></tbody>
+    </table>
+    <div class="add-model-row" id="add-model-row">
+      <select class="add-input" id="add-provider" style="flex:0 0 8rem;">
+        <option value="openai">openai</option>
+        <option value="anthropic">anthropic</option>
+        <option value="deepseek">deepseek</option>
+        <option value="ollama">ollama</option>
+      </select>
+      <input type="text" class="add-input" id="add-model-name" placeholder="model-name (e.g. gpt-4o-mini)">
+      <button class="btn btn-sm btn-primary" onclick="addModelRow()">+ Add</button>
+    </div>
+  </div>
+
+  <!-- ── Section: Recent Cost Log ── -->
+  <div class="section-header" style="margin-top:2rem;">
+    <h2>Recent Cost Log</h2>
+    <button class="btn btn-secondary btn-sm" onclick="refreshCostLog()">↻ Refresh</button>
+  </div>
+  <div class="pricing-table-wrap">
+    <table class="pricing-table">
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Agent</th>
+          <th>Model</th>
+          <th>Tokens</th>
+          <th>Cost</th>
+        </tr>
+      </thead>
+      <tbody id="log-tbody">
+        <tr><td colspan="5" class="empty-pricing"><span class="empty-pricing-icon">📊</span>No cost events yet. Send a chat message to start tracking.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+  // ═══ DATA ═══
+  const _pricing = {{ pricing | tojson }};
+  const _connections = {{ connections | tojson }};
+
+  // Build unified model list: models from connections + models from pricing.yaml not in connections
+  let _models = [];  // [{provider, model, input_per_1m, cached_input_per_1m, output_per_1m, training_per_1m, source}]
+  let _providers = new Set();
+  let _activeProvider = 'all';
+  let _dirty = {};  // track changes: "provider:model" → field values
+
+  function buildModelList() {
+    _models = [];
+    _providers = new Set(['all']);
+    const seen = new Set();
+
+    // 1. Models from connections (live/plugged in)
+    _connections.forEach(conn => {
+      const prov = conn.provider || 'openai';
+      _providers.add(prov);
+      (conn.models || []).forEach(m => {
+        const key = prov + ':' + m;
+        if (seen.has(key)) return;
+        seen.add(key);
+        const prices = lookupPrice(prov, m);
+        _models.push({ provider: prov, model: m, ...prices, source: 'connection', connection: conn.name });
+      });
+    });
+
+    // 2. Models from pricing.yaml not already covered
+    for (const [prov, models] of Object.entries(_pricing)) {
+      _providers.add(prov);
+      for (const [m, vals] of Object.entries(models)) {
+        if (m.startsWith('_')) continue;  // skip _default
+        const key = prov + ':' + m;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        _models.push({
+          provider: prov, model: m,
+          input_per_1m: vals.input_per_1m || 0,
+          cached_input_per_1m: vals.cached_input_per_1m || 0,
+          output_per_1m: vals.output_per_1m || 0,
+          training_per_1m: vals.training_per_1m || 0,
+          source: 'pricing_yaml',
+        });
+      }
+    }
+
+    // Sort: connections first, then by provider, then by model name
+    _models.sort((a, b) => {
+      if (a.provider !== b.provider) return a.provider.localeCompare(b.provider);
+      return a.model.localeCompare(b.model);
+    });
+  }
+
+  function lookupPrice(provider, model) {
+    const provPrices = _pricing[provider] || {};
+    // Exact
+    let mp = provPrices[model];
+    // Prefix
+    if (!mp) {
+      for (const [k, v] of Object.entries(provPrices)) {
+        if (k.startsWith('_')) continue;
+        if (typeof v === 'object' && model.startsWith(k)) { mp = v; break; }
+      }
+    }
+    // Default
+    if (!mp) mp = provPrices['_default'] || {};
+    return {
+      input_per_1m: mp.input_per_1m || 0,
+      cached_input_per_1m: mp.cached_input_per_1m || 0,
+      output_per_1m: mp.output_per_1m || 0,
+      training_per_1m: mp.training_per_1m || 0,
+    };
+  }
+
+  // ═══ RENDER ═══
+
+  function renderTabs() {
+    const el = document.getElementById('provider-tabs');
+    let html = `<button class="prov-tab ${_activeProvider === 'all' ? 'active' : ''}" onclick="setProvider('all')">All<span class="prov-count">${_models.length}</span></button>`;
+    const counts = {};
+    _models.forEach(m => { counts[m.provider] = (counts[m.provider] || 0) + 1; });
+    for (const prov of [..._providers].filter(p => p !== 'all').sort()) {
+      const c = counts[prov] || 0;
+      html += `<button class="prov-tab ${_activeProvider === prov ? 'active' : ''}" onclick="setProvider('${prov}')">${prov}<span class="prov-count">${c}</span></button>`;
+    }
+    el.innerHTML = html;
+  }
+
+  function renderTable() {
+    const tbody = document.getElementById('pricing-tbody');
+    const filtered = _activeProvider === 'all' ? _models : _models.filter(m => m.provider === _activeProvider);
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" class="empty-pricing"><span class="empty-pricing-icon">💰</span>No models found. Add a connection in Settings or click "Refresh Models".</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = filtered.map(m => {
+      const key = m.provider + ':' + m.model;
+      const isDefault = m.model === '_default';
+      const tag = m.source === 'connection'
+        ? `<span style="font-size:0.6rem;color:#52525b;margin-left:0.25rem;">⚡ live</span>`
+        : `<span style="font-size:0.6rem;color:#3f3f46;margin-left:0.25rem;">📄 config</span>`;
+      return `<tr data-key="${_esc(key)}">
+        <td>
+          <span class="model-name">${_esc(m.model)}</span>
+          ${isDefault ? '<span class="model-default-tag">default</span>' : ''}
+          ${tag}<br>
+          <span class="model-provider">${_esc(m.provider)}${m.connection ? ' · ' + _esc(m.connection) : ''}</span>
+        </td>
+        <td><span class="price-prefix">$</span><input type="number" class="price-input" step="0.001" min="0"
+            value="${m.input_per_1m}" data-key="${_esc(key)}" data-field="input_per_1m"
+            onchange="markDirty('${_esc(key)}', 'input_per_1m', this.value)"></td>
+        <td><span class="price-prefix">$</span><input type="number" class="price-input" step="0.001" min="0"
+            value="${m.cached_input_per_1m}" data-key="${_esc(key)}" data-field="cached_input_per_1m"
+            onchange="markDirty('${_esc(key)}', 'cached_input_per_1m', this.value)"></td>
+        <td><span class="price-prefix">$</span><input type="number" class="price-input" step="0.001" min="0"
+            value="${m.output_per_1m}" data-key="${_esc(key)}" data-field="output_per_1m"
+            onchange="markDirty('${_esc(key)}', 'output_per_1m', this.value)"></td>
+        <td><span class="price-prefix">$</span><input type="number" class="price-input" step="0.001" min="0"
+            value="${m.training_per_1m}" data-key="${_esc(key)}" data-field="training_per_1m"
+            onchange="markDirty('${_esc(key)}', 'training_per_1m', this.value)"></td>
+        <td><div class="row-actions">
+          <button class="row-action-btn danger" title="Remove" onclick="removeModel('${_esc(key)}')">✕</button>
+        </div></td>
+      </tr>`;
+    }).join('');
+  }
+
+  function setProvider(prov) {
+    _activeProvider = prov;
+    renderTabs();
+    renderTable();
+  }
+
+  // ═══ MUTATIONS ═══
+
+  function markDirty(key, field, value) {
+    if (!_dirty[key]) _dirty[key] = {};
+    _dirty[key][field] = parseFloat(value) || 0;
+  }
+
+  async function saveAllPricing() {
+    // Build complete pricing object from current model list + any edits
+    const pricing = JSON.parse(JSON.stringify(_pricing));
+
+    // Apply dirty changes
+    for (const [key, fields] of Object.entries(_dirty)) {
+      const [prov, ...modelParts] = key.split(':');
+      const model = modelParts.join(':');
+      if (!pricing[prov]) pricing[prov] = {};
+      if (!pricing[prov][model]) {
+        // Get existing values from the _models list
+        const existing = _models.find(m => m.provider === prov && m.model === model);
+        pricing[prov][model] = {
+          input_per_1m: existing?.input_per_1m || 0,
+          cached_input_per_1m: existing?.cached_input_per_1m || 0,
+          output_per_1m: existing?.output_per_1m || 0,
+          training_per_1m: existing?.training_per_1m || 0,
+        };
+      }
+      Object.assign(pricing[prov][model], fields);
+    }
+
+    // Also ensure all connection models have entries
+    _models.forEach(m => {
+      if (!pricing[m.provider]) pricing[m.provider] = {};
+      if (!pricing[m.provider][m.model]) {
+        pricing[m.provider][m.model] = {
+          input_per_1m: m.input_per_1m,
+          cached_input_per_1m: m.cached_input_per_1m,
+          output_per_1m: m.output_per_1m,
+          training_per_1m: m.training_per_1m,
+        };
+      }
+    });
+
+    const resp = await fetch('/api/pricing', {
+      method: 'PUT', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(pricing),
+    });
+    if (resp.ok) {
+      _dirty = {};
+      Object.assign(_pricing, pricing);
+      showToast('Pricing saved');
+    } else {
+      showToast('Save failed', true);
+    }
+  }
+
+  async function removeModel(key) {
+    const [prov, ...modelParts] = key.split(':');
+    const model = modelParts.join(':');
+    if (!confirm(`Remove pricing for ${prov}/${model}?`)) return;
+
+    const resp = await fetch(`/api/pricing/${encodeURIComponent(prov)}/${encodeURIComponent(model)}`, { method: 'DELETE' });
+    if (resp.ok) {
+      // Remove from local data
+      if (_pricing[prov]) delete _pricing[prov][model];
+      _models = _models.filter(m => !(m.provider === prov && m.model === model));
+      delete _dirty[key];
+      renderTabs();
+      renderTable();
+      showToast('Model removed');
+    }
+  }
+
+  function addModelRow() {
+    const prov = document.getElementById('add-provider').value;
+    const model = document.getElementById('add-model-name').value.trim();
+    if (!model) return;
+    const key = prov + ':' + model;
+    if (_models.find(m => m.provider === prov && m.model === model)) {
+      showToast('Model already exists', true);
+      return;
+    }
+    _models.push({
+      provider: prov, model, source: 'manual',
+      input_per_1m: 0, cached_input_per_1m: 0, output_per_1m: 0, training_per_1m: 0,
+    });
+    _providers.add(prov);
+    // Mark as dirty so it gets saved
+    _dirty[key] = { input_per_1m: 0, cached_input_per_1m: 0, output_per_1m: 0, training_per_1m: 0 };
+    document.getElementById('add-model-name').value = '';
+    renderTabs();
+    renderTable();
+  }
+
+  async function refreshModels() {
+    // Re-fetch models from all connections
+    showToast('Refreshing models from connections…');
+    try {
+      const resp = await fetch('/api/pricing/models');
+      const data = await resp.json();
+      if (data.models) {
+        data.models.forEach(m => {
+          const existing = _models.find(x => x.provider === m.provider && x.model === m.model);
+          if (!existing) {
+            _models.push({ ...m, source: 'connection' });
+            _providers.add(m.provider);
+          }
+        });
+        renderTabs();
+        renderTable();
+        showToast(`Found ${data.models.length} models`);
+      }
+    } catch (e) {
+      showToast('Refresh failed: ' + e, true);
+    }
+  }
+
+  // ═══ COST LOG ═══
+
+  async function refreshCostLog() {
+    try {
+      const resp = await fetch('/api/pricing/cost-log?limit=50');
+      const data = await resp.json();
+      const tbody = document.getElementById('log-tbody');
+      if (!data.events || data.events.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="empty-pricing"><span class="empty-pricing-icon">📊</span>No cost events yet.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = data.events.reverse().map(ev => {
+        const ts = new Date(ev.ts).toLocaleString();
+        const agent = ev.agent || '—';
+        const model = ev.model || '—';
+        const tokens = ((ev.usage?.prompt_tokens||0) + (ev.usage?.completion_tokens||0)).toLocaleString();
+        const cost = '$' + (ev.cost?.total_cost || 0).toFixed(6);
+        return `<tr>
+          <td style="color:#71717a;font-size:0.75rem;">${_esc(ts)}</td>
+          <td style="text-transform:capitalize;">${_esc(agent)}</td>
+          <td><span class="model-name" style="font-size:0.75rem;">${_esc(model)}</span></td>
+          <td>${tokens}</td>
+          <td style="font-family:ui-monospace,SFMono-Regular,'SF Mono',Menlo,monospace;">${cost}</td>
+        </tr>`;
+      }).join('');
+    } catch(e) {
+      console.error('Failed to load cost log:', e);
+    }
+  }
+
+  // Also refresh cost overview stats
+  async function refreshStats() {
+    try {
+      for (const [period, elId, callsId] of [['today','cost-today','cost-today-calls'],['month','cost-month','cost-month-calls'],['all','cost-all','cost-all-calls']]) {
+        const resp = await fetch(`/api/pricing/cost-summary?period=${period}`);
+        const d = await resp.json();
+        document.getElementById(elId).textContent = '$' + (d.total_cost || 0).toFixed(6);
+        const calls = d.num_calls || 0;
+        const tokens = (d.total_tokens || 0).toLocaleString();
+        document.getElementById(callsId).textContent = calls + ' API calls' + (period === 'all' ? ' · ' + tokens + ' tokens' : '');
+      }
+    } catch(e) {}
+  }
+
+  // ═══ UTILS ═══
+
+  function _esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
+  function showToast(msg, isError) {
+    const t = document.createElement('div');
+    t.className = 'toast';
+    t.textContent = msg;
+    t.style.background = isError ? '#ef4444' : '#6366f1';
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2500);
+  }
+
+  // ═══ INIT ═══
+  buildModelList();
+  renderTabs();
+  renderTable();
+  refreshCostLog();
+</script>
+{% endblock %}

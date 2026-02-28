@@ -5,11 +5,18 @@
   "ticks_per_loop": 15,
   "max_steps_per_tick": 3,
   "stimulus": "",
-  "profile": "orion",
+  "profile": "astraea",
   "auto_pause_on_budget": true,
   "auto_pause_on_error_streak": 5,
   "monthly_hard_cap": 20.0,
   "monthly_soft_cap": 16.0,
   "per_session_cap": 2.0,
-  "per_tick_cap": 0.1
+  "per_tick_cap": 0.1,
+  "tiers": [
+    {
+      "enabled": true,
+      "id": "t0",
+      "label": "local_cheap"
+    }
+  ]
 }

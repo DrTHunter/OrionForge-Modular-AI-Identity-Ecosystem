@@ -1,1 +1,21 @@
-﻿{"timezone":"auto","timezone_offset_hours":null,"chat_background":null,"agent_avatars":{},"agent_configs":{}}
+{
+  "timezone": "auto",
+  "timezone_offset_hours": null,
+  "chat_background": null,
+  "agent_avatars": {},
+  "agent_configs": {
+    "astraea": {
+      "attached_notes": [
+        "5ccf5b26",
+        "5b3b207f"
+      ],
+      "note_modes": {
+        "5ccf5b26": "always",
+        "5b3b207f": "always"
+      },
+      "display_name": "astraea",
+      "description": "",
+      "model": ""
+    }
+  }
+}

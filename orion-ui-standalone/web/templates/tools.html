@@ -185,6 +185,115 @@
     text-align: center; padding: 3rem 1rem; color: #52525b;
   }
   .empty-state p { margin: 0.25rem 0; }
+
+  /* ── Cost Tracker styles ─────────────────────────────────────── */
+  .ct-overview { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 1.25rem; margin-top: 1.25rem; }
+  @media (max-width: 768px) { .ct-overview { grid-template-columns: 1fr; } }
+  .ct-card {
+    background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 0.75rem;
+    padding: 1.125rem 1.25rem;
+  }
+  .ct-card-label { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #52525b; margin-bottom: 0.25rem; }
+  .ct-card-value { font-size: 1.5rem; font-weight: 800; color: #fff; font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace; }
+  .ct-card-sub { font-size: 0.75rem; color: #52525b; margin-top: 0.25rem; }
+  .ct-accent { color: #10b981; }
+
+  .ct-status-bar {
+    display: flex; align-items: center; gap: 0.75rem; padding: 0.625rem 1rem;
+    background: rgba(16,185,129,0.06); border: 1px solid rgba(16,185,129,0.15);
+    border-radius: 0.5rem; margin-bottom: 1.25rem; font-size: 0.8125rem; color: #6ee7b7;
+  }
+  .ct-status-bar.warn { background: rgba(245,158,11,0.06); border-color: rgba(245,158,11,0.15); color: #fcd34d; }
+  .ct-status-dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; flex-shrink: 0; }
+  .ct-status-dot.ok { background: #10b981; }
+  .ct-status-dot.warn { background: #f59e0b; }
+
+  .ct-prov-tabs { display: flex; gap: 0; border-bottom: 1px solid #2a2a3a; margin-bottom: 1.25rem; }
+  .ct-prov-tab {
+    padding: 0.625rem 1.25rem; font-size: 0.8125rem; font-weight: 600;
+    color: #71717a; background: none; border: none; cursor: pointer;
+    border-bottom: 2px solid transparent; transition: all 0.15s;
+    position: relative; top: 1px; text-transform: capitalize;
+  }
+  .ct-prov-tab:hover { color: #a1a1aa; }
+  .ct-prov-tab.active { color: #fff; border-bottom-color: #6366f1; }
+  .ct-prov-tab .ct-prov-count {
+    font-size: 0.6875rem; font-weight: 700; color: #52525b;
+    background: rgba(42,42,58,0.6); padding: 0.0625rem 0.375rem;
+    border-radius: 9999px; margin-left: 0.375rem;
+  }
+  .ct-prov-tab.active .ct-prov-count { color: #a5b4fc; background: rgba(99,102,241,0.15); }
+
+  .ct-table-wrap {
+    background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 0.75rem;
+    overflow: hidden; margin-bottom: 1.5rem;
+  }
+  .ct-table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
+  .ct-table thead th {
+    padding: 0.75rem 1rem; text-align: left;
+    font-size: 0.6875rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.05em; color: #52525b; border-bottom: 1px solid #2a2a3a;
+    background: rgba(19,19,26,0.4);
+  }
+  .ct-table thead th:not(:first-child) { text-align: right; }
+  .ct-table tbody tr { border-bottom: 1px solid rgba(42,42,58,0.5); transition: background 0.1s; }
+  .ct-table tbody tr:hover { background: rgba(99,102,241,0.04); }
+  .ct-table tbody tr:last-child { border-bottom: none; }
+  .ct-table td { padding: 0.625rem 1rem; color: #d4d4d8; vertical-align: middle; }
+  .ct-table td:not(:first-child) { text-align: right; }
+
+  .ct-model-name {
+    font-weight: 600; color: #e4e4e7;
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+    font-size: 0.8125rem;
+  }
+  .ct-model-provider { font-size: 0.6875rem; color: #52525b; text-transform: capitalize; }
+  .ct-default-tag {
+    font-size: 0.5625rem; font-weight: 700; color: #818cf8;
+    background: rgba(99,102,241,0.1); padding: 0.0625rem 0.375rem;
+    border-radius: 0.25rem; margin-left: 0.375rem; text-transform: uppercase;
+  }
+
+  .ct-price-input {
+    width: 7rem; text-align: right; background: transparent;
+    border: 1px solid transparent; border-radius: 0.25rem;
+    color: #d4d4d8; font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+    font-size: 0.8125rem; padding: 0.25rem 0.5rem; outline: none;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .ct-price-input:hover { border-color: #2a2a3a; }
+  .ct-price-input:focus { border-color: #6366f1; background: rgba(19,19,26,0.6); }
+  .ct-price-prefix { color: #52525b; font-size: 0.75rem; margin-right: 0.125rem; }
+
+  .ct-refresh-btn {
+    display: inline-flex; align-items: center; gap: 0.375rem;
+    padding: 0.4rem 1rem; border-radius: 0.5rem;
+    background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.2);
+    color: #818cf8; font-size: 0.8125rem; font-weight: 600;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .ct-refresh-btn:hover { background: rgba(99,102,241,0.16); border-color: #6366f1; }
+
+  .ct-add-row {
+    display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem;
+    background: rgba(19,19,26,0.3); border-top: 1px solid #2a2a3a;
+  }
+  .ct-add-input {
+    flex: 1; background: #13131a; border: 1px solid #2a2a3a; border-radius: 0.375rem;
+    color: #d4d4d8; font-size: 0.8125rem; padding: 0.375rem 0.625rem; outline: none;
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+    transition: border-color 0.15s;
+  }
+  .ct-add-input:focus { border-color: #6366f1; }
+  .ct-add-input::placeholder { color: #3f3f46; }
+
+  .ct-empty { padding: 3rem; text-align: center; color: #3f3f46; font-size: 0.875rem; }
+
+  .ct-row-del {
+    background: none; border: none; color: #52525b; cursor: pointer;
+    font-size: 0.75rem; padding: 0.125rem 0.25rem; transition: color 0.15s;
+  }
+  .ct-row-del:hover { color: #fca5a5; }
 </style>
 
 <div class="tools-shell p-6 md:p-10">
@@ -269,6 +378,7 @@
 
   <!-- ═══ EDITOR / DETAIL VIEWS (one per tool) ═══ -->
   {% for tool in tools %}
+  {% if tool.name != 'cost_tracker' %}
   <div class="editor-view" id="editor-{{ tool.name }}">
 
     <!-- Header -->
@@ -346,7 +456,126 @@
       <button class="btn btn-secondary" onclick="showToolsList()">&larr; Back to Tools</button>
     </div>
   </div>
+  {% endif %}
   {% endfor %}
+
+  <!-- ═══ COST TRACKER — Custom Editor View ═══ -->
+  <div class="editor-view" id="editor-cost_tracker">
+
+    <!-- Header -->
+    <div class="tool-detail-header">
+      <div class="tool-detail-icon" style="background:rgba(16,185,129,0.12);color:#10b981;">💰</div>
+      <div>
+        <div class="tool-detail-title">cost_tracker</div>
+        <div class="tool-detail-desc">Manage token pricing, track costs per model, and view spending across all LLM API calls.</div>
+        <div class="tool-status-badge badge-ready">&#10004; Ready</div>
+      </div>
+    </div>
+
+    <!-- Cost Overview Cards -->
+    <div class="ct-overview">
+      <div class="ct-card">
+        <div class="ct-card-label">Today</div>
+        <div class="ct-card-value ct-accent" id="ct-cost-today">
+          ${{ "%.6f" | format(cost_stats.today.get('total_cost', 0)) }}
+        </div>
+        <div class="ct-card-sub" id="ct-cost-today-calls">{{ cost_stats.today.get('num_calls', 0) }} API calls</div>
+      </div>
+      <div class="ct-card">
+        <div class="ct-card-label">This Month (30d)</div>
+        <div class="ct-card-value" id="ct-cost-month">
+          ${{ "%.6f" | format(cost_stats.this_month.get('total_cost', 0)) }}
+        </div>
+        <div class="ct-card-sub" id="ct-cost-month-calls">{{ cost_stats.this_month.get('num_calls', 0) }} API calls</div>
+      </div>
+      <div class="ct-card">
+        <div class="ct-card-label">All Time</div>
+        <div class="ct-card-value" id="ct-cost-all">
+          ${{ "%.6f" | format(cost_stats.all_time.get('total_cost', 0)) }}
+        </div>
+        <div class="ct-card-sub" id="ct-cost-all-calls">{{ cost_stats.all_time.get('num_calls', 0) }} API calls · {{ "{:,}".format(cost_stats.all_time.get('total_tokens', 0)) }} tokens</div>
+      </div>
+    </div>
+
+    <!-- Status bar -->
+    {% if connections %}
+    <div class="ct-status-bar">
+      <span class="ct-status-dot ok"></span>
+      {{ connections | length }} connection{{ 's' if connections | length != 1 else '' }} active &mdash; prices auto-applied to all chat messages
+    </div>
+    {% else %}
+    <div class="ct-status-bar warn">
+      <span class="ct-status-dot warn"></span>
+      No API connections configured. <a href="/settings" style="color:#818cf8; text-decoration:underline;">Add one in Settings</a> to see models.
+    </div>
+    {% endif %}
+
+    <!-- Section: Model Pricing -->
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; margin-top:1.5rem;">
+      <h3 style="font-size:1.0625rem; font-weight:700; color:#fff; margin:0;">Model Pricing</h3>
+      <div style="display:flex; gap:0.5rem;">
+        <button class="ct-refresh-btn" onclick="ctRefreshModels()">↻ Refresh Models</button>
+        <button class="btn btn-primary btn-sm" onclick="ctSaveAll()">Save All</button>
+      </div>
+    </div>
+
+    <!-- Provider Tabs -->
+    <div class="ct-prov-tabs" id="ct-provider-tabs"></div>
+
+    <!-- Pricing Table -->
+    <div class="ct-table-wrap">
+      <table class="ct-table">
+        <thead>
+          <tr>
+            <th style="min-width:14rem;">Model</th>
+            <th>Input<br><span style="font-weight:400;text-transform:none;color:#3f3f46;">$ / 1M tokens</span></th>
+            <th>Cached Input<br><span style="font-weight:400;text-transform:none;color:#3f3f46;">$ / 1M tokens</span></th>
+            <th>Output<br><span style="font-weight:400;text-transform:none;color:#3f3f46;">$ / 1M tokens</span></th>
+            <th>Training<br><span style="font-weight:400;text-transform:none;color:#3f3f46;">$ / 1M tokens</span></th>
+            <th style="width:4rem;"></th>
+          </tr>
+        </thead>
+        <tbody id="ct-pricing-tbody"></tbody>
+      </table>
+      <div class="ct-add-row">
+        <select class="ct-add-input" id="ct-add-provider" style="flex:0 0 8rem;">
+          <option value="openai">openai</option>
+          <option value="anthropic">anthropic</option>
+          <option value="deepseek">deepseek</option>
+          <option value="ollama">ollama</option>
+        </select>
+        <input type="text" class="ct-add-input" id="ct-add-model-name" placeholder="model-name (e.g. gpt-4o-mini)">
+        <button class="btn btn-sm btn-primary" onclick="ctAddModel()">+ Add</button>
+      </div>
+    </div>
+
+    <!-- Section: Recent Cost Log -->
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; margin-top:2rem;">
+      <h3 style="font-size:1.0625rem; font-weight:700; color:#fff; margin:0;">Recent Cost Log</h3>
+      <button class="btn btn-secondary btn-sm" onclick="ctRefreshLog()">↻ Refresh</button>
+    </div>
+    <div class="ct-table-wrap">
+      <table class="ct-table">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Agent</th>
+            <th>Model</th>
+            <th>Tokens</th>
+            <th>Cost</th>
+          </tr>
+        </thead>
+        <tbody id="ct-log-tbody">
+          <tr><td colspan="5" class="ct-empty"><span style="font-size:2rem;display:block;margin-bottom:0.5rem;">📊</span>No cost events yet. Send a chat message to start tracking.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Action Bar -->
+    <div class="action-bar">
+      <button class="btn btn-secondary" onclick="showToolsList()">&larr; Back to Tools</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -394,6 +623,11 @@
       document.getElementById('tab-btn-tools').innerHTML =
         '<span style="opacity:0.6">Tools</span> <span style="color:#3f3f46;margin:0 0.25rem;">&rsaquo;</span> ' + _esc(name);
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      // Initialize pricing data when opening cost_tracker
+      if (name === 'cost_tracker' && !_ctInitialized) {
+        ctBuildModelList(); ctRenderTabs(); ctRenderTable(); ctRefreshLog();
+        _ctInitialized = true;
+      }
     }
   }
 
@@ -406,6 +640,184 @@
       (isError ? 'background:#ef4444;' : 'background:#6366f1;');
     document.body.appendChild(t);
     setTimeout(() => t.remove(), 2500);
+  }
+
+  /* ═══ Cost Tracker — Pricing Management ═══════════════════════ */
+  const _ctPricing = {{ pricing | tojson }};
+  const _ctConnections = {{ connections | tojson }};
+  let _ctModels = [];
+  let _ctProviders = new Set();
+  let _ctActiveProvider = 'all';
+  let _ctDirty = {};
+  let _ctInitialized = false;
+
+  function ctBuildModelList() {
+    _ctModels = [];
+    _ctProviders = new Set(['all']);
+    const seen = new Set();
+    _ctConnections.forEach(conn => {
+      const prov = conn.provider || 'openai';
+      _ctProviders.add(prov);
+      (conn.models || []).forEach(m => {
+        const key = prov + ':' + m;
+        if (seen.has(key)) return;
+        seen.add(key);
+        _ctModels.push({ provider: prov, model: m, ...ctLookupPrice(prov, m), source: 'connection', connection: conn.name });
+      });
+    });
+    for (const [prov, models] of Object.entries(_ctPricing)) {
+      _ctProviders.add(prov);
+      for (const [m, vals] of Object.entries(models)) {
+        if (m.startsWith('_')) continue;
+        const key = prov + ':' + m;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        _ctModels.push({
+          provider: prov, model: m,
+          input_per_1m: vals.input_per_1m || 0,
+          cached_input_per_1m: vals.cached_input_per_1m || 0,
+          output_per_1m: vals.output_per_1m || 0,
+          training_per_1m: vals.training_per_1m || 0,
+          source: 'pricing_yaml',
+        });
+      }
+    }
+    _ctModels.sort((a, b) => a.provider !== b.provider ? a.provider.localeCompare(b.provider) : a.model.localeCompare(b.model));
+  }
+
+  function ctLookupPrice(provider, model) {
+    const pp = _ctPricing[provider] || {};
+    let mp = pp[model];
+    if (!mp) { for (const [k, v] of Object.entries(pp)) { if (!k.startsWith('_') && typeof v === 'object' && model.startsWith(k)) { mp = v; break; } } }
+    if (!mp) mp = pp['_default'] || {};
+    return { input_per_1m: mp.input_per_1m||0, cached_input_per_1m: mp.cached_input_per_1m||0, output_per_1m: mp.output_per_1m||0, training_per_1m: mp.training_per_1m||0 };
+  }
+
+  function ctRenderTabs() {
+    const el = document.getElementById('ct-provider-tabs');
+    const counts = {};
+    _ctModels.forEach(m => { counts[m.provider] = (counts[m.provider]||0) + 1; });
+    let html = `<button class="ct-prov-tab ${_ctActiveProvider==='all'?'active':''}" onclick="ctSetProvider('all')">All<span class="ct-prov-count">${_ctModels.length}</span></button>`;
+    for (const prov of [..._ctProviders].filter(p=>p!=='all').sort()) {
+      html += `<button class="ct-prov-tab ${_ctActiveProvider===prov?'active':''}" onclick="ctSetProvider('${prov}')">${prov}<span class="ct-prov-count">${counts[prov]||0}</span></button>`;
+    }
+    el.innerHTML = html;
+  }
+
+  function ctRenderTable() {
+    const tbody = document.getElementById('ct-pricing-tbody');
+    const filtered = _ctActiveProvider === 'all' ? _ctModels : _ctModels.filter(m => m.provider === _ctActiveProvider);
+    if (!filtered.length) {
+      tbody.innerHTML = `<tr><td colspan="6" class="ct-empty"><span style="font-size:2rem;display:block;margin-bottom:0.5rem;">💰</span>No models found. Add a connection in Settings or click "Refresh Models".</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = filtered.map(m => {
+      const key = m.provider + ':' + m.model;
+      const tag = m.source === 'connection'
+        ? `<span style="font-size:0.6rem;color:#52525b;margin-left:0.25rem;">\u26a1 live</span>`
+        : `<span style="font-size:0.6rem;color:#3f3f46;margin-left:0.25rem;">\ud83d\udcc4 config</span>`;
+      return `<tr data-key="${_esc(key)}">
+        <td><span class="ct-model-name">${_esc(m.model)}</span>${tag}<br><span class="ct-model-provider">${_esc(m.provider)}${m.connection ? ' \u00b7 ' + _esc(m.connection) : ''}</span></td>
+        <td><span class="ct-price-prefix">$</span><input type="number" class="ct-price-input" step="0.001" min="0" value="${m.input_per_1m}" onchange="ctMarkDirty('${_esc(key)}','input_per_1m',this.value)"></td>
+        <td><span class="ct-price-prefix">$</span><input type="number" class="ct-price-input" step="0.001" min="0" value="${m.cached_input_per_1m}" onchange="ctMarkDirty('${_esc(key)}','cached_input_per_1m',this.value)"></td>
+        <td><span class="ct-price-prefix">$</span><input type="number" class="ct-price-input" step="0.001" min="0" value="${m.output_per_1m}" onchange="ctMarkDirty('${_esc(key)}','output_per_1m',this.value)"></td>
+        <td><span class="ct-price-prefix">$</span><input type="number" class="ct-price-input" step="0.001" min="0" value="${m.training_per_1m}" onchange="ctMarkDirty('${_esc(key)}','training_per_1m',this.value)"></td>
+        <td><button class="ct-row-del" title="Remove" onclick="ctRemoveModel('${_esc(key)}')">✕</button></td>
+      </tr>`;
+    }).join('');
+  }
+
+  function ctSetProvider(prov) { _ctActiveProvider = prov; ctRenderTabs(); ctRenderTable(); }
+  function ctMarkDirty(key, field, value) { if (!_ctDirty[key]) _ctDirty[key] = {}; _ctDirty[key][field] = parseFloat(value)||0; }
+
+  async function ctSaveAll() {
+    const pricing = JSON.parse(JSON.stringify(_ctPricing));
+    for (const [key, fields] of Object.entries(_ctDirty)) {
+      const [prov, ...mp] = key.split(':'); const model = mp.join(':');
+      if (!pricing[prov]) pricing[prov] = {};
+      if (!pricing[prov][model]) {
+        const ex = _ctModels.find(m => m.provider === prov && m.model === model);
+        pricing[prov][model] = { input_per_1m: ex?.input_per_1m||0, cached_input_per_1m: ex?.cached_input_per_1m||0, output_per_1m: ex?.output_per_1m||0, training_per_1m: ex?.training_per_1m||0 };
+      }
+      Object.assign(pricing[prov][model], fields);
+    }
+    _ctModels.forEach(m => {
+      if (!pricing[m.provider]) pricing[m.provider] = {};
+      if (!pricing[m.provider][m.model]) pricing[m.provider][m.model] = { input_per_1m: m.input_per_1m, cached_input_per_1m: m.cached_input_per_1m, output_per_1m: m.output_per_1m, training_per_1m: m.training_per_1m };
+    });
+    const resp = await fetch('/api/pricing', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(pricing) });
+    if (resp.ok) { _ctDirty = {}; Object.assign(_ctPricing, pricing); showToast('Pricing saved'); } else { showToast('Save failed', true); }
+  }
+
+  async function ctRemoveModel(key) {
+    const [prov, ...mp] = key.split(':'); const model = mp.join(':');
+    if (!confirm(`Remove pricing for ${prov}/${model}?`)) return;
+    const resp = await fetch(`/api/pricing/${encodeURIComponent(prov)}/${encodeURIComponent(model)}`, { method:'DELETE' });
+    if (resp.ok) {
+      if (_ctPricing[prov]) delete _ctPricing[prov][model];
+      _ctModels = _ctModels.filter(m => !(m.provider === prov && m.model === model));
+      delete _ctDirty[key];
+      ctRenderTabs(); ctRenderTable(); showToast('Model removed');
+    }
+  }
+
+  function ctAddModel() {
+    const prov = document.getElementById('ct-add-provider').value;
+    const model = document.getElementById('ct-add-model-name').value.trim();
+    if (!model) return;
+    if (_ctModels.find(m => m.provider === prov && m.model === model)) { showToast('Model already exists', true); return; }
+    _ctModels.push({ provider: prov, model, source: 'manual', input_per_1m:0, cached_input_per_1m:0, output_per_1m:0, training_per_1m:0 });
+    _ctProviders.add(prov);
+    _ctDirty[prov+':'+model] = { input_per_1m:0, cached_input_per_1m:0, output_per_1m:0, training_per_1m:0 };
+    document.getElementById('ct-add-model-name').value = '';
+    ctRenderTabs(); ctRenderTable();
+  }
+
+  async function ctRefreshModels() {
+    showToast('Refreshing models from connections\u2026');
+    try {
+      const resp = await fetch('/api/pricing/models');
+      const data = await resp.json();
+      if (data.models) {
+        data.models.forEach(m => {
+          if (!_ctModels.find(x => x.provider === m.provider && x.model === m.model)) {
+            _ctModels.push({ ...m, source: 'connection' });
+            _ctProviders.add(m.provider);
+          }
+        });
+        ctRenderTabs(); ctRenderTable();
+        showToast(`Found ${data.models.length} models`);
+      }
+    } catch(e) { showToast('Refresh failed: ' + e, true); }
+  }
+
+  async function ctRefreshLog() {
+    try {
+      const resp = await fetch('/api/pricing/cost-log?limit=50');
+      const data = await resp.json();
+      const tbody = document.getElementById('ct-log-tbody');
+      if (!data.events || !data.events.length) {
+        tbody.innerHTML = `<tr><td colspan="5" class="ct-empty"><span style="font-size:2rem;display:block;margin-bottom:0.5rem;">📊</span>No cost events yet.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = data.events.reverse().map(ev => {
+        const ts = new Date(ev.ts).toLocaleString();
+        const tokens = ((ev.usage?.prompt_tokens||0) + (ev.usage?.completion_tokens||0)).toLocaleString();
+        const cost = '$' + (ev.cost?.total_cost||0).toFixed(6);
+        return `<tr>
+          <td style="color:#71717a;font-size:0.75rem;">${_esc(ts)}</td>
+          <td style="text-transform:capitalize;">${_esc(ev.agent||'\u2014')}</td>
+          <td><span class="ct-model-name" style="font-size:0.75rem;">${_esc(ev.model||'\u2014')}</span></td>
+          <td>${tokens}</td>
+          <td style="font-family:ui-monospace,SFMono-Regular,'SF Mono',Menlo,monospace;">${cost}</td>
+        </tr>`;
+      }).join('');
+    } catch(e) { console.error('Cost log failed:', e); }
+  }
+
+  // Auto-open cost_tracker if URL has #cost_tracker
+  if (location.hash === '#cost_tracker') {
+    setTimeout(() => openToolEditor('cost_tracker'), 100);
   }
 </script>
 {% endblock %}
