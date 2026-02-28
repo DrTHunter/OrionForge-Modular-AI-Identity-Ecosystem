@@ -14,6 +14,11 @@ Prompt Injection Order
 
 import json
 import logging
+import os
+import queue
+import subprocess
+import sys
+import threading
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -21,8 +26,8 @@ from typing import Optional
 
 import httpx
 import yaml
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi import FastAPI, File, Query, Request, UploadFile
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
@@ -65,6 +70,11 @@ async def _lifespan(application: FastAPI):
 app = FastAPI(title="SoulScript Engine", version="0.2.0", lifespan=_lifespan)
 app.mount("/static", StaticFiles(directory=str(Path(__file__).parent / "static")), name="static")
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
+
+# ── Uploads directory (chat backgrounds, etc.) ──────────────────
+_UPLOADS_DIR = _DATA_DIR / "uploads"
+_UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=str(_UPLOADS_DIR)), name="uploads")
 
 # ── FAISS memory (lazy singleton) ────────────────────────────────
 _faiss_memory = None
@@ -204,22 +214,79 @@ def _load_chat(chat_id: str) -> dict | None:
 def _save_chat(chat_id: str, data: dict):
     _write_json(_CHATS_DIR / f"{chat_id}.json", data)
 
-def _create_new_chat(agent: str) -> dict:
+def _create_new_chat(agent: str, mode: str = "chat", meta: dict | None = None) -> dict:
     chat_id = str(uuid.uuid4())[:8]
     now = datetime.now(timezone.utc).isoformat()
     chat_data = {
         "id": chat_id, "title": "New Chat", "folder_id": None,
-        "agent": agent, "mode": "chat",
+        "agent": agent, "mode": mode,
         "created": now, "updated": now, "messages": [],
     }
+    if meta:
+        chat_data.update(meta)
     _save_chat(chat_id, chat_data)
     idx = _load_chat_index()
     idx["chats"].append({
         "id": chat_id, "title": "New Chat", "folder_id": None,
-        "agent": agent, "mode": "chat", "created": now, "updated": now,
+        "agent": agent, "mode": mode, "created": now, "updated": now,
     })
     _save_chat_index(idx)
     return chat_data
+
+
+# ── In-memory burst session store ────────────────────────────────
+_chat_sessions: dict[str, dict] = {}
+
+
+def _update_chat_index_entry(chat_id: str, updates: dict):
+    """Update a chat entry in the index."""
+    idx = _load_chat_index()
+    for c in idx["chats"]:
+        if c["id"] == chat_id:
+            c.update(updates)
+            break
+    _save_chat_index(idx)
+
+
+def _append_agent_line_to_chat(chat_id: str, line: str):
+    """Append an agent output line to a persistent chat (called from reader thread)."""
+    try:
+        role = "agent"
+        parsed = None
+        if line.startswith("[step] "):
+            role = "step"
+            try: parsed = json.loads(line[7:])
+            except Exception: pass
+        elif line.startswith("[tool-result] "):
+            role = "tool-result"
+            try: parsed = json.loads(line[14:])
+            except Exception: pass
+        elif line.startswith("[memory-flush] "):
+            role = "memory-flush"
+            try: parsed = json.loads(line[15:])
+            except Exception: pass
+        elif line.startswith("[tick-start] "):
+            role = "tick-start"
+            try: parsed = json.loads(line[13:])
+            except Exception: pass
+        elif line.startswith("[tick-end] "):
+            role = "tick-end"
+            try: parsed = json.loads(line[10:])
+            except Exception: pass
+        elif line.startswith("[burst] Done") or line.startswith("[burst] Starting"):
+            role = "system"
+        elif "ERROR" in line or "error" in line.lower():
+            role = "error"
+        msg = {"role": role, "text": line, "time": datetime.now(timezone.utc).isoformat()}
+        if parsed:
+            msg["data"] = parsed
+        chat_data = _load_chat(chat_id)
+        if chat_data:
+            chat_data["messages"].append(msg)
+            chat_data["updated"] = datetime.now(timezone.utc).isoformat()
+            _save_chat(chat_id, chat_data)
+    except Exception:
+        pass
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -430,6 +497,9 @@ async def page_chat(request: Request):
         "chat_index": _load_chat_index(),
         "agent_connections": store.get("agent_connections", {}),
         "avatar_map": settings.get("agent_avatars", {}),
+        "user_profile": settings.get("user_profile", {}),
+        "pricing": _load_pricing(),
+        "chat_background": settings.get("chat_background") or "",
     })
 
 @app.get("/profiles", response_class=HTMLResponse)
@@ -540,6 +610,7 @@ async def page_pricing_redirect():
 _TOOL_CATALOGUE = [
     {
         "name": "web_search",
+        "display_name": "Web Search Tool",
         "icon": "🔍",
         "icon_bg": "rgba(34,211,238,0.12)",
         "icon_color": "#22d3ee",
@@ -552,6 +623,7 @@ _TOOL_CATALOGUE = [
             {"name": "url", "type": "string", "required": False, "description": "URL to scrape directly", "enum": []},
             {"name": "knowledge_check", "type": "string", "required": False, "description": "What you already know about this topic", "enum": []},
             {"name": "reason", "type": "string", "required": False, "description": "Why the internet is needed", "enum": []},
+            {"name": "parser", "type": "library", "required": False, "description": "HTML parsing powered by BeautifulSoup4 (bs4)", "enum": ["beautifulsoup4"]},
         ],
     },
     {
@@ -641,11 +713,12 @@ _TOOL_CATALOGUE = [
         ],
     },
     {
-        "name": "trent_inbox",
+        "name": "inbox",
+        "display_name": "Inbox",
         "icon": "💬",
         "icon_bg": "rgba(239,68,68,0.12)",
         "icon_color": "#ef4444",
-        "description": "Send a message to Trent (the operator). Used when the agent needs human input, wants to flag something important, or needs approval.",
+        "description": "Send a message to the user (the operator). Used when the agent needs human input, wants to flag something important, or needs approval.",
         "status": "planned",
         "parameters": [
             {"name": "message", "type": "string", "required": True, "description": "Message for the operator", "enum": []},
@@ -891,9 +964,16 @@ async def api_about_save(body: AboutUpdate):
 class ChatRequest(BaseModel):
     agent: str
     stimulus: str
+    mode: str = "chat"               # "chat" or "burst"
+    burst_ticks: int = 3
+    max_steps: int = 10
     connection_id: Optional[str] = None
     model_override: Optional[str] = None
     chat_id: Optional[str] = None
+
+
+class FolderCreate(BaseModel):
+    name: str
 
 @app.post("/api/chat/send")
 async def api_chat_send(req: ChatRequest):
@@ -1718,6 +1798,521 @@ async def api_pricing_cost_log(agent: str = "", since: str = "", limit: int = 10
         return {"events": read_cost_log(**kwargs)}
     except Exception as exc:
         return {"error": str(exc)}
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  TTS API (ElevenLabs + Edge-TTS / Piper / XTTS)
+# ═══════════════════════════════════════════════════════════════════
+
+@app.post("/api/tts/speak")
+async def api_tts_speak(request: Request):
+    """Proxy text-to-speech via ElevenLabs.  Returns audio/mpeg stream."""
+    body = await request.json()
+    text = body.get("text", "").strip()
+    voice_id = body.get("voice_id", "21m00Tcm4TlvDq8ikWAM")
+    model_id = body.get("model_id", "eleven_multilingual_v2")
+
+    if not text:
+        return JSONResponse({"error": "No text provided"}, 400)
+
+    conn_data = _load_connections()
+    el_conn = None
+    for c in conn_data.get("connections", []):
+        if c.get("provider") == "elevenlabs" and c.get("enabled", True):
+            el_conn = c
+            break
+    if not el_conn or not el_conn.get("api_key"):
+        return JSONResponse({"error": "No ElevenLabs connection configured. Add one in Settings → Connections."}, 400)
+
+    url = f"{el_conn['url'].rstrip('/')}/v1/text-to-speech/{voice_id}"
+    headers = {
+        "xi-api-key": el_conn["api_key"],
+        "Content-Type": "application/json",
+        "Accept": "audio/mpeg",
+    }
+    payload = {
+        "text": text, "model_id": model_id,
+        "voice_settings": {"stability": 0.5, "similarity_boost": 0.75},
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=60) as client:
+            resp = await client.post(url, headers=headers, json=payload)
+            resp.raise_for_status()
+        char_count = int(resp.headers.get("x-character-count", len(text)))
+        return Response(content=resp.content, media_type="audio/mpeg",
+                        headers={"X-TTS-Characters": str(char_count), "X-TTS-Model": model_id})
+    except httpx.HTTPStatusError as e:
+        detail = str(e)
+        try: detail = e.response.json().get("detail", {}).get("message", str(e))
+        except Exception: pass
+        return JSONResponse({"error": f"ElevenLabs error: {detail}"}, 502)
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, 500)
+
+
+@app.get("/api/tts/voices")
+async def api_tts_voices():
+    """Fetch available voices from ElevenLabs."""
+    conn_data = _load_connections()
+    el_conn = None
+    for c in conn_data.get("connections", []):
+        if c.get("provider") == "elevenlabs" and c.get("enabled", True):
+            el_conn = c
+            break
+    if not el_conn or not el_conn.get("api_key"):
+        return JSONResponse({"voices": []})
+    url = f"{el_conn['url'].rstrip('/')}/v1/voices"
+    headers = {"xi-api-key": el_conn["api_key"]}
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.get(url, headers=headers)
+            resp.raise_for_status()
+            data = resp.json()
+        voices = [{"voice_id": v["voice_id"], "name": v["name"], "category": v.get("category", "")}
+                  for v in data.get("voices", [])]
+        return JSONResponse({"voices": voices})
+    except Exception as e:
+        return JSONResponse({"voices": [], "error": str(e)})
+
+
+def _get_edge_tts_conn():
+    """Return the first enabled edge-tts connection or None."""
+    for c in _load_connections().get("connections", []):
+        if c.get("provider") == "edge-tts" and c.get("enabled", True):
+            return c
+    return None
+
+
+@app.post("/api/tts/edge/speak")
+async def api_tts_edge_speak(request: Request):
+    """Proxy text-to-speech via local Edge-TTS container (Piper / XTTS)."""
+    body = await request.json()
+    text = body.get("text", "").strip()
+    voice = body.get("voice", "alloy")
+    model = body.get("model", "tts-1")
+    if not text:
+        return JSONResponse({"error": "No text provided"}, 400)
+    conn = _get_edge_tts_conn()
+    if not conn:
+        return JSONResponse({"error": "No Edge-TTS connection configured."}, 400)
+    url = f"{conn['url'].rstrip('/')}/v1/audio/speech"
+    headers = {"Authorization": f"Bearer {conn.get('api_key', '')}", "Content-Type": "application/json"}
+    payload = {"input": text, "voice": voice, "model": model}
+    try:
+        async with httpx.AsyncClient(timeout=60) as client:
+            resp = await client.post(url, headers=headers, json=payload)
+            resp.raise_for_status()
+        return Response(content=resp.content, media_type="audio/mpeg",
+                        headers={"X-TTS-Characters": str(len(text)), "X-TTS-Provider": "edge-tts"})
+    except httpx.HTTPStatusError as e:
+        detail = str(e)
+        try: detail = e.response.text[:300]
+        except Exception: pass
+        return JSONResponse({"error": f"Edge-TTS error: {detail}"}, 502)
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, 500)
+
+
+@app.get("/api/tts/edge/voices")
+async def api_tts_edge_voices():
+    """Fetch available voices from local Edge-TTS container."""
+    conn = _get_edge_tts_conn()
+    if not conn:
+        return JSONResponse({"voices": []})
+    base_url = conn['url'].rstrip('/')
+    headers = {"Authorization": f"Bearer {conn.get('api_key', '')}"}
+    VOICE_ENGINE_MAP = {
+        "tts-1": {"engine": "piper", "label": "Piper (CPU · fast)"},
+        "tts-1-hd": {"engine": "xtts", "label": "XTTS v2 (GPU · HD)"},
+    }
+    default_voices = {
+        "tts-1": ["alloy", "echo", "echo-alt", "fable", "onyx", "nova", "shimmer"],
+        "tts-1-hd": ["alloy", "alloy-alt", "echo", "fable", "onyx", "nova", "shimmer"],
+    }
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.get(f"{base_url}/v1/models", headers=headers)
+            resp.raise_for_status()
+            models_data = resp.json()
+        voices = []
+        for m in models_data.get("data", []):
+            mid = m["id"]
+            ei = VOICE_ENGINE_MAP.get(mid, {"engine": "unknown", "label": mid})
+            for vn in default_voices.get(mid, []):
+                voices.append({"voice_id": vn, "name": vn, "model": mid, "engine": ei["engine"], "engine_label": ei["label"]})
+        return JSONResponse({"voices": voices})
+    except Exception as e:
+        return JSONResponse({"voices": [], "error": str(e)})
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  STT API (Whisper)
+# ═══════════════════════════════════════════════════════════════════
+
+def _get_whisper_conn():
+    """Return the first enabled whisper connection or None."""
+    for c in _load_connections().get("connections", []):
+        if c.get("provider") == "whisper" and c.get("enabled", True):
+            return c
+    return None
+
+
+@app.post("/api/stt/whisper")
+async def api_stt_whisper(request: Request):
+    """Transcribe uploaded audio via local Whisper container."""
+    conn = _get_whisper_conn()
+    if not conn:
+        return JSONResponse({"error": "No Whisper STT connection configured."}, 400)
+    form = await request.form()
+    audio_file = form.get("file")
+    model = form.get("model", "tiny")
+    language = form.get("language", "en")
+    if not audio_file:
+        return JSONResponse({"error": "No audio file provided"}, 400)
+    audio_bytes = await audio_file.read()
+    filename = getattr(audio_file, 'filename', 'audio.webm') or 'audio.webm'
+    url = f"{conn['url'].rstrip('/')}/v1/audio/transcriptions"
+    headers = {}
+    if conn.get('api_key'):
+        headers["Authorization"] = f"Bearer {conn['api_key']}"
+    try:
+        async with httpx.AsyncClient(timeout=120) as client:
+            resp = await client.post(url, files={"file": (filename, audio_bytes, "audio/webm")},
+                                     data={"model": model, "language": language}, headers=headers)
+            resp.raise_for_status()
+            data = resp.json()
+        return JSONResponse({"text": data.get("text", "").strip(), "provider": "whisper", "model": model})
+    except httpx.HTTPStatusError as e:
+        detail = str(e)
+        try: detail = e.response.text[:300]
+        except Exception: pass
+        return JSONResponse({"error": f"Whisper error: {detail}"}, 502)
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, 500)
+
+
+@app.get("/api/stt/whisper/status")
+async def api_stt_whisper_status():
+    """Check if the Whisper container is reachable."""
+    conn = _get_whisper_conn()
+    if not conn:
+        return JSONResponse({"available": False, "reason": "No connection configured"})
+    try:
+        async with httpx.AsyncClient(timeout=5) as client:
+            resp = await client.get(f"{conn['url'].rstrip('/')}/v1/models")
+            resp.raise_for_status()
+        return JSONResponse({"available": True})
+    except Exception as e:
+        return JSONResponse({"available": False, "reason": str(e)})
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  BURST MODE API
+# ═══════════════════════════════════════════════════════════════════
+
+@app.post("/api/chat/run")
+async def api_chat_run(req: ChatRequest):
+    """Launch a burst session and return the session ID."""
+    session_id = str(uuid.uuid4())[:8]
+    chat_id = req.chat_id
+    if not chat_id:
+        chat = _create_new_chat(req.agent, req.mode, {
+            "burst_ticks": req.burst_ticks, "max_steps": req.max_steps,
+            "connection_id": req.connection_id,
+        })
+        chat_id = chat["id"]
+
+    if req.stimulus:
+        chat_data = _load_chat(chat_id)
+        if chat_data:
+            chat_data["messages"].append({"role": "user", "text": req.stimulus,
+                                          "time": datetime.now(timezone.utc).isoformat()})
+            chat_data["updated"] = datetime.now(timezone.utc).isoformat()
+            _save_chat(chat_id, chat_data)
+            _update_chat_index_entry(chat_id, {"updated": chat_data["updated"]})
+
+    cmd = [
+        sys.executable, "-m", "src.run_burst",
+        "--profile", req.agent,
+        "--burst-ticks", str(req.burst_ticks),
+        "--max-steps", str(req.max_steps),
+        "--stimulus", req.stimulus,
+    ]
+    env = os.environ.copy()
+    if req.connection_id:
+        for c in _load_connections().get("connections", []):
+            if c["id"] == req.connection_id:
+                if c.get("url"): env["OPENAI_BASE_URL"] = c["url"]
+                if c.get("api_key"): env["OPENAI_API_KEY"] = c["api_key"]
+                break
+    if req.model_override:
+        env["AGENT_MODEL_OVERRIDE"] = req.model_override
+
+    try:
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                text=True, cwd=str(_PROJECT_ROOT), env=env)
+        q: queue.Queue = queue.Queue()
+        def _reader(p, qu, cid):
+            try:
+                for line in iter(p.stdout.readline, ""):
+                    stripped = line.rstrip("\n")
+                    qu.put(stripped)
+                    _append_agent_line_to_chat(cid, stripped)
+            except Exception: pass
+            finally: qu.put(None)
+        t = threading.Thread(target=_reader, args=(proc, q, chat_id), daemon=True)
+        t.start()
+        _chat_sessions[session_id] = {
+            "process": proc, "queue": q, "chat_id": chat_id,
+            "agent": req.agent, "mode": req.mode, "stimulus": req.stimulus,
+            "started": datetime.now(timezone.utc).isoformat(),
+            "output_lines": [], "status": "running",
+        }
+        return JSONResponse({"session_id": session_id, "chat_id": chat_id, "status": "started"})
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, 500)
+
+
+@app.get("/api/chat/status/{session_id}")
+async def api_chat_status(session_id: str):
+    """Poll for output from a running chat session."""
+    session = _chat_sessions.get(session_id)
+    if not session:
+        return JSONResponse({"error": "Session not found"}, 404)
+    proc = session["process"]
+    q = session["queue"]
+    new_lines = []
+    while True:
+        try: line = q.get_nowait()
+        except queue.Empty: break
+        if line is None: break
+        new_lines.append(line)
+        session["output_lines"].append(line)
+    retcode = proc.poll()
+    if retcode is not None:
+        session["status"] = "completed" if retcode == 0 else "error"
+    return JSONResponse({
+        "session_id": session_id, "status": session["status"],
+        "new_lines": new_lines, "total_lines": len(session["output_lines"]),
+        "agent": session["agent"], "mode": session["mode"],
+    })
+
+
+@app.post("/api/chat/stop/{session_id}")
+async def api_chat_stop(session_id: str):
+    """Stop a running chat session."""
+    session = _chat_sessions.get(session_id)
+    if not session:
+        return JSONResponse({"error": "Session not found"}, 404)
+    proc = session["process"]
+    if proc.poll() is None:
+        proc.terminate()
+        session["status"] = "stopped"
+    return JSONResponse({"status": session["status"]})
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  OLLAMA MODELS
+# ═══════════════════════════════════════════════════════════════════
+
+@app.get("/api/ollama/models")
+async def api_ollama_models(url: str = Query("http://localhost:11434")):
+    """Fetch locally available Ollama models."""
+    models = []
+    try:
+        api_url = url.rstrip("/") + "/api/tags"
+        async with httpx.AsyncClient(timeout=5) as client:
+            resp = await client.get(api_url)
+            resp.raise_for_status()
+            data = resp.json()
+        for m in data.get("models", []):
+            name = m.get("name", "")
+            size_bytes = m.get("size", 0)
+            size_gb = round(size_bytes / (1024 ** 3), 1) if size_bytes else None
+            details = m.get("details", {})
+            models.append({
+                "name": name,
+                "size": f"{size_gb} GB" if size_gb else "unknown",
+                "family": details.get("family", ""),
+                "parameter_size": details.get("parameter_size", ""),
+                "quantization": details.get("quantization_level", ""),
+                "format": details.get("format", ""),
+                "modified_at": m.get("modified_at", ""),
+            })
+        return JSONResponse({"models": models, "source": "api", "status": "connected"})
+    except Exception:
+        pass
+    try:
+        ollama_exe = os.path.join(os.environ.get("LOCALAPPDATA", ""), "Programs", "Ollama", "ollama.exe")
+        if not os.path.exists(ollama_exe):
+            ollama_exe = "ollama"
+        result = subprocess.run([ollama_exe, "list"], capture_output=True, text=True, timeout=10)
+        if result.returncode == 0:
+            lines = result.stdout.strip().split("\n")
+            for line in lines[1:]:
+                parts = line.split()
+                if parts:
+                    name = parts[0]
+                    size_str = ""
+                    for i, p in enumerate(parts):
+                        if p.upper().endswith("GB") or p.upper().endswith("MB"):
+                            size_str = p; break
+                    models.append({"name": name, "size": size_str or "unknown", "family": "",
+                                   "parameter_size": "", "quantization": "", "format": "", "modified_at": ""})
+            return JSONResponse({"models": models, "source": "cli", "status": "connected"})
+    except Exception:
+        pass
+    return JSONResponse({"models": [], "source": "none", "status": "disconnected",
+                         "error": "Could not connect to Ollama."}, 503)
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  CHAT BACKGROUND UPLOAD
+# ═══════════════════════════════════════════════════════════════════
+
+@app.post("/api/settings/chat-background")
+async def api_upload_chat_background(file: UploadFile = File(...)):
+    """Upload a background image for the chat page."""
+    allowed = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".avif"}
+    ext = os.path.splitext(file.filename or "")[1].lower()
+    if ext not in allowed:
+        return JSONResponse({"error": f"File type {ext} not allowed"}, 400)
+    filename = f"chat_bg{ext}"
+    dest = _UPLOADS_DIR / filename
+    content = await file.read()
+    with open(dest, "wb") as f:
+        f.write(content)
+    settings = _load_settings()
+    settings["chat_background"] = f"/uploads/{filename}"
+    _save_settings(settings)
+    return JSONResponse({"url": settings["chat_background"], "status": "ok"})
+
+
+@app.delete("/api/settings/chat-background")
+async def api_delete_chat_background():
+    """Remove the chat background image."""
+    settings = _load_settings()
+    old_bg = settings.get("chat_background")
+    if old_bg:
+        old_path = _UPLOADS_DIR / os.path.basename(old_bg)
+        if old_path.exists():
+            old_path.unlink()
+    settings["chat_background"] = None
+    _save_settings(settings)
+    return JSONResponse({"status": "ok"})
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  CHAT EMOJI GENERATION
+# ═══════════════════════════════════════════════════════════════════
+
+@app.post("/api/chats/{chat_id}/emoji")
+async def api_generate_emoji(chat_id: str):
+    """Generate a single emoji that represents the chat topic."""
+    chat = _load_chat(chat_id)
+    if not chat:
+        return JSONResponse({"error": "Not found"}, 404)
+    title = chat.get("title", "New Chat")
+    if title == "New Chat":
+        return JSONResponse({"emoji": "💬"})
+    conn_data = _load_connections()
+    agent_name = chat.get("agent", "")
+    conn_id = conn_data.get("agent_connections", {}).get(agent_name)
+    conn = None
+    for c in conn_data.get("connections", []):
+        if c["id"] == conn_id and c.get("enabled"):
+            conn = c; break
+    if not conn:
+        for c in conn_data.get("connections", []):
+            if c.get("enabled") and c.get("api_key"):
+                conn = c; break
+    if not conn:
+        return JSONResponse({"emoji": "💬"})
+    try:
+        url = conn["url"].rstrip("/") + "/chat/completions"
+        headers = {"Content-Type": "application/json"}
+        if conn.get("api_key"):
+            headers["Authorization"] = f"Bearer {conn['api_key']}"
+        model = (conn.get("models") or ["gpt-4o-mini"])[0]
+        cheap = [m for m in (conn.get("models") or []) if "mini" in m or "flash" in m]
+        if cheap: model = cheap[0]
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.post(url, headers=headers, json={
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": "Given a chat title, return a SINGLE emoji that best represents the topic. Return ONLY one emoji character, nothing else."},
+                    {"role": "user", "content": title},
+                ],
+                "max_tokens": 5, "temperature": 0.3,
+            })
+            resp.raise_for_status()
+            emoji = resp.json()["choices"][0]["message"]["content"].strip()
+            if len(emoji) > 4: emoji = "💬"
+    except Exception:
+        emoji = "💬"
+    chat["emoji"] = emoji
+    _save_chat(chat_id, chat)
+    _update_chat_index_entry(chat_id, {"emoji": emoji})
+    return JSONResponse({"emoji": emoji})
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  CHAT FOLDERS & MOVE
+# ═══════════════════════════════════════════════════════════════════
+
+@app.post("/api/chats/folders")
+async def api_create_folder(folder: FolderCreate):
+    """Create a new chat folder."""
+    idx = _load_chat_index()
+    new_folder = {"id": str(uuid.uuid4())[:8], "name": folder.name, "order": len(idx.get("folders", []))}
+    idx.setdefault("folders", []).append(new_folder)
+    _save_chat_index(idx)
+    return JSONResponse(new_folder)
+
+
+@app.put("/api/chats/folders/{folder_id}")
+async def api_update_folder(folder_id: str, request: Request):
+    """Rename a folder."""
+    body = await request.json()
+    idx = _load_chat_index()
+    for f in idx.get("folders", []):
+        if f["id"] == folder_id:
+            if "name" in body: f["name"] = body["name"]
+            _save_chat_index(idx)
+            return JSONResponse(f)
+    return JSONResponse({"error": "Not found"}, 404)
+
+
+@app.delete("/api/chats/folders/{folder_id}")
+async def api_delete_folder(folder_id: str):
+    """Delete a folder (chats inside become un-foldered)."""
+    idx = _load_chat_index()
+    idx["folders"] = [f for f in idx.get("folders", []) if f["id"] != folder_id]
+    for c in idx.get("chats", []):
+        if c.get("folder_id") == folder_id:
+            c["folder_id"] = None
+    _save_chat_index(idx)
+    for c in idx.get("chats", []):
+        ch = _load_chat(c["id"])
+        if ch and ch.get("folder_id") == folder_id:
+            ch["folder_id"] = None
+            _save_chat(c["id"], ch)
+    return JSONResponse({"status": "deleted"})
+
+
+@app.put("/api/chats/{chat_id}/move")
+async def api_move_chat(chat_id: str, request: Request):
+    """Move a chat to a folder (or null to un-folder)."""
+    body = await request.json()
+    folder_id = body.get("folder_id")
+    chat = _load_chat(chat_id)
+    if not chat:
+        return JSONResponse({"error": "Not found"}, 404)
+    chat["folder_id"] = folder_id
+    _save_chat(chat_id, chat)
+    _update_chat_index_entry(chat_id, {"folder_id": folder_id})
+    return JSONResponse({"status": "moved", "folder_id": folder_id})
 
 
 # ═══════════════════════════════════════════════════════════════════
