@@ -294,6 +294,100 @@
     font-size: 0.75rem; padding: 0.125rem 0.25rem; transition: color 0.15s;
   }
   .ct-row-del:hover { color: #fca5a5; }
+
+  /* ── Tool Config: toggle, fields, grid, mode cards ────────────── */
+  .toggle-row {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.75rem 0; border-bottom: 1px solid rgba(42,42,58,0.4);
+  }
+  .toggle-row:last-child { border-bottom: none; }
+  .toggle-label { flex: 1; }
+  .toggle-label-title { font-size: 0.8125rem; font-weight: 600; color: #e4e4e7; }
+  .toggle-label-desc { font-size: 0.6875rem; color: #71717a; margin-top: 0.125rem; }
+  .toggle-switch {
+    position: relative; width: 2.5rem; height: 1.375rem;
+    cursor: pointer; flex-shrink: 0;
+  }
+  .toggle-switch input { opacity: 0; width: 0; height: 0; }
+  .toggle-track {
+    position: absolute; inset: 0; border-radius: 9999px;
+    background: rgba(42,42,58,0.8); transition: background 0.2s;
+  }
+  .toggle-track::after {
+    content: ''; position: absolute; top: 2px; left: 2px;
+    width: 1rem; height: 1rem; border-radius: 50%;
+    background: #71717a; transition: all 0.2s;
+  }
+  .toggle-switch input:checked + .toggle-track {
+    background: rgba(99,102,241,0.6);
+  }
+  .toggle-switch input:checked + .toggle-track::after {
+    transform: translateX(1.125rem); background: #a5b4fc;
+  }
+
+  .config-field { margin-bottom: 0.625rem; }
+  .config-field:last-child { margin-bottom: 0; }
+  .config-label {
+    font-size: 0.6875rem; font-weight: 600; color: #71717a;
+    text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.25rem;
+  }
+  .config-input {
+    width: 100%; background: rgba(24,24,27,0.8); border: 1px solid rgba(42,42,58,0.5);
+    border-radius: 0.375rem; padding: 0.375rem 0.625rem; font-size: 0.8125rem;
+    color: #d4d4d8; outline: none; transition: border-color 0.15s;
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+  }
+  .config-input:focus { border-color: rgba(99,102,241,0.5); }
+  .config-input-wide {
+    width: 100%; background: rgba(24,24,27,0.8); border: 1px solid rgba(42,42,58,0.5);
+    border-radius: 0.375rem; padding: 0.375rem 0.625rem; font-size: 0.8125rem;
+    color: #d4d4d8; outline: none; transition: border-color 0.15s;
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+  }
+  .config-input-wide:focus { border-color: rgba(99,102,241,0.5); }
+  .config-hint { font-size: 0.6875rem; color: #52525b; margin-top: 0.25rem; }
+
+  .config-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+  @media (max-width: 768px) { .config-grid { grid-template-columns: 1fr; } }
+  .mode-card {
+    background: rgba(24,24,27,0.5); border: 1px solid rgba(42,42,58,0.5);
+    border-radius: 0.625rem; padding: 1rem;
+  }
+  .mode-card-title {
+    font-size: 0.8125rem; font-weight: 700; color: #e4e4e7;
+    margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.375rem;
+  }
+  .mode-card-title .mode-icon { font-size: 0.75rem; }
+
+  .meta-chip.configurable { background: rgba(251,191,36,0.12); color: #fbbf24; }
+
+  /* ── About section ─────────────────────────────────────────────── */
+  .about-text { font-size: 0.8125rem; color: #a1a1aa; line-height: 1.65; margin-bottom: 0.75rem; }
+  .about-text:last-child { margin-bottom: 0; }
+  .about-sub {
+    font-size: 0.6875rem; font-weight: 700; color: #71717a;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    margin: 1rem 0 0.5rem; padding-top: 0.75rem;
+    border-top: 1px solid rgba(42,42,58,0.4);
+  }
+  .about-sub:first-child { margin-top: 0; padding-top: 0; border-top: none; }
+  .about-commands { display: flex; flex-direction: column; gap: 0.375rem; }
+  .about-cmd {
+    display: flex; align-items: flex-start; gap: 0.625rem;
+    padding: 0.5rem 0.75rem; border-radius: 0.5rem;
+    background: rgba(24,24,27,0.5); border: 1px solid rgba(42,42,58,0.4);
+  }
+  .about-cmd-name {
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+    font-size: 0.75rem; font-weight: 700; color: #818cf8;
+    white-space: nowrap; min-width: 5.5rem; padding-top: 0.0625rem;
+  }
+  .about-cmd-desc { font-size: 0.75rem; color: #a1a1aa; line-height: 1.5; }
+  .about-cmd-desc code {
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+    font-size: 0.6875rem; color: #22d3ee; background: rgba(34,211,238,0.08);
+    padding: 0.0625rem 0.3rem; border-radius: 0.1875rem;
+  }
 </style>
 
 <div class="tools-shell p-6 md:p-10">
@@ -359,6 +453,9 @@
           <div class="tool-card-desc">{{ tool.description }}</div>
           <div class="tool-card-meta">
             <span class="meta-chip params">{{ tool.parameters|length }} param{{ "s" if tool.parameters|length != 1 }}</span>
+            {% if tool.name == 'web_search' %}
+            <span class="meta-chip configurable">&#9881; Configurable</span>
+            {% endif %}
             <span class="meta-chip status-{{ tool.status }}">
               {% if tool.status == 'ready' %}&#10004; Ready{% elif tool.status == 'planned' %}&#9678; Planned{% else %}&#9671; Concept{% endif %}
             </span>
@@ -437,23 +534,353 @@
     </div>
     {% endif %}
 
-    <!-- Info Section -->
+    <!-- About Section -->
     <div class="section-card">
-      <div class="section-title"><span class="sec-icon">&#8505;&#65039;</span> Integration Status</div>
-      <div style="font-size:0.8125rem;color:#a1a1aa;line-height:1.6;">
-        {% if tool.status == 'ready' %}
-          This tool is implemented and ready to use. It will be dispatched when an agent calls it during a conversation.
-        {% elif tool.status == 'planned' %}
-          This tool is planned for implementation. The interface definition is ready &mdash; the backend handler can be uploaded when needed.
-        {% else %}
-          This tool is in the concept stage. The parameter schema may change as the design evolves.
-        {% endif %}
+      <div class="section-title"><span class="sec-icon">&#128218;</span> About</div>
+
+      {% if tool.name == 'web_search' %}
+      <div class="about-text">
+        Provides internet access through a self-hosted SearXNG instance. The agent can search for information or scrape a specific URL. A knowledge gate can require the agent to justify why it needs the internet before executing.
+      </div>
+      <div class="about-sub">Commands</div>
+      <div class="about-commands">
+        <div class="about-cmd">
+          <span class="about-cmd-name">search</span>
+          <span class="about-cmd-desc">Query the web via SearXNG. Requires <code>query</code> and <code>reason</code>. Optional <code>mode</code> (<code>fast</code>, <code>normal</code>, <code>deep</code>) controls how many pages are scraped and how much text is returned. The <code>knowledge_check</code> field lets the agent state what it already knows.</span>
+        </div>
+        <div class="about-cmd">
+          <span class="about-cmd-name">scrape</span>
+          <span class="about-cmd-desc">Fetch and extract readable content from a specific <code>url</code>. Returns the page text trimmed to the active mode&rsquo;s word limit. Useful when the agent already has a link and needs the full content.</span>
+        </div>
+      </div>
+      <div class="about-sub">How the AI uses this tool</div>
+      <div class="about-text">
+        When the agent encounters a question it cannot answer from memory, it calls <code>search</code> with a query and a reason. If the knowledge gate is enabled and no reason is provided, the tool bounces the request back, telling the agent to use its own knowledge first. On success, the agent receives a list of results with titles, URLs, and scraped snippets. It can then call <code>scrape</code> on any URL to get the full page content.
+      </div>
+
+      {% elif tool.name == 'email' %}
+      <div class="about-text">
+        Draft, preview, and send emails through SMTP. A confirmation gate ensures the user can review every email before it is actually sent.
+      </div>
+      <div class="about-sub">Commands</div>
+      <div class="about-commands">
+        <div class="about-cmd">
+          <span class="about-cmd-name">send</span>
+          <span class="about-cmd-desc">Compose an email with <code>to</code>, <code>subject</code>, and <code>body</code>. The first call returns a preview. The agent must call again with <code>confirmation=&quot;confirmed&quot;</code> after user approval to actually send.</span>
+        </div>
+      </div>
+      <div class="about-sub">How the AI uses this tool</div>
+      <div class="about-text">
+        When asked to send an email, the agent drafts the message and calls the tool. The tool returns a preview for the user to review. Only after explicit approval does the agent re-call with the confirmation flag to dispatch the email via SMTP.
+      </div>
+
+      {% elif tool.name == 'memory' %}
+      <div class="about-text">
+        Read from and write to the agent&rsquo;s persistent FAISS-backed memory vault. Memories are embedded with <code>all-mpnet-base-v2</code> and stored in <code>vault.jsonl</code> for semantic retrieval.
+      </div>
+      <div class="about-sub">Commands</div>
+      <div class="about-commands">
+        <div class="about-cmd">
+          <span class="about-cmd-name">search</span>
+          <span class="about-cmd-desc">Semantic search across all stored memories. Provide <code>text</code> as the query. Returns the top matching entries with similarity scores.</span>
+        </div>
+        <div class="about-cmd">
+          <span class="about-cmd-name">add</span>
+          <span class="about-cmd-desc">Store a new memory. Requires <code>text</code> and an optional <code>category</code> (bio, preference, project, lore, session, meta, health, self, other).</span>
+        </div>
+        <div class="about-cmd">
+          <span class="about-cmd-name">delete</span>
+          <span class="about-cmd-desc">Remove a memory entry by its ID.</span>
+        </div>
+        <div class="about-cmd">
+          <span class="about-cmd-name">list</span>
+          <span class="about-cmd-desc">List all stored memories, optionally filtered by <code>category</code>.</span>
+        </div>
+      </div>
+      <div class="about-sub">How the AI uses this tool</div>
+      <div class="about-text">
+        The agent searches memory at the start of conversations to recall context about the user. During chat, it adds important facts, preferences, or project details to the vault so they persist across sessions.
+      </div>
+
+      {% elif tool.name == 'echo' %}
+      <div class="about-text">
+        A minimal diagnostic tool that returns whatever text is sent to it. Used to verify that the tool dispatch pipeline is working correctly end-to-end.
+      </div>
+      <div class="about-sub">Commands</div>
+      <div class="about-commands">
+        <div class="about-cmd">
+          <span class="about-cmd-name">echo</span>
+          <span class="about-cmd-desc">Send <code>text</code> and receive it back unchanged. No side effects.</span>
+        </div>
+      </div>
+      <div class="about-sub">How the AI uses this tool</div>
+      <div class="about-text">
+        The agent does not call this tool during normal conversations. It exists for operators to test that tool calls are being dispatched and returned correctly through the execution loop.
+      </div>
+
+      {% elif tool.name == 'directives' %}
+      <div class="about-text">
+        Manage runtime directives &mdash; the living governance documents that shape agent behavior, boundaries, and personality. Directives are loaded per-agent from markdown files.
+      </div>
+      <div class="about-sub">Commands</div>
+      <div class="about-commands">
+        <div class="about-cmd">
+          <span class="about-cmd-name">read</span>
+          <span class="about-cmd-desc">Read a specific directive by <code>directive_id</code>. Returns the full markdown content.</span>
+        </div>
+        <div class="about-cmd">
+          <span class="about-cmd-name">update</span>
+          <span class="about-cmd-desc">Update a directive&rsquo;s <code>content</code>. Requires <code>directive_id</code> and the new markdown text.</span>
+        </div>
+        <div class="about-cmd">
+          <span class="about-cmd-name">list</span>
+          <span class="about-cmd-desc">List all available directives with their IDs and summaries.</span>
+        </div>
+      </div>
+      <div class="about-sub">How the AI uses this tool</div>
+      <div class="about-text">
+        The agent reads its directives at startup to understand its behavioral boundaries. During a session, it may query directives to confirm whether an action is within scope or update them when the operator grants new permissions.
+      </div>
+
+      {% elif tool.name == 'task_inbox' %}
+      <div class="about-text">
+        A shared task queue that enables multi-agent coordination and operator-to-agent task assignment. Messages persist until cleared.
+      </div>
+      <div class="about-sub">Commands</div>
+      <div class="about-commands">
+        <div class="about-cmd">
+          <span class="about-cmd-name">read</span>
+          <span class="about-cmd-desc">Read all pending tasks from the inbox.</span>
+        </div>
+        <div class="about-cmd">
+          <span class="about-cmd-name">write</span>
+          <span class="about-cmd-desc">Post a new task <code>message</code> to the inbox for another agent or the operator to pick up.</span>
+        </div>
+        <div class="about-cmd">
+          <span class="about-cmd-name">clear</span>
+          <span class="about-cmd-desc">Clear all tasks from the inbox after they have been processed.</span>
+        </div>
+      </div>
+      <div class="about-sub">How the AI uses this tool</div>
+      <div class="about-text">
+        When an agent identifies a task outside its expertise, it writes a message to the inbox for the appropriate agent. Agents can also check the inbox at the start of each session for operator-assigned work.
+      </div>
+
+      {% elif tool.name == 'continuation_update' %}
+      <div class="about-text">
+        Signals progress during multi-step workflows. Allows the agent to post status updates so the runtime can track long-running operations and decide whether to continue, pause, or escalate.
+      </div>
+      <div class="about-sub">Commands</div>
+      <div class="about-commands">
+        <div class="about-cmd">
+          <span class="about-cmd-name">update</span>
+          <span class="about-cmd-desc">Post an <code>update</code> message describing current progress. Optional <code>status</code> field: <code>in_progress</code>, <code>completed</code>, or <code>blocked</code>.</span>
+        </div>
+      </div>
+      <div class="about-sub">How the AI uses this tool</div>
+      <div class="about-text">
+        During multi-step tasks (research, code generation, analysis), the agent calls this tool between steps to report what it has done and what comes next. If it gets stuck, it sets status to <code>blocked</code> so the runtime can intervene.
+      </div>
+
+      {% elif tool.name == 'runtime_info' %}
+      <div class="about-text">
+        Introspection tool that lets the agent query its own runtime environment &mdash; loaded profiles, active tools, memory statistics, configuration, and uptime.
+      </div>
+      <div class="about-sub">Commands</div>
+      <div class="about-commands">
+        <div class="about-cmd">
+          <span class="about-cmd-name">status</span>
+          <span class="about-cmd-desc">Returns runtime health: uptime, active agent, error counts.</span>
+        </div>
+        <div class="about-cmd">
+          <span class="about-cmd-name">config</span>
+          <span class="about-cmd-desc">Returns the current configuration: connections, model settings, feature flags.</span>
+        </div>
+        <div class="about-cmd">
+          <span class="about-cmd-name">tools</span>
+          <span class="about-cmd-desc">Lists all registered tools and their status (ready, planned, concept).</span>
+        </div>
+        <div class="about-cmd">
+          <span class="about-cmd-name">memory</span>
+          <span class="about-cmd-desc">Returns memory vault statistics: entry count, index size, categories.</span>
+        </div>
+        <div class="about-cmd">
+          <span class="about-cmd-name">all</span>
+          <span class="about-cmd-desc">Returns everything above in a single response.</span>
+        </div>
+      </div>
+      <div class="about-sub">How the AI uses this tool</div>
+      <div class="about-text">
+        The agent can query this tool to understand its own capabilities before attempting an action, or to answer user questions about the system&rsquo;s state and configuration.
+      </div>
+
+      {% elif tool.name == 'trent_inbox' %}
+      <div class="about-text">
+        A direct communication channel to Trent (the operator). Used when the agent needs human input, wants to flag something important, or requires approval for a sensitive action.
+      </div>
+      <div class="about-sub">Commands</div>
+      <div class="about-commands">
+        <div class="about-cmd">
+          <span class="about-cmd-name">message</span>
+          <span class="about-cmd-desc">Send a <code>message</code> to the operator. Optional <code>priority</code>: <code>low</code>, <code>normal</code>, <code>high</code>, or <code>critical</code>.</span>
+        </div>
+      </div>
+      <div class="about-sub">How the AI uses this tool</div>
+      <div class="about-text">
+        When the agent encounters a decision it cannot make alone &mdash; approving a purchase, confirming a sensitive action, or reporting an unexpected error &mdash; it sends a message to the operator&rsquo;s inbox with the appropriate priority level.
+      </div>
+
+      {% elif tool.name == 'computer_use' %}
+      <div class="about-text">
+        Desktop automation tool that gives the agent direct control over the computer &mdash; taking screenshots, moving the mouse, clicking, typing, and pressing keys.
+      </div>
+      <div class="about-sub">Commands</div>
+      <div class="about-commands">
+        <div class="about-cmd">
+          <span class="about-cmd-name">screenshot</span>
+          <span class="about-cmd-desc">Capture the current screen. Returns an image the agent can analyze.</span>
+        </div>
+        <div class="about-cmd">
+          <span class="about-cmd-name">click</span>
+          <span class="about-cmd-desc">Click at coordinates (<code>x</code>, <code>y</code>) on screen.</span>
+        </div>
+        <div class="about-cmd">
+          <span class="about-cmd-name">type</span>
+          <span class="about-cmd-desc">Type <code>text</code> at the current cursor position.</span>
+        </div>
+        <div class="about-cmd">
+          <span class="about-cmd-name">move</span>
+          <span class="about-cmd-desc">Move the mouse cursor to (<code>x</code>, <code>y</code>) without clicking.</span>
+        </div>
+        <div class="about-cmd">
+          <span class="about-cmd-name">scroll</span>
+          <span class="about-cmd-desc">Scroll the mouse wheel at the current position.</span>
+        </div>
+        <div class="about-cmd">
+          <span class="about-cmd-name">key</span>
+          <span class="about-cmd-desc">Press a keyboard key or combination (e.g. <code>ctrl+c</code>, <code>enter</code>).</span>
+        </div>
+      </div>
+      <div class="about-sub">How the AI uses this tool</div>
+      <div class="about-text">
+        The agent takes a screenshot to see the current state, identifies UI elements, then issues click/type/key commands to interact with desktop applications. It loops screenshot &rarr; action &rarr; screenshot to verify each step succeeded.
+      </div>
+
+      {% elif tool.name == 'cost_tracker' %}
+      <div class="about-text">
+        Manages token pricing and tracks spending across all LLM API calls. The agent can query costs, update per-model rates, and monitor budget usage in real time.
+      </div>
+      <div class="about-sub">Commands</div>
+      <div class="about-commands">
+        <div class="about-cmd">
+          <span class="about-cmd-name">get_pricing</span>
+          <span class="about-cmd-desc">Get current pricing for a <code>provider</code> and <code>model</code>.</span>
+        </div>
+        <div class="about-cmd">
+          <span class="about-cmd-name">set_pricing</span>
+          <span class="about-cmd-desc">Update per-million-token rates for a specific model.</span>
+        </div>
+        <div class="about-cmd">
+          <span class="about-cmd-name">list_models</span>
+          <span class="about-cmd-desc">List all models with configured pricing.</span>
+        </div>
+        <div class="about-cmd">
+          <span class="about-cmd-name">cost_summary</span>
+          <span class="about-cmd-desc">Aggregate spending for a <code>period</code>: today, this_week, this_month, or all_time.</span>
+        </div>
+        <div class="about-cmd">
+          <span class="about-cmd-name">cost_log</span>
+          <span class="about-cmd-desc">Return the recent cost event log with per-call breakdowns.</span>
+        </div>
+        <div class="about-cmd">
+          <span class="about-cmd-name">session_cost</span>
+          <span class="about-cmd-desc">Get the running cost total for the current session only.</span>
+        </div>
+      </div>
+      <div class="about-sub">How the AI uses this tool</div>
+      <div class="about-text">
+        The agent may check session cost or budget remaining before performing expensive operations. It can also report spending summaries to the user on request.
+      </div>
+
+      {% else %}
+      <div class="about-text">
+        {{ tool.description }}
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Configurable Settings (web_search only) -->
+    {% if tool.name == 'web_search' %}
+    <div class="section-card">
+      <div class="section-title"><span class="sec-icon">&#129504;</span> Knowledge Gate</div>
+      <div class="toggle-row">
+        <div class="toggle-label">
+          <div class="toggle-label-title">Require Justification</div>
+          <div class="toggle-label-desc">
+            When enabled, the agent must explain what it already knows and WHY it needs
+            the internet before executing a search. Searches without justification are
+            bounced back, telling the agent to use its own knowledge first.
+          </div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="cfg-require-justification"
+                 {% if web_search_config.require_justification %}checked{% endif %}>
+          <span class="toggle-track"></span>
+        </label>
       </div>
     </div>
+
+    <div class="section-card">
+      <div class="section-title"><span class="sec-icon">&#9881;</span> Configuration</div>
+
+      <!-- SearXNG URL -->
+      <div class="config-field" style="margin-bottom:1rem;">
+        <div class="config-label">SearXNG URL</div>
+        <input type="text" class="config-input-wide" id="cfg-searxng-url"
+               value="{{ web_search_config.searxng_url }}"
+               placeholder="http://localhost:3000/search">
+        <div class="config-hint">The SearXNG instance endpoint for web searches</div>
+      </div>
+
+      <!-- Mode Presets -->
+      <div class="config-label" style="margin-bottom:0.75rem;">Mode Presets</div>
+      <div class="config-grid">
+        {% for mode_name in ['fast', 'normal', 'deep'] %}
+        {% set mode = web_search_config.modes[mode_name] %}
+        <div class="mode-card">
+          <div class="mode-card-title">
+            <span class="mode-icon">
+              {% if mode_name == 'fast' %}&#9889;{% elif mode_name == 'normal' %}&#9878;{% else %}&#128300;{% endif %}
+            </span>
+            {{ mode_name|capitalize }}
+          </div>
+          <div class="config-field">
+            <div class="config-label">Pages to scrape</div>
+            <input type="number" class="config-input" id="cfg-{{ mode_name }}-pages"
+                   value="{{ mode.pages }}" min="1" max="20">
+          </div>
+          <div class="config-field">
+            <div class="config-label">Results to return</div>
+            <input type="number" class="config-input" id="cfg-{{ mode_name }}-return"
+                   value="{{ mode.return_count }}" min="1" max="20">
+          </div>
+          <div class="config-field">
+            <div class="config-label">Word limit</div>
+            <input type="number" class="config-input" id="cfg-{{ mode_name }}-words"
+                   value="{{ mode.word_limit }}" min="100" max="10000" step="100">
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
 
     <!-- Action Bar -->
     <div class="action-bar">
       <button class="btn btn-secondary" onclick="showToolsList()">&larr; Back to Tools</button>
+      {% if tool.name == 'web_search' %}
+      <button class="btn btn-primary" onclick="saveToolConfig('web_search')">Save Configuration</button>
+      {% endif %}
     </div>
   </div>
   {% endif %}
@@ -640,6 +1067,44 @@
       (isError ? 'background:#ef4444;' : 'background:#6366f1;');
     document.body.appendChild(t);
     setTimeout(() => t.remove(), 2500);
+  }
+
+  /* ── Save tool config ─────────────────────────────────────────── */
+  async function saveToolConfig(toolName) {
+    let url, body;
+
+    if (toolName === 'web_search') {
+      url = '/api/tools/web_search/config';
+      body = {
+        searxng_url: document.getElementById('cfg-searxng-url').value.trim(),
+        require_justification: document.getElementById('cfg-require-justification').checked,
+        modes: {}
+      };
+      for (const mode of ['fast', 'normal', 'deep']) {
+        body.modes[mode] = {
+          pages:        parseInt(document.getElementById('cfg-' + mode + '-pages').value)  || 2,
+          return_count: parseInt(document.getElementById('cfg-' + mode + '-return').value) || 2,
+          word_limit:   parseInt(document.getElementById('cfg-' + mode + '-words').value)  || 1500,
+        };
+      }
+    } else {
+      return;
+    }
+
+    try {
+      const resp = await fetch(url, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (resp.ok) {
+        showToast(toolName + ' config saved');
+      } else {
+        showToast('Save failed', true);
+      }
+    } catch (e) {
+      showToast('Save failed: ' + e.message, true);
+    }
   }
 
   /* ═══ Cost Tracker — Pricing Management ═══════════════════════ */
