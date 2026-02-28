@@ -532,6 +532,25 @@ async def page_profiles(request: Request):
         for md_file in sorted((_PROJECT_ROOT / "notes").glob("*.md")) if (_PROJECT_ROOT / "notes").exists() else []:
             agent_notes.append({"file": md_file.name, "attached": True, "mode": "always"})
         builtin_notes[name] = agent_notes
+    # Gather all registered tool names for the tools toggle section
+    try:
+        from src.tools.registry import list_registered_tools
+        all_tool_names = list_registered_tools()
+    except Exception:
+        all_tool_names = ["continuation_update", "cost_tracker", "directives", "echo", "memory", "web_search"]
+    # Tool display info from catalogue
+    tool_display = {}
+    for t in _TOOL_CATALOGUE:
+        tool_display[t["name"]] = {
+            "icon": t.get("icon", "🔧"),
+            "display_name": t.get("display_name", t["name"]),
+            "description": t.get("description", "")[:100],
+            "status": t.get("status", "planned"),
+        }
+    # Also include registry tools not in the catalogue
+    for tn in all_tool_names:
+        if tn not in tool_display:
+            tool_display[tn] = {"icon": "🔧", "display_name": tn, "description": "", "status": "ready"}
     return templates.TemplateResponse("profiles.html", {
         "request": request, "page": "profiles",
         "agents": agents, "agent_data": agent_data,
@@ -540,6 +559,8 @@ async def page_profiles(request: Request):
         "user_profile": settings.get("user_profile", {}),
         "connections": [c for c in store.get("connections", []) if c.get("enabled")],
         "builtin_notes": builtin_notes,
+        "all_tool_names": all_tool_names,
+        "tool_display": tool_display,
     })
 
 @app.get("/vault", response_class=HTMLResponse)
@@ -1289,14 +1310,21 @@ async def api_profile_config(name: str, request: Request):
     """Update individual config fields for an agent (display_name, description, model, etc.)."""
     body = await request.json()
     cfg = _get_agent_config(name)
-    for key in ("display_name", "description", "model", "allowed_tools"):
+    for key in ("display_name", "description", "model", "allowed_tools",
+                "voice_id", "edge_voice", "tts_paid_provider", "tts_free_provider"):
         if key in body:
             cfg[key] = body[key]
-    # Also persist model to profile yaml for compatibility
+    # Also persist model + voice + allowed_tools to profile yaml for compatibility
+    profile = _load_profile(name)
     if "model" in body:
-        profile = _load_profile(name)
         profile["model"] = body["model"]
-        _save_profile(name, profile)
+    if "voice_id" in body:
+        profile["voice_id"] = body["voice_id"]
+    if "edge_voice" in body:
+        profile["edge_voice"] = body["edge_voice"]
+    if "allowed_tools" in body:
+        profile["allowed_tools"] = body["allowed_tools"]
+    _save_profile(name, profile)
     # Also persist system_prompt_text if sent
     if "system_prompt_text" in body:
         _save_system_prompt(name, body["system_prompt_text"])
