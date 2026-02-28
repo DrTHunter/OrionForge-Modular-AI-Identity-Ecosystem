@@ -122,39 +122,126 @@
   /* ── Agent List ── */
   .list-header {
     display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
   }
   .list-header h2 { font-size: 1.25rem; font-weight: 700; color: #fff; }
+
   .agents-grid {
-    display: grid; grid-template-columns: repeat(2, 1fr);
-    gap: 0.75rem; margin-bottom: 1.5rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.25rem; margin-bottom: 2rem;
   }
   @media (max-width: 768px) { .agents-grid { grid-template-columns: 1fr; } }
+
+  /* ── "Meet the Agent" style card ── */
   .agent-card {
-    background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 0.75rem;
-    padding: 1rem 1.25rem; cursor: pointer; transition: all 0.15s;
-    display: flex; align-items: center; gap: 1rem; position: relative;
+    background: rgba(13, 18, 36, 0.7);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 1rem;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    display: flex; flex-direction: column;
   }
-  .agent-card:hover { border-color: rgba(99,102,241,0.4); transform: translateY(-2px); }
-  .agent-card-avatar {
-    width: 3rem; height: 3rem; border-radius: 50%;
+  .agent-card:hover {
+    border-color: rgba(99,102,241,0.3);
+    transform: translateY(-6px);
+    box-shadow: 0 20px 60px rgba(99, 102, 241, 0.15);
+  }
+
+  /* Header / picture block */
+  .agent-card-header {
+    height: 130px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 1.25rem; font-weight: 800; color: #fff; flex-shrink: 0;
+    position: relative; overflow: hidden;
   }
-  .agent-card-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
-  .agent-card-info { flex: 1; min-width: 0; }
-  .agent-card-name { font-size: 0.9375rem; font-weight: 700; color: #e4e4e7; text-transform: capitalize; }
+  .agent-card-header::before {
+    content: ''; position: absolute; inset: 0;
+    opacity: 0.35;
+  }
+  .agent-card-header .agent-icon {
+    font-size: 3rem; z-index: 2; position: relative;
+    filter: drop-shadow(0 0 20px currentColor);
+    color: inherit;
+  }
+  .agent-card-header .agent-photo {
+    width: 100%; height: 100%;
+    object-fit: cover; position: absolute; inset: 0;
+    z-index: 2;
+  }
+  /* Status badge */
+  .agent-card-status {
+    position: absolute; top: 12px; right: 12px;
+    display: flex; align-items: center; gap: 5px;
+    padding: 3px 10px; border-radius: 50px;
+    font-size: 0.65rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    z-index: 3;
+    background: rgba(34,197,94,0.15); color: #4ade80;
+    border: 1px solid rgba(34,197,94,0.3);
+  }
+  .agent-card-status::before {
+    content: ''; width: 5px; height: 5px;
+    border-radius: 50%; background: #4ade80;
+    animation: agentPulse 2s infinite;
+  }
+  @keyframes agentPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* Body */
+  .agent-card-body {
+    padding: 1.25rem 1.25rem 1rem; flex: 1;
+    display: flex; flex-direction: column;
+  }
+  .agent-card-name {
+    font-size: 1.15rem; font-weight: 700; color: #f1f5f9;
+    text-transform: capitalize; margin-bottom: 0.2rem;
+  }
+  .agent-card-role {
+    font-size: 0.8rem; color: #818cf8; font-weight: 500;
+    margin-bottom: 0.6rem;
+  }
   .agent-card-desc {
-    font-size: 0.75rem; color: #71717a; margin-top: 0.125rem;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    font-size: 0.85rem; color: rgba(241,245,249,0.55);
+    line-height: 1.55; margin-bottom: 0.875rem;
+    display: -webkit-box; -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical; overflow: hidden;
+    flex: 1;
   }
-  .agent-card-model {
-    font-size: 0.6875rem; color: #52525b; margin-top: 0.25rem;
+
+  /* Footer with LLM bubble */
+  .agent-card-footer {
+    display: flex; align-items: center; gap: 0.5rem;
+    margin-top: auto; padding-top: 0.5rem;
+  }
+  .agent-tag-llm {
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    padding: 4px 12px; border-radius: 50px;
+    font-size: 0.7rem; font-weight: 600;
+    background: rgba(34,211,238,0.1); color: #22d3ee;
+    border: 1px solid rgba(34,211,238,0.15);
     font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+    letter-spacing: -0.01em;
   }
+  .agent-tag-llm i {
+    font-size: 0.6rem; opacity: 0.7;
+  }
+  .agent-tag-tools {
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    padding: 4px 10px; border-radius: 50px;
+    font-size: 0.65rem; font-weight: 600;
+    background: rgba(99,102,241,0.1); color: #818cf8;
+    border: 1px solid rgba(99,102,241,0.15);
+  }
+
   .agent-add-card {
-    border-style: dashed; border-color: #3a3a4a; color: #52525b;
+    border: 1px dashed #3a3a4a; color: #52525b;
     display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+    min-height: 220px; border-radius: 1rem; cursor: pointer;
+    transition: all 0.2s; font-size: 0.9rem; font-weight: 600;
   }
   .agent-add-card:hover { border-color: #6366f1; color: #818cf8; }
 
@@ -162,19 +249,39 @@
   .editor-view { display: none; animation: viewFade 0.2s ease; }
   .editor-view.active { display: block; }
 
-  .profile-card {
-    background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 0.75rem;
-    padding: 1.5rem 2rem; margin-bottom: 1.25rem;
+  /* ── Modal-style agent detail panel (matches website popup) ── */
+  .agent-detail-panel {
+    background: #0d1224;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 1rem;
+    overflow: hidden;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.3);
+    margin-bottom: 1.25rem;
+    animation: modalIn 0.3s ease-out;
   }
-  .profile-top {
-    display: flex; align-items: center; gap: 1.5rem; margin-bottom: 1.25rem;
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.97) translateY(8px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  /* Modal header — gradient banner with avatar + name */
+  .agent-detail-header {
+    padding: 2rem 2rem 1.5rem;
+    position: relative;
+    overflow: hidden;
+    display: flex; align-items: flex-start; gap: 1.5rem;
+  }
+  .agent-detail-header::before {
+    content: ''; position: absolute; inset: 0;
+    opacity: 0.35; z-index: 0;
   }
   .prof-avatar {
     width: 5rem; height: 5rem; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     font-size: 2rem; font-weight: 800; color: #fff;
     flex-shrink: 0; position: relative; cursor: pointer;
-    transition: transform 0.15s;
+    transition: transform 0.15s; z-index: 2;
+    border: 3px solid rgba(255,255,255,0.15);
   }
   .prof-avatar:hover { transform: scale(1.06); }
   .prof-avatar img {
@@ -187,50 +294,135 @@
     width: 1.5rem; height: 1.5rem; display: flex; align-items: center; justify-content: center;
     font-size: 0.625rem;
   }
-  .prof-info { flex: 0 1 50%; min-width: 0; }
+  .prof-header-info {
+    flex: 1; min-width: 0; z-index: 2;
+  }
   .prof-name-row {
     display: flex; align-items: center; gap: 1rem; margin-bottom: 0.25rem;
   }
   .prof-name-input {
     background: transparent; border: none; color: #fff;
-    font-size: 1.375rem; font-weight: 700; outline: none;
+    font-size: 1.5rem; font-weight: 800; outline: none;
     border-bottom: 1px solid transparent; transition: border-color 0.15s;
     padding: 0.125rem 0; width: 100%; max-width: 100%;
+    text-transform: capitalize;
   }
-  .prof-name-input:focus { border-bottom-color: #6366f1; }
+  .prof-name-input:focus { border-bottom-color: #818cf8; }
   .prof-desc-input {
-    background: transparent; border: none; color: #a1a1aa;
-    font-size: 0.8125rem; outline: none; padding: 0.2rem 0;
-    resize: none; line-height: 1.4; overflow: hidden;
+    background: transparent; border: none; color: rgba(241,245,249,0.6);
+    font-size: 0.875rem; outline: none; padding: 0.2rem 0;
+    resize: none; line-height: 1.6; overflow: hidden;
     font-family: inherit; width: 100%;
     min-height: 1.4em;
   }
   .prof-desc-input:focus { color: #d4d4d8; }
-  .prof-desc-input::placeholder { color: #71717a; }
+  .prof-desc-input::placeholder { color: rgba(241,245,249,0.35); }
 
-  /* ── Inline config selectors (right side) ── */
-  .prof-config-strip {
-    display: flex; align-items: flex-start; gap: 2rem;
-    flex-shrink: 0; margin-left: auto; padding-left: 1.5rem;
+  /* Modal body — sections below header */
+  .agent-detail-body {
+    padding: 1.5rem 2rem 2rem;
   }
-  .cfg-item { position: relative; }
-  .cfg-heading {
-    font-size: 0.625rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.06em; color: #52525b; margin-bottom: 0.25rem;
-    white-space: nowrap; display: flex; align-items: center; gap: 0.25rem;
+
+  /* Section title (matches website popup) */
+  .modal-section-title {
+    font-size: 0.8rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1.5px;
+    color: #818cf8; margin: 1.75rem 0 0.75rem;
   }
-  .cfg-heading.model-h { color: #71717a; }
-  .cfg-value {
-    font-size: 0.8125rem; color: #d4d4d8; cursor: pointer;
-    white-space: nowrap; max-width: 14rem;
-    overflow: hidden; text-overflow: ellipsis;
-    transition: color 0.15s;
+  .modal-section-title:first-child { margin-top: 0; }
+
+  /* Trait / tool tag pills */
+  .modal-traits { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .modal-trait {
+    padding: 6px 14px; border-radius: 50px;
+    font-size: 0.8rem; font-weight: 500;
+    background: rgba(99,102,241,0.08);
+    color: rgba(241,245,249,0.6);
+    border: 1px solid rgba(255,255,255,0.06);
+    transition: all 0.15s;
   }
-  .cfg-value:hover { color: #fff; }
-  .cfg-select {
+
+  /* ── Config grid (model, voice, etc.) ── */
+  .config-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;
+    margin-top: 0.5rem;
+  }
+  @media (max-width: 640px) { .config-grid { grid-template-columns: 1fr; } }
+  .config-cell {
+    padding: 0.875rem 1rem;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 0.625rem;
+    transition: border-color 0.15s;
+    position: relative;
+  }
+  .config-cell:hover { border-color: rgba(99,102,241,0.25); }
+  .config-cell-label {
+    font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.06em; color: rgba(241,245,249,0.35);
+    margin-bottom: 0.375rem; display: flex; align-items: center; gap: 0.3rem;
+  }
+  .config-cell-value {
+    font-size: 0.875rem; font-weight: 600; color: #f1f5f9;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .config-cell select {
     position: absolute; inset: 0; width: 100%; height: 100%;
     opacity: 0; cursor: pointer; z-index: 2;
   }
+
+  /* ── Tools toggles ── */
+  .tools-toggle-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 0.625rem; margin-top: 0.5rem;
+  }
+  .tool-toggle-card {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 0.625rem;
+    transition: all 0.15s;
+    cursor: pointer;
+  }
+  .tool-toggle-card:hover { border-color: rgba(99,102,241,0.25); }
+  .tool-toggle-card.enabled { border-color: rgba(99,102,241,0.35); background: rgba(99,102,241,0.05); }
+  .tool-toggle-icon {
+    font-size: 1.25rem; flex-shrink: 0;
+    width: 2.25rem; height: 2.25rem;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 0.5rem;
+  }
+  .tool-toggle-info { flex: 1; min-width: 0; }
+  .tool-toggle-name {
+    font-size: 0.8125rem; font-weight: 600; color: #f1f5f9;
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+  }
+  .tool-toggle-desc {
+    font-size: 0.7rem; color: rgba(241,245,249,0.4);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .tool-toggle-switch {
+    position: relative; width: 2.5rem; height: 1.25rem;
+    background: #27272a; border-radius: 9999px;
+    transition: background 0.2s; flex-shrink: 0;
+  }
+  .tool-toggle-switch.on { background: #6366f1; }
+  .tool-toggle-switch .knob {
+    position: absolute; top: 2px; left: 2px;
+    width: 1rem; height: 1rem; border-radius: 50%;
+    background: #fff; transition: transform 0.2s;
+  }
+  .tool-toggle-switch.on .knob { transform: translateX(1.25rem); }
+
+  .tool-status-badge {
+    font-size: 0.55rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.5px; padding: 1px 6px; border-radius: 50px;
+    flex-shrink: 0;
+  }
+  .tool-status-badge.ready { color: #4ade80; background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); }
+  .tool-status-badge.planned { color: #fbbf24; background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.2); }
+  .tool-status-badge.concept { color: #71717a; background: rgba(113,113,122,0.1); border: 1px solid rgba(113,113,122,0.2); }
 
   /* ── Section Cards ── */
   .section-card {
@@ -458,20 +650,41 @@
       {% set ad = agent_data[name] %}
       {% set av = avatar_map.get(name, {}) %}
       {% set agent_color = av.get('color', '#6366f1') %}
+      {% set model_name = ad.config.get('model', ad.profile.get('model', '')) %}
+      {% set tool_count = (ad.profile.get('allowed_tools', []) | length) %}
+      {% set profile_desc = ad.profile.get('description', '') %}
       <div class="agent-card" data-agent="{{ name }}" onclick="openEditor('{{ name }}')">
-        <div class="agent-card-avatar" style="background: {{ agent_color }};">
+        <!-- Header / picture block -->
+        <div class="agent-card-header"
+             style="background: linear-gradient(135deg, {{ agent_color }}33, {{ agent_color }}0d);">
           {% if av.get('image') %}
-          <img src="{{ av.image }}" alt="{{ name }}">
+          <img class="agent-photo" src="{{ av.image }}" alt="{{ name }}">
           {% else %}
-          {{ name[0] | upper }}
+          <i class="fas fa-user-astronaut agent-icon" style="color: {{ agent_color }};"></i>
           {% endif %}
+          <div class="agent-card-status">Active</div>
         </div>
-        <div class="agent-card-info">
+        <!-- Body -->
+        <div class="agent-card-body">
           <div class="agent-card-name">{{ ad.display_name or name }}</div>
-          {% if ad.description %}
-          <div class="agent-card-desc">{{ ad.description }}</div>
+          {% set summary = ad.description or profile_desc %}
+          {% if summary %}
+          <div class="agent-card-role">{{ summary[:80] }}{% if summary|length > 80 %}…{% endif %}</div>
           {% endif %}
-          <div class="agent-card-model">{{ ad.config.get('model', ad.profile.get('model', 'default')) }}</div>
+          {% set narrative = profile_desc if (ad.description and profile_desc) else '' %}
+          {% if narrative %}
+          <div class="agent-card-desc">{{ narrative }}</div>
+          {% elif not summary %}
+          <div class="agent-card-desc" style="color:#3f3f46; font-style:italic;">No description yet — click to configure.</div>
+          {% endif %}
+          <div class="agent-card-footer">
+            {% if model_name %}
+            <span class="agent-tag-llm"><i class="fas fa-microchip"></i> {{ model_name }}</span>
+            {% endif %}
+            {% if tool_count > 0 %}
+            <span class="agent-tag-tools">{{ tool_count }} tools</span>
+            {% endif %}
+          </div>
         </div>
       </div>
       {% endfor %}
@@ -485,11 +698,17 @@
   {% set agent_color = av.get('color', '#6366f1') %}
   {% set cfg = ad.config %}
   {% set current_model = cfg.get('model', ad.profile.get('model', '')) %}
+  {% set current_voice = cfg.get('voice_id', ad.profile.get('voice_id', '')) %}
+  {% set current_edge_voice = cfg.get('edge_voice', ad.profile.get('edge_voice', 'alloy')) %}
+  {% set current_tools = ad.profile.get('allowed_tools', []) %}
   <div class="editor-view" id="editor-{{ name }}">
 
-    <!-- Profile Card — avatar, name, description, color, model -->
-    <div class="profile-card">
-      <div class="profile-top">
+    <!-- ═══ Modal-style Agent Detail Panel ═══ -->
+    <div class="agent-detail-panel">
+
+      <!-- Header — gradient banner + avatar + name/desc -->
+      <div class="agent-detail-header"
+           style="background: linear-gradient(135deg, {{ agent_color }}22 0%, {{ agent_color }}08 60%, transparent 100%);">
         <div class="prof-avatar" id="avatar-{{ name }}"
              style="background: {{ agent_color }};"
              onclick="toggleAvatarMenu('{{ name }}', event)">
@@ -509,7 +728,7 @@
               ✕ Remove Picture
             </button>
           </div>
-          <!-- Color picker: top-left of avatar -->
+          <!-- Color picker -->
           <div class="color-picker-wrap" id="cpw-{{ name }}" style="position:absolute;top:-4px;left:-4px;z-index:10;" onclick="event.stopPropagation()">
             <div class="color-trigger" onclick="toggleColorDropdown('{{ name }}')" title="Change color"></div>
             <div class="color-dropdown" id="cd-{{ name }}">
@@ -528,7 +747,8 @@
             </div>
           </div>
         </div>
-        <div class="prof-info">
+
+        <div class="prof-header-info">
           <div class="prof-name-row">
             <input type="text" class="prof-name-input" id="name-{{ name }}"
                    value="{{ ad.display_name or name }}"
@@ -537,75 +757,144 @@
                    onchange="saveField('{{ name }}', 'display_name', this.value)">
           </div>
           <textarea class="prof-desc-input" id="desc-{{ name }}"
-                    placeholder="Short description…"
-                    maxlength="150" rows="2"
+                    placeholder="Short description — what does this agent do?"
+                    maxlength="200" rows="2"
                     oninput="autoResizeDesc(this)"
                     onchange="saveField('{{ name }}', 'description', this.value)">{{ ad.description or '' }}</textarea>
         </div>
+      </div>
 
-        <!-- Inline config: Model -->
-        <div class="prof-config-strip">
-          <div class="cfg-item">
-            <div class="cfg-heading model-h">MODEL</div>
-            <div class="cfg-value" id="model-display-{{ name }}">{{ current_model or '—' }}</div>
-            <select class="cfg-select" id="model-{{ name }}"
-                    data-current="{{ current_model }}"
+      <!-- Body — all config sections -->
+      <div class="agent-detail-body">
+
+        <!-- ── Default Model ── -->
+        <div class="modal-section-title">⚡ Default Model</div>
+        <div class="config-grid" style="grid-template-columns: 1fr;">
+          <div class="config-cell">
+            <div class="config-cell-label"><i class="fas fa-microchip" style="font-size:0.65rem;"></i> Preferred LLM</div>
+            <div class="config-cell-value" id="model-display-{{ name }}">{{ current_model or '— Select Model —' }}</div>
+            <select id="model-{{ name }}" data-current="{{ current_model }}"
                     onchange="onModelSelect('{{ name }}', this)">
               <option value="">— Select Model —</option>
             </select>
           </div>
         </div>
-      </div>
-    </div>
 
-    <!-- System Prompt -->
-    <div class="section-card">
-      <div class="section-title"><span class="sec-icon">✦</span> System Prompt</div>
-      <textarea class="textarea-prompt" id="prompt-{{ name }}"
-                placeholder="Write the system prompt for this agent…"
-                onchange="saveField('{{ name }}', 'system_prompt_text', this.value)"
-      >{{ ad.system_prompt }}</textarea>
-      <div class="field-hint">The foundational instruction set that defines behavior, personality, and role.</div>
-    </div>
+        <!-- ── TTS / Voice ── -->
+        <div class="modal-section-title">🔊 Voice & TTS</div>
+        <div class="config-grid">
+          <div class="config-cell">
+            <div class="config-cell-label">💰 Paid TTS (ElevenLabs)</div>
+            <div class="config-cell-value" id="voice-paid-display-{{ name }}">{{ current_voice or 'Not set' }}</div>
+            <select id="voice-paid-{{ name }}" data-current="{{ current_voice }}"
+                    onchange="onVoiceSelect('{{ name }}', 'paid', this)">
+              <option value="">— Select Voice —</option>
+            </select>
+          </div>
+          <div class="config-cell">
+            <div class="config-cell-label">🆓 Free TTS (Edge-TTS / Piper)</div>
+            <div class="config-cell-value" id="voice-free-display-{{ name }}">{{ current_edge_voice or 'alloy' }}</div>
+            <select id="voice-free-{{ name }}" data-current="{{ current_edge_voice }}"
+                    onchange="onVoiceSelect('{{ name }}', 'free', this)">
+              <option value="">— Select Voice —</option>
+              <optgroup label="Piper (CPU · fast)">
+                <option value="alloy" {{ 'selected' if current_edge_voice == 'alloy' else '' }}>alloy</option>
+                <option value="echo" {{ 'selected' if current_edge_voice == 'echo' else '' }}>echo</option>
+                <option value="echo-alt" {{ 'selected' if current_edge_voice == 'echo-alt' else '' }}>echo-alt</option>
+                <option value="fable" {{ 'selected' if current_edge_voice == 'fable' else '' }}>fable</option>
+                <option value="onyx" {{ 'selected' if current_edge_voice == 'onyx' else '' }}>onyx</option>
+                <option value="nova" {{ 'selected' if current_edge_voice == 'nova' else '' }}>nova</option>
+                <option value="shimmer" {{ 'selected' if current_edge_voice == 'shimmer' else '' }}>shimmer</option>
+              </optgroup>
+              <optgroup label="XTTS v2 (GPU · HD)">
+                <option value="alloy-hd" {{ 'selected' if current_edge_voice == 'alloy-hd' else '' }}>alloy (HD)</option>
+                <option value="echo-hd" {{ 'selected' if current_edge_voice == 'echo-hd' else '' }}>echo (HD)</option>
+                <option value="fable-hd" {{ 'selected' if current_edge_voice == 'fable-hd' else '' }}>fable (HD)</option>
+                <option value="onyx-hd" {{ 'selected' if current_edge_voice == 'onyx-hd' else '' }}>onyx (HD)</option>
+                <option value="nova-hd" {{ 'selected' if current_edge_voice == 'nova-hd' else '' }}>nova (HD)</option>
+                <option value="shimmer-hd" {{ 'selected' if current_edge_voice == 'shimmer-hd' else '' }}>shimmer (HD)</option>
+              </optgroup>
+            </select>
+          </div>
+        </div>
 
-    <!-- Notes & Knowledge -->
-    <div class="section-card">
-      <div class="section-title"><span class="sec-icon">📋</span> Notes &amp; Knowledge</div>
-      <p class="field-hint" style="margin-bottom:0.75rem;">
-        Attached notes are injected into the agent's context.
-        <span class="mode-label always">Always</span> = every session &nbsp;|&nbsp;
-        <span class="mode-label directive">Directive</span> = on-demand via directive engine.
-      </p>
-      <div class="notes-grid" id="notes-grid-{{ name }}">
-        {% for note_id in cfg.get('attached_notes', []) %}
-        {% set mode = cfg.get('note_modes', {}).get(note_id, 'always') %}
-        <div class="note-card" id="note-user-{{ name }}-{{ note_id }}">
-          <span class="note-name">📝 {{ note_id }}</span>
-          <span class="note-source">user note</span>
-          <div style="display:flex; align-items:center; gap:0.375rem;">
-            <span class="mode-label {{ mode }}"
-                  id="ml-{{ name }}-{{ note_id }}">
-              {{ mode | upper }}
-            </span>
-            <div class="mode-toggle {{ 'active' if mode == 'directive' else '' }}"
-                 id="mt-{{ name }}-{{ note_id }}"
-                 onclick="toggleNoteMode('{{ name }}', '{{ note_id }}', this)">
-              <span class="toggle-knob"></span>
+        <!-- ── Tools ── -->
+        <div class="modal-section-title" style="display:flex; align-items:center; justify-content:space-between;">
+          <span>🛠️ Available Tools</span>
+          <span style="font-size:0.7rem; font-weight:500; color:rgba(241,245,249,0.35); text-transform:none; letter-spacing:0;">
+            <span id="tool-count-{{ name }}">{{ current_tools | length }}</span> / {{ all_tool_names | length }} enabled
+          </span>
+        </div>
+        <div class="tools-toggle-grid" id="tools-grid-{{ name }}">
+          {% for tool_name in all_tool_names %}
+          {% set td = tool_display.get(tool_name, {}) %}
+          {% set is_on = tool_name in current_tools %}
+          <div class="tool-toggle-card {{ 'enabled' if is_on else '' }}"
+               id="tool-card-{{ name }}-{{ tool_name }}"
+               onclick="toggleTool('{{ name }}', '{{ tool_name }}', this)">
+            <div class="tool-toggle-icon" style="background:{{ td.get('icon_bg', 'rgba(99,102,241,0.08)') or 'rgba(99,102,241,0.08)' }};">
+              {{ td.get('icon', '🔧') }}
+            </div>
+            <div class="tool-toggle-info">
+              <div class="tool-toggle-name">{{ tool_name }}</div>
+              {% if td.get('description') %}
+              <div class="tool-toggle-desc">{{ td.description[:80] }}{% if td.description|length > 80 %}…{% endif %}</div>
+              {% endif %}
+            </div>
+            <span class="tool-status-badge {{ td.get('status', 'planned') }}">{{ td.get('status', 'planned') }}</span>
+            <div class="tool-toggle-switch {{ 'on' if is_on else '' }}" id="tool-sw-{{ name }}-{{ tool_name }}">
+              <span class="knob"></span>
             </div>
           </div>
-          <button class="note-remove-btn" title="Detach" onclick="detachUserNote('{{ name }}', '{{ note_id }}')">✕</button>
+          {% endfor %}
         </div>
-        {% endfor %}
-      </div>
 
-      <div class="notes-empty" id="notes-empty-{{ name }}"
-           style="{{ 'display:none;' if cfg.get('attached_notes') else '' }}">
-        No notes attached. Click "Add Notes" to connect knowledge sources.
-      </div>
+        <!-- ── System Prompt ── -->
+        <div class="modal-section-title">✦ System Prompt</div>
+        <textarea class="textarea-prompt" id="prompt-{{ name }}"
+                  placeholder="Write the system prompt for this agent…"
+                  onchange="saveField('{{ name }}', 'system_prompt_text', this.value)"
+        >{{ ad.system_prompt }}</textarea>
+        <div class="field-hint">The foundational instruction set that defines behavior, personality, and role.</div>
 
-      <button class="add-notes-btn" onclick="openAddNotesModal('{{ name }}')">
-        ＋ Add Notes
-      </button>
+        <!-- ── Soul Script & Knowledge ── -->
+        <div class="modal-section-title">🧬 Soul Script & Knowledge</div>
+        <p class="field-hint" style="margin-bottom:0.75rem;">
+          Attached notes are injected into the agent's context.
+          <span class="mode-label always">Always</span> = every session &nbsp;|&nbsp;
+          <span class="mode-label directive">Directive</span> = on-demand via directive engine.
+        </p>
+        <div class="notes-grid" id="notes-grid-{{ name }}">
+          {% for note_id in cfg.get('attached_notes', []) %}
+          {% set mode = cfg.get('note_modes', {}).get(note_id, 'always') %}
+          <div class="note-card" id="note-user-{{ name }}-{{ note_id }}">
+            <span class="note-name">📝 {{ note_id }}</span>
+            <span class="note-source">user note</span>
+            <div style="display:flex; align-items:center; gap:0.375rem;">
+              <span class="mode-label {{ mode }}"
+                    id="ml-{{ name }}-{{ note_id }}">
+                {{ mode | upper }}
+              </span>
+              <div class="mode-toggle {{ 'active' if mode == 'directive' else '' }}"
+                   id="mt-{{ name }}-{{ note_id }}"
+                   onclick="toggleNoteMode('{{ name }}', '{{ note_id }}', this)">
+                <span class="toggle-knob"></span>
+              </div>
+            </div>
+            <button class="note-remove-btn" title="Detach" onclick="detachUserNote('{{ name }}', '{{ note_id }}')">✕</button>
+          </div>
+          {% endfor %}
+        </div>
+
+        <div class="notes-empty" id="notes-empty-{{ name }}"
+             style="{{ 'display:none;' if cfg.get('attached_notes') else '' }}">
+          No soul scripts attached. Click "Add Notes" to connect knowledge sources.
+        </div>
+
+        <button class="add-notes-btn" onclick="openAddNotesModal('{{ name }}')">
+          ＋ Add Notes
+        </button>
+      </div>
     </div>
 
     <!-- Save -->
@@ -662,6 +951,7 @@
   // ── DATA ──
   const _allNotes = {{ notes | tojson }};
   const _connections = {{ connections | tojson }};
+  const _allToolNames = {{ all_tool_names | tojson }};
 
   let _currentEditor = null;
   let _addNotesAgent = null;
@@ -849,8 +1139,122 @@
   // ── Inline config select handlers ──
   function onModelSelect(agent, sel) {
     const display = document.getElementById('model-display-' + agent);
-    if (display) display.textContent = sel.value || '\u2014';
+    if (display) display.textContent = sel.value || '— Select Model —';
     saveField(agent, 'model', sel.value);
+  }
+
+  // ── Voice / TTS handlers ──
+  function onVoiceSelect(agent, type, sel) {
+    if (type === 'paid') {
+      const display = document.getElementById('voice-paid-display-' + agent);
+      if (display) display.textContent = sel.value || 'Not set';
+      saveField(agent, 'voice_id', sel.value);
+    } else {
+      const display = document.getElementById('voice-free-display-' + agent);
+      if (display) display.textContent = sel.value || 'alloy';
+      saveField(agent, 'edge_voice', sel.value);
+    }
+  }
+
+  // Fetch ElevenLabs voices and populate paid TTS dropdowns
+  async function populateElevenLabsVoices() {
+    try {
+      const resp = await fetch('/api/tts/voices');
+      const data = await resp.json();
+      if (!data.voices || data.voices.length === 0) return;
+      document.querySelectorAll('select[id^="voice-paid-"]').forEach(sel => {
+        const current = sel.dataset.current || '';
+        let selectedText = 'Not set';
+        const grp = document.createElement('optgroup');
+        grp.label = 'ElevenLabs';
+        data.voices.forEach(v => {
+          const opt = document.createElement('option');
+          opt.value = v.voice_id;
+          opt.textContent = v.name + (v.category ? ` (${v.category})` : '');
+          if (v.voice_id === current) { opt.selected = true; selectedText = v.name; }
+          grp.appendChild(opt);
+        });
+        sel.appendChild(grp);
+        const agName = sel.id.replace('voice-paid-', '');
+        const disp = document.getElementById('voice-paid-display-' + agName);
+        if (disp && current) disp.textContent = selectedText;
+      });
+    } catch (e) { /* ElevenLabs not configured */ }
+  }
+
+  // Fetch Edge-TTS voices and populate free TTS dropdowns
+  async function populateEdgeTTSVoices() {
+    try {
+      const resp = await fetch('/api/tts/edge/voices');
+      const data = await resp.json();
+      if (!data.voices || data.voices.length === 0) return;
+      // Group by engine
+      const byEngine = {};
+      data.voices.forEach(v => {
+        const label = v.engine_label || v.engine || 'Edge-TTS';
+        if (!byEngine[label]) byEngine[label] = [];
+        byEngine[label].push(v);
+      });
+      document.querySelectorAll('select[id^="voice-free-"]').forEach(sel => {
+        const current = sel.dataset.current || 'alloy';
+        // Clear existing and rebuild with live data
+        sel.innerHTML = '<option value="">— Select Voice —</option>';
+        let selectedText = current;
+        for (const [engineLabel, voices] of Object.entries(byEngine)) {
+          const grp = document.createElement('optgroup');
+          grp.label = engineLabel;
+          voices.forEach(v => {
+            const opt = document.createElement('option');
+            opt.value = v.voice_id;
+            opt.textContent = v.name;
+            if (v.voice_id === current) { opt.selected = true; selectedText = v.name; }
+            grp.appendChild(opt);
+          });
+          sel.appendChild(grp);
+        }
+        const agName = sel.id.replace('voice-free-', '');
+        const disp = document.getElementById('voice-free-display-' + agName);
+        if (disp) disp.textContent = selectedText;
+      });
+    } catch (e) { /* Edge-TTS not configured — keep hardcoded fallback */ }
+  }
+
+  // ── Tool toggle handler ──
+  function toggleTool(agent, toolName, cardEl) {
+    const sw = document.getElementById('tool-sw-' + agent + '-' + toolName);
+    const isOn = sw.classList.toggle('on');
+    cardEl.classList.toggle('enabled', isOn);
+
+    // Collect all enabled tool names
+    const enabled = [];
+    document.querySelectorAll(`#tools-grid-${agent} .tool-toggle-switch.on`).forEach(s => {
+      const id = s.id.replace('tool-sw-' + agent + '-', '');
+      enabled.push(id);
+    });
+
+    // Update count
+    const counter = document.getElementById('tool-count-' + agent);
+    if (counter) counter.textContent = enabled.length;
+
+    // Also update the agent card footer tool count
+    const card = document.querySelector(`.agent-card[data-agent="${agent}"]`);
+    if (card) {
+      const toolTag = card.querySelector('.agent-tag-tools');
+      if (enabled.length > 0) {
+        if (toolTag) {
+          toolTag.textContent = enabled.length + ' tools';
+        } else {
+          const footer = card.querySelector('.agent-card-footer');
+          if (footer) footer.insertAdjacentHTML('beforeend',
+            `<span class="agent-tag-tools">${enabled.length} tools</span>`);
+        }
+      } else if (toolTag) {
+        toolTag.remove();
+      }
+    }
+
+    // Save
+    saveField(agent, 'allowed_tools', enabled);
   }
 
   // ── Save field ──
@@ -944,7 +1348,7 @@
     });
 
     if (list.children.length === 0) {
-      list.innerHTML = '<p class="text-xs text-zinc-600 text-center py-4">No notes available. Create notes in the <a href="/knowledge" class="text-forge-accent2 hover:underline">Knowledge</a> section.</p>';
+      list.innerHTML = '<p class="text-xs text-zinc-600 text-center py-4">No notes available. Create them in the <a href="/knowledge" class="text-forge-accent2 hover:underline">Knowledge</a> section.</p>';
     }
 
     document.getElementById('add-notes-modal').classList.add('open');
@@ -1009,14 +1413,26 @@
   function _esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
   populateModelDropdowns();
+  populateElevenLabsVoices();
+  populateEdgeTTSVoices();
 
   // ── Save All ──
   async function saveAll(agent) {
+    // Collect enabled tools
+    const enabledTools = [];
+    document.querySelectorAll(`#tools-grid-${agent} .tool-toggle-switch.on`).forEach(s => {
+      const id = s.id.replace('tool-sw-' + agent + '-', '');
+      enabledTools.push(id);
+    });
+
     const data = {
       display_name: document.getElementById('name-' + agent)?.value || agent,
       description: document.getElementById('desc-' + agent)?.value || '',
       model: document.getElementById('model-' + agent)?.value || '',
       system_prompt_text: document.getElementById('prompt-' + agent)?.value || '',
+      voice_id: document.getElementById('voice-paid-' + agent)?.value || '',
+      edge_voice: document.getElementById('voice-free-' + agent)?.value || 'alloy',
+      allowed_tools: enabledTools,
     };
 
     const resp = await fetch(`/api/profiles/${agent}/config`, {
@@ -1025,24 +1441,38 @@
     });
     if (resp.ok) {
       showToast('Profile saved');
-      const cardName = document.querySelector(`.agent-card[data-agent="${agent}"] .agent-card-name`);
-      if (cardName) cardName.textContent = data.display_name;
-      const cardDesc = document.querySelector(`.agent-card[data-agent="${agent}"] .agent-card-desc`);
-      if (cardDesc) {
-        cardDesc.textContent = data.description;
-        cardDesc.style.display = data.description ? '' : 'none';
-      } else if (data.description) {
-        const info = document.querySelector(`.agent-card[data-agent="${agent}"] .agent-card-info`);
-        if (info) {
-          const d = document.createElement('div');
-          d.className = 'agent-card-desc';
-          d.textContent = data.description;
-          const nameEl = info.querySelector('.agent-card-name');
-          if (nameEl) nameEl.after(d);
+      const card = document.querySelector(`.agent-card[data-agent="${agent}"]`);
+      if (card) {
+        const cardName = card.querySelector('.agent-card-name');
+        if (cardName) cardName.textContent = data.display_name;
+        // Update the description/narrative in the card body
+        let cardDesc = card.querySelector('.agent-card-desc');
+        if (cardDesc) {
+          if (data.description) {
+            cardDesc.textContent = data.description;
+            cardDesc.style.cssText = '';
+          } else {
+            cardDesc.textContent = 'No description set — click to edit.';
+            cardDesc.style.color = '#3f3f46';
+            cardDesc.style.fontStyle = 'italic';
+          }
+        }
+        // Update model bubble
+        const footer = card.querySelector('.agent-card-footer');
+        if (footer) {
+          const llmTag = footer.querySelector('.agent-tag-llm');
+          if (data.model) {
+            if (llmTag) {
+              llmTag.innerHTML = '<i class="fas fa-microchip"></i> ' + _esc(data.model);
+            } else {
+              footer.insertAdjacentHTML('afterbegin',
+                `<span class="agent-tag-llm"><i class="fas fa-microchip"></i> ${_esc(data.model)}</span>`);
+            }
+          } else if (llmTag) {
+            llmTag.remove();
+          }
         }
       }
-      const cardModel = document.querySelector(`.agent-card[data-agent="${agent}"] .agent-card-model`);
-      if (cardModel) cardModel.textContent = data.model;
       // Update tab breadcrumb
       document.getElementById('tab-btn-agents').innerHTML =
         '<span style="opacity:0.6">Agents</span> <span style="color:#3f3f46;margin:0 0.25rem;">›</span> ' + _esc(data.display_name);
