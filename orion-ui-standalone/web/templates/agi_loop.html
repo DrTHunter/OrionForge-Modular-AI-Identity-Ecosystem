@@ -83,6 +83,134 @@
   .agi-toggle.on span  { right: 0.125rem; left: auto; }
   .agi-toggle.off { background: #52525b; }
   .agi-toggle.off span { left: 0.125rem; right: auto; }
+
+  /* ── Tier Editor Modal ── */
+  .tier-modal-overlay {
+    display: none; position: fixed; inset: 0; z-index: 1000;
+    background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+    animation: tierFadeIn 0.15s ease;
+  }
+  .tier-modal-overlay.active { display: flex; align-items: center; justify-content: center; }
+  @keyframes tierFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .tier-modal {
+    background: #13131a; border: 1px solid #2a2a3a; border-radius: 0.75rem;
+    width: 100%; max-width: 56rem; max-height: 90vh; overflow-y: auto;
+    box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+    animation: tierSlideIn 0.2s ease;
+  }
+  @keyframes tierSlideIn { from { opacity: 0; transform: translateY(12px) scale(0.98); } to { opacity: 1; transform: none; } }
+
+  .tier-modal-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 1.25rem; border-bottom: 1px solid #2a2a3a;
+  }
+  .tier-modal-head-left { display: flex; align-items: center; gap: 0.75rem; }
+  .tier-modal-badge {
+    padding: 0.25rem 0.625rem; border-radius: 0.25rem; font-size: 0.75rem;
+    font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .tier-modal-title {
+    font-size: 1rem; font-weight: 800; color: #fff;
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+  }
+  .tier-modal-head-right { display: flex; align-items: center; gap: 0.75rem; }
+  .tier-modal-enabled { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8125rem; color: #a1a1aa; }
+  .tier-modal-close {
+    background: none; border: none; color: #52525b; font-size: 1.25rem;
+    cursor: pointer; padding: 0.25rem; line-height: 1; transition: color 0.15s;
+  }
+  .tier-modal-close:hover { color: #fff; }
+
+  .tier-modal-body { padding: 1.25rem; }
+
+  .tier-form-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;
+  }
+  @media (max-width: 640px) { .tier-form-row { grid-template-columns: 1fr; } }
+
+  .tier-form-group { display: flex; flex-direction: column; gap: 0.25rem; }
+  .tier-form-label {
+    font-size: 0.6875rem; font-weight: 700; color: #52525b;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .tier-form-select, .tier-form-input {
+    background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 0.5rem;
+    color: #d4d4d8; font-size: 0.875rem; padding: 0.625rem 0.75rem;
+    outline: none; transition: border-color 0.15s; width: 100%;
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+  }
+  .tier-form-select:focus, .tier-form-input:focus { border-color: #6366f1; }
+  .tier-form-select option { background: #1a1a24; color: #d4d4d8; }
+
+  .tier-params-row {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 1.25rem;
+  }
+  @media (max-width: 640px) { .tier-params-row { grid-template-columns: repeat(2, 1fr); } }
+  .tier-param-card {
+    background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 0.5rem;
+    padding: 0.75rem 0.875rem;
+  }
+  .tier-param-label {
+    font-size: 0.625rem; font-weight: 700; color: #52525b;
+    text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.375rem;
+  }
+  .tier-param-input {
+    width: 100%; background: transparent; border: none; outline: none;
+    color: #fff; font-size: 1.125rem; font-weight: 700;
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+  }
+
+  /* Alt models section */
+  .tier-alts-section {
+    border-top: 1px solid #2a2a3a; padding-top: 1rem; margin-top: 0.5rem;
+  }
+  .tier-alts-header {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;
+  }
+  .tier-alts-title { font-size: 0.75rem; font-weight: 700; color: #71717a; text-transform: uppercase; letter-spacing: 0.05em; }
+  .tier-alt-row {
+    display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;
+  }
+  .tier-alt-label {
+    font-size: 0.6875rem; font-weight: 700; color: #52525b;
+    min-width: 2.5rem; text-transform: uppercase;
+  }
+  .tier-alt-remove {
+    background: none; border: none; color: #52525b; cursor: pointer;
+    font-size: 1rem; padding: 0.25rem; transition: color 0.15s;
+  }
+  .tier-alt-remove:hover { color: #fca5a5; }
+
+  .tier-modal-footer {
+    display: flex; align-items: center; justify-content: flex-end; gap: 0.75rem;
+    padding: 1rem 1.25rem; border-top: 1px solid #2a2a3a;
+  }
+  .tier-btn {
+    padding: 0.5rem 1.25rem; border-radius: 0.5rem; font-size: 0.8125rem;
+    font-weight: 600; cursor: pointer; transition: all 0.15s; border: none;
+  }
+  .tier-btn-primary { background: #6366f1; color: #fff; }
+  .tier-btn-primary:hover { background: #4f46e5; }
+  .tier-btn-secondary { background: rgba(42,42,58,0.5); color: #a1a1aa; border: 1px solid #2a2a3a; }
+  .tier-btn-secondary:hover { background: rgba(42,42,58,0.8); color: #e4e4e7; }
+  .tier-btn-add {
+    display: inline-flex; align-items: center; gap: 0.25rem;
+    padding: 0.25rem 0.625rem; font-size: 0.75rem; font-weight: 600;
+    background: rgba(99,102,241,0.1); color: #818cf8; border: 1px solid rgba(99,102,241,0.2);
+    border-radius: 0.375rem; cursor: pointer; transition: all 0.15s;
+  }
+  .tier-btn-add:hover { background: rgba(99,102,241,0.2); }
+
+  /* Clickable tier row */
+  .tier-table tbody tr { cursor: pointer; transition: all 0.15s; }
+  .tier-table tbody tr:hover { background: rgba(99,102,241,0.08); }
+  .tier-table tbody tr:active { background: rgba(99,102,241,0.12); }
+  .tier-enabled-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 0.375rem; }
+  .tier-enabled-dot.on { background: #10b981; }
+  .tier-enabled-dot.off { background: #52525b; }
+  .tier-edit-hint { font-size: 0.6875rem; color: #3f3f46; margin-left: 0.5rem; opacity: 0; transition: opacity 0.15s; }
+  .tier-table tbody tr:hover .tier-edit-hint { opacity: 1; }
 </style>
 
 <div>
@@ -468,44 +596,110 @@
   <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
   <div class="view-panel" id="panel-routing">
     <div class="card mb-5">
-      <span class="card-header">Tiered Model Router</span>
-      <p class="text-xs text-forge-muted mt-1 mb-4">Automatically selects the cheapest LLM tier capable of handling each task. Retries once, then escalates.</p>
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <span class="card-header mb-0">Tiered Model Router</span>
+          <p class="text-xs text-forge-muted mt-1">Click any tier to edit its configuration. Automatically selects the cheapest capable tier per task.</p>
+        </div>
+        <button onclick="saveTiers()" class="filter-btn active" style="cursor:pointer;" id="btn-save-tiers">Save Tiers</button>
+      </div>
 
       <table class="tier-table">
         <thead>
-          <tr><th>Tier</th><th>Label</th><th>Models</th><th>Cost/Call</th><th>Default For</th></tr>
+          <tr><th></th><th>Tier</th><th>Label</th><th>Connection / Model</th><th>Cost/Call</th><th>Default For</th></tr>
         </thead>
-        <tbody>
-          <tr>
-            <td><span class="tier-badge tier-t0">T0</span></td>
-            <td class="font-semibold">local_cheap</td>
-            <td class="text-xs">qwen2.5:7b, phi-3, gemma-2</td>
-            <td class="text-emerald-300">~$0.00</td>
-            <td class="text-xs">Memory ops, reflection, summarization</td>
-          </tr>
-          <tr>
-            <td><span class="tier-badge tier-t1">T1</span></td>
-            <td class="font-semibold">local_strong</td>
-            <td class="text-xs">llama3:70b, mixtral, command-r+</td>
-            <td class="text-cyan-300">~$0.00</td>
-            <td class="text-xs">Planning, general reasoning</td>
-          </tr>
-          <tr>
-            <td><span class="tier-badge tier-t2">T2</span></td>
-            <td class="font-semibold">cheap_cloud</td>
-            <td class="text-xs">DeepSeek-V3, GPT-5-mini, GPT-5-nano</td>
-            <td class="text-indigo-300">~$0.001</td>
-            <td class="text-xs">Coding, high-stakes decisions</td>
-          </tr>
-          <tr>
-            <td><span class="tier-badge tier-t3">T3</span></td>
-            <td class="font-semibold">expensive_cloud</td>
-            <td class="text-xs">GPT-5.2, Claude Opus 4.6, GPT-5.2-pro</td>
-            <td class="text-yellow-300">~$0.01â€“0.10</td>
-            <td class="text-xs">Final polish, critical review</td>
-          </tr>
-        </tbody>
+        <tbody id="tier-table-body"></tbody>
       </table>
+      <div style="margin-top:0.75rem; text-align:right;">
+        <button onclick="addNewTier()" class="tier-btn-add" title="Add a new tier">+ Add Tier</button>
+      </div>
+    </div>
+
+    <!-- Tier Editor Modal -->
+    <div class="tier-modal-overlay" id="tier-modal-overlay">
+      <div class="tier-modal">
+        <div class="tier-modal-head">
+          <div class="tier-modal-head-left">
+            <span class="tier-modal-badge" id="tm-badge">T0</span>
+            <input type="text" id="tm-label" class="tier-form-input" style="width:14rem;font-size:0.875rem;font-weight:700;" placeholder="tier_label">
+          </div>
+          <div class="tier-modal-head-right">
+            <label class="tier-modal-enabled">
+              <button type="button" class="agi-toggle on" id="tm-enabled" onclick="toggleModalEnabled()">
+                <span></span>
+              </button>
+              <span id="tm-enabled-text">Enabled</span>
+            </label>
+            <button class="tier-modal-close" onclick="closeTierModal()">&times;</button>
+          </div>
+        </div>
+        <div class="tier-modal-body">
+          <!-- Connection & Model row -->
+          <div class="tier-form-row">
+            <div class="tier-form-group">
+              <label class="tier-form-label">Connection / API</label>
+              <select id="tm-connection" class="tier-form-select" onchange="onConnectionChange()">
+                <option value="">-- none (manual provider) --</option>
+              </select>
+            </div>
+            <div class="tier-form-group">
+              <label class="tier-form-label">Primary Model</label>
+              <div style="display:flex;gap:0.5rem;">
+                <select id="tm-model-select" class="tier-form-select" style="flex:1;" onchange="onModelSelectChange()">
+                  <option value="">-- type custom --</option>
+                </select>
+                <input type="text" id="tm-model" class="tier-form-input" placeholder="model-name" style="flex:1;">
+              </div>
+            </div>
+          </div>
+
+          <!-- Params row -->
+          <div class="tier-params-row">
+            <div class="tier-param-card">
+              <div class="tier-param-label">Temperature</div>
+              <input type="number" step="0.1" min="0" max="2" id="tm-temperature" class="tier-param-input" value="0.6">
+            </div>
+            <div class="tier-param-card">
+              <div class="tier-param-label">Max Output Tokens</div>
+              <input type="number" step="256" min="0" id="tm-max-tokens" class="tier-param-input" value="2048">
+            </div>
+            <div class="tier-param-card">
+              <div class="tier-param-label">Max Iterations</div>
+              <input type="number" step="1" min="1" id="tm-max-iter" class="tier-param-input" value="8">
+            </div>
+            <div class="tier-param-card">
+              <div class="tier-param-label">Retries Before Escalate</div>
+              <input type="number" step="1" min="0" id="tm-retries" class="tier-param-input" value="3">
+            </div>
+          </div>
+
+          <!-- Extra settings row -->
+          <div class="tier-form-row">
+            <div class="tier-form-group">
+              <label class="tier-form-label">Default For (task types)</label>
+              <input type="text" id="tm-default-for" class="tier-form-input" placeholder="e.g. Memory ops, reflection, summarization">
+            </div>
+            <div class="tier-form-group">
+              <label class="tier-form-label">Cost Per Call (display)</label>
+              <input type="text" id="tm-cost" class="tier-form-input" placeholder="e.g. ~$0.00">
+            </div>
+          </div>
+
+          <!-- Alternate Models -->
+          <div class="tier-alts-section">
+            <div class="tier-alts-header">
+              <span class="tier-alts-title">Alternate Models (fallbacks within this tier)</span>
+              <button class="tier-btn-add" onclick="addAltModel()">+ Add</button>
+            </div>
+            <div id="tm-alt-list"></div>
+          </div>
+        </div>
+        <div class="tier-modal-footer">
+          <button class="tier-btn tier-btn-secondary" onclick="deleteTierFromModal()" id="tm-delete" style="margin-right:auto;color:#fca5a5;border-color:rgba(239,68,68,0.3);">Delete Tier</button>
+          <button class="tier-btn tier-btn-secondary" onclick="closeTierModal()">Cancel</button>
+          <button class="tier-btn tier-btn-primary" onclick="saveTierFromModal()">Apply</button>
+        </div>
+      </div>
     </div>
 
     <!-- Escalation -->
@@ -1000,5 +1194,299 @@ function showToast(msg, type) {
   clearTimeout(el._t);
   el._t = setTimeout(() => { el.style.opacity = '0'; }, 3000);
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════ */
+/*  Tiered Model Router – dynamic table + modal editor               */
+/* ═══════════════════════════════════════════════════════════════════ */
+
+const _connections = {{ connections | tojson }};
+let _tiers = (_cfg.tiers && _cfg.tiers.length) ? JSON.parse(JSON.stringify(_cfg.tiers)) : [];
+
+const TIER_COLORS = {
+  t0: { bg: 'rgba(16,185,129,0.12)', fg: '#6ee7b7' },
+  t1: { bg: 'rgba(34,211,238,0.12)', fg: '#22d3ee' },
+  t2: { bg: 'rgba(99,102,241,0.12)', fg: '#a5b4fc' },
+  t3: { bg: 'rgba(245,158,11,0.12)', fg: '#fcd34d' },
+  t4: { bg: 'rgba(236,72,153,0.12)', fg: '#f472b6' },
+  t5: { bg: 'rgba(168,85,247,0.12)', fg: '#c084fc' },
+};
+function _tierColor(id) { return TIER_COLORS[id] || { bg: 'rgba(99,102,241,0.12)', fg: '#a5b4fc' }; }
+
+/* ── Render tier table rows ── */
+function renderTierTable() {
+  const tbody = document.getElementById('tier-table-body');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  _tiers.forEach((t, idx) => {
+    const c = _tierColor(t.id);
+    const connName = _connectionLabel(t.connection_id, t.provider);
+    const modelStr = t.primary_model || '—';
+    const alts = (t.alt_models || []).length;
+    const altsHint = alts ? ` <span style="color:#52525b;font-size:0.6875rem;">+${alts} alt${alts>1?'s':''}</span>` : '';
+    const tr = document.createElement('tr');
+    tr.onclick = () => openTierEditor(idx);
+    tr.innerHTML = `
+      <td><span class="tier-enabled-dot ${t.enabled?'on':'off'}"></span></td>
+      <td><span class="tier-badge" style="background:${c.bg};color:${c.fg};">${t.id.toUpperCase()}</span></td>
+      <td class="font-semibold">${_esc(t.label)}</td>
+      <td class="text-xs">${_esc(connName)} / ${_esc(modelStr)}${altsHint}</td>
+      <td class="text-yellow-300">${_esc(t.cost_per_call || '—')}</td>
+      <td class="text-xs">${_esc(t.default_for || '—')}<span class="tier-edit-hint">✎ click to edit</span></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function _connectionLabel(connId, fallbackProvider) {
+  if (connId) {
+    const c = _connections.find(x => x.id === connId);
+    if (c) return `${c.name} (${c.provider || c.type})`;
+  }
+  return fallbackProvider || '—';
+}
+
+function _esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
+/* ── Modal open / close ── */
+let _editingTierIdx = -1;
+
+function openTierEditor(idx) {
+  _editingTierIdx = idx;
+  const t = _tiers[idx];
+  if (!t) return;
+
+  const c = _tierColor(t.id);
+  document.getElementById('tm-badge').textContent = t.id.toUpperCase();
+  document.getElementById('tm-badge').style.background = c.bg;
+  document.getElementById('tm-badge').style.color = c.fg;
+  document.getElementById('tm-label').value = t.label || '';
+
+  // Enabled toggle
+  const tog = document.getElementById('tm-enabled');
+  tog.classList.toggle('on', t.enabled !== false);
+  tog.classList.toggle('off', t.enabled === false);
+  document.getElementById('tm-enabled-text').textContent = t.enabled !== false ? 'Enabled' : 'Disabled';
+
+  // Connection dropdown
+  _populateConnectionDropdown(t.connection_id);
+
+  // Model
+  _populateModelDropdown(t.connection_id, t.primary_model);
+  document.getElementById('tm-model').value = t.primary_model || '';
+
+  // Params
+  document.getElementById('tm-temperature').value = t.temperature ?? 0.6;
+  document.getElementById('tm-max-tokens').value = t.max_output_tokens ?? 2048;
+  document.getElementById('tm-max-iter').value = t.max_iterations ?? 8;
+  document.getElementById('tm-retries').value = t.retries_before_escalate ?? 3;
+
+  // Extra
+  document.getElementById('tm-default-for').value = t.default_for || '';
+  document.getElementById('tm-cost').value = t.cost_per_call || '';
+
+  // Alt models
+  _renderAltModels(t.alt_models || []);
+
+  // Show delete button only if more than 1 tier
+  document.getElementById('tm-delete').style.display = _tiers.length > 1 ? '' : 'none';
+
+  // Show modal
+  document.getElementById('tier-modal-overlay').classList.add('active');
+}
+
+function closeTierModal() {
+  document.getElementById('tier-modal-overlay').classList.remove('active');
+  _editingTierIdx = -1;
+}
+
+// Close on overlay click
+document.addEventListener('click', (e) => {
+  if (e.target.id === 'tier-modal-overlay') closeTierModal();
+});
+// Close on Escape
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && document.getElementById('tier-modal-overlay').classList.contains('active')) {
+    closeTierModal();
+  }
+});
+
+function toggleModalEnabled() {
+  const tog = document.getElementById('tm-enabled');
+  const isOn = tog.classList.contains('on');
+  tog.classList.toggle('on', !isOn);
+  tog.classList.toggle('off', isOn);
+  document.getElementById('tm-enabled-text').textContent = isOn ? 'Disabled' : 'Enabled';
+}
+
+/* ── Connection & model dropdowns ── */
+function _populateConnectionDropdown(selectedId) {
+  const sel = document.getElementById('tm-connection');
+  sel.innerHTML = '<option value="">-- none (manual provider) --</option>';
+  _connections.forEach(c => {
+    if (!c.enabled) return;
+    const opt = document.createElement('option');
+    opt.value = c.id;
+    opt.textContent = `${c.name} (${c.provider || c.type})`;
+    if (c.id === selectedId) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+function _populateModelDropdown(connId, selectedModel) {
+  const sel = document.getElementById('tm-model-select');
+  sel.innerHTML = '<option value="">-- type custom --</option>';
+  if (connId) {
+    const conn = _connections.find(c => c.id === connId);
+    if (conn && conn.models && conn.models.length) {
+      conn.models.forEach(m => {
+        const name = typeof m === 'string' ? m : m.id || m.name || '';
+        if (!name) return;
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        if (name === selectedModel) opt.selected = true;
+        sel.appendChild(opt);
+      });
+    }
+  }
+}
+
+function onConnectionChange() {
+  const connId = document.getElementById('tm-connection').value;
+  const currentModel = document.getElementById('tm-model').value;
+  _populateModelDropdown(connId, currentModel);
+}
+
+function onModelSelectChange() {
+  const val = document.getElementById('tm-model-select').value;
+  if (val) document.getElementById('tm-model').value = val;
+}
+
+/* ── Alternate models ── */
+function _renderAltModels(alts) {
+  const container = document.getElementById('tm-alt-list');
+  container.innerHTML = '';
+  (alts || []).forEach((model, i) => {
+    const row = document.createElement('div');
+    row.className = 'tier-alt-row';
+    row.innerHTML = `
+      <span class="tier-alt-label">ALT ${i + 1}</span>
+      <input type="text" class="tier-form-input tm-alt-input" value="${_esc(model)}" placeholder="model-name" style="flex:1;">
+      <button class="tier-alt-remove" onclick="removeAltModel(${i})" title="Remove">&times;</button>
+    `;
+    container.appendChild(row);
+  });
+}
+
+function addAltModel() {
+  const container = document.getElementById('tm-alt-list');
+  const idx = container.querySelectorAll('.tier-alt-row').length;
+  const row = document.createElement('div');
+  row.className = 'tier-alt-row';
+  row.innerHTML = `
+    <span class="tier-alt-label">ALT ${idx + 1}</span>
+    <input type="text" class="tier-form-input tm-alt-input" value="" placeholder="model-name" style="flex:1;">
+    <button class="tier-alt-remove" onclick="removeAltModel(${idx})" title="Remove">&times;</button>
+  `;
+  container.appendChild(row);
+}
+
+function removeAltModel(idx) {
+  const alts = _gatherAltModels();
+  alts.splice(idx, 1);
+  _renderAltModels(alts);
+}
+
+function _gatherAltModels() {
+  return Array.from(document.querySelectorAll('.tm-alt-input')).map(el => el.value.trim()).filter(Boolean);
+}
+
+/* ── Save tier from modal back into _tiers array ── */
+function saveTierFromModal() {
+  if (_editingTierIdx < 0 || _editingTierIdx >= _tiers.length) return;
+
+  const t = _tiers[_editingTierIdx];
+  t.label = document.getElementById('tm-label').value.trim() || t.label;
+  t.enabled = document.getElementById('tm-enabled').classList.contains('on');
+
+  const connId = document.getElementById('tm-connection').value;
+  t.connection_id = connId;
+  if (connId) {
+    const conn = _connections.find(c => c.id === connId);
+    t.provider = conn ? (conn.provider || conn.type) : t.provider;
+  }
+
+  t.primary_model = document.getElementById('tm-model').value.trim();
+  t.temperature = parseFloat(document.getElementById('tm-temperature').value) || 0.6;
+  t.max_output_tokens = parseInt(document.getElementById('tm-max-tokens').value) || 2048;
+  t.max_iterations = parseInt(document.getElementById('tm-max-iter').value) || 8;
+  t.retries_before_escalate = parseInt(document.getElementById('tm-retries').value) || 3;
+  t.default_for = document.getElementById('tm-default-for').value.trim();
+  t.cost_per_call = document.getElementById('tm-cost').value.trim();
+  t.alt_models = _gatherAltModels();
+
+  closeTierModal();
+  renderTierTable();
+  showToast('Tier updated — click Save Tiers to persist', 'ok');
+}
+
+/* ── Delete tier ── */
+function deleteTierFromModal() {
+  if (_editingTierIdx < 0 || _tiers.length <= 1) return;
+  if (!confirm('Delete tier ' + _tiers[_editingTierIdx].id.toUpperCase() + '?')) return;
+  _tiers.splice(_editingTierIdx, 1);
+  closeTierModal();
+  renderTierTable();
+  showToast('Tier removed — click Save Tiers to persist', 'warn');
+}
+
+/* ── Add new tier ── */
+function addNewTier() {
+  const nextIdx = _tiers.length;
+  const id = 't' + nextIdx;
+  _tiers.push({
+    id: id,
+    label: 'new_tier_' + nextIdx,
+    enabled: true,
+    connection_id: '',
+    provider: '',
+    primary_model: '',
+    temperature: 0.6,
+    max_output_tokens: 2048,
+    max_iterations: 8,
+    retries_before_escalate: 3,
+    alt_models: [],
+    default_for: '',
+    cost_per_call: '~$0.00',
+  });
+  renderTierTable();
+  openTierEditor(nextIdx);
+}
+
+/* ── Persist all tiers to backend ── */
+async function saveTiers() {
+  const cfg = _gatherConfig();
+  cfg.tiers = _tiers;
+  try {
+    const resp = await fetch('/api/agi-loop/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cfg),
+    });
+    const data = await resp.json();
+    if (data.ok) {
+      _cfg.tiers = JSON.parse(JSON.stringify(_tiers));
+      showToast('Tiers saved', 'ok');
+    } else {
+      showToast('Save failed', 'error');
+    }
+  } catch (e) {
+    showToast('Save error: ' + e.message, 'error');
+  }
+}
+
+/* ── Initialize tier table on page load ── */
+renderTierTable();
 </script>
 {% endblock %}

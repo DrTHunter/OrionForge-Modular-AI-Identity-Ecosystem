@@ -40,6 +40,7 @@ _FAISS_DIR    = _DATA_DIR / "memory" / "faiss"
 
 CONNECTIONS_FILE = _CONFIG_DIR / "connections.json"
 SETTINGS_FILE    = _CONFIG_DIR / "settings.json"
+PRICING_FILE     = _CONFIG_DIR / "pricing.yaml"
 
 log = logging.getLogger("soulscript")
 
@@ -137,6 +138,22 @@ def _save_settings(data: dict):
 
 
 # ═══════════════════════════════════════════════════════════════════
+#  PRICING
+# ═══════════════════════════════════════════════════════════════════
+
+def _load_pricing() -> dict:
+    if not PRICING_FILE.exists():
+        return {}
+    with open(PRICING_FILE, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f) or {}
+
+def _save_pricing(data: dict):
+    PRICING_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with open(PRICING_FILE, "w", encoding="utf-8") as f:
+        yaml.dump(data, f, default_flow_style=False, sort_keys=False)
+
+
+# ═══════════════════════════════════════════════════════════════════
 #  PROFILES
 # ═══════════════════════════════════════════════════════════════════
 
@@ -227,11 +244,13 @@ def _save_note(note_id: str, data: dict):
 #  PROMPT ASSEMBLY — The core of SoulScript identity persistence
 # ═══════════════════════════════════════════════════════════════════
 
-def _build_chat_messages(agent: str, messages: list[dict]) -> tuple[list[dict], dict]:
+def _build_chat_messages(agent: str, messages: list[dict]) -> tuple[list[dict], dict, list[dict]]:
     """Assemble the full prompt with identity + knowledge + memory layers.
 
-    Returns (llm_messages, layer_metadata) where layer_metadata exposes
-    exactly what was injected at each stage — for the Prompt Inspector UI.
+    Returns (llm_messages, layer_metadata, tool_defs) where:
+      - llm_messages: the message array for the LLM
+      - layer_metadata: what was injected at each stage (Prompt Inspector UI)
+      - tool_defs: OpenAI-format tool definitions for the ``tools`` API param
 
     Injection order (highest priority first):
       1. Base system prompt    — the agent's personality / instructions
@@ -239,6 +258,7 @@ def _build_chat_messages(agent: str, messages: list[dict]) -> tuple[list[dict], 
       3. Always-on knowledge   — verbatim attached knowledge notes
       4. Memory Vault context  — FAISS search over persistent agent memories
       5. Conversation history  — recent user/assistant turns
+      6. Tool registry         — function-calling definitions for allowed tools
     """
     layers = {
         "base_prompt": {"chars": 0, "preview": ""},
@@ -246,6 +266,7 @@ def _build_chat_messages(agent: str, messages: list[dict]) -> tuple[list[dict], 
         "always_on":   {"chunks": 0, "chars": 0, "preview": ""},
         "vault":       {"memories": 0, "chars": 0, "snippets": []},
         "conversation": {"turns": 0, "chars": 0},
+        "tools":       {"count": 0, "names": []},
     }
 
     # ── 1. Base prompt ──
@@ -330,7 +351,17 @@ def _build_chat_messages(agent: str, messages: list[dict]) -> tuple[list[dict], 
     layers["conversation"]["turns"] = len(conversation)
     layers["conversation"]["chars"] = MAX_CONTEXT_CHARS - budget
 
-    return [{"role": "system", "content": system_prompt}] + conversation, layers
+    # ── 6. Tool registry ──
+    tool_defs: list[dict] = []
+    try:
+        from src.tools.registry import get_tool_defs_for_agent
+        tool_defs = get_tool_defs_for_agent(agent)
+        layers["tools"]["count"] = len(tool_defs)
+        layers["tools"]["names"] = [d["function"]["name"] for d in tool_defs]
+    except Exception as exc:
+        log.warning("[prompt] Tool registry failed: %s", exc)
+
+    return [{"role": "system", "content": system_prompt}] + conversation, layers, tool_defs
 
 
 def _extract_and_save_memories(agent: str, response_text: str) -> list[dict]:
@@ -413,6 +444,7 @@ async def page_profiles(request: Request):
             "profile": profile, "config": cfg,
             "system_prompt": _load_system_prompt(name),
             "display_name": cfg.get("display_name", name),
+            "description": cfg.get("description", ""),
         }
     store = _load_connections()
     all_models = []
@@ -422,11 +454,22 @@ async def page_profiles(request: Request):
                 if m not in all_models:
                     all_models.append(m)
     notes = [n for n in _load_notes_index() if not n.get("trashed")]
+    # Builtin notes (agent-specific .md files in notes/ dir)
+    notes_dir = _DATA_DIR / "user_notes"
+    builtin_notes = {}
+    for name in agents:
+        agent_notes = []
+        for md_file in sorted((_PROJECT_ROOT / "notes").glob("*.md")) if (_PROJECT_ROOT / "notes").exists() else []:
+            agent_notes.append({"file": md_file.name, "attached": True, "mode": "always"})
+        builtin_notes[name] = agent_notes
     return templates.TemplateResponse("profiles.html", {
         "request": request, "page": "profiles",
         "agents": agents, "agent_data": agent_data,
         "all_models": all_models, "notes": notes,
         "avatar_map": settings.get("agent_avatars", {}),
+        "user_profile": settings.get("user_profile", {}),
+        "connections": [c for c in store.get("connections", []) if c.get("enabled")],
+        "builtin_notes": builtin_notes,
     })
 
 @app.get("/vault", response_class=HTMLResponse)
@@ -483,6 +526,11 @@ async def page_settings(request: Request, tab: str = "connections"):
         "connections": store.get("connections", []),
         "settings": _load_settings(), "tab": tab,
     })
+
+@app.get("/pricing", response_class=RedirectResponse)
+async def page_pricing_redirect():
+    """Redirect old pricing page to tools (cost_tracker tool)."""
+    return RedirectResponse(url="/tools#cost_tracker", status_code=302)
 
 
 # ── Tools page ────────────────────────────────────────────────────
@@ -615,17 +663,54 @@ _TOOL_CATALOGUE = [
             {"name": "text", "type": "string", "required": False, "description": "Text to type or key to press", "enum": []},
         ],
     },
+    {
+        "name": "cost_tracker",
+        "icon": "💰",
+        "icon_bg": "rgba(16,185,129,0.12)",
+        "icon_color": "#10b981",
+        "description": "Manage token pricing, track costs per model, and view spending across all LLM API calls. Edit per-model rates and monitor usage in real time.",
+        "status": "ready",
+        "parameters": [
+            {"name": "action", "type": "string", "required": True, "description": "Operation to perform", "enum": ["get_pricing", "set_pricing", "list_models", "cost_summary", "cost_log", "session_cost"]},
+            {"name": "provider", "type": "string", "required": False, "description": "Provider name (openai, anthropic, deepseek, ollama)", "enum": []},
+            {"name": "model", "type": "string", "required": False, "description": "Model name", "enum": []},
+            {"name": "period", "type": "string", "required": False, "description": "Time period for cost summary", "enum": ["today", "this_week", "this_month", "all_time"]},
+        ],
+    },
 ]
 
 @app.get("/tools", response_class=HTMLResponse)
 async def page_tools(request: Request):
     agents = _list_agents()
+    # Gather pricing data for the cost_tracker tool panel
+    pricing = _load_pricing()
+    store = _load_connections()
+    connections = [c for c in store.get("connections", []) if c.get("enabled")]
+    try:
+        from src.observability.metering import read_cost_log, aggregate_costs
+        from datetime import timedelta
+        now = datetime.now(timezone.utc)
+        all_events = read_cost_log(limit=100000)
+        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+        today_events = [e for e in all_events if e.get("ts", "") >= today_start]
+        month_start = (now - timedelta(days=30)).isoformat()
+        month_events = [e for e in all_events if e.get("ts", "") >= month_start]
+        cost_stats = {
+            "today": aggregate_costs(today_events),
+            "this_month": aggregate_costs(month_events),
+            "all_time": aggregate_costs(all_events),
+        }
+    except Exception:
+        cost_stats = {"today": {}, "this_month": {}, "all_time": {}}
     return templates.TemplateResponse("tools.html", {
         "request": request,
         "page": "tools",
         "tools": _TOOL_CATALOGUE,
         "agents": agents,
         "total": len(_TOOL_CATALOGUE),
+        "pricing": pricing,
+        "connections": connections,
+        "cost_stats": cost_stats,
     })
 
 
@@ -646,11 +731,56 @@ _AGI_LOOP_DEFAULTS = {
     "monthly_soft_cap": 16.00,
     "per_session_cap": 2.00,
     "per_tick_cap": 0.10,
+    "tiers": [
+        {
+            "id": "t0", "label": "local_cheap", "enabled": True,
+            "connection_id": "", "provider": "ollama",
+            "primary_model": "qwen2.5:7b",
+            "temperature": 0.6, "max_output_tokens": 2048,
+            "max_iterations": 8, "retries_before_escalate": 3,
+            "alt_models": [],
+            "default_for": "Memory ops, reflection, summarization",
+            "cost_per_call": "~$0.00",
+        },
+        {
+            "id": "t1", "label": "local_strong", "enabled": True,
+            "connection_id": "", "provider": "ollama",
+            "primary_model": "llama3:70b",
+            "temperature": 0.5, "max_output_tokens": 4096,
+            "max_iterations": 8, "retries_before_escalate": 3,
+            "alt_models": [],
+            "default_for": "Planning, general reasoning",
+            "cost_per_call": "~$0.00",
+        },
+        {
+            "id": "t2", "label": "cheap_cloud", "enabled": True,
+            "connection_id": "", "provider": "deepseek",
+            "primary_model": "deepseek-chat",
+            "temperature": 0.4, "max_output_tokens": 8192,
+            "max_iterations": 6, "retries_before_escalate": 2,
+            "alt_models": [],
+            "default_for": "Coding, high-stakes decisions",
+            "cost_per_call": "~$0.001",
+        },
+        {
+            "id": "t3", "label": "expensive_cloud", "enabled": True,
+            "connection_id": "", "provider": "openai",
+            "primary_model": "gpt-4o",
+            "temperature": 0.3, "max_output_tokens": 16384,
+            "max_iterations": 4, "retries_before_escalate": 2,
+            "alt_models": [],
+            "default_for": "Final polish, critical review",
+            "cost_per_call": "~$0.01\u20130.10",
+        },
+    ],
 }
 
 def _load_agi_loop_config() -> dict:
     saved = _read_json(AGI_LOOP_FILE, {})
     merged = {**_AGI_LOOP_DEFAULTS, **saved}
+    # Ensure tiers always present
+    if "tiers" not in merged:
+        merged["tiers"] = _AGI_LOOP_DEFAULTS["tiers"]
     return merged
 
 def _save_agi_loop_config(data: dict):
@@ -661,9 +791,11 @@ def _save_agi_loop_config(data: dict):
 async def page_agi_loop(request: Request):
     agents = _list_agents()
     config = _load_agi_loop_config()
+    connections = _load_connections().get("connections", [])
     return templates.TemplateResponse("agi_loop.html", {
         "request": request, "page": "agi-loop",
         "agents": agents, "config": config,
+        "connections": connections,
     })
 
 
@@ -681,6 +813,7 @@ class AGILoopConfigUpdate(BaseModel):
     monthly_soft_cap: float = 16.00
     per_session_cap: float = 2.00
     per_tick_cap: float = 0.10
+    tiers: list = []
 
 
 @app.get("/api/agi-loop/config")
@@ -748,7 +881,7 @@ async def api_chat_send(req: ChatRequest):
     chat_data["updated"] = now
 
     # Build prompt with all identity layers
-    llm_messages, layers = _build_chat_messages(req.agent, chat_data["messages"])
+    llm_messages, layers, tool_defs = _build_chat_messages(req.agent, chat_data["messages"])
 
     # Resolve model
     profile = _load_profile(req.agent)
@@ -769,12 +902,15 @@ async def api_chat_send(req: ChatRequest):
         headers["Authorization"] = f"Bearer {conn['api_key']}"
 
     try:
+        payload = {
+            "model": model,
+            "messages": llm_messages,
+            "temperature": profile.get("temperature", 0.7),
+        }
+        if tool_defs:
+            payload["tools"] = tool_defs
         async with httpx.AsyncClient(timeout=120) as client:
-            resp = await client.post(url, json={
-                "model": model,
-                "messages": llm_messages,
-                "temperature": profile.get("temperature", 0.7),
-            }, headers=headers)
+            resp = await client.post(url, json=payload, headers=headers)
             resp.raise_for_status()
             data = resp.json()
     except httpx.HTTPStatusError as exc:
@@ -785,6 +921,17 @@ async def api_chat_send(req: ChatRequest):
     raw_response = data.get("choices", [{}])[0].get("message", {}).get("content", "")
     usage = data.get("usage", {})
 
+    # ── Cost metering ──
+    provider = conn.get("provider", "openai")
+    try:
+        from src.observability.metering import meter_from_raw_usage, log_cost_event
+        metering = meter_from_raw_usage(usage, provider=provider, model=model)
+        cost_data = metering.cost.to_dict()
+        log_cost_event(metering, agent=req.agent, chat_id=chat_data["id"])
+    except Exception as exc:
+        log.warning("[metering] cost computation failed: %s", exc)
+        cost_data = {}
+
     # Extract and save any [MEMORY_SAVE: ...] tags to the vault
     saved_memories = _extract_and_save_memories(req.agent, raw_response)
     # Strip memory tags from the text shown to the user
@@ -792,7 +939,7 @@ async def api_chat_send(req: ChatRequest):
 
     chat_data["messages"].append({
         "role": "assistant", "text": response_text, "time": now,
-        "usage": usage, "data": {"agent": req.agent, "model": model, "usage": usage},
+        "usage": usage, "data": {"agent": req.agent, "model": model, "usage": usage, "cost": cost_data},
         "layers": layers,
     })
     _save_chat(chat_data["id"], chat_data)
@@ -806,7 +953,7 @@ async def api_chat_send(req: ChatRequest):
 
     return {
         "response": response_text, "chat_id": chat_data["id"],
-        "model": model, "usage": usage, "layers": layers,
+        "model": model, "usage": usage, "cost": cost_data, "layers": layers,
         "saved_memories": saved_memories,
     }
 
@@ -952,6 +1099,81 @@ async def api_profile_delete(name: str):
     settings.get("agent_configs", {}).pop(name, None)
     _save_settings(settings)
     return {"ok": True}
+
+@app.put("/api/profiles/{name}/config")
+async def api_profile_config(name: str, request: Request):
+    """Update individual config fields for an agent (display_name, description, model, etc.)."""
+    body = await request.json()
+    cfg = _get_agent_config(name)
+    for key in ("display_name", "description", "model", "allowed_tools"):
+        if key in body:
+            cfg[key] = body[key]
+    # Also persist model to profile yaml for compatibility
+    if "model" in body:
+        profile = _load_profile(name)
+        profile["model"] = body["model"]
+        _save_profile(name, profile)
+    # Also persist system_prompt_text if sent
+    if "system_prompt_text" in body:
+        _save_system_prompt(name, body["system_prompt_text"])
+    _save_agent_config(name, cfg)
+    return {"ok": True}
+
+@app.put("/api/profiles/{name}/avatar")
+async def api_profile_avatar(name: str, request: Request):
+    """Update avatar image or colour for an agent."""
+    body = await request.json()
+    settings = _load_settings()
+    avatars = settings.setdefault("agent_avatars", {})
+    entry = avatars.setdefault(name, {})
+    if "color" in body:
+        entry["color"] = body["color"]
+    if "image" in body:
+        if body["image"]:
+            entry["image"] = body["image"]
+        else:
+            entry.pop("image", None)
+    avatars[name] = entry
+    _save_settings(settings)
+    return {"ok": True}
+
+@app.put("/api/profiles/user")
+async def api_profile_user(request: Request):
+    """Update user profile (name, avatar, color)."""
+    body = await request.json()
+    settings = _load_settings()
+    user_profile = settings.setdefault("user_profile", {})
+    for key in ("name", "color", "image"):
+        if key in body:
+            if key == "image" and not body[key]:
+                user_profile.pop("image", None)
+            else:
+                user_profile[key] = body[key]
+    _save_settings(settings)
+    return {"ok": True}
+
+@app.post("/api/profiles/create")
+async def api_profile_create_v2(request: Request):
+    """Create a new agent (v2 — supports description and model)."""
+    body = await request.json()
+    name = body.get("name", "").strip().lower().replace(" ", "_")
+    if not name:
+        return JSONResponse({"error": "Name required"}, 400)
+    if (_PROFILES_DIR / f"{name}.yaml").exists():
+        return JSONResponse({"error": "Already exists"}, 400)
+    model = body.get("model", "")
+    desc = body.get("description", "")
+    _save_profile(name, {"name": name, "model": model, "temperature": 0.7,
+                         "system_prompt": f"{name}.system.md"})
+    _save_system_prompt(name, f"You are {name}.")
+    if desc or model:
+        cfg = _get_agent_config(name)
+        if desc:
+            cfg["description"] = desc
+        if model:
+            cfg["model"] = model
+        _save_agent_config(name, cfg)
+    return {"ok": True, "name": name}
 
 @app.put("/api/profiles/{name}/knowledge")
 async def api_profile_knowledge(name: str, request: Request):
@@ -1259,6 +1481,139 @@ async def api_connections_probe_models(request: Request):
     except Exception as exc:
         return {"error": str(exc)}
     return {"models": models}
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  PRICING API
+# ═══════════════════════════════════════════════════════════════════
+
+@app.get("/api/pricing")
+async def api_pricing_get():
+    """Return the full pricing registry."""
+    return _load_pricing()
+
+@app.put("/api/pricing")
+async def api_pricing_update(request: Request):
+    """Replace the entire pricing registry."""
+    body = await request.json()
+    _save_pricing(body)
+    try:
+        from src.observability.metering import reset_pricing_cache
+        reset_pricing_cache()
+    except Exception:
+        pass
+    return {"ok": True}
+
+@app.put("/api/pricing/{provider}/{model:path}")
+async def api_pricing_set_model(provider: str, model: str, request: Request):
+    """Update pricing for a single provider/model."""
+    body = await request.json()
+    pricing = _load_pricing()
+    if provider not in pricing:
+        pricing[provider] = {}
+    entry = pricing[provider].get(model, {})
+    for key in ("input_per_1m", "cached_input_per_1m", "output_per_1m", "training_per_1m"):
+        if key in body:
+            entry[key] = float(body[key])
+    pricing[provider][model] = entry
+    _save_pricing(pricing)
+    try:
+        from src.observability.metering import reset_pricing_cache
+        reset_pricing_cache()
+    except Exception:
+        pass
+    return {"ok": True, "pricing": entry}
+
+@app.delete("/api/pricing/{provider}/{model:path}")
+async def api_pricing_delete_model(provider: str, model: str):
+    """Remove pricing for a single model."""
+    pricing = _load_pricing()
+    if provider in pricing:
+        pricing[provider].pop(model, None)
+        if not pricing[provider]:
+            del pricing[provider]
+    _save_pricing(pricing)
+    try:
+        from src.observability.metering import reset_pricing_cache
+        reset_pricing_cache()
+    except Exception:
+        pass
+    return {"ok": True}
+
+@app.get("/api/pricing/models")
+async def api_pricing_all_models():
+    """Return all models from all enabled connections + current pricing."""
+    store = _load_connections()
+    pricing = _load_pricing()
+    result = []
+    seen = set()
+    for conn in store.get("connections", []):
+        if not conn.get("enabled"):
+            continue
+        provider = conn.get("provider", "openai")
+        conn_name = conn.get("name", provider)
+        for m in conn.get("models", []):
+            key = f"{provider}:{m}"
+            if key in seen:
+                continue
+            seen.add(key)
+            # Look up current pricing
+            prov_prices = pricing.get(provider, {})
+            mp = prov_prices.get(m)
+            if not mp:
+                for pk, pv in prov_prices.items():
+                    if pk.startswith("_"):
+                        continue
+                    if isinstance(pv, dict) and m.startswith(pk):
+                        mp = pv
+                        break
+            if not mp:
+                mp = prov_prices.get("_default", {})
+            result.append({
+                "provider": provider,
+                "connection": conn_name,
+                "model": m,
+                "input_per_1m": mp.get("input_per_1m", 0.0),
+                "cached_input_per_1m": mp.get("cached_input_per_1m", 0.0),
+                "output_per_1m": mp.get("output_per_1m", 0.0),
+                "training_per_1m": mp.get("training_per_1m", 0.0),
+            })
+    return {"models": result}
+
+@app.get("/api/pricing/cost-summary")
+async def api_pricing_cost_summary(agent: str = "", period: str = "all"):
+    """Return aggregated cost stats."""
+    try:
+        from src.observability.metering import read_cost_log, aggregate_costs
+        from datetime import timedelta
+        now_utc = datetime.now(timezone.utc)
+        kwargs = {}
+        if agent:
+            kwargs["agent"] = agent
+        if period == "today":
+            kwargs["since"] = now_utc.replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+        elif period == "week":
+            kwargs["since"] = (now_utc - timedelta(days=7)).isoformat()
+        elif period == "month":
+            kwargs["since"] = (now_utc - timedelta(days=30)).isoformat()
+        events = read_cost_log(**kwargs, limit=100000)
+        return aggregate_costs(events)
+    except Exception as exc:
+        return {"error": str(exc)}
+
+@app.get("/api/pricing/cost-log")
+async def api_pricing_cost_log(agent: str = "", since: str = "", limit: int = 100):
+    """Return recent cost log entries."""
+    try:
+        from src.observability.metering import read_cost_log
+        kwargs = {"limit": limit}
+        if agent:
+            kwargs["agent"] = agent
+        if since:
+            kwargs["since"] = since
+        return {"events": read_cost_log(**kwargs)}
+    except Exception as exc:
+        return {"error": str(exc)}
 
 
 # ═══════════════════════════════════════════════════════════════════
