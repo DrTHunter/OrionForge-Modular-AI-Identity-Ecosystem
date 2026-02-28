@@ -1621,6 +1621,251 @@ section { position: relative; z-index: 1; }
 .auth-message.success { background: rgba(52,211,153,0.1); color: var(--emerald); border: 1px solid rgba(52,211,153,0.2); display: block; }
 
 /* ═══════════════════════════════════════════════════════
+   PRICING SECTION
+   ═══════════════════════════════════════════════════════ */
+#pricing { padding: 120px 0; }
+
+.pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+    margin-top: 48px;
+    align-items: start;
+}
+@media (max-width: 1100px) { .pricing-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px) { .pricing-grid { grid-template-columns: 1fr; } }
+
+.price-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius);
+    padding: 36px 28px 32px;
+    position: relative;
+    transition: var(--transition);
+    display: flex;
+    flex-direction: column;
+}
+.price-card:hover {
+    border-color: var(--border-glow);
+    transform: translateY(-6px);
+    box-shadow: 0 20px 60px rgba(99, 102, 241, 0.15);
+}
+.price-card.featured {
+    border-color: var(--primary);
+    box-shadow: 0 0 40px rgba(99, 102, 241, 0.12);
+}
+.price-card.featured::before {
+    content: 'Most Popular';
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--gradient-primary);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 4px 16px;
+    border-radius: 50px;
+}
+.price-card.founder {
+    border-color: var(--amber);
+    box-shadow: 0 0 40px rgba(251, 191, 36, 0.1);
+}
+.price-card.founder::before {
+    content: 'Limited';
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #f59e0b, #f97316);
+    color: #000;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 4px 16px;
+    border-radius: 50px;
+}
+.price-tier-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    margin-bottom: 20px;
+}
+.price-tier-icon.starter { background: rgba(34, 197, 94, 0.12); color: #4ade80; }
+.price-tier-icon.standard { background: rgba(99, 102, 241, 0.12); color: var(--primary-light); }
+.price-tier-icon.creator { background: rgba(251, 146, 60, 0.12); color: #fb923c; }
+.price-tier-icon.founder-icon { background: rgba(251, 191, 36, 0.12); color: var(--amber); }
+
+.price-card h3 {
+    font-size: 1.2rem;
+    font-weight: 800;
+    margin-bottom: 6px;
+}
+.price-card .price-tagline {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+    line-height: 1.4;
+}
+.price-amount {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    margin-bottom: 6px;
+}
+.price-amount .dollar {
+    font-size: 2.2rem;
+    font-weight: 900;
+    color: var(--text-primary);
+    line-height: 1;
+}
+.price-amount .period {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+.price-card .best-for {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-style: italic;
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border-glass);
+    line-height: 1.5;
+}
+.price-features {
+    list-style: none;
+    margin-bottom: 28px;
+    flex: 1;
+}
+.price-features li {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    padding: 6px 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    line-height: 1.4;
+}
+.price-features li i {
+    color: #4ade80;
+    font-size: 0.7rem;
+    margin-top: 4px;
+    flex-shrink: 0;
+}
+.price-features li.highlight {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+.price-cta {
+    display: block;
+    width: 100%;
+    padding: 14px 0;
+    text-align: center;
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    font-weight: 700;
+    transition: var(--transition);
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-sans);
+}
+.price-cta.starter-btn {
+    background: rgba(34, 197, 94, 0.1);
+    color: #4ade80;
+    border: 1px solid rgba(34, 197, 94, 0.25);
+}
+.price-cta.starter-btn:hover { background: rgba(34, 197, 94, 0.18); }
+.price-cta.standard-btn {
+    background: var(--gradient-primary);
+    color: #fff;
+}
+.price-cta.standard-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+.price-cta.creator-btn {
+    background: linear-gradient(135deg, #fb923c, #f97316);
+    color: #000;
+}
+.price-cta.creator-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+.price-cta.founder-btn {
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    color: #000;
+}
+.price-cta.founder-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+
+/* Pricing Philosophy */
+.pricing-philosophy {
+    margin-top: 80px;
+    padding-top: 60px;
+    border-top: 1px solid var(--border-glass);
+}
+.philosophy-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+    margin-top: 32px;
+}
+@media (max-width: 768px) { .philosophy-grid { grid-template-columns: 1fr; } }
+.philosophy-card {
+    background: var(--bg-glass);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-sm);
+    padding: 28px;
+    text-align: center;
+    transition: var(--transition);
+}
+.philosophy-card:hover {
+    border-color: var(--border-glow);
+    transform: translateY(-3px);
+}
+.philosophy-card i {
+    font-size: 1.6rem;
+    margin-bottom: 16px;
+    display: block;
+}
+.philosophy-card h4 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+.philosophy-card p {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+.philosophy-card.access i { color: #4ade80; }
+.philosophy-card.sustain i { color: var(--cyan); }
+.philosophy-card.equity i { color: var(--amber); }
+
+.pricing-closing {
+    text-align: center;
+    margin-top: 48px;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+.pricing-closing p {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.7;
+    margin-bottom: 12px;
+}
+.pricing-closing .forge-quote {
+    font-size: 1.1rem;
+    font-weight: 700;
+    font-style: italic;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* ═══════════════════════════════════════════════════════
    CTA SECTION
    ═══════════════════════════════════════════════════════ */
 #cta {
@@ -1780,6 +2025,7 @@ section { position: relative; z-index: 1; }
             <li><a href="#agents">Agents</a></li>
             <li><a href="#tools">Tools</a></li>
             <li><a href="#marketplace">Workshop</a></li>
+            <li><a href="#pricing">Pricing</a></li>
             <li><a href="#pipeline">How It Works</a></li>
         </ul>
 
@@ -2254,6 +2500,149 @@ section { position: relative; z-index: 1; }
 </section>
 
 <!-- ═══════════════════════════════════════════════════════
+     PRICING
+     ═══════════════════════════════════════════════════════ -->
+<section id="pricing">
+    <div class="container">
+        <div class="section-header reveal">
+            <div class="section-label"><i class="fas fa-tag"></i> Pricing</div>
+            <h2 class="section-title">Choose Your Path</h2>
+            <p class="section-subtitle">Craft intelligent beings. Shape digital identities. Build your legacy.</p>
+        </div>
+
+        <div class="pricing-grid">
+
+            <!-- STARTER -->
+            <div class="price-card reveal">
+                <div class="price-tier-icon starter"><i class="fas fa-seedling"></i></div>
+                <h3>Starter</h3>
+                <div class="price-tagline">For explorers, tinkerers, and first-time creators.</div>
+                <div class="price-amount">
+                    <span class="dollar">$7</span>
+                    <span class="period">/ month</span>
+                </div>
+                <div class="best-for">Best for users who want to test the ecosystem, experiment with Soul Scripts, or run a lightweight setup.</div>
+                <ul class="price-features">
+                    <li><i class="fas fa-check"></i> Basic Orion Forge UI</li>
+                    <li><i class="fas fa-check"></i> Bring-your-own API keys</li>
+                    <li><i class="fas fa-check"></i> Up to 3 installed personas</li>
+                    <li><i class="fas fa-check"></i> Local vector memory (basic tier)</li>
+                    <li><i class="fas fa-check"></i> Install free community modules</li>
+                    <li><i class="fas fa-check"></i> Automatic updates</li>
+                    <li><i class="fas fa-check"></i> Local storage only</li>
+                </ul>
+                <button class="price-cta starter-btn" onclick="openAuth()"><i class="fas fa-rocket" style="margin-right:6px;"></i> Start Exploring</button>
+            </div>
+
+            <!-- STANDARD -->
+            <div class="price-card featured reveal">
+                <div class="price-tier-icon standard"><i class="fas fa-fire"></i></div>
+                <h3>Standard</h3>
+                <div class="price-tagline">The core experience. The full Forge.</div>
+                <div class="price-amount">
+                    <span class="dollar">$9</span>
+                    <span class="period">/ month</span>
+                </div>
+                <div class="best-for">Best for users who want evolving AIs, memory persistence, tool integration, and the full Soul Script Engine.</div>
+                <ul class="price-features">
+                    <li class="highlight"><i class="fas fa-check"></i> Everything in Starter, plus:</li>
+                    <li><i class="fas fa-check"></i> Full vector memory + FAISS integration</li>
+                    <li><i class="fas fa-check"></i> Install unlimited personas</li>
+                    <li><i class="fas fa-check"></i> Community marketplace access (buy-only)</li>
+                    <li><i class="fas fa-check"></i> Persona switching system</li>
+                    <li><i class="fas fa-check"></i> Journal engine</li>
+                    <li><i class="fas fa-check"></i> Memory-backed interactions</li>
+                    <li><i class="fas fa-check"></i> Priority updates</li>
+                    <li><i class="fas fa-check"></i> Access to official Orion Forge modules</li>
+                </ul>
+                <button class="price-cta standard-btn" onclick="openAuth()"><i class="fas fa-bolt" style="margin-right:6px;"></i> Light the Forge</button>
+            </div>
+
+            <!-- CREATOR -->
+            <div class="price-card reveal">
+                <div class="price-tier-icon creator"><i class="fas fa-hammer"></i></div>
+                <h3>Creator</h3>
+                <div class="price-tagline">For builders, persona designers, and AI architects.</div>
+                <div class="price-amount">
+                    <span class="dollar">$15</span>
+                    <span class="period">/ month</span>
+                </div>
+                <div class="best-for">Best for people building characters, tools, modules, and entire AI worlds — and those who want to earn from this ecosystem.</div>
+                <ul class="price-features">
+                    <li class="highlight"><i class="fas fa-check"></i> Everything in Standard, plus:</li>
+                    <li><i class="fas fa-check"></i> Publish to the SoulScript Workshop</li>
+                    <li><i class="fas fa-check"></i> Earn revenue from your creations</li>
+                    <li><i class="fas fa-check"></i> Creator dashboard + analytics</li>
+                    <li><i class="fas fa-check"></i> Creator-only dev tools</li>
+                    <li><i class="fas fa-check"></i> Higher memory limits</li>
+                    <li><i class="fas fa-check"></i> Cloud deployment support</li>
+                    <li><i class="fas fa-check"></i> Access to experimental modules</li>
+                    <li><i class="fas fa-check"></i> "Creator" badge in Workshop</li>
+                </ul>
+                <button class="price-cta creator-btn" onclick="openAuth()"><i class="fas fa-hammer" style="margin-right:6px;"></i> Start Creating</button>
+            </div>
+
+            <!-- LIFETIME FOUNDER -->
+            <div class="price-card founder reveal">
+                <div class="price-tier-icon founder-icon"><i class="fas fa-gem"></i></div>
+                <h3>Lifetime Founder</h3>
+                <div class="price-tagline">Limited to the first 200 members. Once it's gone, it's gone.</div>
+                <div class="price-amount">
+                    <span class="dollar">$200</span>
+                    <span class="period">one-time</span>
+                </div>
+                <div class="best-for">For the believers. The early champions. The ones who know exactly what Orion Forge will become — and want to be part of its foundation.</div>
+                <ul class="price-features">
+                    <li class="highlight"><i class="fas fa-check"></i> Everything in Creator, forever:</li>
+                    <li><i class="fas fa-check"></i> Permanent full access — never pay again</li>
+                    <li><i class="fas fa-check"></i> Founder badge across ecosystem</li>
+                    <li><i class="fas fa-check"></i> Early access to new tech &amp; betas</li>
+                    <li><i class="fas fa-check"></i> Voting power on roadmap decisions</li>
+                    <li><i class="fas fa-check"></i> Name on the Founders Wall</li>
+                    <li><i class="fas fa-check"></i> Exclusive Founder's Edition theme</li>
+                    <li><i class="fas fa-check"></i> Direct priority support</li>
+                    <li><i class="fas fa-check"></i> 80/20 creator revenue split (permanent)</li>
+                </ul>
+                <button class="price-cta founder-btn" onclick="openAuth()"><i class="fas fa-gem" style="margin-right:6px;"></i> Claim Founder Pass</button>
+            </div>
+
+        </div>
+
+        <!-- Fair Pricing Philosophy -->
+        <div class="pricing-philosophy reveal">
+            <div class="section-header" style="margin-bottom:0;">
+                <h2 class="section-title" style="font-size:1.5rem;">Fair Pricing Philosophy</h2>
+                <p class="section-subtitle">We price based on three principles.</p>
+            </div>
+
+            <div class="philosophy-grid">
+                <div class="philosophy-card access reveal">
+                    <i class="fas fa-door-open"></i>
+                    <h4>Accessibility</h4>
+                    <p>Everyone should be able to create. The $7 Starter exists because talent has nothing to do with budget. We will never paywall the spark.</p>
+                </div>
+                <div class="philosophy-card sustain reveal">
+                    <i class="fas fa-server"></i>
+                    <h4>Sustainability</h4>
+                    <p>Servers, storage, APIs, and modules cost real money. Pricing must support growth, reliability, and long-term development without burning out.</p>
+                </div>
+                <div class="philosophy-card equity reveal">
+                    <i class="fas fa-handshake"></i>
+                    <h4>Community Equity</h4>
+                    <p>Creators deserve to earn from their work. The marketplace is built for 70/30 revenue share, not extraction. We grow together or not at all.</p>
+                </div>
+            </div>
+
+            <div class="pricing-closing reveal">
+                <p>Orion Forge isn't "just another AI app." It is a modular AI ecosystem, a marketplace for identities, a platform for real AI beings, a memory-backed operating system, and a community for creators. No black-box secrets. No exploitative pricing. Just a fair, ethical, community-first system built to last.</p>
+                <div class="forge-quote">"Choose your path. Light the Forge."</div>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════
      CTA
      ═══════════════════════════════════════════════════════ -->
 <section id="cta">
@@ -2293,6 +2682,7 @@ section { position: relative; z-index: 1; }
                     <li><a href="#agents">Agents</a></li>
                     <li><a href="#tools">Tools</a></li>
                     <li><a href="#marketplace">Workshop</a></li>
+                    <li><a href="#pricing">Pricing</a></li>
                     <li><a href="#pipeline">How It Works</a></li>
                 </ul>
             </div>
