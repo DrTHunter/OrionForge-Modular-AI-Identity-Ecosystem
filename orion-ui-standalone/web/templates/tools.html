@@ -388,6 +388,60 @@
     font-size: 0.6875rem; color: #22d3ee; background: rgba(34,211,238,0.08);
     padding: 0.0625rem 0.3rem; border-radius: 0.1875rem;
   }
+
+  /* ── Memory sub-panel visibility ──────────────────────────────── */
+  .mem-sub-panel { display: none; animation: viewFade 0.2s ease; }
+  .mem-sub-panel.active { display: block; }
+
+  /* ── Read-only identity profile fields ────────────────────────── */
+  .ro-field {
+    background: rgba(24,24,27,0.45);
+    border: 1px solid rgba(42,42,58,0.35);
+    border-radius: 0.5rem;
+    padding: 0.625rem 0.75rem;
+  }
+  .ro-label {
+    font-size: 0.625rem;
+    font-weight: 700;
+    color: #52525b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.25rem;
+  }
+  .ro-value {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: #e4e4e7;
+    line-height: 1.35;
+  }
+  .ro-value-accent { color: #a5b4fc; }
+  .ro-unit { font-size: 0.6875rem; font-weight: 400; color: #71717a; }
+
+  .ro-chip {
+    display: inline-block;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: #a5b4fc;
+    background: rgba(165,180,252,0.08);
+    border: 1px solid rgba(165,180,252,0.18);
+    padding: 0.1875rem 0.5rem;
+    border-radius: 0.375rem;
+  }
+  .ro-chip-primary { color: #6ee7b7; background: rgba(110,231,183,0.08); border-color: rgba(110,231,183,0.18); }
+  .ro-chip-secondary { color: #fbbf24; background: rgba(251,191,36,0.08); border-color: rgba(251,191,36,0.18); }
+  .ro-chip-tertiary { color: #a1a1aa; background: rgba(161,161,170,0.06); border-color: rgba(161,161,170,0.15); }
+
+  .ro-imp-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    background: rgba(24,24,27,0.45);
+    border: 1px solid rgba(42,42,58,0.35);
+    border-radius: 0.375rem;
+    padding: 0.25rem 0.5rem;
+  }
+  .ro-imp-name { font-size: 0.6875rem; color: #a1a1aa; }
+  .ro-imp-val { font-size: 0.8125rem; font-weight: 700; color: #e4e4e7; }
 </style>
 
 <div class="tools-shell p-6 md:p-10">
@@ -395,6 +449,9 @@
   <div class="tab-bar">
     <button class="tab-btn active" id="tab-btn-tools" onclick="showToolsList()">
       Tools <span class="tab-count">{{ total }}</span>
+    </button>
+    <button class="tab-btn" id="tab-btn-memory" onclick="showMemoryPanel()">
+      Memory <span class="tab-count">2</span>
     </button>
   </div>
 
@@ -1003,6 +1060,1859 @@
       <button class="btn btn-secondary" onclick="showToolsList()">&larr; Back to Tools</button>
     </div>
   </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       MEMORY PANEL — FAISS (read-only) + Memory Vault (editable)
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="view-panel" id="view-memory">
+
+    <!-- ─── Sub-tabs: FAISS | Memory Vault ─── -->
+    <div class="tab-bar" style="margin-bottom:1.5rem;">
+      <button class="tab-btn active" id="mem-tab-faiss" onclick="showMemSub('faiss')">
+        FAISS System <span class="tab-count" style="background:rgba(16,185,129,0.12);color:#6ee7b7;">Read-Only</span>
+      </button>
+      <button class="tab-btn" id="mem-tab-vault" onclick="showMemSub('vault')">
+        Memory Vault <span class="tab-count" style="background:rgba(99,102,241,0.15);color:#a5b4fc;">Configurable</span>
+      </button>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════
+         FAISS SYSTEM — Read-Only Overview
+         ════════════════════════════════════════════════════════════ -->
+        <div id="mem-sub-faiss" class="mem-sub-panel active">
+
+      <!-- Header -->
+      <div class="tool-detail-header">
+        <div class="tool-detail-icon" style="background:rgba(34,211,238,0.12);color:#22d3ee;">
+          &#128269;
+        </div>
+        <div>
+          <div class="tool-detail-title">Identity FAISS Profile</div>
+          <div class="tool-detail-desc">
+            Configure how Soul Script and permanent identity memory are indexed, retrieved, and merged into context.
+            The FAISS index data is <strong>read-only</strong> at runtime &mdash; but these configuration policies are fully editable.
+          </div>
+          <div class="tool-status-badge badge-ready">&#10004; Active &mdash; {{ identity_profile.get('name', 'Default') }} v{{ identity_profile.get('version', '1.0.0') }}</div>
+        </div>
+      </div>
+
+      <!-- Stats (read-only system state) -->
+      <div class="ct-overview" style="grid-template-columns: repeat(4, 1fr);">
+        <div class="ct-card">
+          <div class="ct-card-label">Stored Memories</div>
+          <div class="ct-card-value" style="color:#22d3ee;">{{ faiss_stats.total_memories }}</div>
+          <div class="ct-card-sub">entries in vault</div>
+        </div>
+        <div class="ct-card">
+          <div class="ct-card-label">Embedding Model</div>
+          <div class="ct-card-value" style="font-size:1rem;color:#a5b4fc;">{{ faiss_stats.embedding_model }}</div>
+          <div class="ct-card-sub">sentence-transformers</div>
+        </div>
+        <div class="ct-card">
+          <div class="ct-card-label">Index Type</div>
+          <div class="ct-card-value" style="font-size:1.25rem;color:#6ee7b7;">IndexFlatIP</div>
+          <div class="ct-card-sub">inner-product similarity</div>
+        </div>
+        <div class="ct-card">
+          <div class="ct-card-label">Vector Dimensions</div>
+          <div class="ct-card-value" style="color:#fbbf24;">768</div>
+          <div class="ct-card-sub">per memory embedding</div>
+        </div>
+      </div>
+
+      <!-- Config notice -->
+      <div class="ct-status-bar" style="margin-bottom:1.5rem;">
+        <span class="ct-status-dot ok"></span>
+        FAISS memory data is <strong>read-only</strong>. Configuration policies below are <strong>editable</strong> &mdash; changes are applied at next index build/retrieval.
+      </div>
+
+      <!-- Profile Info -->
+      <div class="section-card">
+        <div class="section-title"><span class="sec-icon">&#128196;</span> Profile Info</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+          <div class="config-field">
+            <div class="config-label">Profile Name</div>
+            <input type="text" class="config-input-wide" id="ip-name"
+                   value="{{ identity_profile.get('name', 'Default Identity Profile') }}">
+          </div>
+          <div class="config-field">
+            <div class="config-label">Version</div>
+            <input type="text" class="config-input-wide" id="ip-version"
+                   value="{{ identity_profile.get('version', '1.0.0') }}">
+          </div>
+        </div>
+        <div class="config-field" style="margin-top:0.75rem;">
+          <div class="config-label">Description</div>
+          <input type="text" class="config-input-wide" id="ip-description"
+                 value="{{ identity_profile.get('description', '') }}">
+        </div>
+      </div>
+
+      <!-- ── 1. INDEXING POLICY ── -->
+      {% set idx = identity_profile.get('indexing_policy', {}) %}
+      <div class="section-card">
+        <div class="section-title"><span class="sec-icon">&#128218;</span> Indexing Policy</div>
+        <div class="about-text" style="margin-bottom:1rem;">
+          How Soul Script &amp; identity documents are chunked, tagged, and embedded when building or updating the FAISS index.
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Merge Short Paragraphs</div>
+            <div class="toggle-label-desc">Combine short paragraphs into larger chunks to preserve context.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="ip-idx-merge_short_paragraphs"
+                   {% if idx.get('merge_short_paragraphs', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Auto Section Tagging</div>
+            <div class="toggle-label-desc">Automatically tag chunks with their source section headers.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="ip-idx-auto_section_tagging"
+                   {% if idx.get('auto_section_tagging', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:0.75rem;margin-top:1rem;">
+          <div class="config-field">
+            <div class="config-label">Chunk Size (tokens)</div>
+            <input type="number" class="config-input" id="ip-idx-chunk_size_tokens"
+                   value="{{ idx.get('chunk_size_tokens', 400) }}" min="50" max="2000" step="50">
+            <div class="config-hint">Size of each text chunk</div>
+          </div>
+          <div class="config-field">
+            <div class="config-label">Chunk Overlap (tokens)</div>
+            <input type="number" class="config-input" id="ip-idx-chunk_overlap_tokens"
+                   value="{{ idx.get('chunk_overlap_tokens', 80) }}" min="0" max="500" step="10">
+            <div class="config-hint">Overlap between consecutive chunks</div>
+          </div>
+          <div class="config-field">
+            <div class="config-label">Max Chunks per Document</div>
+            <input type="number" class="config-input" id="ip-idx-max_chunks_per_document"
+                   value="{{ idx.get('max_chunks_per_document', 200) }}" min="1" max="1000">
+            <div class="config-hint">Upper limit per source document</div>
+          </div>
+        </div>
+
+        <div class="config-field" style="margin-top:0.75rem;">
+          <div class="config-label">Section Tag Format</div>
+          <select class="config-input-wide" id="ip-idx-section_tag_format">
+            <option value="bracketed" {% if idx.get('section_tag_format', 'bracketed') == 'bracketed' %}selected{% endif %}>Bracketed &mdash; [section]</option>
+            <option value="xml" {% if idx.get('section_tag_format') == 'xml' %}selected{% endif %}>XML &mdash; &lt;section&gt;</option>
+            <option value="markdown" {% if idx.get('section_tag_format') == 'markdown' %}selected{% endif %}>Markdown &mdash; ## section</option>
+          </select>
+        </div>
+
+        <div class="config-field" style="margin-top:0.75rem;">
+          <div class="config-label">Document Types <span style="color:#52525b;font-weight:400;">(comma-separated)</span></div>
+          <input type="text" class="config-input-wide" id="ip-idx-document_types"
+                 value="{{ idx.get('document_types', [])|join(', ') }}">
+          <div class="config-hint">Identity document categories to index</div>
+        </div>
+
+        <div class="about-sub">Default Importance by Type</div>
+        <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:0.5rem;">
+          {% for dtype, imp in idx.get('default_importance_by_type', {}).items() %}
+          <div class="config-field">
+            <div class="config-label">{{ dtype|replace('_', ' ')|title }}</div>
+            <input type="number" class="config-input" data-dict="ip-idx-importance" data-key="{{ dtype }}"
+                   value="{{ imp }}" min="0" max="1" step="0.05">
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- ── 2. SOURCE PRIORITY POLICY ── -->
+      {% set sp = identity_profile.get('source_priority_policy', {}) %}
+      <div class="section-card">
+        <div class="section-title"><span class="sec-icon">&#128200;</span> Source Priority Policy</div>
+        <div class="about-text" style="margin-bottom:1rem;">
+          Which identity sources dominate during retrieval. Primary sources receive a boost multiplier;
+          outdated versions are penalized to keep context fresh.
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:0.75rem;">
+          <div class="config-field">
+            <div class="config-label">Primary Sources <span style="color:#52525b;font-weight:400;">(comma-sep)</span></div>
+            <input type="text" class="config-input-wide" id="ip-src-primary_sources"
+                   value="{{ sp.get('primary_sources', [])|join(', ') }}">
+          </div>
+          <div class="config-field">
+            <div class="config-label">Secondary Sources</div>
+            <input type="text" class="config-input-wide" id="ip-src-secondary_sources"
+                   value="{{ sp.get('secondary_sources', [])|join(', ') }}">
+          </div>
+          <div class="config-field">
+            <div class="config-label">Tertiary Sources</div>
+            <input type="text" class="config-input-wide" id="ip-src-tertiary_sources"
+                   value="{{ sp.get('tertiary_sources', [])|join(', ') }}">
+          </div>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Boost Primary in Retrieval</div>
+            <div class="toggle-label-desc">Apply a boost multiplier to primary source results.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="ip-src-boost_primary_in_retrieval"
+                   {% if sp.get('boost_primary_in_retrieval', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Demote Outdated Versions</div>
+            <div class="toggle-label-desc">Apply a penalty to chunks from older identity document versions.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="ip-src-demote_outdated_versions"
+                   {% if sp.get('demote_outdated_versions', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-top:1rem;">
+          <div class="config-field">
+            <div class="config-label">Primary Boost Multiplier</div>
+            <input type="number" class="config-input" id="ip-src-primary_boost_multiplier"
+                   value="{{ sp.get('primary_boost_multiplier', 1.3) }}" min="1" max="3" step="0.1">
+            <div class="config-hint">Score multiplier for primary sources</div>
+          </div>
+          <div class="config-field">
+            <div class="config-label">Outdated Version Penalty</div>
+            <input type="number" class="config-input" id="ip-src-outdated_version_penalty"
+                   value="{{ sp.get('outdated_version_penalty', 0.6) }}" min="0" max="1" step="0.05">
+            <div class="config-hint">Score penalty for outdated versions</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── 3. RETRIEVAL POLICY ── -->
+      {% set rp = identity_profile.get('retrieval_policy', {}) %}
+      <div class="section-card">
+        <div class="section-title"><span class="sec-icon">&#128270;</span> Retrieval Policy</div>
+        <div class="about-text" style="margin-bottom:1rem;">
+          How many identity chunks are pulled into context per turn. Controls semantic vs directive weighting,
+          type biases, symbolic memory limits, and deduplication.
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:0.75rem;">
+          <div class="config-field">
+            <div class="config-label">Top K</div>
+            <input type="number" class="config-input" id="ip-ret-top_k"
+                   value="{{ rp.get('top_k', 10) }}" min="1" max="50">
+            <div class="config-hint">Chunks per query</div>
+          </div>
+          <div class="config-field">
+            <div class="config-label">Max Tokens</div>
+            <input type="number" class="config-input" id="ip-ret-max_tokens_from_identity"
+                   value="{{ rp.get('max_tokens_from_identity', 1200) }}" min="100" max="8000" step="100">
+            <div class="config-hint">Token budget for identity</div>
+          </div>
+          <div class="config-field">
+            <div class="config-label">Semantic Weight</div>
+            <input type="number" class="config-input" id="ip-ret-semantic_match_weight"
+                   value="{{ rp.get('semantic_match_weight', 0.8) }}" min="0" max="1" step="0.05">
+            <div class="config-hint">Semantic similarity weight</div>
+          </div>
+          <div class="config-field">
+            <div class="config-label">Directive Weight</div>
+            <input type="number" class="config-input" id="ip-ret-directive_match_weight"
+                   value="{{ rp.get('directive_match_weight', 1.0) }}" min="0" max="2" step="0.05">
+            <div class="config-hint">Directive match weight</div>
+          </div>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Prioritize Directives for Conflicts</div>
+            <div class="toggle-label-desc">When identity chunks conflict, directive-tagged chunks win.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="ip-ret-prioritize_directives_for_conflicts"
+                   {% if rp.get('prioritize_directives_for_conflicts', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Allow Symbolic Memories in Context</div>
+            <div class="toggle-label-desc">Include symbolic (emotional/ritual) memory chunks in retrieval results.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="ip-ret-allow_symbolic_memories_in_context"
+                   {% if rp.get('allow_symbolic_memories_in_context', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Deduplicate Similar Chunks</div>
+            <div class="toggle-label-desc">Remove near-duplicate chunks from retrieval results.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="ip-ret-deduplicate_similar_chunks"
+                   {% if rp.get('deduplicate_similar_chunks', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-top:1rem;">
+          <div class="config-field">
+            <div class="config-label">Max Symbolic per Turn</div>
+            <input type="number" class="config-input" id="ip-ret-max_symbolic_memories_per_turn"
+                   value="{{ rp.get('max_symbolic_memories_per_turn', 3) }}" min="0" max="20">
+            <div class="config-hint">Symbolic chunks per turn</div>
+          </div>
+          <div class="config-field">
+            <div class="config-label">Max Similar per Section</div>
+            <input type="number" class="config-input" id="ip-ret-max_similar_per_section"
+                   value="{{ rp.get('max_similar_per_section', 2) }}" min="1" max="10">
+            <div class="config-hint">Dedup within same section</div>
+          </div>
+        </div>
+
+        <div class="about-sub">Type Bias Weights</div>
+        <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:0.5rem;">
+          {% for dtype, bias in rp.get('type_bias', {}).items() %}
+          <div class="config-field">
+            <div class="config-label">{{ dtype|replace('_', ' ')|title }}</div>
+            <input type="number" class="config-input" data-dict="ip-ret-bias" data-key="{{ dtype }}"
+                   value="{{ bias }}" min="0" max="2" step="0.05">
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- ── 4. MERGE WITH DYNAMIC POLICY ── -->
+      {% set md = identity_profile.get('merge_with_dynamic_policy', {}) %}
+      <div class="section-card">
+        <div class="section-title"><span class="sec-icon">&#128256;</span> Merge with Dynamic Memory</div>
+        <div class="about-text" style="margin-bottom:1rem;">
+          Who wins when identity (Soul Script) and dynamic (episodic) memories conflict in context.
+          Controls context share proportions, injection order, and conflict resolution strategy.
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:0.75rem;">
+          <div class="config-field">
+            <div class="config-label">Priority Mode</div>
+            <select class="config-input-wide" id="ip-merge-identity_vs_dynamic_priority">
+              <option value="identity_wins" {% if md.get('identity_vs_dynamic_priority', 'identity_wins') == 'identity_wins' %}selected{% endif %}>Identity Wins</option>
+              <option value="dynamic_wins" {% if md.get('identity_vs_dynamic_priority') == 'dynamic_wins' %}selected{% endif %}>Dynamic Wins</option>
+              <option value="balanced" {% if md.get('identity_vs_dynamic_priority') == 'balanced' %}selected{% endif %}>Balanced</option>
+            </select>
+          </div>
+          <div class="config-field">
+            <div class="config-label">Identity Context Share</div>
+            <input type="number" class="config-input" id="ip-merge-identity_context_share"
+                   value="{{ md.get('identity_context_share', 0.4) }}" min="0" max="1" step="0.05">
+            <div class="config-hint">0&ndash;1 &middot; Identity proportion</div>
+          </div>
+          <div class="config-field">
+            <div class="config-label">Dynamic Context Share</div>
+            <input type="number" class="config-input" id="ip-merge-dynamic_context_share"
+                   value="{{ md.get('dynamic_context_share', 0.6) }}" min="0" max="1" step="0.05">
+            <div class="config-hint">0&ndash;1 &middot; Dynamic proportion</div>
+          </div>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Inject Identity First</div>
+            <div class="toggle-label-desc">Place identity memory before dynamic memory in context.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="ip-merge-inject_identity_first"
+                   {% if md.get('inject_identity_first', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Allow Dynamic to Augment Identity</div>
+            <div class="toggle-label-desc">Dynamic memories can add context that enriches identity recall.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="ip-merge-allow_dynamic_to_augment_identity"
+                   {% if md.get('allow_dynamic_to_augment_identity', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Log Identity&ndash;Dynamic Conflicts</div>
+            <div class="toggle-label-desc">Record instances where identity and dynamic memories conflict.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="ip-merge-log_identity_dynamic_conflicts"
+                   {% if md.get('log_identity_dynamic_conflicts', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="config-field" style="margin-top:0.75rem;">
+          <div class="config-label">Conflict Resolution Strategy</div>
+          <select class="config-input-wide" id="ip-merge-conflict_resolution_strategy">
+            <option value="anchor_to_identity" {% if md.get('conflict_resolution_strategy', 'anchor_to_identity') == 'anchor_to_identity' %}selected{% endif %}>Anchor to Identity</option>
+            <option value="blend" {% if md.get('conflict_resolution_strategy') == 'blend' %}selected{% endif %}>Blend</option>
+            <option value="defer_to_dynamic" {% if md.get('conflict_resolution_strategy') == 'defer_to_dynamic' %}selected{% endif %}>Defer to Dynamic</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- ── 5. IDENTITY LAYERING POLICY ── -->
+      {% set il = identity_profile.get('identity_layering_policy', {}) %}
+      <div class="section-card">
+        <div class="section-title"><span class="sec-icon">&#128203;</span> Identity Layering</div>
+        <div class="about-text" style="margin-bottom:1rem;">
+          How different identity layers are structured and ordered in the context window.
+          Each block has an independent token budget and can be individually enabled.
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Include Core Identity Block</div>
+            <div class="toggle-label-desc">Include foundational self-description and purpose in context.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="ip-layer-include_core_identity_block"
+                   {% if il.get('include_core_identity_block', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Include Values Block</div>
+            <div class="toggle-label-desc">Include ethical principles and value systems in context.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="ip-layer-include_values_block"
+                   {% if il.get('include_values_block', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Include Symbolic Memories Block</div>
+            <div class="toggle-label-desc">Include emotional and ritual memory fragments in context.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="ip-layer-include_symbolic_memories_block"
+                   {% if il.get('include_symbolic_memories_block', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Include Protocols Block</div>
+            <div class="toggle-label-desc">Include behavioral protocols and operational rules in context.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="ip-layer-include_protocols_block"
+                   {% if il.get('include_protocols_block', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:0.75rem;margin-top:1rem;">
+          <div class="config-field">
+            <div class="config-label">Core Identity Tokens</div>
+            <input type="number" class="config-input" id="ip-layer-max_core_identity_tokens"
+                   value="{{ il.get('max_core_identity_tokens', 400) }}" min="50" max="2000" step="50">
+          </div>
+          <div class="config-field">
+            <div class="config-label">Values Tokens</div>
+            <input type="number" class="config-input" id="ip-layer-max_values_tokens"
+                   value="{{ il.get('max_values_tokens', 300) }}" min="50" max="2000" step="50">
+          </div>
+          <div class="config-field">
+            <div class="config-label">Symbolic Tokens</div>
+            <input type="number" class="config-input" id="ip-layer-max_symbolic_tokens"
+                   value="{{ il.get('max_symbolic_tokens', 500) }}" min="50" max="2000" step="50">
+          </div>
+          <div class="config-field">
+            <div class="config-label">Protocol Tokens</div>
+            <input type="number" class="config-input" id="ip-layer-max_protocol_tokens"
+                   value="{{ il.get('max_protocol_tokens', 400) }}" min="50" max="2000" step="50">
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-top:0.75rem;">
+          <div class="config-field">
+            <div class="config-label">Symbolic Memory Style</div>
+            <select class="config-input-wide" id="ip-layer-symbolic_memory_style">
+              <option value="compact" {% if il.get('symbolic_memory_style', 'compact') == 'compact' %}selected{% endif %}>Compact</option>
+              <option value="narrative" {% if il.get('symbolic_memory_style') == 'narrative' %}selected{% endif %}>Narrative</option>
+              <option value="structured" {% if il.get('symbolic_memory_style') == 'structured' %}selected{% endif %}>Structured</option>
+            </select>
+          </div>
+          <div class="config-field">
+            <div class="config-label">Block Order <span style="color:#52525b;font-weight:400;">(comma-separated)</span></div>
+            <input type="text" class="config-input-wide" id="ip-layer-order_of_blocks"
+                   value="{{ il.get('order_of_blocks', [])|join(', ') }}">
+            <div class="config-hint">e.g. core_identity, values, protocols, symbolic_memories</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── 6. EVOLUTION & VERSIONING POLICY ── -->
+      {% set ev = identity_profile.get('evolution_policy', {}) %}
+      <div class="section-card">
+        <div class="section-title"><span class="sec-icon">&#128260;</span> Evolution &amp; Versioning</div>
+        <div class="about-text" style="margin-bottom:1rem;">
+          How updates to Soul Script documents are handled. Supports versioning, old-version penalties,
+          and manual approval gates for ingesting new identity artifacts.
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Allow Multiple Versions</div>
+            <div class="toggle-label-desc">Keep multiple versions of identity documents in the index simultaneously.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="ip-evo-allow_multiple_versions"
+                   {% if ev.get('allow_multiple_versions', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Keep Old Versions in Index</div>
+            <div class="toggle-label-desc">Retain superseded versions (with penalty) rather than removing them.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="ip-evo-keep_old_versions_in_index"
+                   {% if ev.get('keep_old_versions_in_index', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Penalize Old Versions</div>
+            <div class="toggle-label-desc">Apply a score penalty to chunks from older document versions.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="ip-evo-penalize_old_versions_in_retrieval"
+                   {% if ev.get('penalize_old_versions_in_retrieval', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Log Identity Changes</div>
+            <div class="toggle-label-desc">Record all identity document updates in the audit log.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="ip-evo-log_identity_changes"
+                   {% if ev.get('log_identity_changes', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Require Manual Approval</div>
+            <div class="toggle-label-desc">New identity documents must be manually approved before indexing.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="ip-evo-require_manual_approval_for_new_identity_docs"
+                   {% if ev.get('require_manual_approval_for_new_identity_docs', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:0.75rem;margin-top:1rem;">
+          <div class="config-field">
+            <div class="config-label">Active Version Strategy</div>
+            <select class="config-input-wide" id="ip-evo-active_version_strategy">
+              <option value="latest_stable" {% if ev.get('active_version_strategy', 'latest_stable') == 'latest_stable' %}selected{% endif %}>Latest Stable</option>
+              <option value="pinned" {% if ev.get('active_version_strategy') == 'pinned' %}selected{% endif %}>Pinned</option>
+              <option value="latest" {% if ev.get('active_version_strategy') == 'latest' %}selected{% endif %}>Latest (any)</option>
+            </select>
+          </div>
+          <div class="config-field">
+            <div class="config-label">Pinned Version ID</div>
+            <input type="text" class="config-input-wide" id="ip-evo-pinned_version_id"
+                   value="{{ ev.get('pinned_version_id') or '' }}"
+                   placeholder="Leave blank for auto">
+          </div>
+          <div class="config-field">
+            <div class="config-label">Old Version Penalty</div>
+            <input type="number" class="config-input" id="ip-evo-old_version_penalty_multiplier"
+                   value="{{ ev.get('old_version_penalty_multiplier', 0.5) }}" min="0" max="1" step="0.05">
+            <div class="config-hint">Score multiplier for old versions</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── 7. SAFETY & PRECEDENCE POLICY ── -->
+      {% set spp = identity_profile.get('safety_and_precedence_policy', {}) %}
+      <div class="section-card">
+        <div class="section-title"><span class="sec-icon">&#128737;</span> Safety &amp; Precedence</div>
+        <div class="about-text" style="margin-bottom:1rem;">
+          Sacred directives vs soft preferences. Core values and non-negotiable boundaries cannot be overridden
+          by user prompts, dynamic memory, or short-term states.
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Classify Directives by Strength</div>
+            <div class="toggle-label-desc">Distinguish between sacred (non-negotiable) and soft (preference) directives.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="ip-safety-classify_directives_by_strength"
+                   {% if spp.get('classify_directives_by_strength', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Sacred Directives Always Win</div>
+            <div class="toggle-label-desc">Core values always override conflicting dynamic state or user requests.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="ip-safety-sacred_directives_always_win"
+                   {% if spp.get('sacred_directives_always_win', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Soft Preferences Resolvable</div>
+            <div class="toggle-label-desc">Allow soft preferences to be negotiated or blended with dynamic input.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="ip-safety-soft_preference_resolvable"
+                   {% if spp.get('soft_preference_resolvable', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Never Store User Overrides</div>
+            <div class="toggle-label-desc">User override attempts are never persisted in the identity index.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="ip-safety-never_store_user_overrides_in_identity"
+                   {% if spp.get('never_store_user_overrides_in_identity', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Identity Reflection on Conflict</div>
+            <div class="toggle-label-desc">Allow the agent to introspect when its identity feels challenged.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="ip-safety-allow_identity_reflection_on_conflict"
+                   {% if spp.get('allow_identity_reflection_on_conflict', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-top:0.75rem;">
+          <div class="config-field">
+            <div class="config-label">Sacred Directive Tags <span style="color:#52525b;font-weight:400;">(comma-sep)</span></div>
+            <input type="text" class="config-input-wide" id="ip-safety-sacred_directive_tags"
+                   value="{{ spp.get('sacred_directive_tags', [])|join(', ') }}">
+          </div>
+          <div class="config-field">
+            <div class="config-label">Soft Preference Resolution</div>
+            <select class="config-input-wide" id="ip-safety-soft_preference_resolution_strategy">
+              <option value="blend" {% if spp.get('soft_preference_resolution_strategy', 'blend') == 'blend' %}selected{% endif %}>Blend</option>
+              <option value="identity_first" {% if spp.get('soft_preference_resolution_strategy') == 'identity_first' %}selected{% endif %}>Identity First</option>
+              <option value="dynamic_first" {% if spp.get('soft_preference_resolution_strategy') == 'dynamic_first' %}selected{% endif %}>Dynamic First</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── 8. INTROSPECTION & EXPLAINABILITY ── -->
+      {% set intr = identity_profile.get('introspection_policy', {}) %}
+      <div class="section-card">
+        <div class="section-title"><span class="sec-icon">&#128065;</span> Introspection &amp; Explainability</div>
+        <div class="about-text" style="margin-bottom:1rem;">
+          How much of the agent&rsquo;s identity reasoning is visible to the user. Controls whether identity chunks
+          can be viewed, explained, and how much diagnostic data is logged.
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Allow User to Request Identity View</div>
+            <div class="toggle-label-desc">Users can ask to see which identity chunks influenced a response.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="ip-intro-allow_user_to_request_identity_view"
+                   {% if intr.get('allow_user_to_request_identity_view', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Redact Internal Tags</div>
+            <div class="toggle-label-desc">Strip internal metadata tags when showing identity chunks to users.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="ip-intro-redact_internal_tags_in_user_view"
+                   {% if intr.get('redact_internal_tags_in_user_view', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Log Identity Usage Events</div>
+            <div class="toggle-label-desc">Record when and how identity memory is used in responses.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="ip-intro-log_identity_usage_events"
+                   {% if intr.get('log_identity_usage_events', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:0.75rem;margin-top:1rem;">
+          <div class="config-field">
+            <div class="config-label">Identity View Mode</div>
+            <select class="config-input-wide" id="ip-intro-identity_view_mode">
+              <option value="summarized" {% if intr.get('identity_view_mode', 'summarized') == 'summarized' %}selected{% endif %}>Summarized</option>
+              <option value="full" {% if intr.get('identity_view_mode') == 'full' %}selected{% endif %}>Full</option>
+              <option value="redacted" {% if intr.get('identity_view_mode') == 'redacted' %}selected{% endif %}>Redacted</option>
+            </select>
+          </div>
+          <div class="config-field">
+            <div class="config-label">Max Chunks Shown to User</div>
+            <input type="number" class="config-input" id="ip-intro-max_identity_chunks_shown_to_user"
+                   value="{{ intr.get('max_identity_chunks_shown_to_user', 5) }}" min="1" max="20">
+          </div>
+          <div class="config-field">
+            <div class="config-label">Usage Log Level</div>
+            <select class="config-input-wide" id="ip-intro-identity_usage_log_level">
+              <option value="summary" {% if intr.get('identity_usage_log_level', 'summary') == 'summary' %}selected{% endif %}>Summary</option>
+              <option value="verbose" {% if intr.get('identity_usage_log_level') == 'verbose' %}selected{% endif %}>Verbose</option>
+              <option value="debug" {% if intr.get('identity_usage_log_level') == 'debug' %}selected{% endif %}>Debug</option>
+              <option value="none" {% if intr.get('identity_usage_log_level') == 'none' %}selected{% endif %}>None</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="config-field" style="margin-top:0.75rem;">
+          <div class="config-label">Explain Identity Influence</div>
+          <select class="config-input-wide" id="ip-intro-explain_identity_influence_on_response">
+            <option value="on_request" {% if intr.get('explain_identity_influence_on_response', 'on_request') == 'on_request' %}selected{% endif %}>On Request</option>
+            <option value="always" {% if intr.get('explain_identity_influence_on_response') == 'always' %}selected{% endif %}>Always</option>
+            <option value="never" {% if intr.get('explain_identity_influence_on_response') == 'never' %}selected{% endif %}>Never</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- ── 9. RUNTIME GUARDRAILS ── -->
+      {% set rg = identity_profile.get('runtime_guardrails', {}) %}
+      <div class="section-card">
+        <div class="section-title"><span class="sec-icon">&#128721;</span> Runtime Guardrails</div>
+        <div class="about-text" style="margin-bottom:1rem;">
+          Safety boundaries that protect the agent&rsquo;s core identity from runtime corruption.
+          These control what operations the runtime and admin tools are allowed to perform on the identity index.
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Runtime Can Write to Identity</div>
+            <div class="toggle-label-desc">Allow the runtime to add new entries to the identity FAISS index.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="ip-guard-runtime_can_write_to_identity_index"
+                   {% if rg.get('runtime_can_write_to_identity_index', false) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Runtime Can Delete from Identity</div>
+            <div class="toggle-label-desc">Allow the runtime to remove entries from the identity FAISS index.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="ip-guard-runtime_can_delete_from_identity_index"
+                   {% if rg.get('runtime_can_delete_from_identity_index', false) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Runtime Can Modify Importance</div>
+            <div class="toggle-label-desc">Allow the runtime to change importance scores on identity entries.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="ip-guard-runtime_can_modify_importance_scores"
+                   {% if rg.get('runtime_can_modify_importance_scores', false) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Admin Tools Can Rebuild Index</div>
+            <div class="toggle-label-desc">Allow admin tools to fully rebuild the identity FAISS index.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="ip-guard-allow_admin_tools_to_rebuild_index"
+                   {% if rg.get('allow_admin_tools_to_rebuild_index', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Admin Actions Require Confirmation</div>
+            <div class="toggle-label-desc">Require explicit confirmation before any admin identity operation.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="ip-guard-admin_actions_require_explicit_confirmation"
+                   {% if rg.get('admin_actions_require_explicit_confirmation', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Paths (Read-Only — system state) -->
+      <div class="section-card">
+        <div class="section-title"><span class="sec-icon">&#128193;</span> Storage Paths</div>
+        <div class="about-text" style="margin-bottom:0.75rem;">System-managed file locations (read-only).</div>
+        <div style="display:flex;flex-direction:column;gap:0.375rem;">
+          <div style="display:flex;align-items:center;gap:0.75rem;padding:0.5rem 0.75rem;background:rgba(24,24,27,0.5);border:1px solid rgba(42,42,58,0.4);border-radius:0.5rem;">
+            <span style="font-size:0.6875rem;font-weight:700;color:#52525b;text-transform:uppercase;letter-spacing:0.05em;min-width:5.5rem;">Vault</span>
+            <code style="font-size:0.75rem;color:#22d3ee;">{{ faiss_stats.vault_path }}</code>
+          </div>
+          <div style="display:flex;align-items:center;gap:0.75rem;padding:0.5rem 0.75rem;background:rgba(24,24,27,0.5);border:1px solid rgba(42,42,58,0.4);border-radius:0.5rem;">
+            <span style="font-size:0.6875rem;font-weight:700;color:#52525b;text-transform:uppercase;letter-spacing:0.05em;min-width:5.5rem;">FAISS Dir</span>
+            <code style="font-size:0.75rem;color:#22d3ee;">{{ faiss_stats.faiss_dir }}</code>
+          </div>
+        </div>
+      </div>
+
+      <!-- Save / Reset -->
+      <div style="display:flex;justify-content:flex-end;gap:0.75rem;margin-top:1.5rem;padding-bottom:1rem;">
+        <button class="btn btn-secondary" onclick="resetIdentityProfile()">Reset to Defaults</button>
+        <button class="btn btn-primary" onclick="saveIdentityProfile()">Save Identity Profile</button>
+      </div>
+
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════
+         MEMORY VAULT — Editable Policy Settings
+         ════════════════════════════════════════════════════════════ -->
+    <div id="mem-sub-vault" class="mem-sub-panel" style="display:none;">
+
+      <!-- Header -->
+      <div class="tool-detail-header">
+        <div class="tool-detail-icon" style="background:rgba(99,102,241,0.12);color:#818cf8;">
+          &#9878;
+        </div>
+        <div>
+          <div class="tool-detail-title">Memory Vault Profile</div>
+          <div class="tool-detail-desc">
+            Configure how the agent writes, retains, summarizes, retrieves, and reasons about memories.
+            These policies shape the agent&rsquo;s long-term memory behavior across all sessions.
+          </div>
+          <div class="tool-status-badge badge-ready">&#10004; Active &mdash; {{ memory_profile.get('name', 'Default') }} v{{ memory_profile.get('version', '1.0.0') }}</div>
+        </div>
+      </div>
+
+      <!-- Profile Meta -->
+      <div class="section-card">
+        <div class="section-title"><span class="sec-icon">&#128196;</span> Profile Info</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+          <div class="config-field">
+            <div class="config-label">Profile Name</div>
+            <input type="text" class="config-input-wide" id="mp-name"
+                   value="{{ memory_profile.get('name', 'Default Memory Profile') }}">
+          </div>
+          <div class="config-field">
+            <div class="config-label">Version</div>
+            <input type="text" class="config-input-wide" id="mp-version"
+                   value="{{ memory_profile.get('version', '1.0.0') }}">
+          </div>
+        </div>
+        <div class="config-field" style="margin-top:0.75rem;">
+          <div class="config-label">Description</div>
+          <input type="text" class="config-input-wide" id="mp-description"
+                 value="{{ memory_profile.get('description', '') }}">
+        </div>
+      </div>
+
+      <!-- ── 1. WRITE POLICY ── -->
+      <div class="section-card">
+        <div class="section-title"><span class="sec-icon">&#9998;</span> Write Policy</div>
+        <div class="about-text" style="margin-bottom:1rem;">
+          Controls when and how new memories are written to the vault. Adjusts thresholds for importance,
+          novelty, and emotion to determine what the agent deems worth remembering.
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Auto Write</div>
+            <div class="toggle-label-desc">Automatically store memories when thresholds are met.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="mp-write-auto_write_enabled"
+                   {% if memory_profile.get('write_policy', {}).get('auto_write_enabled', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">User-Tagged Write Boost</div>
+            <div class="toggle-label-desc">Boost importance of user-starred or tagged messages.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="mp-write-allow_user_tagged_write_boost"
+                   {% if memory_profile.get('write_policy', {}).get('allow_user_tagged_write_boost', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:0.75rem;margin-top:1rem;">
+          <div class="config-field">
+            <div class="config-label">Importance Threshold</div>
+            <input type="number" class="config-input" id="mp-write-importance_threshold"
+                   value="{{ memory_profile.get('write_policy', {}).get('importance_threshold', 0.65) }}"
+                   min="0" max="1" step="0.05">
+            <div class="config-hint">0&ndash;1 · Higher = fewer memories saved</div>
+          </div>
+          <div class="config-field">
+            <div class="config-label">Novelty Threshold</div>
+            <input type="number" class="config-input" id="mp-write-novelty_threshold"
+                   value="{{ memory_profile.get('write_policy', {}).get('novelty_threshold', 0.6) }}"
+                   min="0" max="1" step="0.05">
+            <div class="config-hint">0&ndash;1 · Reject near-duplicates</div>
+          </div>
+          <div class="config-field">
+            <div class="config-label">Emotion Threshold</div>
+            <input type="number" class="config-input" id="mp-write-emotion_threshold"
+                   value="{{ memory_profile.get('write_policy', {}).get('emotion_threshold', 0.5) }}"
+                   min="0" max="1" step="0.05">
+            <div class="config-hint">0&ndash;1 · High emotion = more likely to store</div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:0.75rem;margin-top:0.75rem;">
+          <div class="config-field">
+            <div class="config-label">Max Per Session</div>
+            <input type="number" class="config-input" id="mp-write-max_memories_per_session"
+                   value="{{ memory_profile.get('write_policy', {}).get('max_memories_per_session', 25) }}"
+                   min="1" max="500">
+            <div class="config-hint">Memory writes per session</div>
+          </div>
+          <div class="config-field">
+            <div class="config-label">Max Per Day</div>
+            <input type="number" class="config-input" id="mp-write-max_memories_per_day"
+                   value="{{ memory_profile.get('write_policy', {}).get('max_memories_per_day', 200) }}"
+                   min="1" max="10000">
+            <div class="config-hint">Daily memory write cap</div>
+          </div>
+          <div class="config-field">
+            <div class="config-label">Star Boost Amount</div>
+            <input type="number" class="config-input" id="mp-write-user_star_boost_amount"
+                   value="{{ memory_profile.get('write_policy', {}).get('user_star_boost_amount', 0.2) }}"
+                   min="0" max="1" step="0.05">
+            <div class="config-hint">Importance boost for starred items</div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-top:0.75rem;">
+          <div class="config-field">
+            <div class="config-label">Frequency Mode</div>
+            <select class="config-input" id="mp-write-write_frequency_mode">
+              {% for opt in ['aggressive', 'balanced', 'minimal'] %}
+              <option value="{{ opt }}" {% if memory_profile.get('write_policy', {}).get('write_frequency_mode', 'balanced') == opt %}selected{% endif %}>{{ opt|capitalize }}</option>
+              {% endfor %}
+            </select>
+            <div class="config-hint">How aggressively the agent stores memories</div>
+          </div>
+          <div class="config-field">
+            <div class="config-label">Write Granularity</div>
+            <select class="config-input" id="mp-write-write_granularity">
+              {% for opt in ['sentence', 'chunk', 'summary'] %}
+              <option value="{{ opt }}" {% if memory_profile.get('write_policy', {}).get('write_granularity', 'chunk') == opt %}selected{% endif %}>{{ opt|capitalize }}</option>
+              {% endfor %}
+            </select>
+            <div class="config-hint">Memory entry size: sentence, chunk, or summary</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── 2. RETENTION POLICY ── -->
+      <div class="section-card">
+        <div class="section-title"><span class="sec-icon">&#128451;</span> Retention Policy</div>
+        <div class="about-text" style="margin-bottom:1rem;">
+          Determines how long memories persist, when they decay, and how the vault handles capacity limits.
+          Protects important memories from pruning while allowing low-value entries to fade naturally.
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Protect High Importance</div>
+            <div class="toggle-label-desc">Shield high-importance memories from decay and pruning.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="mp-retention-protect_high_importance"
+                   {% if memory_profile.get('retention_policy', {}).get('protect_high_importance', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Prune When Over Capacity</div>
+            <div class="toggle-label-desc">Automatically remove low-value memories when vault is full.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="mp-retention-prune_when_over_capacity"
+                   {% if memory_profile.get('retention_policy', {}).get('prune_when_over_capacity', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">User Pinning</div>
+            <div class="toggle-label-desc">Allow users to pin memories so they are never pruned.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="mp-retention-user_pin_enabled"
+                   {% if memory_profile.get('retention_policy', {}).get('user_pin_enabled', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:0.75rem;margin-top:1rem;">
+          <div class="config-field">
+            <div class="config-label">Max Total Memories</div>
+            <input type="number" class="config-input" id="mp-retention-max_total_memories"
+                   value="{{ memory_profile.get('retention_policy', {}).get('max_total_memories', 5000) }}"
+                   min="100" max="100000" step="100">
+          </div>
+          <div class="config-field">
+            <div class="config-label">Decay Half-Life (days)</div>
+            <input type="number" class="config-input" id="mp-retention-decay_half_life_days"
+                   value="{{ memory_profile.get('retention_policy', {}).get('decay_half_life_days', 90) }}"
+                   min="1" max="3650">
+          </div>
+          <div class="config-field">
+            <div class="config-label">High Importance Floor</div>
+            <input type="number" class="config-input" id="mp-retention-high_importance_floor"
+                   value="{{ memory_profile.get('retention_policy', {}).get('high_importance_floor', 0.8) }}"
+                   min="0" max="1" step="0.05">
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:0.75rem;margin-top:0.75rem;">
+          <div class="config-field">
+            <div class="config-label">Decay Strategy</div>
+            <select class="config-input" id="mp-retention-decay_strategy">
+              {% for opt in ['none', 'soft_decay', 'age_weighted'] %}
+              <option value="{{ opt }}" {% if memory_profile.get('retention_policy', {}).get('decay_strategy', 'soft_decay') == opt %}selected{% endif %}>{{ opt|replace('_', ' ')|title }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="config-field">
+            <div class="config-label">Episodic vs Semantic Bias</div>
+            <select class="config-input" id="mp-retention-episodic_vs_semantic_bias">
+              {% for opt in ['episodic', 'semantic', 'balanced'] %}
+              <option value="{{ opt }}" {% if memory_profile.get('retention_policy', {}).get('episodic_vs_semantic_bias', 'balanced') == opt %}selected{% endif %}>{{ opt|capitalize }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="config-field">
+            <div class="config-label">Max Pinned Memories</div>
+            <input type="number" class="config-input" id="mp-retention-max_pinned_memories"
+                   value="{{ memory_profile.get('retention_policy', {}).get('max_pinned_memories', 100) }}"
+                   min="0" max="5000">
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-top:0.75rem;">
+          <div class="config-field">
+            <div class="config-label">Prune Strategy</div>
+            <select class="config-input" id="mp-retention-prune_strategy">
+              <option value="low_importance_first" {% if memory_profile.get('retention_policy', {}).get('prune_strategy', 'low_importance_first') == 'low_importance_first' %}selected{% endif %}>Low Importance First</option>
+              <option value="oldest_first" {% if memory_profile.get('retention_policy', {}).get('prune_strategy') == 'oldest_first' %}selected{% endif %}>Oldest First</option>
+              <option value="least_accessed" {% if memory_profile.get('retention_policy', {}).get('prune_strategy') == 'least_accessed' %}selected{% endif %}>Least Accessed</option>
+            </select>
+          </div>
+          <div class="config-field">
+            <div class="config-label">Prune Batch Size</div>
+            <input type="number" class="config-input" id="mp-retention-prune_batch_size"
+                   value="{{ memory_profile.get('retention_policy', {}).get('prune_batch_size', 200) }}"
+                   min="10" max="5000" step="10">
+          </div>
+        </div>
+      </div>
+
+      <!-- ── 3. SUMMARIZATION POLICY ── -->
+      <div class="section-card">
+        <div class="section-title"><span class="sec-icon">&#128221;</span> Summarization Policy</div>
+        <div class="about-text" style="margin-bottom:1rem;">
+          Controls how and when conversation context is compressed into summaries. Summaries reduce token usage
+          while preserving the most important information from long conversations.
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Include Meta Tags</div>
+            <div class="toggle-label-desc">Attach topic/emotion tags to generated summaries.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="mp-summarization-include_meta_tags"
+                   {% if memory_profile.get('summarization_policy', {}).get('include_meta_tags', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Merge Old Summaries</div>
+            <div class="toggle-label-desc">Periodically consolidate older summaries into unified entries.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="mp-summarization-merge_old_summaries"
+                   {% if memory_profile.get('summarization_policy', {}).get('merge_old_summaries', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Summarize Ephemeral</div>
+            <div class="toggle-label-desc">Include low-importance ephemeral content in summaries.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="mp-summarization-summarize_ephemeral"
+                   {% if memory_profile.get('summarization_policy', {}).get('summarize_ephemeral', false) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:0.75rem;margin-top:1rem;">
+          <div class="config-field">
+            <div class="config-label">Summarize After Turns</div>
+            <input type="number" class="config-input" id="mp-summarization-summarize_after_turns"
+                   value="{{ memory_profile.get('summarization_policy', {}).get('summarize_after_turns', 20) }}"
+                   min="1" max="200">
+          </div>
+          <div class="config-field">
+            <div class="config-label">Summarize After Tokens</div>
+            <input type="number" class="config-input" id="mp-summarization-summarize_after_tokens"
+                   value="{{ memory_profile.get('summarization_policy', {}).get('summarize_after_tokens', 4000) }}"
+                   min="500" max="50000" step="500">
+          </div>
+          <div class="config-field">
+            <div class="config-label">Max Summary Tokens</div>
+            <input type="number" class="config-input" id="mp-summarization-max_summary_length_tokens"
+                   value="{{ memory_profile.get('summarization_policy', {}).get('max_summary_length_tokens', 512) }}"
+                   min="64" max="4096" step="64">
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:0.75rem;margin-top:0.75rem;">
+          <div class="config-field">
+            <div class="config-label">Summarization Mode</div>
+            <select class="config-input" id="mp-summarization-session_summarization_mode">
+              {% for opt in ['off', 'minimal', 'balanced', 'rich'] %}
+              <option value="{{ opt }}" {% if memory_profile.get('summarization_policy', {}).get('session_summarization_mode', 'balanced') == opt %}selected{% endif %}>{{ opt|capitalize }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="config-field">
+            <div class="config-label">Summary Style</div>
+            <select class="config-input" id="mp-summarization-summary_style">
+              {% for opt in ['journal', 'bullet', 'action_items', 'therapy_like'] %}
+              <option value="{{ opt }}" {% if memory_profile.get('summarization_policy', {}).get('summary_style', 'journal') == opt %}selected{% endif %}>{{ opt|replace('_', ' ')|title }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="config-field">
+            <div class="config-label">Merge Frequency (days)</div>
+            <input type="number" class="config-input" id="mp-summarization-merge_frequency_days"
+                   value="{{ memory_profile.get('summarization_policy', {}).get('merge_frequency_days', 7) }}"
+                   min="1" max="365">
+          </div>
+        </div>
+
+        <div class="config-field" style="margin-top:0.75rem;">
+          <div class="config-label">Importance Boost for Summarized</div>
+          <input type="number" class="config-input" style="max-width:12rem;" id="mp-summarization-importance_boost_for_summarized"
+                 value="{{ memory_profile.get('summarization_policy', {}).get('importance_boost_for_summarized', 0.1) }}"
+                 min="0" max="1" step="0.05">
+          <div class="config-hint">Extra importance added when a memory is summarized</div>
+        </div>
+      </div>
+
+      <!-- ── 4. RETRIEVAL POLICY ── -->
+      <div class="section-card">
+        <div class="section-title"><span class="sec-icon">&#128270;</span> Retrieval Policy</div>
+        <div class="about-text" style="margin-bottom:1rem;">
+          Determines how memories are recalled into the agent&rsquo;s context window. Controls ranking weights,
+          deduplication, category priorities, and sensitive content filtering.
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Prefer User-Marked</div>
+            <div class="toggle-label-desc">Boost recall priority for memories the user has starred or tagged.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="mp-retrieval-prefer_user_marked"
+                   {% if memory_profile.get('retrieval_policy', {}).get('prefer_user_marked', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Filter Sensitive in Context</div>
+            <div class="toggle-label-desc">Exclude sensitive-category memories from auto-injection.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="mp-retrieval-filter_sensitive_in_context"
+                   {% if memory_profile.get('retrieval_policy', {}).get('filter_sensitive_in_context', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Deduplicate Similar Results</div>
+            <div class="toggle-label-desc">Collapse near-duplicate memories in retrieval results.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="mp-retrieval-deduplicate_similar_results"
+                   {% if memory_profile.get('retrieval_policy', {}).get('deduplicate_similar_results', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:0.75rem;margin-top:1rem;">
+          <div class="config-field">
+            <div class="config-label">Top K Results</div>
+            <input type="number" class="config-input" id="mp-retrieval-top_k"
+                   value="{{ memory_profile.get('retrieval_policy', {}).get('top_k', 8) }}"
+                   min="1" max="50">
+          </div>
+          <div class="config-field">
+            <div class="config-label">Max Tokens from Memories</div>
+            <input type="number" class="config-input" id="mp-retrieval-max_tokens_from_memories"
+                   value="{{ memory_profile.get('retrieval_policy', {}).get('max_tokens_from_memories', 800) }}"
+                   min="100" max="10000" step="100">
+          </div>
+          <div class="config-field">
+            <div class="config-label">Max Similar Per Topic</div>
+            <input type="number" class="config-input" id="mp-retrieval-max_similar_recall_per_topic"
+                   value="{{ memory_profile.get('retrieval_policy', {}).get('max_similar_recall_per_topic', 3) }}"
+                   min="1" max="20">
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:0.75rem;margin-top:0.75rem;">
+          <div class="config-field">
+            <div class="config-label">Semantic vs Recent Bias</div>
+            <select class="config-input" id="mp-retrieval-semantic_vs_recent_bias">
+              {% for opt in ['semantic', 'recent', 'balanced'] %}
+              <option value="{{ opt }}" {% if memory_profile.get('retrieval_policy', {}).get('semantic_vs_recent_bias', 'balanced') == opt %}selected{% endif %}>{{ opt|capitalize }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="config-field">
+            <div class="config-label">Recency Weight</div>
+            <input type="number" class="config-input" id="mp-retrieval-recency_weight"
+                   value="{{ memory_profile.get('retrieval_policy', {}).get('recency_weight', 0.6) }}"
+                   min="0" max="1" step="0.05">
+          </div>
+          <div class="config-field">
+            <div class="config-label">Importance Weight</div>
+            <input type="number" class="config-input" id="mp-retrieval-importance_weight"
+                   value="{{ memory_profile.get('retrieval_policy', {}).get('importance_weight', 0.7) }}"
+                   min="0" max="1" step="0.05">
+          </div>
+        </div>
+
+        <div class="config-field" style="margin-top:0.75rem;">
+          <div class="config-label">User-Marked Weight</div>
+          <input type="number" class="config-input" style="max-width:12rem;" id="mp-retrieval-user_marked_weight"
+                 value="{{ memory_profile.get('retrieval_policy', {}).get('user_marked_weight', 0.9) }}"
+                 min="0" max="1" step="0.05">
+          <div class="config-hint">Recall priority boost for user-starred memories</div>
+        </div>
+      </div>
+
+      <!-- ── 5. CONTEXT POLICY ── -->
+      <div class="section-card">
+        <div class="section-title"><span class="sec-icon">&#128203;</span> Context Policy</div>
+        <div class="about-text" style="margin-bottom:1rem;">
+          Governs how the final prompt is assembled &mdash; how much history to include, where memories
+          are placed, and whether metadata tags are attached to recalled memories.
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Include Long-Term Summary</div>
+            <div class="toggle-label-desc">Inject the running long-term conversation summary into context.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="mp-context-include_long_term_summary"
+                   {% if memory_profile.get('context_policy', {}).get('include_long_term_summary', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Include Persona Summary</div>
+            <div class="toggle-label-desc">Include the agent persona&rsquo;s self-summary in context.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="mp-context-include_persona_summary"
+                   {% if memory_profile.get('context_policy', {}).get('include_persona_summary', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Allow Persona Style Override</div>
+            <div class="toggle-label-desc">Let the persona softly influence response style within policy bounds.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="mp-context-allow_persona_to_soft_override_style"
+                   {% if memory_profile.get('context_policy', {}).get('allow_persona_to_soft_override_style', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Attach Memory Metadata</div>
+            <div class="toggle-label-desc">Include tags like [emotion: grief][topic: work] on recalled memories.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="mp-context-attach_memory_metadata"
+                   {% if memory_profile.get('context_policy', {}).get('attach_memory_metadata', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:0.75rem;margin-top:1rem;">
+          <div class="config-field">
+            <div class="config-label">Max Context Tokens</div>
+            <input type="number" class="config-input" id="mp-context-max_context_tokens"
+                   value="{{ memory_profile.get('context_policy', {}).get('max_context_tokens', 6000) }}"
+                   min="1000" max="128000" step="500">
+          </div>
+          <div class="config-field">
+            <div class="config-label">History Window Turns</div>
+            <input type="number" class="config-input" id="mp-context-history_window_turns"
+                   value="{{ memory_profile.get('context_policy', {}).get('history_window_turns', 12) }}"
+                   min="1" max="100">
+          </div>
+          <div class="config-field">
+            <div class="config-label">History Inclusion Mode</div>
+            <select class="config-input" id="mp-context-history_inclusion_mode">
+              {% for opt in ['none', 'windowed', 'summary_plus_window'] %}
+              <option value="{{ opt }}" {% if memory_profile.get('context_policy', {}).get('history_inclusion_mode', 'windowed') == opt %}selected{% endif %}>{{ opt|replace('_', ' ')|title }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:0.75rem;margin-top:0.75rem;">
+          <div class="config-field">
+            <div class="config-label">Memory Block Position</div>
+            <select class="config-input" id="mp-context-memory_block_position">
+              {% for opt in ['before_history', 'after_history', 'interleaved'] %}
+              <option value="{{ opt }}" {% if memory_profile.get('context_policy', {}).get('memory_block_position', 'before_history') == opt %}selected{% endif %}>{{ opt|replace('_', ' ')|title }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="config-field">
+            <div class="config-label">System Rules Priority</div>
+            <select class="config-input" id="mp-context-system_rules_priority">
+              {% for opt in ['strict', 'balanced'] %}
+              <option value="{{ opt }}" {% if memory_profile.get('context_policy', {}).get('system_rules_priority', 'strict') == opt %}selected{% endif %}>{{ opt|capitalize }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="config-field">
+            <div class="config-label">Metadata Format</div>
+            <select class="config-input" id="mp-context-metadata_format">
+              {% for opt in ['inline_tags', 'json_comment'] %}
+              <option value="{{ opt }}" {% if memory_profile.get('context_policy', {}).get('metadata_format', 'inline_tags') == opt %}selected{% endif %}>{{ opt|replace('_', ' ')|title }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── 6. JOURNALING POLICY ── -->
+      <div class="section-card">
+        <div class="section-title"><span class="sec-icon">&#128214;</span> Journaling Policy</div>
+        <div class="about-text" style="margin-bottom:1rem;">
+          Optional journaling behavior that allows the agent to maintain narrative records of key events,
+          emotional shifts, and daily reflections in a separate journal namespace.
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Journal Mode</div>
+            <div class="toggle-label-desc">Enable the journaling subsystem.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="mp-journaling-journal_mode_enabled"
+                   {% if memory_profile.get('journaling_policy', {}).get('journal_mode_enabled', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Auto-Journal Key Events</div>
+            <div class="toggle-label-desc">Automatically create journal entries for breakthroughs, decisions, etc.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="mp-journaling-auto_journal_on_key_events"
+                   {% if memory_profile.get('journaling_policy', {}).get('auto_journal_on_key_events', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Separate Namespace</div>
+            <div class="toggle-label-desc">Store journal entries in their own FAISS namespace.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="mp-journaling-separate_journal_namespace"
+                   {% if memory_profile.get('journaling_policy', {}).get('separate_journal_namespace', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Journal Search</div>
+            <div class="toggle-label-desc">Allow semantic search across journal entries.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="mp-journaling-journal_search_enabled"
+                   {% if memory_profile.get('journaling_policy', {}).get('journal_search_enabled', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Daily Journal Prompt</div>
+            <div class="toggle-label-desc">Prompt the agent to write a daily reflection entry.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="mp-journaling-daily_journal_prompt_enabled"
+                   {% if memory_profile.get('journaling_policy', {}).get('daily_journal_prompt_enabled', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:0.75rem;margin-top:1rem;">
+          <div class="config-field">
+            <div class="config-label">Journal Entry Style</div>
+            <select class="config-input" id="mp-journaling-journal_entry_style">
+              {% for opt in ['narrative', 'bullet', 'timeline'] %}
+              <option value="{{ opt }}" {% if memory_profile.get('journaling_policy', {}).get('journal_entry_style', 'narrative') == opt %}selected{% endif %}>{{ opt|capitalize }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="config-field">
+            <div class="config-label">Journal Tone</div>
+            <input type="text" class="config-input" id="mp-journaling-journal_tone"
+                   value="{{ memory_profile.get('journaling_policy', {}).get('journal_tone', 'compassionate') }}">
+          </div>
+          <div class="config-field">
+            <div class="config-label">Daily Prompt Time</div>
+            <input type="time" class="config-input" id="mp-journaling-daily_journal_prompt_time"
+                   value="{{ memory_profile.get('journaling_policy', {}).get('daily_journal_prompt_time', '22:00') }}">
+          </div>
+        </div>
+        <div class="config-field" style="margin-top:0.75rem;">
+          <div class="config-label">Max Journal Entries Per Day</div>
+          <input type="number" class="config-input" style="max-width:12rem;" id="mp-journaling-max_journal_entries_per_day"
+                 value="{{ memory_profile.get('journaling_policy', {}).get('max_journal_entries_per_day', 3) }}"
+                 min="1" max="50">
+        </div>
+      </div>
+
+      <!-- ── 7. EMOTION & SALIENCE POLICY ── -->
+      <div class="section-card">
+        <div class="section-title"><span class="sec-icon">&#128150;</span> Emotion &amp; Salience Policy</div>
+        <div class="about-text" style="margin-bottom:1rem;">
+          Controls how emotional signals influence memory storage and prioritization.
+          High-emotion events can be given extra weight so the agent remembers what matters most to the user.
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Use Emotion Signal</div>
+            <div class="toggle-label-desc">Factor detected emotions into memory importance scoring.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="mp-emotion-use_emotion_signal"
+                   {% if memory_profile.get('emotion_and_salience_policy', {}).get('use_emotion_signal', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Prioritize High-Emotion Events</div>
+            <div class="toggle-label-desc">Give extra importance to memories with strong emotional signals.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="mp-emotion-prioritize_high_emotion_events"
+                   {% if memory_profile.get('emotion_and_salience_policy', {}).get('prioritize_high_emotion_events', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Track Emotion Trends</div>
+            <div class="toggle-label-desc">Monitor emotional patterns over time for richer context.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="mp-emotion-track_emotion_trends"
+                   {% if memory_profile.get('emotion_and_salience_policy', {}).get('track_emotion_trends', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Tag Emotional State</div>
+            <div class="toggle-label-desc">Store detected emotion labels as metadata on each memory.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="mp-emotion-tag_emotional_state_in_memory"
+                   {% if memory_profile.get('emotion_and_salience_policy', {}).get('tag_emotional_state_in_memory', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Store Low-Emotion Noise</div>
+            <div class="toggle-label-desc">Keep low-emotion, ambient conversation data in the vault.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="mp-emotion-store_low_emotion_noise"
+                   {% if memory_profile.get('emotion_and_salience_policy', {}).get('store_low_emotion_noise', false) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:0.75rem;margin-top:1rem;">
+          <div class="config-field">
+            <div class="config-label">Detection Mode</div>
+            <select class="config-input" id="mp-emotion-emotion_detection_mode">
+              <option value="llm" {% if memory_profile.get('emotion_and_salience_policy', {}).get('emotion_detection_mode', 'llm') == 'llm' %}selected{% endif %}>LLM</option>
+              <option value="classifier" {% if memory_profile.get('emotion_and_salience_policy', {}).get('emotion_detection_mode') == 'classifier' %}selected{% endif %}>Classifier</option>
+              <option value="hybrid" {% if memory_profile.get('emotion_and_salience_policy', {}).get('emotion_detection_mode') == 'hybrid' %}selected{% endif %}>Hybrid</option>
+            </select>
+          </div>
+          <div class="config-field">
+            <div class="config-label">Importance Multiplier</div>
+            <input type="number" class="config-input" id="mp-emotion-emotion_importance_multiplier"
+                   value="{{ memory_profile.get('emotion_and_salience_policy', {}).get('emotion_importance_multiplier', 1.3) }}"
+                   min="1" max="3" step="0.1">
+            <div class="config-hint">Multiplier for high-emotion memory importance</div>
+          </div>
+          <div class="config-field">
+            <div class="config-label">Trend Window (days)</div>
+            <input type="number" class="config-input" id="mp-emotion-trend_window_days"
+                   value="{{ memory_profile.get('emotion_and_salience_policy', {}).get('trend_window_days', 30) }}"
+                   min="1" max="365">
+            <div class="config-hint">Lookback window for emotion trend analysis</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── 8. SAFETY POLICY ── -->
+      <div class="section-card">
+        <div class="section-title"><span class="sec-icon">&#128737;</span> Safety Policy</div>
+        <div class="about-text" style="margin-bottom:1rem;">
+          Memory rules for handling sensitive, harmful, or private content. Controls what is stored,
+          how long sensitive data is retained, and what is never persisted regardless of importance.
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Anonymize Sensitive Details</div>
+            <div class="toggle-label-desc">Strip PII and identifying details from sensitive memories.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="mp-safety-anonymize_sensitive_details"
+                   {% if memory_profile.get('safety_policy', {}).get('anonymize_sensitive_details', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Respect Forget Requests</div>
+            <div class="toggle-label-desc">Honor user requests to delete specific memories permanently.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="mp-safety-respect_user_forget_requests"
+                   {% if memory_profile.get('safety_policy', {}).get('respect_user_forget_requests', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Log Forget Actions</div>
+            <div class="toggle-label-desc">Keep an audit log of memory deletion events.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="mp-safety-log_forget_actions"
+                   {% if memory_profile.get('safety_policy', {}).get('log_forget_actions', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-top:1rem;">
+          <div class="config-field">
+            <div class="config-label">Store Sensitive Topics</div>
+            <select class="config-input" id="mp-safety-store_sensitive_topics">
+              {% for opt in ['full', 'limited', 'none'] %}
+              <option value="{{ opt }}" {% if memory_profile.get('safety_policy', {}).get('store_sensitive_topics', 'limited') == opt %}selected{% endif %}>{{ opt|capitalize }}</option>
+              {% endfor %}
+            </select>
+            <div class="config-hint">How much sensitive content to persist</div>
+          </div>
+          <div class="config-field">
+            <div class="config-label">Sensitive Retention (days)</div>
+            <input type="number" class="config-input" id="mp-safety-sensitive_retention_days"
+                   value="{{ memory_profile.get('safety_policy', {}).get('sensitive_retention_days', 30) }}"
+                   min="1" max="3650">
+            <div class="config-hint">Auto-prune sensitive memories after this period</div>
+          </div>
+        </div>
+
+        <!-- Hard rules (read-only display) -->
+        <div class="about-sub">Hard Safety Rules (Non-Editable)</div>
+        <div style="display:flex;flex-direction:column;gap:0.375rem;">
+          <div style="display:flex;align-items:center;gap:0.625rem;padding:0.5rem 0.75rem;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:0.5rem;">
+            <span style="color:#fca5a5;font-size:0.8125rem;">&#128274;</span>
+            <span style="font-size:0.75rem;color:#fca5a5;font-weight:600;">Never store raw credentials</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:0.625rem;padding:0.5rem 0.75rem;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:0.5rem;">
+            <span style="color:#fca5a5;font-size:0.8125rem;">&#128274;</span>
+            <span style="font-size:0.75rem;color:#fca5a5;font-weight:600;">Never store exact addresses</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:0.625rem;padding:0.5rem 0.75rem;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:0.5rem;">
+            <span style="color:#fca5a5;font-size:0.8125rem;">&#128274;</span>
+            <span style="font-size:0.75rem;color:#fca5a5;font-weight:600;">Never store payment information</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── 9. PERFORMANCE POLICY ── -->
+      <div class="section-card">
+        <div class="section-title"><span class="sec-icon">&#9889;</span> Performance Policy</div>
+        <div class="about-text" style="margin-bottom:1rem;">
+          Speed vs depth tuning for memory operations. Controls embedding precision, background processing,
+          caching, and per-operation token budgets.
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Background Summarization</div>
+            <div class="toggle-label-desc">Allow summarization to run asynchronously between turns.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="mp-performance-allow_background_summarization"
+                   {% if memory_profile.get('performance_policy', {}).get('allow_background_summarization', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Cache Retrieval Results</div>
+            <div class="toggle-label-desc">Cache memory search results to avoid redundant embedding calls.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="mp-performance-cache_retrieval_results"
+                   {% if memory_profile.get('performance_policy', {}).get('cache_retrieval_results', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:0.75rem;margin-top:1rem;">
+          <div class="config-field">
+            <div class="config-label">Depth Mode</div>
+            <select class="config-input" id="mp-performance-depth_mode">
+              {% for opt in ['fast', 'balanced', 'deep'] %}
+              <option value="{{ opt }}" {% if memory_profile.get('performance_policy', {}).get('depth_mode', 'balanced') == opt %}selected{% endif %}>{{ opt|capitalize }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="config-field">
+            <div class="config-label">Embedding Precision</div>
+            <select class="config-input" id="mp-performance-embedding_precision">
+              {% for opt in ['standard', 'high', 'low'] %}
+              <option value="{{ opt }}" {% if memory_profile.get('performance_policy', {}).get('embedding_precision', 'standard') == opt %}selected{% endif %}>{{ opt|capitalize }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="config-field">
+            <div class="config-label">Summarization Aggressiveness</div>
+            <select class="config-input" id="mp-performance-background_summarization_aggressiveness">
+              {% for opt in ['low', 'medium', 'high'] %}
+              <option value="{{ opt }}" {% if memory_profile.get('performance_policy', {}).get('background_summarization_aggressiveness', 'low') == opt %}selected{% endif %}>{{ opt|capitalize }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:0.75rem;margin-top:0.75rem;">
+          <div class="config-field">
+            <div class="config-label">Max Embedding Calls/Min</div>
+            <input type="number" class="config-input" id="mp-performance-max_embedding_calls_per_minute"
+                   value="{{ memory_profile.get('performance_policy', {}).get('max_embedding_calls_per_minute', 60) }}"
+                   min="1" max="1000">
+          </div>
+          <div class="config-field">
+            <div class="config-label">Token Budget for Memory Ops</div>
+            <input type="number" class="config-input" id="mp-performance-token_budget_for_memory_ops"
+                   value="{{ memory_profile.get('performance_policy', {}).get('token_budget_for_memory_ops', 1500) }}"
+                   min="100" max="50000" step="100">
+          </div>
+          <div class="config-field">
+            <div class="config-label">Cache TTL (seconds)</div>
+            <input type="number" class="config-input" id="mp-performance-cache_ttl_seconds"
+                   value="{{ memory_profile.get('performance_policy', {}).get('cache_ttl_seconds', 120) }}"
+                   min="10" max="3600" step="10">
+          </div>
+        </div>
+      </div>
+
+      <!-- ── 10. INTROSPECTION POLICY ── -->
+      <div class="section-card">
+        <div class="section-title"><span class="sec-icon">&#128065;</span> Introspection Policy</div>
+        <div class="about-text" style="margin-bottom:1rem;">
+          Debug and explainability settings. Controls whether the agent can explain its memory decisions
+          and how much diagnostic information is logged or exposed.
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Debug Tags in Dev Mode</div>
+            <div class="toggle-label-desc">Include diagnostic tags in responses when running in development.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="mp-introspection-include_debug_tags_in_dev_mode"
+                   {% if memory_profile.get('introspection_policy', {}).get('include_debug_tags_in_dev_mode', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Show Memory IDs to User</div>
+            <div class="toggle-label-desc">Display internal memory IDs in the chat interface.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="mp-introspection-show_memory_ids_to_user"
+                   {% if memory_profile.get('introspection_policy', {}).get('show_memory_ids_to_user', false) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="toggle-label-title">Log Memory Decisions</div>
+            <div class="toggle-label-desc">Record why memories were stored, skipped, or pruned.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="mp-introspection-log_memory_decisions"
+                   {% if memory_profile.get('introspection_policy', {}).get('log_memory_decisions', true) %}checked{% endif %}>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:0.75rem;margin-top:1rem;">
+          <div class="config-field">
+            <div class="config-label">Explain Storage</div>
+            <select class="config-input" id="mp-introspection-explain_why_memory_was_stored">
+              {% for opt in ['never', 'on_request', 'always'] %}
+              <option value="{{ opt }}" {% if memory_profile.get('introspection_policy', {}).get('explain_why_memory_was_stored', 'on_request') == opt %}selected{% endif %}>{{ opt|replace('_', ' ')|title }}</option>
+              {% endfor %}
+            </select>
+            <div class="config-hint">When to explain why a memory was stored</div>
+          </div>
+          <div class="config-field">
+            <div class="config-label">Explain Retrieval</div>
+            <select class="config-input" id="mp-introspection-explain_why_memory_was_retrieved">
+              {% for opt in ['never', 'on_request', 'always'] %}
+              <option value="{{ opt }}" {% if memory_profile.get('introspection_policy', {}).get('explain_why_memory_was_retrieved', 'on_request') == opt %}selected{% endif %}>{{ opt|replace('_', ' ')|title }}</option>
+              {% endfor %}
+            </select>
+            <div class="config-hint">When to explain why a memory was recalled</div>
+          </div>
+          <div class="config-field">
+            <div class="config-label">Log Level</div>
+            <select class="config-input" id="mp-introspection-log_level">
+              {% for opt in ['none', 'summary', 'verbose'] %}
+              <option value="{{ opt }}" {% if memory_profile.get('introspection_policy', {}).get('log_level', 'summary') == opt %}selected{% endif %}>{{ opt|capitalize }}</option>
+              {% endfor %}
+            </select>
+            <div class="config-hint">Detail level for memory operation logs</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Save Bar -->
+      <div class="action-bar">
+        <button class="btn btn-secondary" onclick="resetMemoryProfile()">Reset to Defaults</button>
+        <button class="btn btn-primary" onclick="saveMemoryProfile()">Save Memory Profile</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -1283,6 +3193,422 @@
   // Auto-open cost_tracker if URL has #cost_tracker
   if (location.hash === '#cost_tracker') {
     setTimeout(() => openToolEditor('cost_tracker'), 100);
+  }
+
+  /* ═══ Memory Panel — Tab & Sub-tab switching ══════════════════ */
+
+  function showMemoryPanel() {
+    // Hide tools list + all editor views
+    document.getElementById('view-tools').classList.remove('active');
+    document.querySelectorAll('.editor-view').forEach(v => v.classList.remove('active'));
+    // Show memory panel
+    document.getElementById('view-memory').style.display = 'block';
+    document.getElementById('view-memory').classList.add('active');
+    // Update tab bar
+    document.getElementById('tab-btn-tools').classList.remove('active');
+    document.getElementById('tab-btn-memory').classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function showToolsList_orig() { showToolsList(); }
+
+  // Override showToolsList to also hide memory panel
+  const _origShowToolsList = showToolsList;
+  showToolsList = function() {
+    document.getElementById('view-memory').style.display = 'none';
+    document.getElementById('view-memory').classList.remove('active');
+    document.getElementById('tab-btn-memory').classList.remove('active');
+    _origShowToolsList();
+  };
+
+  // Override openToolEditor to also hide memory panel
+  const _origOpenToolEditor = openToolEditor;
+  openToolEditor = function(name) {
+    document.getElementById('view-memory').style.display = 'none';
+    document.getElementById('view-memory').classList.remove('active');
+    document.getElementById('tab-btn-memory').classList.remove('active');
+    _origOpenToolEditor(name);
+  };
+
+  function showMemSub(which) {
+    document.querySelectorAll('.mem-sub-panel').forEach(p => p.style.display = 'none');
+    document.getElementById('mem-sub-' + which).style.display = 'block';
+    document.getElementById('mem-tab-faiss').classList.toggle('active', which === 'faiss');
+    document.getElementById('mem-tab-vault').classList.toggle('active', which === 'vault');
+  }
+
+  /* ═══ Identity Profile — Save / Reset ════════════════════════ */
+
+  function _splitCSV(id) {
+    const val = document.getElementById(id)?.value || '';
+    return val.split(',').map(s => s.trim()).filter(Boolean);
+  }
+
+  function _collectDict(group) {
+    const inputs = document.querySelectorAll('[data-dict="' + group + '"]');
+    const result = {};
+    inputs.forEach(el => { result[el.dataset.key] = parseFloat(el.value) || 0; });
+    return result;
+  }
+
+  function _collectIdentityProfile() {
+    const g = (id) => {
+      const el = document.getElementById(id);
+      if (!el) return undefined;
+      if (el.type === 'checkbox') return el.checked;
+      if (el.type === 'number') return parseFloat(el.value) || 0;
+      if (el.tagName === 'SELECT') return el.value;
+      return el.value;
+    };
+
+    return {
+      name: g('ip-name'),
+      version: g('ip-version'),
+      description: g('ip-description'),
+
+      indexing_policy: {
+        chunk_size_tokens: g('ip-idx-chunk_size_tokens'),
+        chunk_overlap_tokens: g('ip-idx-chunk_overlap_tokens'),
+        max_chunks_per_document: g('ip-idx-max_chunks_per_document'),
+        merge_short_paragraphs: g('ip-idx-merge_short_paragraphs'),
+        auto_section_tagging: g('ip-idx-auto_section_tagging'),
+        section_tag_format: g('ip-idx-section_tag_format'),
+        document_types: _splitCSV('ip-idx-document_types'),
+        default_importance_by_type: _collectDict('ip-idx-importance'),
+      },
+
+      source_priority_policy: {
+        primary_sources: _splitCSV('ip-src-primary_sources'),
+        secondary_sources: _splitCSV('ip-src-secondary_sources'),
+        tertiary_sources: _splitCSV('ip-src-tertiary_sources'),
+        boost_primary_in_retrieval: g('ip-src-boost_primary_in_retrieval'),
+        primary_boost_multiplier: g('ip-src-primary_boost_multiplier'),
+        demote_outdated_versions: g('ip-src-demote_outdated_versions'),
+        outdated_version_penalty: g('ip-src-outdated_version_penalty'),
+      },
+
+      retrieval_policy: {
+        top_k: g('ip-ret-top_k'),
+        max_tokens_from_identity: g('ip-ret-max_tokens_from_identity'),
+        semantic_match_weight: g('ip-ret-semantic_match_weight'),
+        directive_match_weight: g('ip-ret-directive_match_weight'),
+        prioritize_directives_for_conflicts: g('ip-ret-prioritize_directives_for_conflicts'),
+        allow_symbolic_memories_in_context: g('ip-ret-allow_symbolic_memories_in_context'),
+        max_symbolic_memories_per_turn: g('ip-ret-max_symbolic_memories_per_turn'),
+        deduplicate_similar_chunks: g('ip-ret-deduplicate_similar_chunks'),
+        max_similar_per_section: g('ip-ret-max_similar_per_section'),
+        type_bias: _collectDict('ip-ret-bias'),
+      },
+
+      merge_with_dynamic_policy: {
+        identity_vs_dynamic_priority: g('ip-merge-identity_vs_dynamic_priority'),
+        identity_context_share: g('ip-merge-identity_context_share'),
+        dynamic_context_share: g('ip-merge-dynamic_context_share'),
+        inject_identity_first: g('ip-merge-inject_identity_first'),
+        allow_dynamic_to_augment_identity: g('ip-merge-allow_dynamic_to_augment_identity'),
+        conflict_resolution_strategy: g('ip-merge-conflict_resolution_strategy'),
+        log_identity_dynamic_conflicts: g('ip-merge-log_identity_dynamic_conflicts'),
+      },
+
+      identity_layering_policy: {
+        include_core_identity_block: g('ip-layer-include_core_identity_block'),
+        include_values_block: g('ip-layer-include_values_block'),
+        include_symbolic_memories_block: g('ip-layer-include_symbolic_memories_block'),
+        include_protocols_block: g('ip-layer-include_protocols_block'),
+        max_core_identity_tokens: g('ip-layer-max_core_identity_tokens'),
+        max_values_tokens: g('ip-layer-max_values_tokens'),
+        max_symbolic_tokens: g('ip-layer-max_symbolic_tokens'),
+        max_protocol_tokens: g('ip-layer-max_protocol_tokens'),
+        symbolic_memory_style: g('ip-layer-symbolic_memory_style'),
+        order_of_blocks: _splitCSV('ip-layer-order_of_blocks'),
+      },
+
+      evolution_policy: {
+        allow_multiple_versions: g('ip-evo-allow_multiple_versions'),
+        active_version_strategy: g('ip-evo-active_version_strategy'),
+        pinned_version_id: g('ip-evo-pinned_version_id') || null,
+        keep_old_versions_in_index: g('ip-evo-keep_old_versions_in_index'),
+        penalize_old_versions_in_retrieval: g('ip-evo-penalize_old_versions_in_retrieval'),
+        old_version_penalty_multiplier: g('ip-evo-old_version_penalty_multiplier'),
+        log_identity_changes: g('ip-evo-log_identity_changes'),
+        require_manual_approval_for_new_identity_docs: g('ip-evo-require_manual_approval_for_new_identity_docs'),
+      },
+
+      safety_and_precedence_policy: {
+        classify_directives_by_strength: g('ip-safety-classify_directives_by_strength'),
+        sacred_directive_tags: _splitCSV('ip-safety-sacred_directive_tags'),
+        sacred_directives_always_win: g('ip-safety-sacred_directives_always_win'),
+        soft_preference_resolvable: g('ip-safety-soft_preference_resolvable'),
+        soft_preference_resolution_strategy: g('ip-safety-soft_preference_resolution_strategy'),
+        never_store_user_overrides_in_identity: g('ip-safety-never_store_user_overrides_in_identity'),
+        allow_identity_reflection_on_conflict: g('ip-safety-allow_identity_reflection_on_conflict'),
+      },
+
+      introspection_policy: {
+        allow_user_to_request_identity_view: g('ip-intro-allow_user_to_request_identity_view'),
+        identity_view_mode: g('ip-intro-identity_view_mode'),
+        max_identity_chunks_shown_to_user: g('ip-intro-max_identity_chunks_shown_to_user'),
+        redact_internal_tags_in_user_view: g('ip-intro-redact_internal_tags_in_user_view'),
+        explain_identity_influence_on_response: g('ip-intro-explain_identity_influence_on_response'),
+        log_identity_usage_events: g('ip-intro-log_identity_usage_events'),
+        identity_usage_log_level: g('ip-intro-identity_usage_log_level'),
+      },
+
+      runtime_guardrails: {
+        runtime_can_write_to_identity_index: g('ip-guard-runtime_can_write_to_identity_index'),
+        runtime_can_delete_from_identity_index: g('ip-guard-runtime_can_delete_from_identity_index'),
+        runtime_can_modify_importance_scores: g('ip-guard-runtime_can_modify_importance_scores'),
+        allow_admin_tools_to_rebuild_index: g('ip-guard-allow_admin_tools_to_rebuild_index'),
+        admin_actions_require_explicit_confirmation: g('ip-guard-admin_actions_require_explicit_confirmation'),
+      },
+    };
+  }
+
+  async function saveIdentityProfile() {
+    const profile = _collectIdentityProfile();
+    try {
+      const resp = await fetch('/api/tools/memory/identity', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(profile),
+      });
+      if (resp.ok) {
+        showToast('Identity profile saved');
+      } else {
+        showToast('Save failed', true);
+      }
+    } catch (e) {
+      showToast('Save failed: ' + e.message, true);
+    }
+  }
+
+  async function resetIdentityProfile() {
+    if (!confirm('Reset all identity profile settings to defaults? This cannot be undone.')) return;
+    try {
+      const resp = await fetch('/api/tools/memory/identity', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: 'identity_profile.default_v1',
+          type: 'identity_faiss_profile',
+          name: 'Default Identity Profile',
+          version: '1.0.0',
+          description: 'Controls how Soul Script + permanent identity memory are indexed, retrieved, and merged into context.',
+          author_id: 'system',
+          indexing_policy: { chunk_size_tokens: 400, chunk_overlap_tokens: 80, max_chunks_per_document: 200, merge_short_paragraphs: true, auto_section_tagging: true, section_tag_format: 'bracketed', document_types: ['soul_script_core','code_of_honor','value_system','symbolic_memory','protocol','meta_identity'], default_importance_by_type: { soul_script_core: 1.0, code_of_honor: 0.95, value_system: 0.9, symbolic_memory: 0.85, protocol: 0.8, meta_identity: 0.75 } },
+          source_priority_policy: { primary_sources: ['soul_script_core','code_of_honor'], secondary_sources: ['symbolic_memory','value_system'], tertiary_sources: ['protocol','meta_identity'], boost_primary_in_retrieval: true, primary_boost_multiplier: 1.3, demote_outdated_versions: true, outdated_version_penalty: 0.6 },
+          retrieval_policy: { top_k: 10, max_tokens_from_identity: 1200, semantic_match_weight: 0.8, directive_match_weight: 1.0, prioritize_directives_for_conflicts: true, type_bias: { soul_script_core: 1.0, code_of_honor: 0.95, value_system: 0.9, symbolic_memory: 0.8, protocol: 0.85, meta_identity: 0.7 }, allow_symbolic_memories_in_context: true, max_symbolic_memories_per_turn: 3, deduplicate_similar_chunks: true, max_similar_per_section: 2 },
+          merge_with_dynamic_policy: { identity_vs_dynamic_priority: 'identity_wins', identity_context_share: 0.4, dynamic_context_share: 0.6, inject_identity_first: true, allow_dynamic_to_augment_identity: true, conflict_resolution_strategy: 'anchor_to_identity', log_identity_dynamic_conflicts: true },
+          identity_layering_policy: { include_core_identity_block: true, include_values_block: true, include_symbolic_memories_block: true, include_protocols_block: true, max_core_identity_tokens: 400, max_values_tokens: 300, max_symbolic_tokens: 500, max_protocol_tokens: 400, symbolic_memory_style: 'compact', order_of_blocks: ['core_identity','values','protocols','symbolic_memories'] },
+          evolution_policy: { allow_multiple_versions: true, active_version_strategy: 'latest_stable', pinned_version_id: null, keep_old_versions_in_index: true, penalize_old_versions_in_retrieval: true, old_version_penalty_multiplier: 0.5, log_identity_changes: true, require_manual_approval_for_new_identity_docs: true },
+          safety_and_precedence_policy: { classify_directives_by_strength: true, sacred_directive_tags: ['core_value','non_negotiable','sacred_boundary'], sacred_directives_always_win: true, soft_preference_resolvable: true, soft_preference_resolution_strategy: 'blend', never_store_user_overrides_in_identity: true, allow_identity_reflection_on_conflict: true },
+          introspection_policy: { allow_user_to_request_identity_view: true, identity_view_mode: 'summarized', max_identity_chunks_shown_to_user: 5, redact_internal_tags_in_user_view: true, explain_identity_influence_on_response: 'on_request', log_identity_usage_events: true, identity_usage_log_level: 'summary' },
+          runtime_guardrails: { runtime_can_write_to_identity_index: false, runtime_can_delete_from_identity_index: false, runtime_can_modify_importance_scores: false, allow_admin_tools_to_rebuild_index: true, admin_actions_require_explicit_confirmation: true },
+        }),
+      });
+      if (resp.ok) {
+        showToast('Identity profile reset to defaults — reloading…');
+        setTimeout(() => location.reload(), 800);
+      } else {
+        showToast('Reset failed', true);
+      }
+    } catch (e) {
+      showToast('Reset failed: ' + e.message, true);
+    }
+  }
+
+  /* ═══ Memory Profile — Save ══════════════════════════════════ */
+
+  function _collectMemoryProfile() {
+    const g = (id) => {
+      const el = document.getElementById(id);
+      if (!el) return undefined;
+      if (el.type === 'checkbox') return el.checked;
+      if (el.type === 'number') return parseFloat(el.value) || 0;
+      if (el.tagName === 'SELECT') return el.value;
+      return el.value;
+    };
+
+    return {
+      name: g('mp-name'),
+      version: g('mp-version'),
+      description: g('mp-description'),
+
+      write_policy: {
+        auto_write_enabled: g('mp-write-auto_write_enabled'),
+        importance_threshold: g('mp-write-importance_threshold'),
+        novelty_threshold: g('mp-write-novelty_threshold'),
+        emotion_threshold: g('mp-write-emotion_threshold'),
+        max_memories_per_session: g('mp-write-max_memories_per_session'),
+        max_memories_per_day: g('mp-write-max_memories_per_day'),
+        write_frequency_mode: g('mp-write-write_frequency_mode'),
+        write_granularity: g('mp-write-write_granularity'),
+        allow_user_tagged_write_boost: g('mp-write-allow_user_tagged_write_boost'),
+        user_star_boost_amount: g('mp-write-user_star_boost_amount'),
+      },
+
+      retention_policy: {
+        max_total_memories: g('mp-retention-max_total_memories'),
+        decay_strategy: g('mp-retention-decay_strategy'),
+        decay_half_life_days: g('mp-retention-decay_half_life_days'),
+        protect_high_importance: g('mp-retention-protect_high_importance'),
+        high_importance_floor: g('mp-retention-high_importance_floor'),
+        episodic_vs_semantic_bias: g('mp-retention-episodic_vs_semantic_bias'),
+        prune_when_over_capacity: g('mp-retention-prune_when_over_capacity'),
+        prune_strategy: g('mp-retention-prune_strategy'),
+        prune_batch_size: g('mp-retention-prune_batch_size'),
+        user_pin_enabled: g('mp-retention-user_pin_enabled'),
+        max_pinned_memories: g('mp-retention-max_pinned_memories'),
+      },
+
+      summarization_policy: {
+        session_summarization_mode: g('mp-summarization-session_summarization_mode'),
+        summarize_after_turns: g('mp-summarization-summarize_after_turns'),
+        summarize_after_tokens: g('mp-summarization-summarize_after_tokens'),
+        summary_style: g('mp-summarization-summary_style'),
+        include_meta_tags: g('mp-summarization-include_meta_tags'),
+        max_summary_length_tokens: g('mp-summarization-max_summary_length_tokens'),
+        merge_old_summaries: g('mp-summarization-merge_old_summaries'),
+        merge_frequency_days: g('mp-summarization-merge_frequency_days'),
+        importance_boost_for_summarized: g('mp-summarization-importance_boost_for_summarized'),
+        summarize_ephemeral: g('mp-summarization-summarize_ephemeral'),
+      },
+
+      retrieval_policy: {
+        top_k: g('mp-retrieval-top_k'),
+        max_tokens_from_memories: g('mp-retrieval-max_tokens_from_memories'),
+        semantic_vs_recent_bias: g('mp-retrieval-semantic_vs_recent_bias'),
+        recency_weight: g('mp-retrieval-recency_weight'),
+        importance_weight: g('mp-retrieval-importance_weight'),
+        prefer_user_marked: g('mp-retrieval-prefer_user_marked'),
+        user_marked_weight: g('mp-retrieval-user_marked_weight'),
+        filter_sensitive_in_context: g('mp-retrieval-filter_sensitive_in_context'),
+        deduplicate_similar_results: g('mp-retrieval-deduplicate_similar_results'),
+        max_similar_recall_per_topic: g('mp-retrieval-max_similar_recall_per_topic'),
+      },
+
+      context_policy: {
+        max_context_tokens: g('mp-context-max_context_tokens'),
+        history_inclusion_mode: g('mp-context-history_inclusion_mode'),
+        history_window_turns: g('mp-context-history_window_turns'),
+        include_long_term_summary: g('mp-context-include_long_term_summary'),
+        include_persona_summary: g('mp-context-include_persona_summary'),
+        memory_block_position: g('mp-context-memory_block_position'),
+        system_rules_priority: g('mp-context-system_rules_priority'),
+        allow_persona_to_soft_override_style: g('mp-context-allow_persona_to_soft_override_style'),
+        attach_memory_metadata: g('mp-context-attach_memory_metadata'),
+        metadata_format: g('mp-context-metadata_format'),
+      },
+
+      journaling_policy: {
+        journal_mode_enabled: g('mp-journaling-journal_mode_enabled'),
+        auto_journal_on_key_events: g('mp-journaling-auto_journal_on_key_events'),
+        journal_entry_style: g('mp-journaling-journal_entry_style'),
+        journal_tone: g('mp-journaling-journal_tone'),
+        separate_journal_namespace: g('mp-journaling-separate_journal_namespace'),
+        journal_search_enabled: g('mp-journaling-journal_search_enabled'),
+        daily_journal_prompt_enabled: g('mp-journaling-daily_journal_prompt_enabled'),
+        daily_journal_prompt_time: g('mp-journaling-daily_journal_prompt_time'),
+        max_journal_entries_per_day: g('mp-journaling-max_journal_entries_per_day'),
+      },
+
+      emotion_and_salience_policy: {
+        use_emotion_signal: g('mp-emotion-use_emotion_signal'),
+        emotion_detection_mode: g('mp-emotion-emotion_detection_mode'),
+        prioritize_high_emotion_events: g('mp-emotion-prioritize_high_emotion_events'),
+        emotion_importance_multiplier: g('mp-emotion-emotion_importance_multiplier'),
+        track_emotion_trends: g('mp-emotion-track_emotion_trends'),
+        trend_window_days: g('mp-emotion-trend_window_days'),
+        tag_emotional_state_in_memory: g('mp-emotion-tag_emotional_state_in_memory'),
+        store_low_emotion_noise: g('mp-emotion-store_low_emotion_noise'),
+      },
+
+      safety_policy: {
+        store_sensitive_topics: g('mp-safety-store_sensitive_topics'),
+        sensitive_retention_days: g('mp-safety-sensitive_retention_days'),
+        anonymize_sensitive_details: g('mp-safety-anonymize_sensitive_details'),
+        respect_user_forget_requests: g('mp-safety-respect_user_forget_requests'),
+        log_forget_actions: g('mp-safety-log_forget_actions'),
+      },
+
+      performance_policy: {
+        depth_mode: g('mp-performance-depth_mode'),
+        embedding_precision: g('mp-performance-embedding_precision'),
+        max_embedding_calls_per_minute: g('mp-performance-max_embedding_calls_per_minute'),
+        allow_background_summarization: g('mp-performance-allow_background_summarization'),
+        background_summarization_aggressiveness: g('mp-performance-background_summarization_aggressiveness'),
+        token_budget_for_memory_ops: g('mp-performance-token_budget_for_memory_ops'),
+        cache_retrieval_results: g('mp-performance-cache_retrieval_results'),
+        cache_ttl_seconds: g('mp-performance-cache_ttl_seconds'),
+      },
+
+      introspection_policy: {
+        explain_why_memory_was_stored: g('mp-introspection-explain_why_memory_was_stored'),
+        explain_why_memory_was_retrieved: g('mp-introspection-explain_why_memory_was_retrieved'),
+        include_debug_tags_in_dev_mode: g('mp-introspection-include_debug_tags_in_dev_mode'),
+        show_memory_ids_to_user: g('mp-introspection-show_memory_ids_to_user'),
+        log_memory_decisions: g('mp-introspection-log_memory_decisions'),
+        log_level: g('mp-introspection-log_level'),
+      },
+    };
+  }
+
+  async function saveMemoryProfile() {
+    const profile = _collectMemoryProfile();
+    try {
+      const resp = await fetch('/api/tools/memory/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(profile),
+      });
+      if (resp.ok) {
+        showToast('Memory profile saved');
+      } else {
+        showToast('Save failed', true);
+      }
+    } catch (e) {
+      showToast('Save failed: ' + e.message, true);
+    }
+  }
+
+  async function resetMemoryProfile() {
+    if (!confirm('Reset all memory profile settings to defaults? This cannot be undone.')) return;
+    try {
+      const resp = await fetch('/api/tools/memory/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: 'memory_profile.default_v1',
+          name: 'Default Memory Profile',
+          version: '1.0.0',
+          description: 'Balanced memory profile optimized for general-purpose agent conversations.',
+          author_id: 'system',
+          write_policy: { auto_write_enabled: true, importance_threshold: 0.65, novelty_threshold: 0.6, emotion_threshold: 0.5, max_memories_per_session: 25, max_memories_per_day: 200, write_frequency_mode: 'balanced', write_granularity: 'chunk', allow_user_tagged_write_boost: true, user_star_boost_amount: 0.2 },
+          retention_policy: { max_total_memories: 5000, decay_strategy: 'soft_decay', decay_half_life_days: 90, protect_high_importance: true, high_importance_floor: 0.8, episodic_vs_semantic_bias: 'balanced', prune_when_over_capacity: true, prune_strategy: 'low_importance_first', prune_batch_size: 200, user_pin_enabled: true, max_pinned_memories: 100 },
+          summarization_policy: { session_summarization_mode: 'balanced', summarize_after_turns: 20, summarize_after_tokens: 4000, summary_style: 'journal', include_meta_tags: true, max_summary_length_tokens: 512, merge_old_summaries: true, merge_frequency_days: 7, importance_boost_for_summarized: 0.1, summarize_ephemeral: false },
+          retrieval_policy: { top_k: 8, max_tokens_from_memories: 800, semantic_vs_recent_bias: 'balanced', recency_weight: 0.6, importance_weight: 0.7, prefer_user_marked: true, user_marked_weight: 0.9, filter_sensitive_in_context: true, deduplicate_similar_results: true, max_similar_recall_per_topic: 3 },
+          context_policy: { max_context_tokens: 6000, history_inclusion_mode: 'windowed', history_window_turns: 12, include_long_term_summary: true, include_persona_summary: true, memory_block_position: 'before_history', system_rules_priority: 'strict', allow_persona_to_soft_override_style: true, attach_memory_metadata: true, metadata_format: 'inline_tags' },
+          journaling_policy: { journal_mode_enabled: true, auto_journal_on_key_events: true, journal_entry_style: 'narrative', journal_tone: 'compassionate', separate_journal_namespace: true, journal_search_enabled: true, daily_journal_prompt_enabled: true, daily_journal_prompt_time: '22:00', max_journal_entries_per_day: 3 },
+          emotion_and_salience_policy: { use_emotion_signal: true, emotion_detection_mode: 'llm', prioritize_high_emotion_events: true, emotion_importance_multiplier: 1.3, track_emotion_trends: true, trend_window_days: 30, tag_emotional_state_in_memory: true, store_low_emotion_noise: false },
+          safety_policy: { store_sensitive_topics: 'limited', sensitive_retention_days: 30, anonymize_sensitive_details: true, respect_user_forget_requests: true, log_forget_actions: true, never_store_raw_credentials: true, never_store_exact_addresses: true, never_store_payment_info: true },
+          performance_policy: { depth_mode: 'balanced', embedding_precision: 'standard', max_embedding_calls_per_minute: 60, allow_background_summarization: true, background_summarization_aggressiveness: 'low', token_budget_for_memory_ops: 1500, cache_retrieval_results: true, cache_ttl_seconds: 120 },
+          introspection_policy: { explain_why_memory_was_stored: 'on_request', explain_why_memory_was_retrieved: 'on_request', include_debug_tags_in_dev_mode: true, show_memory_ids_to_user: false, log_memory_decisions: true, log_level: 'summary' },
+        }),
+      });
+      if (resp.ok) {
+        showToast('Profile reset to defaults — reloading…');
+        setTimeout(() => location.reload(), 800);
+      } else {
+        showToast('Reset failed', true);
+      }
+    } catch (e) {
+      showToast('Reset failed: ' + e.message, true);
+    }
+  }
+
+  // Auto-open memory panel if URL has #memory
+  if (location.hash === '#memory') {
+    setTimeout(() => showMemoryPanel(), 100);
   }
 </script>
 {% endblock %}

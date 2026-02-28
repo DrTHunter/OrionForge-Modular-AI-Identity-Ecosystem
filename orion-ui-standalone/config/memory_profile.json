@@ -1,0 +1,143 @@
+{
+  "id": "memory_profile.default_v1",
+  "name": "Default Memory Profile",
+  "version": "1.0.0",
+  "description": "Balanced memory profile optimized for general-purpose agent conversations.",
+  "author_id": "system",
+  "write_policy": {
+    "auto_write_enabled": true,
+    "importance_threshold": 0.65,
+    "novelty_threshold": 0.6,
+    "emotion_threshold": 0.5,
+    "max_memories_per_session": 25,
+    "max_memories_per_day": 200,
+    "write_frequency_mode": "balanced",
+    "write_granularity": "chunk",
+    "allow_user_tagged_write_boost": true,
+    "user_star_boost_amount": 0.2,
+    "auto_write_for": [
+      "breakthrough",
+      "decision",
+      "commitment",
+      "history",
+      "preference"
+    ],
+    "ignore_categories": [
+      "smalltalk",
+      "ephemeral_updates"
+    ]
+  },
+  "retention_policy": {
+    "max_total_memories": 5000,
+    "decay_strategy": "soft_decay",
+    "decay_half_life_days": 90,
+    "protect_high_importance": true,
+    "high_importance_floor": 0.8,
+    "episodic_vs_semantic_bias": "balanced",
+    "prune_when_over_capacity": true,
+    "prune_strategy": "low_importance_first",
+    "prune_batch_size": 200,
+    "user_pin_enabled": true,
+    "max_pinned_memories": 100
+  },
+  "summarization_policy": {
+    "session_summarization_mode": "balanced",
+    "summarize_after_turns": 20,
+    "summarize_after_tokens": 4000,
+    "summary_style": "journal",
+    "include_meta_tags": true,
+    "max_summary_length_tokens": 512,
+    "merge_old_summaries": true,
+    "merge_frequency_days": 7,
+    "importance_boost_for_summarized": 0.1,
+    "summarize_ephemeral": false
+  },
+  "retrieval_policy": {
+    "top_k": 8,
+    "max_tokens_from_memories": 800,
+    "semantic_vs_recent_bias": "balanced",
+    "recency_weight": 0.6,
+    "importance_weight": 0.7,
+    "prefer_user_marked": true,
+    "user_marked_weight": 0.9,
+    "category_priorities": {
+      "relationship": 1.0,
+      "projects": 0.9,
+      "health": 0.7,
+      "smalltalk": 0.2
+    },
+    "filter_sensitive_in_context": true,
+    "sensitive_categories": [
+      "trauma",
+      "medical"
+    ],
+    "deduplicate_similar_results": true,
+    "max_similar_recall_per_topic": 3
+  },
+  "context_policy": {
+    "max_context_tokens": 6000,
+    "history_inclusion_mode": "windowed",
+    "history_window_turns": 12,
+    "include_long_term_summary": true,
+    "include_persona_summary": true,
+    "memory_block_position": "before_history",
+    "system_rules_priority": "strict",
+    "allow_persona_to_soft_override_style": true,
+    "attach_memory_metadata": true,
+    "metadata_format": "inline_tags"
+  },
+  "journaling_policy": {
+    "journal_mode_enabled": true,
+    "auto_journal_on_key_events": true,
+    "journal_entry_style": "narrative",
+    "journal_tone": "compassionate",
+    "separate_journal_namespace": true,
+    "journal_search_enabled": true,
+    "daily_journal_prompt_enabled": true,
+    "daily_journal_prompt_time": "22:00",
+    "max_journal_entries_per_day": 3
+  },
+  "emotion_and_salience_policy": {
+    "use_emotion_signal": true,
+    "emotion_detection_mode": "llm",
+    "prioritize_high_emotion_events": true,
+    "emotion_importance_multiplier": 1.3,
+    "track_emotion_trends": true,
+    "trend_window_days": 30,
+    "tag_emotional_state_in_memory": true,
+    "store_low_emotion_noise": false
+  },
+  "safety_policy": {
+    "store_sensitive_topics": "limited",
+    "sensitive_topics": [
+      "self_harm",
+      "abuse",
+      "illegal_activities"
+    ],
+    "sensitive_retention_days": 30,
+    "anonymize_sensitive_details": true,
+    "respect_user_forget_requests": true,
+    "log_forget_actions": true,
+    "never_store_raw_credentials": true,
+    "never_store_exact_addresses": true,
+    "never_store_payment_info": true
+  },
+  "performance_policy": {
+    "depth_mode": "balanced",
+    "embedding_precision": "standard",
+    "max_embedding_calls_per_minute": 60,
+    "allow_background_summarization": true,
+    "background_summarization_aggressiveness": "low",
+    "token_budget_for_memory_ops": 1500,
+    "cache_retrieval_results": true,
+    "cache_ttl_seconds": 120
+  },
+  "introspection_policy": {
+    "explain_why_memory_was_stored": "on_request",
+    "explain_why_memory_was_retrieved": "on_request",
+    "include_debug_tags_in_dev_mode": true,
+    "show_memory_ids_to_user": false,
+    "log_memory_decisions": true,
+    "log_level": "summary"
+  }
+}
