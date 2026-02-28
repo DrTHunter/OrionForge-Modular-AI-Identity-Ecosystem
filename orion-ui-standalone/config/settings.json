@@ -17,5 +17,28 @@
       "description": "",
       "model": ""
     }
+  },
+  "tool_config": {
+    "web_search": {
+      "require_justification": true,
+      "searxng_url": "http://localhost:3000/search",
+      "modes": {
+        "fast": {
+          "pages": 2,
+          "return_count": 2,
+          "word_limit": 800
+        },
+        "deep": {
+          "pages": 8,
+          "return_count": 5,
+          "word_limit": 3000
+        },
+        "normal": {
+          "pages": 4,
+          "return_count": 3,
+          "word_limit": 1500
+        }
+      }
+    }
   }
 }

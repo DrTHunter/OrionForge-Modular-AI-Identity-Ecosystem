@@ -705,6 +705,12 @@ async def page_tools(request: Request):
         }
     except Exception:
         cost_stats = {"today": {}, "this_month": {}, "all_time": {}}
+    # Web-search effective config for the config panel
+    try:
+        from src.tools.web_search import get_effective_config as _ws_cfg
+        ws_config = _ws_cfg()
+    except Exception:
+        ws_config = {"searxng_url": "http://localhost:3000/search", "require_justification": True, "modes": {"fast": {"pages": 2, "return_count": 2, "word_limit": 800}, "normal": {"pages": 4, "return_count": 3, "word_limit": 1500}, "deep": {"pages": 8, "return_count": 5, "word_limit": 3000}}}
     return templates.TemplateResponse("tools.html", {
         "request": request,
         "page": "tools",
@@ -714,7 +720,29 @@ async def page_tools(request: Request):
         "pricing": pricing,
         "connections": connections,
         "cost_stats": cost_stats,
+        "web_search_config": ws_config,
     })
+
+
+# ── Web Search Config API ─────────────────────────────────────────
+@app.get("/api/tools/web_search/config", response_class=JSONResponse)
+async def api_web_search_config_get():
+    """Return the effective web_search configuration."""
+    from src.tools.web_search import get_effective_config
+    return JSONResponse(get_effective_config())
+
+
+@app.put("/api/tools/web_search/config", response_class=JSONResponse)
+async def api_web_search_config_put(request: Request):
+    """Save web_search configuration to settings.json."""
+    body = await request.json()
+    settings = _load_settings()
+    if "tool_config" not in settings:
+        settings["tool_config"] = {}
+    settings["tool_config"]["web_search"] = body
+    _save_settings(settings)
+    from src.tools.web_search import get_effective_config
+    return JSONResponse(get_effective_config())
 
 
 # ── AGI Loop page (preview only — no backend connected) ──────────
