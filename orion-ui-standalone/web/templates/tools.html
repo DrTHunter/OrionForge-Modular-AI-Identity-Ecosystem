@@ -449,7 +449,7 @@
           {{ tool.icon }}
         </div>
         <div class="tool-card-info">
-          <div class="tool-card-name">{{ tool.name }}</div>
+          <div class="tool-card-name">{{ tool.display_name|default(tool.name) }}</div>
           <div class="tool-card-desc">{{ tool.description }}</div>
           <div class="tool-card-meta">
             <span class="meta-chip params">{{ tool.parameters|length }} param{{ "s" if tool.parameters|length != 1 }}</span>
@@ -484,7 +484,7 @@
         {{ tool.icon }}
       </div>
       <div>
-        <div class="tool-detail-title">{{ tool.name }}</div>
+        <div class="tool-detail-title">{{ tool.display_name|default(tool.name) }}</div>
         <div class="tool-detail-desc">{{ tool.description }}</div>
         <div class="tool-status-badge badge-{{ tool.status }}">
           {% if tool.status == 'ready' %}&#10004; Ready{% elif tool.status == 'planned' %}&#9678; Planned{% else %}&#9671; Concept{% endif %}
@@ -714,9 +714,9 @@
         The agent can query this tool to understand its own capabilities before attempting an action, or to answer user questions about the system&rsquo;s state and configuration.
       </div>
 
-      {% elif tool.name == 'trent_inbox' %}
+      {% elif tool.name == 'inbox' %}
       <div class="about-text">
-        A direct communication channel to Trent (the operator). Used when the agent needs human input, wants to flag something important, or requires approval for a sensitive action.
+        A direct communication channel to the user (the operator). Used when the agent needs human input, wants to flag something important, or requires approval for a sensitive action.
       </div>
       <div class="about-sub">Commands</div>
       <div class="about-commands">
