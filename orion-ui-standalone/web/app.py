@@ -805,6 +805,20 @@ async def page_tools(request: Request):
         ws_config = _ws_cfg()
     except Exception:
         ws_config = {"searxng_url": "http://localhost:3000/search", "require_justification": True, "modes": {"fast": {"pages": 2, "return_count": 2, "word_limit": 800}, "normal": {"pages": 4, "return_count": 3, "word_limit": 1500}, "deep": {"pages": 8, "return_count": 5, "word_limit": 3000}}}
+    # Identity + Memory profiles for the memory tool panel
+    identity_profile = _load_identity_profile()
+    memory_profile = _load_memory_profile()
+    # FAISS memory stats
+    try:
+        fm = _get_faiss_memory()
+        faiss_stats = {
+            "total_memories": len(fm.list_all()) if fm else 0,
+            "vault_path": str(_VAULT_PATH),
+            "faiss_dir": str(_FAISS_DIR),
+            "embedding_model": "all-mpnet-base-v2",
+        }
+    except Exception:
+        faiss_stats = {"total_memories": 0, "vault_path": str(_VAULT_PATH), "faiss_dir": str(_FAISS_DIR), "embedding_model": "all-mpnet-base-v2"}
     return templates.TemplateResponse("tools.html", {
         "request": request,
         "page": "tools",
@@ -815,6 +829,9 @@ async def page_tools(request: Request):
         "connections": connections,
         "cost_stats": cost_stats,
         "web_search_config": ws_config,
+        "identity_profile": identity_profile,
+        "memory_profile": memory_profile,
+        "faiss_stats": faiss_stats,
     })
 
 
@@ -837,6 +854,67 @@ async def api_web_search_config_put(request: Request):
     _save_settings(settings)
     from src.tools.web_search import get_effective_config
     return JSONResponse(get_effective_config())
+
+
+# ── Identity Profile Config API ────────────────────────────────────
+IDENTITY_PROFILE_FILE = _CONFIG_DIR / "identity_profile.json"
+
+def _load_identity_profile() -> dict:
+    return _read_json(IDENTITY_PROFILE_FILE, {})
+
+def _save_identity_profile(data: dict):
+    _write_json(IDENTITY_PROFILE_FILE, data)
+
+@app.get("/api/tools/memory/identity", response_class=JSONResponse)
+async def api_identity_profile_get():
+    """Return the current identity FAISS profile."""
+    return JSONResponse(_load_identity_profile())
+
+@app.put("/api/tools/memory/identity", response_class=JSONResponse)
+async def api_identity_profile_put(request: Request):
+    """Save a partial or full identity profile update."""
+    body = await request.json()
+    profile = _load_identity_profile()
+    def _deep_merge(base: dict, updates: dict):
+        for k, v in updates.items():
+            if isinstance(v, dict) and isinstance(base.get(k), dict):
+                _deep_merge(base[k], v)
+            else:
+                base[k] = v
+    _deep_merge(profile, body)
+    _save_identity_profile(profile)
+    return JSONResponse(profile)
+
+
+# ── Memory Profile Config API ─────────────────────────────────────
+MEMORY_PROFILE_FILE = _CONFIG_DIR / "memory_profile.json"
+
+def _load_memory_profile() -> dict:
+    return _read_json(MEMORY_PROFILE_FILE, {})
+
+def _save_memory_profile(data: dict):
+    _write_json(MEMORY_PROFILE_FILE, data)
+
+@app.get("/api/tools/memory/profile", response_class=JSONResponse)
+async def api_memory_profile_get():
+    """Return the current memory profile configuration."""
+    return JSONResponse(_load_memory_profile())
+
+@app.put("/api/tools/memory/profile", response_class=JSONResponse)
+async def api_memory_profile_put(request: Request):
+    """Save a partial or full memory profile update."""
+    body = await request.json()
+    profile = _load_memory_profile()
+    # Deep-merge incoming fields into existing profile
+    def _deep_merge(base: dict, updates: dict):
+        for k, v in updates.items():
+            if isinstance(v, dict) and isinstance(base.get(k), dict):
+                _deep_merge(base[k], v)
+            else:
+                base[k] = v
+    _deep_merge(profile, body)
+    _save_memory_profile(profile)
+    return JSONResponse(profile)
 
 
 # ── AGI Loop page (preview only — no backend connected) ──────────
