@@ -29,6 +29,7 @@ _TOOL_MAP: Dict[str, Tuple[str, str, bool]] = {
     "directives":          ("src.tools.directives_tool",     "DirectivesTool",        False),
     "cost_tracker":        ("src.tools.cost_tracker",        "CostTrackerTool",       False),
     "continuation_update": ("src.tools.continuation_update", "ContinuationUpdateTool", False),
+    "web_search":          ("src.tools.web_search",          "WebSearchTool",         True),
 }
 
 # Singleton cache for stateful tool instances
@@ -92,6 +93,29 @@ def get_tool_defs_for_agent(agent: str) -> List[Dict[str, Any]]:
                  agent, len(defs),
                  [d["function"]["name"] for d in defs])
     return defs
+
+
+def execute_tool(name: str, arguments: Dict[str, Any]) -> str:
+    """Run a tool by name with the given arguments.  Returns the result string.
+
+    Raises ``KeyError`` if the tool is unknown, ``RuntimeError`` on exec failure.
+    """
+    if name not in _TOOL_MAP:
+        raise KeyError(f"Unknown tool: {name}")
+
+    mod_path, cls_name, needs_instance = _TOOL_MAP[name]
+    mod = importlib.import_module(mod_path)
+    cls = getattr(mod, cls_name)
+
+    if needs_instance:
+        # Use cached singleton
+        if name not in _instances:
+            _instances[name] = cls()
+        result = _instances[name].execute(arguments)
+    else:
+        result = cls.execute(arguments)
+
+    return str(result)
 
 
 def list_registered_tools() -> List[str]:

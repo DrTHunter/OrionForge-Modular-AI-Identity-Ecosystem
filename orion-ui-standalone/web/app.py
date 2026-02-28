@@ -543,12 +543,15 @@ _TOOL_CATALOGUE = [
         "icon": "🔍",
         "icon_bg": "rgba(34,211,238,0.12)",
         "icon_color": "#22d3ee",
-        "description": "Search the web via SearXNG and scrape/summarise results. Supports fast, normal, and deep modes.",
-        "status": "planned",
+        "description": "Search the web via SearXNG and scrape/summarise results. Supports fast, normal, and deep modes. Includes knowledge-gate to prevent unnecessary searches.",
+        "status": "ready",
         "parameters": [
-            {"name": "query", "type": "string", "required": True, "description": "Search query string", "enum": []},
+            {"name": "action", "type": "string", "required": True, "description": "search or scrape", "enum": ["search", "scrape"]},
+            {"name": "query", "type": "string", "required": False, "description": "Search query string", "enum": []},
             {"name": "mode", "type": "string", "required": False, "description": "Search depth preset", "enum": ["fast", "normal", "deep"]},
-            {"name": "justification", "type": "string", "required": False, "description": "Why the agent needs the internet", "enum": []},
+            {"name": "url", "type": "string", "required": False, "description": "URL to scrape directly", "enum": []},
+            {"name": "knowledge_check", "type": "string", "required": False, "description": "What you already know about this topic", "enum": []},
+            {"name": "reason", "type": "string", "required": False, "description": "Why the internet is needed", "enum": []},
         ],
     },
     {
@@ -893,7 +896,7 @@ async def api_chat_send(req: ChatRequest):
         or (conn["models"][0] if conn.get("models") else "gpt-4o-mini")
     )
 
-    # Call LLM API
+    # Call LLM API (with tool-call loop)
     url = conn["url"].rstrip("/")
     if not url.endswith("/chat/completions"):
         url += "/chat/completions"
@@ -901,45 +904,117 @@ async def api_chat_send(req: ChatRequest):
     if conn.get("api_key"):
         headers["Authorization"] = f"Bearer {conn['api_key']}"
 
-    try:
-        payload = {
-            "model": model,
-            "messages": llm_messages,
-            "temperature": profile.get("temperature", 0.7),
-        }
-        if tool_defs:
-            payload["tools"] = tool_defs
-        async with httpx.AsyncClient(timeout=120) as client:
-            resp = await client.post(url, json=payload, headers=headers)
-            resp.raise_for_status()
-            data = resp.json()
-    except httpx.HTTPStatusError as exc:
-        return JSONResponse({"error": f"API {exc.response.status_code}: {exc.response.text[:200]}"}, 502)
-    except Exception as exc:
-        return JSONResponse({"error": f"Request failed: {exc}"}, 502)
+    MAX_TOOL_ROUNDS = 10          # safety cap
+    tool_call_log: list[dict] = []  # track every tool invocation for the UI
+    total_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+    cost_data = {}
 
-    raw_response = data.get("choices", [{}])[0].get("message", {}).get("content", "")
-    usage = data.get("usage", {})
+    running_messages = list(llm_messages)  # mutable copy for the loop
 
-    # ── Cost metering ──
-    provider = conn.get("provider", "openai")
-    try:
-        from src.observability.metering import meter_from_raw_usage, log_cost_event
-        metering = meter_from_raw_usage(usage, provider=provider, model=model)
-        cost_data = metering.cost.to_dict()
-        log_cost_event(metering, agent=req.agent, chat_id=chat_data["id"])
-    except Exception as exc:
-        log.warning("[metering] cost computation failed: %s", exc)
-        cost_data = {}
+    for _round in range(MAX_TOOL_ROUNDS + 1):
+        try:
+            payload = {
+                "model": model,
+                "messages": running_messages,
+                "temperature": profile.get("temperature", 0.7),
+            }
+            if tool_defs:
+                payload["tools"] = tool_defs
+            async with httpx.AsyncClient(timeout=120) as client:
+                resp = await client.post(url, json=payload, headers=headers)
+                resp.raise_for_status()
+                data = resp.json()
+        except httpx.HTTPStatusError as exc:
+            return JSONResponse({"error": f"API {exc.response.status_code}: {exc.response.text[:200]}"}, 502)
+        except Exception as exc:
+            return JSONResponse({"error": f"Request failed: {exc}"}, 502)
+
+        choice = data.get("choices", [{}])[0]
+        msg = choice.get("message", {})
+        finish = choice.get("finish_reason", "stop")
+        usage = data.get("usage", {})
+
+        # Accumulate token usage across rounds
+        for k in total_usage:
+            total_usage[k] += usage.get(k, 0)
+
+        # ── Cost metering (every round) ──
+        provider = conn.get("provider", "openai")
+        try:
+            from src.observability.metering import meter_from_raw_usage, log_cost_event
+            metering = meter_from_raw_usage(usage, provider=provider, model=model)
+            cost_data = metering.cost.to_dict()
+            log_cost_event(metering, agent=req.agent, chat_id=chat_data["id"])
+        except Exception as exc:
+            log.warning("[metering] cost computation failed: %s", exc)
+
+        # ── If the LLM wants to call tools ──
+        tool_calls = msg.get("tool_calls")
+        if finish == "tool_calls" or tool_calls:
+            # Append the assistant message WITH tool_calls to the running context
+            running_messages.append(msg)
+
+            from src.tools.registry import execute_tool
+            import json as _json
+
+            for tc in (tool_calls or []):
+                fn_name = tc.get("function", {}).get("name", "")
+                fn_args_raw = tc.get("function", {}).get("arguments", "{}")
+                tc_id = tc.get("id", "")
+
+                # Parse arguments
+                try:
+                    fn_args = _json.loads(fn_args_raw) if isinstance(fn_args_raw, str) else fn_args_raw
+                except _json.JSONDecodeError:
+                    fn_args = {}
+
+                # Execute
+                log.info("[tools] Round %d — calling %s(%s)", _round + 1, fn_name, fn_args)
+                try:
+                    result = execute_tool(fn_name, fn_args)
+                except Exception as exc:
+                    result = f"Error: {exc}"
+                    log.error("[tools] %s failed: %s", fn_name, exc)
+
+                # Log for UI
+                tool_call_log.append({
+                    "round": _round + 1,
+                    "tool": fn_name,
+                    "arguments": fn_args,
+                    "result": result[:500],
+                })
+
+                # Append tool result message for the next round
+                running_messages.append({
+                    "role": "tool",
+                    "tool_call_id": tc_id,
+                    "content": result,
+                })
+
+            # Continue the loop — LLM will see the tool results
+            continue
+
+        # ── Normal text response — done ──
+        break
+
+    raw_response = msg.get("content", "") or ""
 
     # Extract and save any [MEMORY_SAVE: ...] tags to the vault
     saved_memories = _extract_and_save_memories(req.agent, raw_response)
     # Strip memory tags from the text shown to the user
     response_text = _strip_memory_tags(raw_response)
 
+    # Add tool layer to metadata
+    layers["tools"]["calls"] = tool_call_log
+
     chat_data["messages"].append({
         "role": "assistant", "text": response_text, "time": now,
-        "usage": usage, "data": {"agent": req.agent, "model": model, "usage": usage, "cost": cost_data},
+        "usage": total_usage,
+        "data": {
+            "agent": req.agent, "model": model,
+            "usage": total_usage, "cost": cost_data,
+            "tool_calls": tool_call_log,
+        },
         "layers": layers,
     })
     _save_chat(chat_data["id"], chat_data)
@@ -953,8 +1028,9 @@ async def api_chat_send(req: ChatRequest):
 
     return {
         "response": response_text, "chat_id": chat_data["id"],
-        "model": model, "usage": usage, "cost": cost_data, "layers": layers,
+        "model": model, "usage": total_usage, "cost": cost_data, "layers": layers,
         "saved_memories": saved_memories,
+        "tool_calls": tool_call_log,
     }
 
 @app.get("/api/chat/history")
