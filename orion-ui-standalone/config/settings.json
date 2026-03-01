@@ -63,5 +63,23 @@
       }
     }
   },
-  "timezone_name": null
+  "timezone_name": null,
+  "api_keys": {
+    "openai": "",
+    "anthropic": "",
+    "deepseek": "",
+    "google_gemini": "",
+    "ollama_url": "http://localhost:11434"
+  },
+  "stt": {
+    "provider": "whisper",
+    "whisper_api_key": "",
+    "whisper_model": "base"
+  },
+  "tts": {
+    "provider": "edge_tts",
+    "elevenlabs_api_key": "",
+    "elevenlabs_voice_id": "",
+    "edge_tts_voice": "en-US-AriaNeural"
+  }
 }

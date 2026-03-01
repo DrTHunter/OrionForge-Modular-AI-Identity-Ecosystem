@@ -1859,6 +1859,49 @@ async def api_connections_probe_models(request: Request):
     return {"models": models}
 
 
+@app.get("/api/connections/all-models")
+async def api_connections_all_models():
+    """Return a map of connection_id → sorted model list for every enabled connection.
+    Used by the model-router panel to populate model dropdowns."""
+    store = _load_connections()
+    result: dict[str, list[str]] = {}
+    for conn in store.get("connections", []):
+        if not conn.get("enabled"):
+            continue
+        result[conn["id"]] = sorted(conn.get("models") or [])
+    return result
+
+
+@app.post("/api/connections/refresh-all-models")
+async def api_connections_refresh_all_models():
+    """Live-fetch models from every enabled connection and persist them.
+    Returns the updated connection_id → model-list map."""
+    store = _load_connections()
+    result: dict[str, list[str]] = {}
+    async with httpx.AsyncClient(timeout=15) as client:
+        for conn in store.get("connections", []):
+            if not conn.get("enabled"):
+                continue
+            provider = conn.get("provider", "openai")
+            base_url = (conn.get("url") or "").rstrip("/")
+            headers = {"Authorization": f"Bearer {conn['api_key']}"} if conn.get("api_key") else {}
+            try:
+                if provider == "ollama":
+                    resp = await client.get(f"{base_url}/api/tags", headers=headers)
+                    resp.raise_for_status()
+                    models = sorted(m["name"] for m in resp.json().get("models", []))
+                else:
+                    resp = await client.get(f"{base_url}/models", headers=headers)
+                    resp.raise_for_status()
+                    models = sorted(m["id"] for m in resp.json().get("data", []))
+            except Exception:
+                models = sorted(conn.get("models") or [])
+            conn["models"] = models
+            result[conn["id"]] = models
+    _save_connections(store)
+    return result
+
+
 # ═══════════════════════════════════════════════════════════════════
 #  PRICING API
 # ═══════════════════════════════════════════════════════════════════
@@ -2405,6 +2448,83 @@ async def api_save_timezone(request: Request):
     settings["timezone_offset_hours"] = body.get("timezone_offset_hours", None)
     _save_settings(settings)
     return JSONResponse({"status": "ok"})
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  API KEYS
+# ═══════════════════════════════════════════════════════════════════
+
+@app.put("/api/settings/api-keys")
+async def api_save_api_keys(request: Request):
+    """Save API keys for LLM providers (OpenAI, Anthropic, DeepSeek, Google Gemini, Ollama)."""
+    body = await request.json()
+    settings = _load_settings()
+    settings["api_keys"] = {
+        "openai":        body.get("openai", ""),
+        "anthropic":     body.get("anthropic", ""),
+        "deepseek":      body.get("deepseek", ""),
+        "google_gemini": body.get("google_gemini", ""),
+        "ollama_url":    body.get("ollama_url", "http://localhost:11434"),
+    }
+    _save_settings(settings)
+    return JSONResponse({"status": "ok"})
+
+
+@app.get("/api/settings/api-keys")
+async def api_get_api_keys():
+    """Return saved API keys (masked for security)."""
+    settings = _load_settings()
+    keys = settings.get("api_keys", {})
+    masked = {}
+    for k, v in keys.items():
+        if k == "ollama_url":
+            masked[k] = v
+        elif v and len(v) > 8:
+            masked[k] = v[:4] + "•" * (len(v) - 8) + v[-4:]
+        elif v:
+            masked[k] = "•" * len(v)
+        else:
+            masked[k] = ""
+    return JSONResponse(masked)
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  VOICE — STT & TTS
+# ═══════════════════════════════════════════════════════════════════
+
+@app.put("/api/settings/voice")
+async def api_save_voice_settings(request: Request):
+    """Save STT (Whisper) and TTS (ElevenLabs, Edge TTS) settings."""
+    body = await request.json()
+    settings = _load_settings()
+
+    stt = body.get("stt", {})
+    settings["stt"] = {
+        "provider":        stt.get("provider", "none"),
+        "whisper_api_key": stt.get("whisper_api_key", ""),
+        "whisper_model":   stt.get("whisper_model", "base"),
+    }
+
+    tts = body.get("tts", {})
+    settings["tts"] = {
+        "provider":            tts.get("provider", "none"),
+        "elevenlabs_api_key":  tts.get("elevenlabs_api_key", ""),
+        "elevenlabs_voice_id": tts.get("elevenlabs_voice_id", ""),
+        "edge_tts_voice":      tts.get("edge_tts_voice", "en-US-AriaNeural"),
+    }
+
+    _save_settings(settings)
+    return JSONResponse({"status": "ok"})
+
+
+@app.get("/api/settings/voice")
+async def api_get_voice_settings():
+    """Return current STT / TTS configuration."""
+    settings = _load_settings()
+    return JSONResponse({
+        "stt": settings.get("stt", {"provider": "none"}),
+        "tts": settings.get("tts", {"provider": "none"}),
+    })
 
 
 # ═══════════════════════════════════════════════════════════════════

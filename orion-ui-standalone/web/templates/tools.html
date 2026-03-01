@@ -444,6 +444,47 @@
   .ro-imp-val { font-size: 0.8125rem; font-weight: 700; color: #e4e4e7; }
 
   /* ── Router Panel ─────────────────────────────────────────────── */
+
+  /* About box */
+  .rt-about {
+    background: #13131a; border: 1px solid #2a2a3a; border-radius: 0.75rem;
+    margin-bottom: 1.5rem; overflow: hidden;
+  }
+  .rt-about-header {
+    display: flex; align-items: center; gap: 0.65rem;
+    padding: 0.875rem 1.25rem; border-bottom: 1px solid #2a2a3a;
+    background: rgba(99,102,241,0.06);
+  }
+  .rt-about-icon  { font-size: 1.25rem; }
+  .rt-about-title {
+    font-size: 1.05rem; font-weight: 800; color: #fff;
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+  }
+  .rt-about-badge {
+    padding: 0.15rem 0.45rem; border-radius: 0.25rem; font-size: 0.7rem;
+    font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+    background: rgba(251,191,36,0.15); color: #fbbf24; border: 1px solid rgba(251,191,36,0.3);
+  }
+  .rt-about-body {
+    padding: 1rem 1.25rem; font-size: 0.875rem; color: #a1a1aa; line-height: 1.6;
+  }
+  .rt-about-body p { margin: 0 0 0.75rem; }
+  .rt-about-body strong { color: #e4e4e7; }
+  .rt-about-body em { color: #c4b5fd; font-style: normal; }
+  .rt-about-how {
+    background: #0f0f17; border: 1px solid #23233a; border-radius: 0.5rem;
+    padding: 0.875rem 1rem; margin-top: 0.25rem;
+  }
+  .rt-about-how-title {
+    font-size: 0.8rem; font-weight: 700; color: #818cf8; text-transform: uppercase;
+    letter-spacing: 0.05em; margin-bottom: 0.5rem;
+  }
+  .rt-about-how ol {
+    margin: 0; padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.4rem;
+  }
+  .rt-about-how li { font-size: 0.8125rem; color: #a1a1aa; line-height: 1.55; }
+  .rt-about-how li strong { color: #c4b5fd; }
+
   .router-tier-grid { display: flex; flex-direction: column; gap: 1.25rem; }
 
   /* Tier inline card (mirrors AGI loop modal) */
@@ -3088,6 +3129,35 @@
        ═══════════════════════════════════════════════════════════════ -->
   <div class="view-panel" id="view-router">
 
+    <!-- ─── About Section ─── -->
+    <div class="rt-about">
+      <div class="rt-about-header">
+        <span class="rt-about-icon">🤖</span>
+        <span class="rt-about-title">Model Router</span>
+        <span class="rt-about-badge">AUTO</span>
+      </div>
+      <div class="rt-about-body">
+        <p>The <strong>Model Router</strong> automatically selects the best LLM connection and model for each task based on configurable cost/capability tiers. Instead of manually picking a model for every message, select <strong>🤖&nbsp;Auto&nbsp;(Router)</strong> from the <em>API connection</em> dropdown in the Chat page and the router handles the rest.</p>
+        <div class="rt-about-how">
+          <div class="rt-about-how-title">How it works</div>
+          <ol>
+            <li><strong>Tiers</strong> — Define up to four model tiers below, from cheapest/fastest (T0) to most capable/expensive (T3). Each tier specifies a connection, model, temperature, token limits, and retry/escalation behaviour.</li>
+            <li><strong>Task Mapping</strong> — Each task type (coding, planning, summarization, etc.) is mapped to a starting tier. The router begins at that tier and can escalate upward if retries are exhausted or quality thresholds aren't met.</li>
+            <li><strong>Auto Selection</strong> — When <em>Auto (Router)</em> is active in Chat, every outgoing request is classified by task type, matched to its mapped tier, and dispatched to that tier's connection &amp; model — no manual switching required.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── Refresh bar ─── -->
+    <div class="rt-threshold-bar" style="margin-bottom:1rem;">
+      <div>
+        <div class="rt-threshold-title">📡 Connection Models</div>
+        <div class="rt-threshold-sub">Auto-populated from your API keys in Settings. Click Refresh to re-fetch from all providers.</div>
+      </div>
+      <button class="rt-threshold-btn" id="btn-rt-refresh" onclick="_rtRefreshAllModels()">🔄 Refresh Models</button>
+    </div>
+
     <!-- ─── Tier Configuration Cards ─── -->
     <div class="router-tier-grid" id="router-tier-grid">
       <!-- filled by JS -->
@@ -3820,6 +3890,44 @@
 
   let _routerConfig = {{ router_config | tojson }};
 
+  /* Connection → model-list map.  Populated on first render and via Refresh. */
+  let _rtConnModels = {};   // { conn_id: ['model-a', 'model-b', ...] }
+
+  /* Build the map from the connections already loaded for this page */
+  (function _rtInitConnModels() {
+    const conns = {{ connections | tojson }};
+    conns.forEach(c => {
+      if (c.enabled && c.models && c.models.length)
+        _rtConnModels[c.id] = [...c.models].sort();
+    });
+  })();
+
+  /* Refresh models from all connections via live API calls */
+  async function _rtRefreshAllModels() {
+    const btn = document.getElementById('btn-rt-refresh');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Fetching…'; }
+    try {
+      const resp = await fetch('/api/connections/refresh-all-models', { method: 'POST' });
+      if (resp.ok) {
+        _rtConnModels = await resp.json();
+        renderTierCards();
+        showToast('Models refreshed from all connections');
+      } else {
+        showToast('Refresh failed', true);
+      }
+    } catch (e) {
+      showToast('Refresh failed: ' + e.message, true);
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = '🔄 Refresh Models'; }
+    }
+  }
+
+  /* Return <option> elements for a datalist from a specific connection */
+  function _rtModelDatalistOpts(connId) {
+    const models = _rtConnModels[connId] || [];
+    return models.map(m => `<option value="${_rtEsc(m)}">`).join('');
+  }
+
   const _TIER_OPTIONS = [
     { value: 'local_cheap',     label: 'Local Cheap' },
     { value: 'local_strong',    label: 'Local Strong' },
@@ -3905,12 +4013,17 @@
     const tiers = _routerConfig.tiers || [];
     grid.innerHTML = tiers.map((t, i) => {
       const c = _rtColor(t.id);
+      const connId = t.connection_id || '';
+      const dlId = `rt-dl-primary-${i}`;
+      const altDlId = idx => `rt-dl-alt-${i}-${idx}`;
       const alts = (t.alt_models || []);
       const altRows = alts.length
         ? alts.map((m, ai) => `
             <div class="rt-alt-row">
               <span class="rt-alt-label">ALT ${ai+1}</span>
-              <input type="text" class="rt-form-input rt-alt-input" data-tier="${i}" value="${_rtEsc(m)}" style="flex:1;">
+              <input type="text" class="rt-form-input rt-alt-input" data-tier="${i}" value="${_rtEsc(m)}" style="flex:1;"
+                list="${altDlId(ai)}" placeholder="Select or type model…">
+              <datalist id="${altDlId(ai)}">${_rtModelDatalistOpts(connId)}</datalist>
               <button class="rt-alt-remove" onclick="_rtRemoveAlt(${i},${ai})">&times;</button>
             </div>`).join('')
         : '<div class="rt-alts-empty">No alternates. Primary model only.</div>';
@@ -3936,15 +4049,16 @@
           <div class="rt-form-row">
             <div class="rt-form-group">
               <label class="rt-form-label">Connection / API</label>
-              <select class="rt-form-select" onchange="_routerConfig.tiers[${i}].connection_id = this.value">
+              <select class="rt-form-select" onchange="_rtOnConnChange(${i}, this.value)">
                 ${_rtConnOpts(t.connection_id)}
               </select>
             </div>
             <div class="rt-form-group">
               <label class="rt-form-label">Primary Model</label>
               <input type="text" class="rt-form-input" value="${_rtEsc(t.primary_model)}"
-                placeholder="model-name"
+                list="${dlId}" placeholder="Select or type model…"
                 onchange="_routerConfig.tiers[${i}].primary_model = this.value">
+              <datalist id="${dlId}">${_rtModelDatalistOpts(connId)}</datalist>
             </div>
           </div>
           <!-- 4 param cards -->
@@ -3985,6 +4099,17 @@
         </div>
       </div>`;
     }).join('');
+  }
+
+  /* Called when the Connection dropdown changes — update config + refresh model datalists */
+  function _rtOnConnChange(tierIdx, connId) {
+    _routerConfig.tiers[tierIdx].connection_id = connId;
+    // Refresh datalists for this tier's primary + alt models
+    const card = document.querySelector(`[data-tier-idx="${tierIdx}"]`);
+    if (!card) return;
+    card.querySelectorAll('datalist').forEach(dl => {
+      dl.innerHTML = _rtModelDatalistOpts(connId);
+    });
   }
 
   function _rtAddAlt(tierIdx) {
