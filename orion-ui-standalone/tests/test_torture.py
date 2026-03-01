@@ -1419,6 +1419,217 @@ def test_directive_injector_with_manifest():
 
 
 # ═════════════════════════════════════════════
+# 25. Model Router — config defaults, load/save, API round-trip
+# ═════════════════════════════════════════════
+def test_model_router_config():
+    """Test the model router configuration system: defaults, load/save, merge logic, API endpoints."""
+    print("\n=== TORTURE: Model Router — Config & API ===")
+    from pathlib import Path
+
+    tmp = tempfile.mkdtemp()
+    try:
+        # ── Import backend objects ──
+        from web.app import (
+            _MODEL_ROUTER_DEFAULTS,
+            _load_model_router_config, _save_model_router_config,
+            MODEL_ROUTER_FILE,
+            _read_json, _write_json,
+        )
+        import web.app as _app_mod
+
+        # Save original path and redirect to temp
+        orig_file = _app_mod.MODEL_ROUTER_FILE
+        tmp_file = Path(tmp) / "model_router.json"
+        _app_mod.MODEL_ROUTER_FILE = tmp_file
+
+        # ── 1. Defaults structure ──
+        check("defaults has tiers", "tiers" in _MODEL_ROUTER_DEFAULTS)
+        check("defaults has task_tier_map", "task_tier_map" in _MODEL_ROUTER_DEFAULTS)
+        tiers = _MODEL_ROUTER_DEFAULTS["tiers"]
+        check("4 default tiers", len(tiers) == 4)
+
+        # Tier IDs
+        tier_ids = [t["id"] for t in tiers]
+        check("tier ids are t0-t3", tier_ids == ["t0", "t1", "t2", "t3"])
+
+        # Each tier has required fields
+        required_fields = [
+            "id", "label", "enabled", "connection_id", "provider",
+            "primary_model", "temperature", "max_output_tokens",
+            "max_iterations", "retries_before_escalate", "alt_models", "cost_per_call",
+        ]
+        for t in tiers:
+            for fld in required_fields:
+                check(f"{t['id']} has {fld}", fld in t, f"missing {fld} in {t['id']}")
+
+        # Tier labels
+        labels = [t["label"] for t in tiers]
+        check("labels correct", labels == ["local_cheap", "local_strong", "cheap_cloud", "expensive_cloud"])
+
+        # All tiers enabled by default
+        check("all tiers enabled", all(t["enabled"] for t in tiers))
+
+        # Temperature ranges
+        for t in tiers:
+            check(f"{t['id']} temp 0-2", 0 <= t["temperature"] <= 2,
+                  f"temp={t['temperature']}")
+
+        # Max output tokens positive
+        for t in tiers:
+            check(f"{t['id']} tokens > 0", t["max_output_tokens"] > 0)
+
+        # Max iterations positive
+        for t in tiers:
+            check(f"{t['id']} iterations > 0", t["max_iterations"] > 0)
+
+        # Alt models are lists
+        for t in tiers:
+            check(f"{t['id']} alt_models is list", isinstance(t["alt_models"], list))
+
+        # ── 2. Task tier map ──
+        ttm = _MODEL_ROUTER_DEFAULTS["task_tier_map"]
+        expected_tasks = ["coding", "summarization", "planning", "high_stakes",
+                          "final_polish", "memory_ops", "reflection", "general"]
+        for task in expected_tasks:
+            check(f"task '{task}' in map", task in ttm, f"missing: {task}")
+
+        valid_tiers = {"local_cheap", "local_strong", "cheap_cloud", "expensive_cloud", "__auto__"}
+        for task, tier in ttm.items():
+            check(f"task '{task}' → valid tier", tier in valid_tiers, f"got: {tier}")
+
+        check("general → __auto__", ttm["general"] == "__auto__")
+        check("coding → cheap_cloud", ttm["coding"] == "cheap_cloud")
+        check("final_polish → expensive_cloud", ttm["final_polish"] == "expensive_cloud")
+        check("planning → local_strong", ttm["planning"] == "local_strong")
+
+        # ── 3. Load with missing file → returns defaults ──
+        if tmp_file.exists():
+            tmp_file.unlink()
+        cfg = _load_model_router_config()
+        check("missing file → has tiers", "tiers" in cfg)
+        check("missing file → 4 tiers", len(cfg["tiers"]) == 4)
+        check("missing file → has task_tier_map", "task_tier_map" in cfg)
+        check("missing file → 8 tasks", len(cfg["task_tier_map"]) == 8)
+
+        # ── 4. Save + reload round-trip ──
+        custom = {
+            "tiers": [
+                {"id": "t0", "label": "custom_local", "enabled": False,
+                 "connection_id": "conn_1", "provider": "ollama",
+                 "primary_model": "gemma:2b", "temperature": 0.9,
+                 "max_output_tokens": 1024, "max_iterations": 5,
+                 "retries_before_escalate": 1, "alt_models": ["phi3"],
+                 "cost_per_call": "~$0.00"},
+            ],
+            "task_tier_map": {"coding": "local_cheap", "general": "__auto__"},
+        }
+        _save_model_router_config(custom)
+        check("file created", tmp_file.exists())
+
+        loaded = _load_model_router_config()
+        check("round-trip tiers count", len(loaded["tiers"]) == 1)
+        check("round-trip tier label", loaded["tiers"][0]["label"] == "custom_local")
+        check("round-trip tier disabled", loaded["tiers"][0]["enabled"] is False)
+        check("round-trip alt_models", loaded["tiers"][0]["alt_models"] == ["phi3"])
+        check("round-trip task map coding", loaded["task_tier_map"]["coding"] == "local_cheap")
+
+        # ── 5. Partial save → merge with defaults ──
+        _write_json(tmp_file, {"task_tier_map": {"coding": "expensive_cloud"}})
+        merged = _load_model_router_config()
+        check("partial → tiers from defaults", len(merged["tiers"]) == 4)
+        check("partial → coding overridden", merged["task_tier_map"]["coding"] == "expensive_cloud")
+
+        # ── 6. Empty save → defaults restored ──
+        _write_json(tmp_file, {})
+        empty_load = _load_model_router_config()
+        check("empty file → tiers from defaults", len(empty_load["tiers"]) == 4)
+        check("empty file → task_tier_map from defaults", len(empty_load["task_tier_map"]) == 8)
+
+        # ── 7. API endpoints via TestClient ──
+        try:
+            from httpx import ASGITransport, AsyncClient
+            import asyncio
+
+            # Remove saved file so we test fresh defaults
+            if tmp_file.exists():
+                tmp_file.unlink()
+
+            from web.app import app as _test_app
+
+            async def _run_api_tests():
+                transport = ASGITransport(app=_test_app)
+                async with AsyncClient(transport=transport, base_url="http://test") as client:
+                    # GET → defaults
+                    r = await client.get("/api/model-router/config")
+                    check("GET status 200", r.status_code == 200)
+                    data = r.json()
+                    check("GET has tiers", "tiers" in data)
+                    check("GET has task_tier_map", "task_tier_map" in data)
+                    check("GET 4 tiers", len(data["tiers"]) == 4)
+
+                    # POST → save custom config
+                    custom_post = {
+                        "tiers": data["tiers"],
+                        "task_tier_map": {**data["task_tier_map"], "coding": "local_strong"},
+                    }
+                    r2 = await client.post("/api/model-router/config", json=custom_post)
+                    check("POST status 200", r2.status_code == 200)
+                    resp2 = r2.json()
+                    check("POST ok", resp2.get("ok") is True)
+                    check("POST config returned", "config" in resp2)
+                    check("POST coding changed", resp2["config"]["task_tier_map"]["coding"] == "local_strong")
+
+                    # GET after POST → reflects saved state
+                    r3 = await client.get("/api/model-router/config")
+                    data3 = r3.json()
+                    check("GET after POST reflects save", data3["task_tier_map"]["coding"] == "local_strong")
+
+                    # POST /reset → restore defaults
+                    r4 = await client.post("/api/model-router/reset")
+                    check("RESET status 200", r4.status_code == 200)
+                    resp4 = r4.json()
+                    check("RESET ok", resp4.get("ok") is True)
+                    check("RESET coding back to default",
+                          resp4["config"]["task_tier_map"]["coding"] == "cheap_cloud")
+                    check("RESET 4 tiers", len(resp4["config"]["tiers"]) == 4)
+
+                    # GET after reset → defaults
+                    r5 = await client.get("/api/model-router/config")
+                    data5 = r5.json()
+                    check("GET after reset → default coding",
+                          data5["task_tier_map"]["coding"] == "cheap_cloud")
+
+            asyncio.run(_run_api_tests())
+
+        except ImportError:
+            # httpx not installed — skip API tests gracefully
+            check("httpx not available — API tests skipped", True)
+
+        # ── 8. Tier-specific field validations ──
+        t0 = _MODEL_ROUTER_DEFAULTS["tiers"][0]
+        t3 = _MODEL_ROUTER_DEFAULTS["tiers"][3]
+
+        check("t0 provider ollama", t0["provider"] == "ollama")
+        check("t0 model qwen2.5:7b", t0["primary_model"] == "qwen2.5:7b")
+        check("t3 provider openai", t3["provider"] == "openai")
+        check("t3 model gpt-4o", t3["primary_model"] == "gpt-4o")
+        check("t0 cost ~$0.00", t0["cost_per_call"] == "~$0.00")
+        check("t3 cost contains $0.01", "$0.01" in t3["cost_per_call"])
+
+        # Escalation: retries should decrease as tier cost increases
+        check("t0 retries >= t3 retries",
+              t0["retries_before_escalate"] >= t3["retries_before_escalate"])
+
+        # Max iterations should increase with tier capability
+        check("t3 iterations >= t0 iterations",
+              t3["max_iterations"] >= t0["max_iterations"])
+
+    finally:
+        _app_mod.MODEL_ROUTER_FILE = orig_file
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ═════════════════════════════════════════════
 if __name__ == "__main__":
     test_boundary_policy()
     test_pii_guard_extended()
@@ -1444,6 +1655,7 @@ if __name__ == "__main__":
     test_echo_tool()
     test_llm_types()
     test_directive_injector_with_manifest()
+    test_model_router_config()
 
     print(f"\n{'='*40}")
     print(f"Results: {PASS} passed, {FAIL} failed")
