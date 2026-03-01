@@ -105,7 +105,7 @@
     display: none; position: absolute; top: calc(100% + 6px); left: 50%;
     transform: translateX(-50%); background: #1a1a24;
     border: 1px solid rgba(99,102,241,0.25); border-radius: 0.5rem;
-    padding: 0.25rem 0; z-index: 70; min-width: 10rem;
+    padding: 0.25rem 0; z-index: 9999; min-width: 10rem;
     box-shadow: 0 8px 24px rgba(0,0,0,0.5);
   }
   .avatar-menu.open { display: block; }
@@ -254,7 +254,7 @@
     background: #0d1224;
     border: 1px solid rgba(255,255,255,0.06);
     border-radius: 1rem;
-    overflow: hidden;
+    overflow: visible;
     box-shadow: 0 40px 80px rgba(0,0,0,0.3);
     margin-bottom: 1.25rem;
     animation: modalIn 0.3s ease-out;
@@ -268,12 +268,15 @@
   .agent-detail-header {
     padding: 2rem 2rem 1.5rem;
     position: relative;
-    overflow: hidden;
+    overflow: visible;
+    border-radius: 1rem 1rem 0 0;
     display: flex; align-items: flex-start; gap: 1.5rem;
   }
   .agent-detail-header::before {
     content: ''; position: absolute; inset: 0;
     opacity: 0.35; z-index: 0;
+    border-radius: 1rem 1rem 0 0;
+    overflow: hidden;
   }
   .prof-avatar {
     width: 5rem; height: 5rem; border-radius: 50%;
