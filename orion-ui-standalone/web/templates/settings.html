@@ -76,6 +76,8 @@
   <!-- ═══ Tab Bar ═══ -->
   <div class="settings-tabs">
     <button class="settings-tab {{ 'active' if tab == 'connections' }}" onclick="switchSettingsTab('connections')">Connections</button>
+    <button class="settings-tab {{ 'active' if tab == 'api_keys' }}" onclick="switchSettingsTab('api_keys')">API Keys</button>
+    <button class="settings-tab {{ 'active' if tab == 'voice' }}" onclick="switchSettingsTab('voice')">Voice</button>
     <button class="settings-tab {{ 'active' if tab == 'chat' }}" onclick="switchSettingsTab('chat')">Chat</button>
     <button class="settings-tab {{ 'active' if tab == 'general' }}" onclick="switchSettingsTab('general')">General</button>
   </div>
@@ -128,6 +130,161 @@
         {% endif %}
       </div>
     </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       TAB — API Keys
+       ═══════════════════════════════════════════════════════════ -->
+  <div class="settings-panel {{ 'active' if tab == 'api_keys' }}" id="panel-api_keys">
+
+    <!-- OpenAI -->
+    <div class="settings-section">
+      <div class="settings-section-title">OpenAI</div>
+      <div class="settings-section-desc">API key for GPT-4o, GPT-4o-mini, o1, and other OpenAI models</div>
+      <div class="mb-3">
+        <label class="block text-xs text-forge-muted mb-1">API Key</label>
+        <input id="key-openai" type="password" class="search-input w-full" style="max-width:32rem;"
+               placeholder="sk-..." value="{{ settings.get('api_keys', {}).get('openai', '') }}">
+      </div>
+    </div>
+
+    <!-- Anthropic -->
+    <div class="settings-section">
+      <div class="settings-section-title">Anthropic</div>
+      <div class="settings-section-desc">API key for Claude models (Opus, Sonnet, Haiku)</div>
+      <div class="mb-3">
+        <label class="block text-xs text-forge-muted mb-1">API Key</label>
+        <input id="key-anthropic" type="password" class="search-input w-full" style="max-width:32rem;"
+               placeholder="sk-ant-..." value="{{ settings.get('api_keys', {}).get('anthropic', '') }}">
+      </div>
+    </div>
+
+    <!-- DeepSeek -->
+    <div class="settings-section">
+      <div class="settings-section-title">DeepSeek</div>
+      <div class="settings-section-desc">API key for DeepSeek models (DeepSeek-V3, DeepSeek-R1, etc.)</div>
+      <div class="mb-3">
+        <label class="block text-xs text-forge-muted mb-1">API Key</label>
+        <input id="key-deepseek" type="password" class="search-input w-full" style="max-width:32rem;"
+               placeholder="sk-..." value="{{ settings.get('api_keys', {}).get('deepseek', '') }}">
+      </div>
+    </div>
+
+    <!-- Google Gemini -->
+    <div class="settings-section">
+      <div class="settings-section-title">Google Gemini</div>
+      <div class="settings-section-desc">API key for Gemini models (Gemini 2.0, 1.5 Pro, etc.)</div>
+      <div class="mb-3">
+        <label class="block text-xs text-forge-muted mb-1">API Key</label>
+        <input id="key-google_gemini" type="password" class="search-input w-full" style="max-width:32rem;"
+               placeholder="AIza..." value="{{ settings.get('api_keys', {}).get('google_gemini', '') }}">
+      </div>
+    </div>
+
+    <!-- Ollama -->
+    <div class="settings-section">
+      <div class="settings-section-title">Ollama</div>
+      <div class="settings-section-desc">Local inference via Ollama — no API key required, just the server URL</div>
+      <div class="mb-3">
+        <label class="block text-xs text-forge-muted mb-1">Ollama Server URL</label>
+        <input id="key-ollama_url" type="text" class="search-input w-full" style="max-width:32rem;"
+               placeholder="http://localhost:11434" value="{{ settings.get('api_keys', {}).get('ollama_url', 'http://localhost:11434') }}">
+      </div>
+    </div>
+
+    <button class="filter-btn active" onclick="saveApiKeys()" style="cursor:pointer;">Save API Keys</button>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       TAB — Voice (STT / TTS)
+       ═══════════════════════════════════════════════════════════ -->
+  <div class="settings-panel {{ 'active' if tab == 'voice' }}" id="panel-voice">
+
+    <!-- STT -->
+    <div class="settings-section">
+      <div class="settings-section-title">Speech-to-Text (STT)</div>
+      <div class="settings-section-desc">Choose a speech recognition provider for voice input</div>
+
+      <div class="mb-3">
+        <label class="block text-xs text-forge-muted mb-1">Provider</label>
+        <select id="stt-provider" class="search-input" style="max-width:20rem;" onchange="toggleSttFields()">
+          <option value="none" {{ 'selected' if settings.get('stt', {}).get('provider', 'none') == 'none' }}>Disabled</option>
+          <option value="whisper" {{ 'selected' if settings.get('stt', {}).get('provider') == 'whisper' }}>Whisper (OpenAI)</option>
+          <option value="whisper_local" {{ 'selected' if settings.get('stt', {}).get('provider') == 'whisper_local' }}>Whisper (Local / whisper.cpp)</option>
+        </select>
+      </div>
+
+      <!-- Whisper API fields -->
+      <div id="stt-whisper-fields" style="display:none;">
+        <div class="mb-3">
+          <label class="block text-xs text-forge-muted mb-1">OpenAI API Key <span class="text-zinc-600">(uses your OpenAI key above if left blank)</span></label>
+          <input id="stt-whisper-api-key" type="password" class="search-input w-full" style="max-width:32rem;"
+                 placeholder="sk-... (optional — falls back to OpenAI key)" value="{{ settings.get('stt', {}).get('whisper_api_key', '') }}">
+        </div>
+      </div>
+
+      <!-- Whisper local fields -->
+      <div id="stt-whisper-local-fields" style="display:none;">
+        <div class="mb-3">
+          <label class="block text-xs text-forge-muted mb-1">Model Size</label>
+          <select id="stt-whisper-model" class="search-input" style="max-width:14rem;">
+            <option value="tiny" {{ 'selected' if settings.get('stt', {}).get('whisper_model') == 'tiny' }}>Tiny</option>
+            <option value="base" {{ 'selected' if settings.get('stt', {}).get('whisper_model', 'base') == 'base' }}>Base</option>
+            <option value="small" {{ 'selected' if settings.get('stt', {}).get('whisper_model') == 'small' }}>Small</option>
+            <option value="medium" {{ 'selected' if settings.get('stt', {}).get('whisper_model') == 'medium' }}>Medium</option>
+            <option value="large" {{ 'selected' if settings.get('stt', {}).get('whisper_model') == 'large' }}>Large</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- TTS -->
+    <div class="settings-section">
+      <div class="settings-section-title">Text-to-Speech (TTS)</div>
+      <div class="settings-section-desc">Choose a voice synthesis provider for agent responses</div>
+
+      <div class="mb-3">
+        <label class="block text-xs text-forge-muted mb-1">Provider</label>
+        <select id="tts-provider" class="search-input" style="max-width:20rem;" onchange="toggleTtsFields()">
+          <option value="none" {{ 'selected' if settings.get('tts', {}).get('provider', 'none') == 'none' }}>Disabled</option>
+          <option value="elevenlabs" {{ 'selected' if settings.get('tts', {}).get('provider') == 'elevenlabs' }}>ElevenLabs</option>
+          <option value="edge_tts" {{ 'selected' if settings.get('tts', {}).get('provider') == 'edge_tts' }}>Edge TTS (Free)</option>
+        </select>
+      </div>
+
+      <!-- ElevenLabs fields -->
+      <div id="tts-elevenlabs-fields" style="display:none;">
+        <div class="mb-3">
+          <label class="block text-xs text-forge-muted mb-1">ElevenLabs API Key</label>
+          <input id="tts-elevenlabs-api-key" type="password" class="search-input w-full" style="max-width:32rem;"
+                 placeholder="xi-..." value="{{ settings.get('tts', {}).get('elevenlabs_api_key', '') }}">
+        </div>
+        <div class="mb-3">
+          <label class="block text-xs text-forge-muted mb-1">Voice ID</label>
+          <input id="tts-elevenlabs-voice-id" type="text" class="search-input w-full" style="max-width:32rem;"
+                 placeholder="e.g. 21m00Tcm4TlvDq8ikWAM" value="{{ settings.get('tts', {}).get('elevenlabs_voice_id', '') }}">
+        </div>
+      </div>
+
+      <!-- Edge TTS fields -->
+      <div id="tts-edge-fields" style="display:none;">
+        <div class="mb-3">
+          <label class="block text-xs text-forge-muted mb-1">Voice</label>
+          <select id="tts-edge-voice" class="search-input" style="max-width:24rem;">
+            <option value="en-US-AriaNeural" {{ 'selected' if settings.get('tts', {}).get('edge_tts_voice', 'en-US-AriaNeural') == 'en-US-AriaNeural' }}>en-US-AriaNeural (Female)</option>
+            <option value="en-US-GuyNeural" {{ 'selected' if settings.get('tts', {}).get('edge_tts_voice') == 'en-US-GuyNeural' }}>en-US-GuyNeural (Male)</option>
+            <option value="en-US-JennyNeural" {{ 'selected' if settings.get('tts', {}).get('edge_tts_voice') == 'en-US-JennyNeural' }}>en-US-JennyNeural (Female)</option>
+            <option value="en-US-ChristopherNeural" {{ 'selected' if settings.get('tts', {}).get('edge_tts_voice') == 'en-US-ChristopherNeural' }}>en-US-ChristopherNeural (Male)</option>
+            <option value="en-GB-SoniaNeural" {{ 'selected' if settings.get('tts', {}).get('edge_tts_voice') == 'en-GB-SoniaNeural' }}>en-GB-SoniaNeural (Female, British)</option>
+            <option value="en-GB-RyanNeural" {{ 'selected' if settings.get('tts', {}).get('edge_tts_voice') == 'en-GB-RyanNeural' }}>en-GB-RyanNeural (Male, British)</option>
+            <option value="en-AU-NatashaNeural" {{ 'selected' if settings.get('tts', {}).get('edge_tts_voice') == 'en-AU-NatashaNeural' }}>en-AU-NatashaNeural (Female, Australian)</option>
+            <option value="en-IN-NeerjaNeural" {{ 'selected' if settings.get('tts', {}).get('edge_tts_voice') == 'en-IN-NeerjaNeural' }}>en-IN-NeerjaNeural (Female, Indian)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <button class="filter-btn active" onclick="saveVoiceSettings()" style="cursor:pointer;">Save Voice Settings</button>
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════
@@ -287,6 +444,60 @@
 <script>
 let _conns = {{ connections | tojson }};
 let _tzMode = '{{ settings.get("timezone", "auto") }}';
+
+/* ── API Keys ──────────────────────────────────────────── */
+async function saveApiKeys() {
+  const payload = {
+    openai:       document.getElementById('key-openai').value,
+    anthropic:    document.getElementById('key-anthropic').value,
+    deepseek:     document.getElementById('key-deepseek').value,
+    google_gemini:document.getElementById('key-google_gemini').value,
+    ollama_url:   document.getElementById('key-ollama_url').value,
+  };
+  const resp = await fetch('/api/settings/api-keys', {
+    method: 'PUT', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(payload),
+  });
+  const data = await resp.json();
+  showToast(data.status === 'ok' ? 'API keys saved' : 'Error saving keys', data.status === 'ok' ? 'ok' : 'error');
+}
+
+/* ── Voice (STT / TTS) ────────────────────────────────── */
+function toggleSttFields() {
+  const p = document.getElementById('stt-provider').value;
+  document.getElementById('stt-whisper-fields').style.display = p === 'whisper' ? 'block' : 'none';
+  document.getElementById('stt-whisper-local-fields').style.display = p === 'whisper_local' ? 'block' : 'none';
+}
+function toggleTtsFields() {
+  const p = document.getElementById('tts-provider').value;
+  document.getElementById('tts-elevenlabs-fields').style.display = p === 'elevenlabs' ? 'block' : 'none';
+  document.getElementById('tts-edge-fields').style.display = p === 'edge_tts' ? 'block' : 'none';
+}
+// initialise on load
+toggleSttFields();
+toggleTtsFields();
+
+async function saveVoiceSettings() {
+  const payload = {
+    stt: {
+      provider:       document.getElementById('stt-provider').value,
+      whisper_api_key:document.getElementById('stt-whisper-api-key').value,
+      whisper_model:  document.getElementById('stt-whisper-model').value,
+    },
+    tts: {
+      provider:           document.getElementById('tts-provider').value,
+      elevenlabs_api_key: document.getElementById('tts-elevenlabs-api-key').value,
+      elevenlabs_voice_id:document.getElementById('tts-elevenlabs-voice-id').value,
+      edge_tts_voice:     document.getElementById('tts-edge-voice').value,
+    },
+  };
+  const resp = await fetch('/api/settings/voice', {
+    method: 'PUT', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(payload),
+  });
+  const data = await resp.json();
+  showToast(data.status === 'ok' ? 'Voice settings saved' : 'Error saving voice settings', data.status === 'ok' ? 'ok' : 'error');
+}
 
 /* ── Tab switching ─────────────────────────────────────── */
 function switchSettingsTab(name) {
