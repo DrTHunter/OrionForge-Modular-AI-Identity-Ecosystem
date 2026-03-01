@@ -2309,6 +2309,18 @@ async def api_delete_chat_background():
     return JSONResponse({"status": "ok"})
 
 
+@app.put("/api/settings/timezone")
+async def api_save_timezone(request: Request):
+    """Save timezone preferences."""
+    body = await request.json()
+    settings = _load_settings()
+    settings["timezone"] = body.get("timezone", "auto")
+    settings["timezone_name"] = body.get("timezone_name", None)
+    settings["timezone_offset_hours"] = body.get("timezone_offset_hours", None)
+    _save_settings(settings)
+    return JSONResponse({"status": "ok"})
+
+
 # ═══════════════════════════════════════════════════════════════════
 #  CHAT EMOJI GENERATION
 # ═══════════════════════════════════════════════════════════════════
