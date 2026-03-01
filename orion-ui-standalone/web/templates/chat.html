@@ -370,6 +370,7 @@
   .tb-sel:focus { border-color: #6366f1; }
   .tb-sel.local-conn { border-color: rgba(16,185,129,0.4); color: #6ee7b7; }
   .tb-sel.cloud-conn { border-color: rgba(99,102,241,0.4); color: #a5b4fc; }
+  .tb-sel.auto-conn  { border-color: rgba(251,191,36,0.4); color: #fbbf24; }
   #chat-model { max-width: 11rem; }
   #chat-model option { background: #1a1a24; color: #d4d4d8; }
   #chat-model optgroup { color: #71717a; font-style: normal; font-size: 0.6875rem; }
@@ -680,6 +681,7 @@
             </span>
             <select id="chat-connection" class="tb-sel" title="API Connection" onchange="onConnectionChange(this)">
               <option value="">Default API</option>
+              <option value="__auto__" data-type="auto" data-provider="router" data-url="" data-models="">🤖 Auto (Router)</option>
               {% for conn in connections %}
               {% if conn.enabled and conn.provider not in ('elevenlabs', 'edge-tts', 'whisper') %}
               <option value="{{ conn.id }}"
@@ -791,7 +793,12 @@ function onConnectionChange(sel) {
   const modelSel = document.getElementById('chat-model');
   const connSel = document.getElementById('chat-connection');
 
-  connSel.classList.remove('local-conn', 'cloud-conn');
+  connSel.classList.remove('local-conn', 'cloud-conn', 'auto-conn');
+  if (sel.value === '__auto__') {
+    connSel.classList.add('auto-conn');
+    modelSel.style.display = 'none';
+    return;
+  }
   if (sel.value) {
     connSel.classList.add(connType === 'local' ? 'local-conn' : 'cloud-conn');
   }

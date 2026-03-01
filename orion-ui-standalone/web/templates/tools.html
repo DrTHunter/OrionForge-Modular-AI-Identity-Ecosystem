@@ -442,6 +442,172 @@
   }
   .ro-imp-name { font-size: 0.6875rem; color: #a1a1aa; }
   .ro-imp-val { font-size: 0.8125rem; font-weight: 700; color: #e4e4e7; }
+
+  /* ── Router Panel ─────────────────────────────────────────────── */
+  .router-tier-grid { display: flex; flex-direction: column; gap: 1.25rem; }
+
+  /* Tier inline card (mirrors AGI loop modal) */
+  .rt-card {
+    background: #13131a; border: 1px solid #2a2a3a; border-radius: 0.75rem;
+    overflow: hidden; transition: border-color 0.2s;
+  }
+  .rt-card:hover { border-color: rgba(99,102,241,0.35); }
+
+  /* Card header */
+  .rt-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.875rem 1.25rem; border-bottom: 1px solid #2a2a3a;
+  }
+  .rt-head-left { display: flex; align-items: center; gap: 0.75rem; }
+  .rt-badge {
+    padding: 0.2rem 0.5rem; border-radius: 0.25rem; font-size: 0.75rem;
+    font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+    flex-shrink: 0;
+  }
+  .rt-title {
+    font-size: 1rem; font-weight: 800; color: #fff;
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+  }
+  .rt-head-right { display: flex; align-items: center; gap: 0.75rem; }
+  .rt-enabled-wrap {
+    display: flex; align-items: center; gap: 0.5rem;
+    font-size: 0.8125rem; color: #a1a1aa;
+  }
+  .rt-enabled-wrap input[type="checkbox"] {
+    accent-color: #6366f1; width: 0.875rem; height: 0.875rem; cursor: pointer;
+  }
+  .rt-close {
+    background: none; border: none; color: #52525b; font-size: 1.25rem;
+    cursor: pointer; padding: 0.25rem; line-height: 1; transition: color 0.15s;
+  }
+  .rt-close:hover { color: #fff; }
+
+  /* Card body */
+  .rt-body { padding: 1.25rem; }
+
+  /* Connection + Model row (2-col) */
+  .rt-form-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;
+  }
+  @media (max-width: 640px) { .rt-form-row { grid-template-columns: 1fr; } }
+  .rt-form-group { display: flex; flex-direction: column; gap: 0.25rem; }
+  .rt-form-label {
+    font-size: 0.6875rem; font-weight: 700; color: #52525b;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .rt-form-select, .rt-form-input {
+    background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 0.5rem;
+    color: #d4d4d8; font-size: 0.875rem; padding: 0.625rem 0.75rem;
+    outline: none; transition: border-color 0.15s; width: 100%;
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+  }
+  .rt-form-select:focus, .rt-form-input:focus { border-color: #6366f1; }
+  .rt-form-select option { background: #1a1a24; color: #d4d4d8; }
+
+  /* 4-param cards row */
+  .rt-params-row {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 1.25rem;
+  }
+  @media (max-width: 640px) { .rt-params-row { grid-template-columns: repeat(2, 1fr); } }
+  .rt-param-card {
+    background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 0.5rem;
+    padding: 0.75rem 0.875rem;
+  }
+  .rt-param-label {
+    font-size: 0.625rem; font-weight: 700; color: #52525b;
+    text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.375rem;
+  }
+  .rt-param-input {
+    width: 100%; background: transparent; border: none; outline: none;
+    color: #fff; font-size: 1.125rem; font-weight: 700;
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+  }
+
+  /* Alt models section */
+  .rt-alts-section {
+    border-top: 1px solid #2a2a3a; padding-top: 1rem; margin-top: 0.5rem;
+  }
+  .rt-alts-header {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;
+  }
+  .rt-alts-title {
+    font-size: 0.75rem; font-weight: 700; color: #71717a;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .rt-alts-empty {
+    font-size: 0.75rem; color: #3f3f46; font-style: italic;
+  }
+  .rt-alt-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem; }
+  .rt-alt-label {
+    font-size: 0.6875rem; font-weight: 700; color: #52525b;
+    min-width: 2.5rem; text-transform: uppercase;
+  }
+  .rt-alt-remove {
+    background: none; border: none; color: #52525b; cursor: pointer;
+    font-size: 1rem; padding: 0.25rem; transition: color 0.15s;
+  }
+  .rt-alt-remove:hover { color: #fca5a5; }
+  .rt-btn-add {
+    display: inline-flex; align-items: center; gap: 0.25rem;
+    padding: 0.25rem 0.625rem; font-size: 0.75rem; font-weight: 600;
+    background: rgba(99,102,241,0.1); color: #818cf8;
+    border: 1px solid rgba(99,102,241,0.2); border-radius: 0.375rem;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .rt-btn-add:hover { background: rgba(99,102,241,0.2); }
+
+  /* Threshold Defaults bar */
+  .rt-threshold-bar {
+    background: #13131a; border: 1px solid #2a2a3a; border-radius: 0.75rem;
+    padding: 1.25rem 1.5rem; margin: 1.5rem 0;
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  }
+  .rt-threshold-title {
+    font-size: 0.9375rem; font-weight: 700; color: #e4e4e7;
+  }
+  .rt-threshold-sub {
+    font-size: 0.75rem; color: #52525b; margin-top: 0.25rem; line-height: 1.4;
+  }
+  .rt-threshold-btn {
+    flex-shrink: 0; display: inline-flex; align-items: center; gap: 0.375rem;
+    padding: 0.5rem 1rem; border-radius: 0.5rem; font-size: 0.8125rem;
+    font-weight: 600; cursor: pointer; border: 1px solid #2a2a3a;
+    background: rgba(42,42,58,0.5); color: #a1a1aa; transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .rt-threshold-btn:hover { background: rgba(42,42,58,0.8); color: #e4e4e7; }
+
+  /* Task→Tier mapping section */
+  .rt-task-section-title {
+    font-size: 0.9375rem; font-weight: 700; color: #e4e4e7; margin-bottom: 0.375rem;
+  }
+  .rt-task-section-sub {
+    font-size: 0.75rem; color: #52525b; margin-bottom: 1rem; line-height: 1.4;
+  }
+  .task-map-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.75rem;
+  }
+  @media (max-width: 900px) { .task-map-grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 600px) { .task-map-grid { grid-template-columns: repeat(2, 1fr); } }
+  .task-map-card {
+    background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 0.5rem;
+    padding: 0.75rem 0.875rem;
+    display: flex; flex-direction: column; gap: 0.375rem;
+  }
+  .task-map-label {
+    font-size: 0.625rem; font-weight: 700; color: #52525b;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .task-map-select {
+    background: #13131a; border: 1px solid #2a2a3a; border-radius: 0.375rem;
+    color: #d4d4d8; font-size: 0.8125rem; padding: 0.5rem 0.625rem;
+    outline: none; width: 100%; transition: border-color 0.15s;
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+  }
+  .task-map-select:focus { border-color: #6366f1; }
+  .task-map-select option { background: #1a1a24; color: #d4d4d8; }
 </style>
 
 <div class="tools-shell p-6 md:p-10">
@@ -452,6 +618,9 @@
     </button>
     <button class="tab-btn" id="tab-btn-memory" onclick="showMemoryPanel()">
       Memory <span class="tab-count">2</span>
+    </button>
+    <button class="tab-btn" id="tab-btn-router" onclick="showRouterPanel()">
+      Router
     </button>
   </div>
 
@@ -2913,6 +3082,42 @@
       </div>
     </div>
   </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       ROUTER PANEL — Model Router / Task-Tier Mapping
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="view-panel" id="view-router">
+
+    <!-- ─── Tier Configuration Cards ─── -->
+    <div class="router-tier-grid" id="router-tier-grid">
+      <!-- filled by JS -->
+    </div>
+
+    <!-- ─── Threshold Defaults bar ─── -->
+    <div class="rt-threshold-bar">
+      <div>
+        <div class="rt-threshold-title">⚙ Threshold Defaults (per tier)</div>
+        <div class="rt-threshold-sub">These thresholds are set individually on each tier card above. Use "Reset All" to restore built-in defaults for every tier.</div>
+      </div>
+      <button class="rt-threshold-btn" onclick="resetRouterConfig()">🔄 Reset All to Defaults</button>
+    </div>
+
+    <!-- ─── Task → Tier Mapping ─── -->
+    <div style="margin-bottom:1rem;">
+      <div class="rt-task-section-title">🎯 Task → Tier Mapping</div>
+      <div class="rt-task-section-sub">Set the minimum tier used for each task type. The router will start at this tier (or higher if budget/escalation requires).</div>
+    </div>
+    <div class="task-map-grid" id="task-map-grid">
+      <!-- filled by JS -->
+    </div>
+
+    <!-- ─── Action Bar ─── -->
+    <div class="action-bar" style="margin-top:1.5rem;">
+      <button class="btn btn-secondary" onclick="resetRouterConfig()">Reset All</button>
+      <button class="btn btn-primary" onclick="saveRouterConfig()">Save Router Config</button>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -3609,6 +3814,256 @@
   // Auto-open memory panel if URL has #memory
   if (location.hash === '#memory') {
     setTimeout(() => showMemoryPanel(), 100);
+  }
+
+  /* ═══ Model Router Panel ══════════════════════════════════════ */
+
+  let _routerConfig = {{ router_config | tojson }};
+
+  const _TIER_OPTIONS = [
+    { value: 'local_cheap',     label: 'Local Cheap' },
+    { value: 'local_strong',    label: 'Local Strong' },
+    { value: 'cheap_cloud',     label: 'Cheap Cloud' },
+    { value: 'expensive_cloud', label: 'Expensive Cloud' },
+    { value: '__auto__',        label: '-- Auto --' },
+  ];
+
+  function _hideRouterPanel() {
+    const rp = document.getElementById('view-router');
+    if (rp) { rp.style.display = 'none'; rp.classList.remove('active'); }
+    document.getElementById('tab-btn-router')?.classList.remove('active');
+  }
+
+  function showRouterPanel() {
+    // Hide tools list + all editor views + memory panel
+    document.getElementById('view-tools').classList.remove('active');
+    document.querySelectorAll('.editor-view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-memory').style.display = 'none';
+    document.getElementById('view-memory').classList.remove('active');
+    // Show router panel
+    const rp = document.getElementById('view-router');
+    rp.style.display = 'block';
+    rp.classList.add('active');
+    // Update tab bar
+    document.getElementById('tab-btn-tools').classList.remove('active');
+    document.getElementById('tab-btn-memory').classList.remove('active');
+    document.getElementById('tab-btn-router').classList.add('active');
+    renderRouterPanel();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // Patch existing overrides to also hide router
+  const _prevShowToolsList = showToolsList;
+  showToolsList = function() {
+    _hideRouterPanel();
+    _prevShowToolsList();
+  };
+
+  const _prevOpenToolEditor = openToolEditor;
+  openToolEditor = function(name) {
+    _hideRouterPanel();
+    _prevOpenToolEditor(name);
+  };
+
+  // Also patch showMemoryPanel to hide router
+  const _prevShowMemoryPanel = showMemoryPanel;
+  showMemoryPanel = function() {
+    _hideRouterPanel();
+    _prevShowMemoryPanel();
+  };
+
+  function renderRouterPanel() {
+    renderTierCards();
+    renderTaskMap();
+  }
+
+  const _RT_TIER_COLORS = {
+    t0: { bg: 'rgba(16,185,129,0.12)', fg: '#6ee7b7' },
+    t1: { bg: 'rgba(34,211,238,0.12)', fg: '#22d3ee' },
+    t2: { bg: 'rgba(99,102,241,0.12)', fg: '#a5b4fc' },
+    t3: { bg: 'rgba(245,158,11,0.12)', fg: '#fcd34d' },
+    t4: { bg: 'rgba(236,72,153,0.12)', fg: '#f472b6' },
+    t5: { bg: 'rgba(168,85,247,0.12)', fg: '#c084fc' },
+  };
+  function _rtColor(id) { return _RT_TIER_COLORS[id] || { bg: 'rgba(99,102,241,0.12)', fg: '#a5b4fc' }; }
+  function _rtEsc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
+  /* Build connection dropdown options for a tier */
+  function _rtConnOpts(selectedId) {
+    const conns = typeof _connections !== 'undefined' ? _connections : ({{ connections | tojson }});
+    let html = '<option value="">-- none (manual) --</option>';
+    conns.forEach(c => {
+      if (!c.enabled) return;
+      const sel = c.id === selectedId ? 'selected' : '';
+      html += `<option value="${_rtEsc(c.id)}" ${sel}>${_rtEsc(c.name)} (${_rtEsc(c.provider || c.type)})</option>`;
+    });
+    return html;
+  }
+
+  function renderTierCards() {
+    const grid = document.getElementById('router-tier-grid');
+    const tiers = _routerConfig.tiers || [];
+    grid.innerHTML = tiers.map((t, i) => {
+      const c = _rtColor(t.id);
+      const alts = (t.alt_models || []);
+      const altRows = alts.length
+        ? alts.map((m, ai) => `
+            <div class="rt-alt-row">
+              <span class="rt-alt-label">ALT ${ai+1}</span>
+              <input type="text" class="rt-form-input rt-alt-input" data-tier="${i}" value="${_rtEsc(m)}" style="flex:1;">
+              <button class="rt-alt-remove" onclick="_rtRemoveAlt(${i},${ai})">&times;</button>
+            </div>`).join('')
+        : '<div class="rt-alts-empty">No alternates. Primary model only.</div>';
+
+      return `
+      <div class="rt-card" data-tier-idx="${i}">
+        <div class="rt-head">
+          <div class="rt-head-left">
+            <span class="rt-badge" style="background:${c.bg};color:${c.fg};">${t.id.toUpperCase()}</span>
+            <span class="rt-title">${_rtEsc(t.label)}</span>
+          </div>
+          <div class="rt-head-right">
+            <label class="rt-enabled-wrap">
+              <input type="checkbox" ${t.enabled ? 'checked' : ''}
+                onchange="_routerConfig.tiers[${i}].enabled = this.checked">
+              Enabled
+            </label>
+            <button class="rt-close" title="Collapse" onclick="this.closest('.rt-card').querySelector('.rt-body').style.display = this.closest('.rt-card').querySelector('.rt-body').style.display==='none'?'block':'none'">&times;</button>
+          </div>
+        </div>
+        <div class="rt-body">
+          <!-- Connection + Model row -->
+          <div class="rt-form-row">
+            <div class="rt-form-group">
+              <label class="rt-form-label">Connection / API</label>
+              <select class="rt-form-select" onchange="_routerConfig.tiers[${i}].connection_id = this.value">
+                ${_rtConnOpts(t.connection_id)}
+              </select>
+            </div>
+            <div class="rt-form-group">
+              <label class="rt-form-label">Primary Model</label>
+              <input type="text" class="rt-form-input" value="${_rtEsc(t.primary_model)}"
+                placeholder="model-name"
+                onchange="_routerConfig.tiers[${i}].primary_model = this.value">
+            </div>
+          </div>
+          <!-- 4 param cards -->
+          <div class="rt-params-row">
+            <div class="rt-param-card">
+              <div class="rt-param-label">Temperature</div>
+              <input type="number" step="0.1" min="0" max="2" class="rt-param-input"
+                value="${t.temperature ?? 0.6}"
+                onchange="_routerConfig.tiers[${i}].temperature = parseFloat(this.value)||0">
+            </div>
+            <div class="rt-param-card">
+              <div class="rt-param-label">Max Output Tokens</div>
+              <input type="number" step="256" min="0" class="rt-param-input"
+                value="${t.max_output_tokens ?? 4096}"
+                onchange="_routerConfig.tiers[${i}].max_output_tokens = parseInt(this.value)||4096">
+            </div>
+            <div class="rt-param-card">
+              <div class="rt-param-label">Max Iterations</div>
+              <input type="number" step="1" min="1" class="rt-param-input"
+                value="${t.max_iterations ?? 8}"
+                onchange="_routerConfig.tiers[${i}].max_iterations = parseInt(this.value)||8">
+            </div>
+            <div class="rt-param-card">
+              <div class="rt-param-label">Retries Before Escalate</div>
+              <input type="number" step="1" min="0" max="10" class="rt-param-input"
+                value="${t.retries_before_escalate ?? 3}"
+                onchange="_routerConfig.tiers[${i}].retries_before_escalate = parseInt(this.value)||0">
+            </div>
+          </div>
+          <!-- Alt models -->
+          <div class="rt-alts-section">
+            <div class="rt-alts-header">
+              <span class="rt-alts-title">Alternate Models (Fallbacks Within This Tier)</span>
+              <button class="rt-btn-add" onclick="_rtAddAlt(${i})">+ Alt</button>
+            </div>
+            <div id="rt-alt-list-${i}">${altRows}</div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function _rtAddAlt(tierIdx) {
+    const t = _routerConfig.tiers[tierIdx];
+    if (!t.alt_models) t.alt_models = [];
+    t.alt_models.push('');
+    renderTierCards();
+  }
+
+  function _rtRemoveAlt(tierIdx, altIdx) {
+    const t = _routerConfig.tiers[tierIdx];
+    t.alt_models.splice(altIdx, 1);
+    renderTierCards();
+  }
+
+  /* Gather alt model values from inputs before saving */
+  function _rtGatherAlts() {
+    const tiers = _routerConfig.tiers || [];
+    tiers.forEach((t, i) => {
+      const inputs = document.querySelectorAll(`[data-tier="${i}"].rt-alt-input`);
+      t.alt_models = Array.from(inputs).map(el => el.value.trim()).filter(Boolean);
+    });
+  }
+
+  function renderTaskMap() {
+    const grid = document.getElementById('task-map-grid');
+    const map = _routerConfig.task_tier_map || {};
+    const tasks = Object.keys(map);
+    grid.innerHTML = tasks.map(task => {
+      const val = map[task];
+      const opts = _TIER_OPTIONS.map(o =>
+        `<option value="${o.value}" ${o.value === val ? 'selected' : ''}>${o.label}</option>`
+      ).join('');
+      return `
+        <div class="task-map-card">
+          <div class="task-map-label">${task.replace(/_/g, ' ')}</div>
+          <select class="task-map-select" onchange="_routerConfig.task_tier_map['${task}'] = this.value">${opts}</select>
+        </div>
+      `;
+    }).join('');
+  }
+
+  async function saveRouterConfig() {
+    _rtGatherAlts();
+    try {
+      const resp = await fetch('/api/model-router/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(_routerConfig),
+      });
+      if (resp.ok) {
+        showToast('Router config saved');
+      } else {
+        showToast('Save failed', true);
+      }
+    } catch (e) {
+      showToast('Save failed: ' + e.message, true);
+    }
+  }
+
+  async function resetRouterConfig() {
+    try {
+      const resp = await fetch('/api/model-router/reset', { method: 'POST' });
+      if (resp.ok) {
+        const data = await resp.json();
+        _routerConfig = data.config;
+        renderRouterPanel();
+        showToast('Router config reset to defaults');
+      } else {
+        showToast('Reset failed', true);
+      }
+    } catch (e) {
+      showToast('Reset failed: ' + e.message, true);
+    }
+  }
+
+  // Auto-open router panel if URL has #router
+  if (location.hash === '#router') {
+    setTimeout(() => showRouterPanel(), 100);
   }
 </script>
 {% endblock %}

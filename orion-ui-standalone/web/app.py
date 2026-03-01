@@ -832,6 +832,7 @@ async def page_tools(request: Request):
         "identity_profile": identity_profile,
         "memory_profile": memory_profile,
         "faiss_stats": faiss_stats,
+        "router_config": _load_model_router_config(),
     })
 
 
@@ -1029,6 +1030,91 @@ async def api_agi_loop_config_save(body: AGILoopConfigUpdate):
     data = body.dict()
     _save_agi_loop_config(data)
     return JSONResponse({"ok": True, "config": data})
+
+
+# ── Model Router config ──────────────────────────────────────────
+MODEL_ROUTER_FILE = _CONFIG_DIR / "model_router.json"
+
+_MODEL_ROUTER_DEFAULTS = {
+    "tiers": [
+        {
+            "id": "t0", "label": "local_cheap", "enabled": True,
+            "connection_id": "", "provider": "ollama",
+            "primary_model": "qwen2.5:7b",
+            "temperature": 0.6, "max_output_tokens": 2048,
+            "max_iterations": 8, "retries_before_escalate": 3,
+            "alt_models": [],
+            "cost_per_call": "~$0.00",
+        },
+        {
+            "id": "t1", "label": "local_strong", "enabled": True,
+            "connection_id": "", "provider": "ollama",
+            "primary_model": "llama3:70b",
+            "temperature": 0.5, "max_output_tokens": 4096,
+            "max_iterations": 10, "retries_before_escalate": 3,
+            "alt_models": [],
+            "cost_per_call": "~$0.00",
+        },
+        {
+            "id": "t2", "label": "cheap_cloud", "enabled": True,
+            "connection_id": "", "provider": "deepseek",
+            "primary_model": "deepseek-chat",
+            "temperature": 0.4, "max_output_tokens": 8192,
+            "max_iterations": 12, "retries_before_escalate": 2,
+            "alt_models": [],
+            "cost_per_call": "~$0.001",
+        },
+        {
+            "id": "t3", "label": "expensive_cloud", "enabled": True,
+            "connection_id": "", "provider": "openai",
+            "primary_model": "gpt-4o",
+            "temperature": 0.3, "max_output_tokens": 16384,
+            "max_iterations": 15, "retries_before_escalate": 2,
+            "alt_models": [],
+            "cost_per_call": "~$0.01\u20130.10",
+        },
+    ],
+    "task_tier_map": {
+        "coding": "cheap_cloud",
+        "summarization": "local_cheap",
+        "planning": "local_strong",
+        "high_stakes": "cheap_cloud",
+        "final_polish": "expensive_cloud",
+        "memory_ops": "local_cheap",
+        "reflection": "local_cheap",
+        "general": "__auto__",
+    },
+}
+
+def _load_model_router_config() -> dict:
+    saved = _read_json(MODEL_ROUTER_FILE, {})
+    merged = {**_MODEL_ROUTER_DEFAULTS, **saved}
+    if "tiers" not in merged:
+        merged["tiers"] = _MODEL_ROUTER_DEFAULTS["tiers"]
+    if "task_tier_map" not in merged:
+        merged["task_tier_map"] = _MODEL_ROUTER_DEFAULTS["task_tier_map"]
+    return merged
+
+def _save_model_router_config(data: dict):
+    _write_json(MODEL_ROUTER_FILE, data)
+
+
+@app.get("/api/model-router/config")
+async def api_model_router_config_get():
+    return JSONResponse(_load_model_router_config())
+
+
+@app.post("/api/model-router/config")
+async def api_model_router_config_save(request: Request):
+    data = await request.json()
+    _save_model_router_config(data)
+    return JSONResponse({"ok": True, "config": data})
+
+
+@app.post("/api/model-router/reset")
+async def api_model_router_reset():
+    _save_model_router_config(_MODEL_ROUTER_DEFAULTS)
+    return JSONResponse({"ok": True, "config": _MODEL_ROUTER_DEFAULTS})
 
 
 # ── About page ───────────────────────────────────────────────────
