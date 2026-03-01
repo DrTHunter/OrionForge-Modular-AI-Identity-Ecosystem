@@ -2,55 +2,224 @@
 {% block title %}Settings — SoulScript Engine{% endblock %}
 
 {% block content %}
+<style>
+  /* ── Settings tab bar ── */
+  .settings-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
+  .settings-tab {
+    padding: 0.4rem 1rem; border-radius: 0.375rem; font-size: 0.8125rem;
+    font-weight: 600; cursor: pointer; border: 1px solid rgba(255,255,255,0.08);
+    background: transparent; color: rgba(241,245,249,0.5); transition: all 0.15s;
+  }
+  .settings-tab:hover { color: #e2e8f0; border-color: rgba(255,255,255,0.15); }
+  .settings-tab.active {
+    background: #6366f1; color: #fff; border-color: #6366f1;
+  }
+  .settings-panel { display: none; }
+  .settings-panel.active { display: block; }
+
+  /* ── Section cards ── */
+  .settings-section {
+    background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 0.75rem; padding: 1.25rem 1.5rem; margin-bottom: 1.25rem;
+    max-width: 48rem;
+  }
+  .settings-section-title {
+    font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1.5px; color: #a5b4fc; margin-bottom: 0.25rem;
+  }
+  .settings-section-desc {
+    font-size: 0.75rem; color: rgba(241,245,249,0.4); margin-bottom: 1rem;
+  }
+
+  /* ── Timezone mode buttons ── */
+  .tz-mode-group { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+  .tz-mode-btn {
+    padding: 0.375rem 0.875rem; border-radius: 0.375rem; font-size: 0.8125rem;
+    font-weight: 500; cursor: pointer; border: 1px solid rgba(255,255,255,0.1);
+    background: transparent; color: rgba(241,245,249,0.5); transition: all 0.15s;
+  }
+  .tz-mode-btn:hover { border-color: rgba(255,255,255,0.2); color: #e2e8f0; }
+  .tz-mode-btn.active {
+    background: rgba(99,102,241,0.15); color: #818cf8;
+    border-color: rgba(99,102,241,0.4);
+  }
+
+  /* ── Background preview ── */
+  .bg-preview-zone {
+    border: 2px dashed rgba(255,255,255,0.1); border-radius: 0.75rem;
+    padding: 1.5rem; text-align: center; cursor: pointer; transition: all 0.2s;
+    position: relative; overflow: hidden; height: 12rem;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 0.5rem;
+    max-width: 28rem;
+  }
+  .bg-preview-zone:hover { border-color: rgba(99,102,241,0.4); background: rgba(99,102,241,0.03); }
+  .bg-preview-zone.has-image { border-style: solid; border-color: rgba(99,102,241,0.25); padding: 0; }
+  .bg-preview-zone img {
+    width: 100%; height: 100%; object-fit: cover; border-radius: 0.6rem;
+    position: absolute; inset: 0;
+  }
+  .bg-preview-zone .bg-overlay-text {
+    position: relative; z-index: 2; background: rgba(0,0,0,0.6);
+    padding: 0.375rem 0.875rem; border-radius: 0.375rem;
+    font-size: 0.75rem; color: #d4d4d8;
+  }
+  .bg-actions { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+</style>
+
 <div>
   <div class="mb-6">
     <h1 class="text-2xl font-bold text-white">Settings</h1>
-    <p class="text-sm text-forge-muted mt-1">Manage API connections and runtime configuration</p>
+    <p class="text-sm text-forge-muted mt-1">Manage connections, API keys, and runtime configuration</p>
   </div>
 
-  <!-- Connections -->
-  <div class="card mb-6">
-    <div class="flex items-center justify-between mb-4">
-      <div>
-        <span class="card-header mb-0">API Connections</span>
-        <p class="text-xs text-forge-muted mt-1">Manage OpenAI-compatible and Ollama API connections</p>
-      </div>
-      <button onclick="openModal()" class="filter-btn active" style="cursor:pointer;">+ Add Connection</button>
-    </div>
+  <!-- ═══ Tab Bar ═══ -->
+  <div class="settings-tabs">
+    <button class="settings-tab {{ 'active' if tab == 'connections' }}" onclick="switchSettingsTab('connections')">Connections</button>
+    <button class="settings-tab {{ 'active' if tab == 'chat' }}" onclick="switchSettingsTab('chat')">Chat</button>
+    <button class="settings-tab {{ 'active' if tab == 'general' }}" onclick="switchSettingsTab('general')">General</button>
+  </div>
 
-    <div class="space-y-3" id="connections-list">
-      {% for conn in connections %}
-      <div class="p-4 rounded-lg border border-forge-border bg-forge-bg flex items-center justify-between" id="conn-{{ conn.id }}">
-        <div class="flex items-center gap-3 flex-1">
-          <button onclick="toggleConn('{{ conn.id }}', {{ 'false' if conn.enabled else 'true' }})"
-                  class="w-10 h-5 rounded-full relative transition-colors {{ 'bg-forge-success' if conn.enabled else 'bg-zinc-600' }}"
-                  style="cursor:pointer;">
-            <span class="absolute top-0.5 {{ 'right-0.5' if conn.enabled else 'left-0.5' }} w-4 h-4 bg-white rounded-full transition-all shadow"></span>
-          </button>
-          <div>
-            <div class="flex items-center gap-2">
-              <span class="text-sm font-semibold text-white">{{ conn.name }}</span>
-              <span class="badge {{ 'badge-scope' if conn.type == 'external' else 'badge-category' }}">{{ conn.type }}</span>
-              <span class="badge badge-type">{{ conn.provider }}</span>
+  <!-- ═══════════════════════════════════════════════════════════
+       TAB 1 — Connections
+       ═══════════════════════════════════════════════════════════ -->
+  <div class="settings-panel {{ 'active' if tab == 'connections' }}" id="panel-connections">
+    <div class="card mb-6">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <span class="card-header mb-0">API Connections</span>
+          <p class="text-xs text-forge-muted mt-1">Manage OpenAI-compatible and Ollama API connections</p>
+        </div>
+        <button onclick="openModal()" class="filter-btn active" style="cursor:pointer;">+ Add Connection</button>
+      </div>
+
+      <div class="space-y-3" id="connections-list">
+        {% for conn in connections %}
+        <div class="p-4 rounded-lg border border-forge-border bg-forge-bg flex items-center justify-between" id="conn-{{ conn.id }}">
+          <div class="flex items-center gap-3 flex-1">
+            <button onclick="toggleConn('{{ conn.id }}', {{ 'false' if conn.enabled else 'true' }})"
+                    class="w-10 h-5 rounded-full relative transition-colors {{ 'bg-forge-success' if conn.enabled else 'bg-zinc-600' }}"
+                    style="cursor:pointer;">
+              <span class="absolute top-0.5 {{ 'right-0.5' if conn.enabled else 'left-0.5' }} w-4 h-4 bg-white rounded-full transition-all shadow"></span>
+            </button>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-sm font-semibold text-white">{{ conn.name }}</span>
+                <span class="badge {{ 'badge-scope' if conn.type == 'external' else 'badge-category' }}">{{ conn.type }}</span>
+                <span class="badge badge-type">{{ conn.provider }}</span>
+              </div>
+              <p class="text-xs text-forge-muted mt-0.5">{{ conn.url }}</p>
+              {% if conn.models %}
+              <p class="model-list text-xs text-zinc-500 mt-0.5">Models: {{ conn.models | join(', ') }}</p>
+              {% endif %}
             </div>
-            <p class="text-xs text-forge-muted mt-0.5">{{ conn.url }}</p>
-            {% if conn.models %}
-            <p class="model-list text-xs text-zinc-500 mt-0.5">Models: {{ conn.models | join(', ') }}</p>
-            {% endif %}
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="fetchModels('{{ conn.id }}', this)" class="text-xs text-forge-highlight hover:text-white" style="cursor:pointer;" title="Fetch available models">↓ models</button>
+            <button onclick="editConn('{{ conn.id }}')" class="text-xs text-forge-accent hover:text-white" style="cursor:pointer;">⚙</button>
+            <button onclick="deleteConn('{{ conn.id }}')" class="text-xs text-forge-danger hover:text-white" style="cursor:pointer;">✕</button>
           </div>
         </div>
-        <div class="flex items-center gap-2">
-          <button onclick="fetchModels('{{ conn.id }}', this)" class="text-xs text-forge-highlight hover:text-white" style="cursor:pointer;" title="Fetch available models">↓ models</button>
-          <button onclick="editConn('{{ conn.id }}')" class="text-xs text-forge-accent hover:text-white" style="cursor:pointer;">⚙</button>
-          <button onclick="deleteConn('{{ conn.id }}')" class="text-xs text-forge-danger hover:text-white" style="cursor:pointer;">✕</button>
+        {% endfor %}
+        {% if not connections %}
+        <div class="p-6 text-center text-forge-muted text-sm">
+          No connections configured. Add one to start chatting.
         </div>
+        {% endif %}
       </div>
-      {% endfor %}
-      {% if not connections %}
-      <div class="p-6 text-center text-forge-muted text-sm">
-        No connections configured. Add one to start chatting.
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       TAB 2 — Chat
+       ═══════════════════════════════════════════════════════════ -->
+  <div class="settings-panel {{ 'active' if tab == 'chat' }}" id="panel-chat">
+    <div class="settings-section">
+      <div class="settings-section-title">Chat Background</div>
+      <div class="settings-section-desc">Set a custom background image for the chat view. Supported: PNG, JPG, WebP, GIF</div>
+
+      <div class="bg-preview-zone {{ 'has-image' if settings.get('chat_background') }}"
+           id="bg-preview-zone" onclick="document.getElementById('bg-file-input').click()">
+        {% if settings.get('chat_background') %}
+        <img src="{{ settings.chat_background }}" alt="Chat background" id="bg-preview-img">
+        <span class="bg-overlay-text">Click to change</span>
+        {% else %}
+        <span style="font-size:2rem; opacity:0.3;">🖼️</span>
+        <span style="font-size:0.8125rem; color:rgba(241,245,249,0.35);">Click or drag an image here</span>
+        <span style="font-size:0.7rem; color:rgba(241,245,249,0.2);">PNG, JPG, WebP, GIF</span>
+        {% endif %}
       </div>
-      {% endif %}
+      <input type="file" id="bg-file-input" accept=".png,.jpg,.jpeg,.webp,.gif" style="display:none;" onchange="uploadChatBg(this)">
+
+      <div class="bg-actions">
+        <button class="filter-btn" onclick="document.getElementById('bg-file-input').click()" style="cursor:pointer;">
+          📷 Upload Image
+        </button>
+        {% if settings.get('chat_background') %}
+        <button class="filter-btn" onclick="removeChatBg()" style="cursor:pointer; color:#fca5a5;">
+          ✕ Remove Background
+        </button>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       TAB 3 — General
+       ═══════════════════════════════════════════════════════════ -->
+  <div class="settings-panel {{ 'active' if tab == 'general' }}" id="panel-general">
+    <!-- Timezone -->
+    <div class="settings-section">
+      <div class="settings-section-title">Timezone</div>
+      <div class="settings-section-desc">Controls how timestamps are displayed across the dashboard</div>
+
+      <label style="font-size:0.8125rem; color:#d4d4d8; margin-bottom:0.5rem; display:block;">Timezone Mode</label>
+      <div class="tz-mode-group">
+        <button class="tz-mode-btn {{ 'active' if settings.get('timezone','auto') == 'auto' }}"
+                onclick="setTzMode('auto')">Auto (Host)</button>
+        <button class="tz-mode-btn {{ 'active' if settings.get('timezone') == 'named' }}"
+                onclick="setTzMode('named')">Named Zone</button>
+        <button class="tz-mode-btn {{ 'active' if settings.get('timezone') == 'offset' }}"
+                onclick="setTzMode('offset')">UTC Offset</button>
+      </div>
+
+      <!-- Named zone picker (hidden unless mode=named) -->
+      <div id="tz-named-row" style="display:{{ 'flex' if settings.get('timezone') == 'named' else 'none' }};
+           gap:0.5rem; align-items:center; margin-bottom:1rem;">
+        <label style="font-size:0.75rem; color:rgba(241,245,249,0.5); white-space:nowrap;">Zone:</label>
+        <select id="tz-named-select" class="search-input" style="max-width:16rem;">
+          <option value="">Select timezone...</option>
+        </select>
+      </div>
+
+      <!-- UTC offset picker (hidden unless mode=offset) -->
+      <div id="tz-offset-row" style="display:{{ 'flex' if settings.get('timezone') == 'offset' else 'none' }};
+           gap:0.5rem; align-items:center; margin-bottom:1rem;">
+        <label style="font-size:0.75rem; color:rgba(241,245,249,0.5); white-space:nowrap;">UTC Offset:</label>
+        <select id="tz-offset-select" class="search-input" style="max-width:10rem;">
+          {% for h in range(-12, 15) %}
+          <option value="{{ h }}" {{ 'selected' if settings.get('timezone_offset_hours') == h }}>
+            UTC{{ '+' if h >= 0 else '' }}{{ h }}:00
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div style="font-size:0.75rem; color:rgba(241,245,249,0.4); margin-bottom:1rem;">
+        Current display time: &nbsp;
+        <code id="tz-current-time" style="color:#d4d4d8; font-size:0.8125rem;"></code>
+      </div>
+
+      <button class="filter-btn active" onclick="saveTimezone()" style="cursor:pointer;">Save Timezone</button>
+    </div>
+
+    <!-- General / Runtime -->
+    <div class="settings-section">
+      <div class="settings-section-title">General</div>
+      <div class="settings-section-desc">Runtime configuration</div>
+      <div class="p-4 rounded-lg border border-forge-border bg-forge-bg text-sm text-forge-muted">
+        Additional settings modules can be added here. Currently managed via config/ YAML files.
+      </div>
     </div>
   </div>
 </div>
@@ -117,7 +286,135 @@
 
 <script>
 let _conns = {{ connections | tojson }};
+let _tzMode = '{{ settings.get("timezone", "auto") }}';
 
+/* ── Tab switching ─────────────────────────────────────── */
+function switchSettingsTab(name) {
+  document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.settings-panel').forEach(p => p.classList.remove('active'));
+  event.target.classList.add('active');
+  const panel = document.getElementById('panel-' + name);
+  if (panel) panel.classList.add('active');
+  // Update URL without reload
+  history.replaceState(null, '', '/settings?tab=' + name);
+}
+
+/* ── Timezone ──────────────────────────────────────────── */
+const _TZ_NAMES = Intl.supportedValuesOf ? Intl.supportedValuesOf('timeZone') : [
+  'America/New_York','America/Chicago','America/Denver','America/Los_Angeles',
+  'America/Anchorage','Pacific/Honolulu','Europe/London','Europe/Paris',
+  'Europe/Berlin','Asia/Tokyo','Asia/Shanghai','Asia/Kolkata',
+  'Australia/Sydney','Pacific/Auckland','UTC',
+];
+
+(function populateTimezoneSelect() {
+  const sel = document.getElementById('tz-named-select');
+  if (!sel) return;
+  const saved = '{{ settings.get("timezone_name", "") }}';
+  _TZ_NAMES.forEach(tz => {
+    const opt = document.createElement('option');
+    opt.value = tz;
+    opt.textContent = tz.replace(/_/g, ' ');
+    if (tz === saved) opt.selected = true;
+    sel.appendChild(opt);
+  });
+})();
+
+function setTzMode(mode) {
+  _tzMode = mode;
+  document.querySelectorAll('.tz-mode-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('tz-named-row').style.display = mode === 'named' ? 'flex' : 'none';
+  document.getElementById('tz-offset-row').style.display = mode === 'offset' ? 'flex' : 'none';
+  updateTzDisplay();
+}
+
+function updateTzDisplay() {
+  const el = document.getElementById('tz-current-time');
+  if (!el) return;
+  let opts = { year: 'numeric', month: 'short', day: '2-digit',
+               hour: '2-digit', minute: '2-digit', second: '2-digit',
+               hour12: false };
+  let dateStr;
+  try {
+    if (_tzMode === 'named') {
+      const tz = document.getElementById('tz-named-select').value;
+      if (tz) opts.timeZone = tz;
+      dateStr = new Date().toLocaleString('en-US', opts) + ' ' + (tz || 'Auto');
+    } else if (_tzMode === 'offset') {
+      const off = parseInt(document.getElementById('tz-offset-select').value) || 0;
+      const now = new Date();
+      const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+      const local = new Date(utcMs + off * 3600000);
+      dateStr = local.toLocaleString('en-US', opts) + ' UTC' + (off >= 0 ? '+' : '') + off;
+    } else {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      opts.timeZoneName = 'short';
+      dateStr = new Date().toLocaleString('en-US', opts);
+    }
+  } catch (e) {
+    dateStr = new Date().toLocaleString();
+  }
+  el.textContent = dateStr;
+}
+updateTzDisplay();
+setInterval(updateTzDisplay, 1000);
+
+// Listen for select changes
+document.getElementById('tz-named-select')?.addEventListener('change', updateTzDisplay);
+document.getElementById('tz-offset-select')?.addEventListener('change', updateTzDisplay);
+
+async function saveTimezone() {
+  const body = { timezone: _tzMode };
+  if (_tzMode === 'named') body.timezone_name = document.getElementById('tz-named-select').value;
+  if (_tzMode === 'offset') body.timezone_offset_hours = parseInt(document.getElementById('tz-offset-select').value) || 0;
+  const resp = await fetch('/api/settings/timezone', {
+    method: 'PUT', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(body),
+  });
+  const data = await resp.json();
+  if (data.status === 'ok') showToast('Timezone saved', 'ok');
+  else showToast('Error saving timezone', 'error');
+}
+
+/* ── Chat Background ───────────────────────────────────── */
+async function uploadChatBg(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const form = new FormData();
+  form.append('file', file);
+  try {
+    const resp = await fetch('/api/settings/chat-background', { method: 'POST', body: form });
+    const data = await resp.json();
+    if (data.error) { showToast(data.error, 'error'); return; }
+    // Update preview
+    const zone = document.getElementById('bg-preview-zone');
+    zone.classList.add('has-image');
+    zone.innerHTML = `<img src="${data.url}" alt="Chat background" id="bg-preview-img">
+                      <span class="bg-overlay-text">Click to change</span>`;
+    showToast('Background uploaded', 'ok');
+    // Reload to get the remove button
+    setTimeout(() => location.reload(), 500);
+  } catch (e) {
+    showToast('Upload failed: ' + e, 'error');
+  }
+}
+
+async function removeChatBg() {
+  if (!confirm('Remove chat background?')) return;
+  try {
+    const resp = await fetch('/api/settings/chat-background', { method: 'DELETE' });
+    const data = await resp.json();
+    if (data.status === 'ok') {
+      showToast('Background removed', 'ok');
+      setTimeout(() => location.reload(), 300);
+    }
+  } catch (e) {
+    showToast('Remove failed: ' + e, 'error');
+  }
+}
+
+/* ── Connection management (unchanged) ─────────────────── */
 function openModal(editId) {
   document.getElementById('conn-modal').classList.remove('hidden');
   document.getElementById('conn-edit-id').value = '';
