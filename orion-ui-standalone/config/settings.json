@@ -35,6 +35,7 @@
         "continuation_update",
         "directives",
         "echo",
+        "email",
         "memory",
         "web_search"
       ]

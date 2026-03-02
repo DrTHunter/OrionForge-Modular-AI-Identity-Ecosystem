@@ -44,6 +44,7 @@ def test_registry_list():
     check("has cost_tracker", "cost_tracker" in tools)
     check("has continuation_update", "continuation_update" in tools)
     check("has web_search", "web_search" in tools)
+    check("has email", "email" in tools)
     check("sorted", tools == sorted(tools))
 
 
@@ -70,6 +71,11 @@ def test_registry_resolve():
     cu_def = _resolve_tool("continuation_update")
     check("continuation_update resolves", cu_def is not None)
 
+    # Email (stateful instance)
+    email_def = _resolve_tool("email")
+    check("email resolves", email_def is not None)
+    check("email name", email_def["function"]["name"] == "email")
+
     # Unknown tool
     unk = _resolve_tool("nonexistent_tool")
     check("unknown tool → None", unk is None)
@@ -82,6 +88,20 @@ def test_registry_execute():
     # Echo
     result = execute_tool("echo", {"message": "test123"})
     check("execute echo", result == "test123", f"got {result!r}")
+
+    # Email — accounts action (should work even with no accounts)
+    email_result = execute_tool("email", {"action": "accounts"}, agent_name="astraea")
+    parsed = json.loads(email_result)
+    check("execute email accounts", "accounts" in parsed, f"got {parsed}")
+
+    # Email — status action
+    status_result = execute_tool("email", {"action": "status"}, agent_name="astraea")
+    status_parsed = json.loads(status_result)
+    check("execute email status", "accounts_configured" in status_parsed, f"got {status_parsed}")
+
+    # Email — agent_name passthrough
+    result_with_agent = execute_tool("email", {"action": "accounts"}, agent_name="callum")
+    check("execute email with agent_name", True)  # no crash
 
     # Unknown tool → KeyError
     try:

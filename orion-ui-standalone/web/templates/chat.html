@@ -610,6 +610,107 @@
   .tool-call-round { color:#71717a; font-size:0.625rem; margin-left:0.375rem; }
   .tool-call-args { color:#52525b; font-family:ui-monospace,SFMono-Regular,monospace; font-size:0.6875rem; margin-top:0.125rem; }
   .tool-call-result { color:#3f3f46; font-family:ui-monospace,SFMono-Regular,monospace; font-size:0.6875rem; margin-top:0.125rem; white-space:pre-wrap; word-break:break-word; max-height:3rem; overflow:hidden; }
+
+  /* ── Markdown-rendered message body ── */
+  .msg-body h1, .msg-body h2, .msg-body h3, .msg-body h4 {
+    margin: 0.75rem 0 0.375rem; font-weight: 700; color: #e4e4e7; line-height: 1.35;
+  }
+  .msg-body h1 { font-size: 1.25rem; }
+  .msg-body h2 { font-size: 1.1rem; }
+  .msg-body h3 { font-size: 1rem; }
+  .msg-body h4 { font-size: 0.9375rem; color: #a1a1aa; }
+  .msg-body p { margin: 0.375rem 0; }
+  .msg-body ul, .msg-body ol { margin: 0.375rem 0 0.375rem 1.25rem; }
+  .msg-body li { margin: 0.125rem 0; }
+  .msg-body blockquote {
+    border-left: 3px solid #6366f1; padding: 0.25rem 0.75rem; margin: 0.5rem 0;
+    color: #a1a1aa; background: rgba(99,102,241,0.04); border-radius: 0 0.375rem 0.375rem 0;
+  }
+  .msg-body a { color: #818cf8; text-decoration: underline; text-underline-offset: 2px; }
+  .msg-body a:hover { color: #a5b4fc; }
+  .msg-body table { border-collapse: collapse; margin: 0.5rem 0; font-size: 0.8125rem; width: 100%; }
+  .msg-body th, .msg-body td {
+    border: 1px solid #2a2a3a; padding: 0.375rem 0.625rem; text-align: left;
+  }
+  .msg-body th { background: rgba(99,102,241,0.08); font-weight: 600; color: #e4e4e7; }
+  .msg-body hr { border: none; border-top: 1px solid #2a2a3a; margin: 0.75rem 0; }
+  .msg-body img {
+    max-width: 100%; border-radius: 0.5rem; margin: 0.5rem 0;
+    border: 1px solid rgba(42,42,58,0.5);
+  }
+
+  /* ── Code blocks (enhanced with copy button) ── */
+  .code-block-wrap {
+    position: relative; margin: 0.625rem 0; border-radius: 0.5rem; overflow: hidden;
+    border: 1px solid rgba(63,63,70,0.4); background: #0d1117;
+  }
+  .code-block-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.375rem 0.75rem; background: rgba(63,63,70,0.15);
+    border-bottom: 1px solid rgba(63,63,70,0.3);
+  }
+  .code-block-lang {
+    font-size: 0.6875rem; font-weight: 600; color: #71717a; text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .code-copy-btn {
+    background: none; border: 1px solid rgba(63,63,70,0.4); border-radius: 0.25rem;
+    color: #71717a; font-size: 0.6875rem; padding: 0.125rem 0.5rem; cursor: pointer;
+    transition: all 0.15s; display: flex; align-items: center; gap: 0.25rem;
+  }
+  .code-copy-btn:hover { color: #e4e4e7; border-color: #6366f1; background: rgba(99,102,241,0.08); }
+  .code-copy-btn.copied { color: #10b981; border-color: #10b981; }
+  .code-block-wrap pre {
+    margin: 0; padding: 0.75rem 1rem; overflow-x: auto; font-size: 0.8125rem;
+    line-height: 1.6; background: transparent !important;
+  }
+  .code-block-wrap pre code {
+    font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, monospace;
+    font-size: 0.8125rem; background: transparent !important;
+  }
+  /* Inline code (not in a block) */
+  .msg-body code:not(pre code) {
+    background: rgba(99,102,241,0.1); padding: 0.125rem 0.375rem;
+    border-radius: 0.25rem; font-size: 0.85em; color: #c4b5fd;
+    font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  }
+  /* Override for old .assistant-code / .assistant-inline-code so marked output takes precedence */
+  .msg-body .assistant-code, .msg-body .assistant-inline-code { all: unset; }
+
+  /* ── Per-message action bar ── */
+  .msg-actions {
+    display: flex; align-items: center; gap: 0.125rem;
+    margin-left: 3.5rem; margin-top: 0.25rem;
+    opacity: 0; transition: opacity 0.15s;
+  }
+  .chat-entry:hover .msg-actions { opacity: 1; }
+  .msg-actions.always-visible { opacity: 1; }
+  .msg-action-btn {
+    background: none; border: 1px solid transparent; border-radius: 0.375rem;
+    color: #52525b; font-size: 0.75rem; padding: 0.2rem 0.5rem;
+    cursor: pointer; transition: all 0.15s; display: inline-flex;
+    align-items: center; gap: 0.25rem; white-space: nowrap;
+  }
+  .msg-action-btn:hover { color: #e4e4e7; background: rgba(99,102,241,0.08); border-color: rgba(99,102,241,0.15); }
+  .msg-action-btn.active { color: #6366f1; }
+  .msg-action-btn.copied { color: #10b981; }
+
+  /* ── Suggested responses ── */
+  .suggestions-bar {
+    display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0.5rem 0;
+    justify-content: center;
+  }
+  .suggestion-chip {
+    background: rgba(99,102,241,0.06); border: 1px solid rgba(99,102,241,0.18);
+    border-radius: 1.5rem; padding: 0.375rem 0.875rem;
+    font-size: 0.8125rem; color: #a5b4fc; cursor: pointer;
+    transition: all 0.15s; white-space: nowrap; max-width: 280px;
+    overflow: hidden; text-overflow: ellipsis;
+  }
+  .suggestion-chip:hover {
+    background: rgba(99,102,241,0.15); border-color: rgba(99,102,241,0.35);
+    color: #c7d2fe; transform: translateY(-1px);
+  }
 </style>
 
 <!-- ═══════════════ LAYOUT ═══════════════ -->
@@ -648,6 +749,9 @@
           <span class="text-xs text-zinc-600">Select an agent and mode from the toolbar below</span>
         </div>
       </div>
+
+      <!-- Suggestion chips -->
+      <div class="suggestions-bar" id="suggestion-chips" style="display:none;"></div>
 
       <!-- Compose bar -->
       <div class="chat-compose">
@@ -1608,28 +1712,60 @@ function _renderEntry(role, text, data, timeStr, layers) {
         thread.appendChild(tcEl);
       }
 
-      // Per-message speak button
+      // ── Per-message action bar (Copy, Read Aloud, Continue, Regenerate) ──
+      const msgIdx = _msgs.length;   // index of *next* push (will be this msg)
+      const actionsBar = document.createElement('div');
+      actionsBar.className = 'msg-actions';
+
+      // Copy button
+      const copyBtn = document.createElement('button');
+      copyBtn.className = 'msg-action-btn';
+      copyBtn.innerHTML = '📋 Copy';
+      copyBtn.onclick = () => {
+        navigator.clipboard.writeText(text).then(() => {
+          copyBtn.classList.add('copied'); copyBtn.innerHTML = '✓ Copied';
+          setTimeout(() => { copyBtn.classList.remove('copied'); copyBtn.innerHTML = '📋 Copy'; }, 1800);
+        });
+      };
+      actionsBar.appendChild(copyBtn);
+
+      // Read Aloud button (uses existing TTS)
       const speakBtn = document.createElement('button');
-      speakBtn.className = 'msg-speak-btn';
-      speakBtn.title = 'Read aloud';
-      speakBtn.textContent = '🔊';
+      speakBtn.className = 'msg-action-btn';
+      speakBtn.innerHTML = '🔊 Read Aloud';
       speakBtn.onclick = () => {
-        if (speakBtn.classList.contains('playing')) { stopTtsGlobal(); return; }
+        if (speakBtn.classList.contains('active')) { stopTtsGlobal(); speakBtn.classList.remove('active'); speakBtn.innerHTML = '🔊 Read Aloud'; return; }
         _unlockAudio();
         const prov = _ttsProvider !== 'off' ? _ttsProvider : 'edge';
         const savedProv = _ttsProvider;
         _ttsProvider = prov;
         const metaTarget = el.querySelector('.msg-meta');
-        speakBtn.classList.add('playing');
+        speakBtn.classList.add('active'); speakBtn.innerHTML = '⏹ Stop';
         speakText(text, metaTarget).then(r => {
           _ttsProvider = savedProv;
+          speakBtn.classList.remove('active'); speakBtn.innerHTML = '🔊 Read Aloud';
           if (r && !r.cached && metaTarget && apiCostStr !== null) {
             _updateMetaWithTts(metaTarget, apiCostStr, r.cost, r.provider);
           }
         });
       };
-      const header = el.querySelector('.msg-header');
-      if (header) header.appendChild(speakBtn);
+      actionsBar.appendChild(speakBtn);
+
+      // Continue button
+      const contBtn = document.createElement('button');
+      contBtn.className = 'msg-action-btn';
+      contBtn.innerHTML = '▶ Continue';
+      contBtn.onclick = () => continueResponse();
+      actionsBar.appendChild(contBtn);
+
+      // Regenerate button
+      const regenBtn = document.createElement('button');
+      regenBtn.className = 'msg-action-btn';
+      regenBtn.innerHTML = '🔄 Regenerate';
+      regenBtn.onclick = () => regenerateResponse(msgIdx);
+      actionsBar.appendChild(regenBtn);
+
+      el.appendChild(actionsBar);
 
       // Auto-play TTS if enabled
       if (_ttsProvider !== 'off' && d._live) {
@@ -1638,6 +1774,10 @@ function _renderEntry(role, text, data, timeStr, layers) {
           if (r && metaEl && apiCostStr !== null) _updateMetaWithTts(metaEl, apiCostStr, r.cost, r.provider);
         });
       }
+
+      // Show suggestion chips after live assistant messages
+      if (d._live) generateSuggestions(text, agentName);
+
       break;
     }
     case 'system': {
@@ -1821,16 +1961,59 @@ function pushMsg(role, text, data, layers) {
 }
 
 // ═══════════════════════════════════════════
-//  FORMAT HELPERS
+//  FORMAT HELPERS  (marked.js + highlight.js)
 // ═══════════════════════════════════════════
+const _markedRenderer = new marked.Renderer();
+let _codeBlockId = 0;
+_markedRenderer.code = function(code, language, isEscaped) {
+  // marked v12+ passes an object; handle both shapes
+  let text = code, lang = language;
+  if (typeof code === 'object' && code !== null) { text = code.text ?? ''; lang = code.lang ?? ''; }
+  lang = (lang || '').trim();
+  const id = 'cb-' + (++_codeBlockId);
+  let highlighted;
+  try {
+    highlighted = lang && hljs.getLanguage(lang)
+      ? hljs.highlight(text, {language: lang, ignoreIllegals: true}).value
+      : hljs.highlightAuto(text).value;
+  } catch(e) { highlighted = esc(text); }
+  return `<div class="code-block-wrap">
+    <div class="code-block-header">
+      <span class="code-block-lang">${esc(lang || 'code')}</span>
+      <button class="code-copy-btn" onclick="copyCodeBlock('${id}',this)">📋 Copy</button>
+    </div>
+    <pre><code id="${id}" class="hljs ${lang ? 'language-' + esc(lang) : ''}">${highlighted}</code></pre>
+  </div>`;
+};
+_markedRenderer.image = function(href, title, text) {
+  // marked v12+ passes an object
+  if (typeof href === 'object' && href !== null) {
+    const tok = href;
+    text = tok.text ?? ''; title = tok.title ?? ''; href = tok.href ?? '';
+  }
+  const t = title ? ` title="${esc(title)}"` : '';
+  return `<img src="${href}" alt="${esc(text || '')}"${t} loading="lazy">`;
+};
+marked.setOptions({ renderer: _markedRenderer, gfm: true, breaks: true });
+
+function copyCodeBlock(id, btn) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  navigator.clipboard.writeText(el.textContent).then(() => {
+    btn.classList.add('copied'); btn.textContent = '✓ Copied';
+    setTimeout(() => { btn.classList.remove('copied'); btn.textContent = '📋 Copy'; }, 1800);
+  });
+}
+
 function formatAssistantText(text) {
-  let html = esc(text);
-  html = html.replace(/```(\w*)\n([\s\S]*?)```/g, '<pre class="assistant-code"><code>$2</code></pre>');
-  html = html.replace(/`([^`]+)`/g, '<code class="assistant-inline-code">$1</code>');
-  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-  html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-  html = html.replace(/\n/g, '<br>');
-  return html;
+  if (!text) return '';
+  try { return marked.parse(text); }
+  catch(e) {
+    // Fallback: basic escaping
+    let html = esc(text);
+    html = html.replace(/\n/g, '<br>');
+    return html;
+  }
 }
 
 function _tryParseJson(prefix, line) {
@@ -1861,6 +2044,7 @@ async function sendChatMsg() {
   const agent = document.getElementById('chat-agent').value;
   const stim  = document.getElementById('chat-stimulus').value.trim();
   if (!stim) return;
+  clearSuggestions();
 
   const payload = {
     agent,
@@ -1940,6 +2124,124 @@ async function sendChatMsg() {
 }
 
 // ═══════════════════════════════════════════
+//  CONTINUE / REGENERATE / SUGGESTIONS
+// ═══════════════════════════════════════════
+
+/** Send "Continue" — asks the agent to keep going from where it left off */
+async function continueResponse() {
+  const textarea = document.getElementById('chat-stimulus');
+  textarea.value = 'Continue from where you left off.';
+  await sendChatMsg();
+}
+
+/** Regenerate the last assistant response */
+async function regenerateResponse(msgIdx) {
+  // Find the last user message to re-send
+  let lastUserText = null;
+  for (let i = _msgs.length - 1; i >= 0; i--) {
+    if (_msgs[i].role === 'user') { lastUserText = _msgs[i].text; break; }
+  }
+  if (!lastUserText) return;
+
+  // Remove the last assistant message from DOM + array
+  const thread = document.getElementById('chat-thread');
+  const assistantEntries = thread.querySelectorAll('.assistant-entry');
+  if (assistantEntries.length > 0) {
+    const last = assistantEntries[assistantEntries.length - 1];
+    // Also remove associated elements (action bar, tool calls, etc.) that are siblings
+    let sibling = last.nextElementSibling;
+    while (sibling && !sibling.classList.contains('chat-entry')) {
+      const next = sibling.nextElementSibling;
+      sibling.remove();
+      sibling = next;
+    }
+    last.remove();
+  }
+  // Remove from messages array (pop last assistant)
+  for (let i = _msgs.length - 1; i >= 0; i--) {
+    if (_msgs[i].role === 'assistant') { _msgs.splice(i, 1); break; }
+  }
+  // Also remove the user msg we're about to re-send
+  for (let i = _msgs.length - 1; i >= 0; i--) {
+    if (_msgs[i].role === 'user') { _msgs.splice(i, 1); break; }
+  }
+  const userEntries = thread.querySelectorAll('.user-entry');
+  if (userEntries.length > 0) userEntries[userEntries.length - 1].remove();
+
+  // Re-send
+  document.getElementById('chat-stimulus').value = lastUserText;
+  await sendChatMsg();
+}
+
+/** Generate and display suggestion chips after assistant response */
+function generateSuggestions(assistantText, agentName) {
+  clearSuggestions();
+  const bar = document.getElementById('suggestion-chips');
+  if (!bar) return;
+
+  // Build contextual suggestions from assistant reply
+  const suggestions = _buildSuggestions(assistantText);
+  if (!suggestions.length) return;
+
+  suggestions.forEach(s => {
+    const chip = document.createElement('button');
+    chip.className = 'suggestion-chip';
+    chip.textContent = s;
+    chip.onclick = () => useSuggestion(s);
+    bar.appendChild(chip);
+  });
+  bar.style.display = 'flex';
+}
+
+function clearSuggestions() {
+  const bar = document.getElementById('suggestion-chips');
+  if (bar) { bar.innerHTML = ''; bar.style.display = 'none'; }
+}
+
+function useSuggestion(text) {
+  const textarea = document.getElementById('chat-stimulus');
+  textarea.value = text;
+  autoResize(textarea);
+  clearSuggestions();
+  runChat();
+}
+
+/**
+ * Build 3-4 contextual suggestion chips from the assistant's last response.
+ * Uses simple heuristics — detects questions, topics, and offers generic follow-ups.
+ */
+function _buildSuggestions(text) {
+  const suggestions = [];
+  const lower = text.toLowerCase();
+
+  // If the assistant asked a question, offer direct answer-type responses
+  const hasQuestion = /\?/.test(text.slice(-300));
+
+  if (hasQuestion) {
+    suggestions.push('Yes, go ahead');
+    suggestions.push('No, let\'s try something else');
+  }
+
+  // Detect code in response
+  if (/```/.test(text)) {
+    suggestions.push('Explain this code step by step');
+    if (!hasQuestion) suggestions.push('Can you improve this code?');
+  }
+
+  // Detect lists / steps
+  if (/^\s*[\d\-•]\s/m.test(text)) {
+    suggestions.push('Elaborate on these points');
+  }
+
+  // Generic follow-ups
+  if (suggestions.length < 3) suggestions.push('Tell me more');
+  if (suggestions.length < 4) suggestions.push('Summarize this');
+  if (suggestions.length < 4 && !hasQuestion) suggestions.push('Give me an example');
+
+  return suggestions.slice(0, 4);
+}
+
+// ═══════════════════════════════════════════
 //  CHAT EXECUTION (routes by mode)
 // ═══════════════════════════════════════════
 async function runChat() {
@@ -1949,6 +2251,7 @@ async function runChat() {
   const agent = document.getElementById('chat-agent').value;
   const stim  = document.getElementById('chat-stimulus').value.trim();
   if (!stim) return;
+  clearSuggestions();
 
   const payload = {
     agent,

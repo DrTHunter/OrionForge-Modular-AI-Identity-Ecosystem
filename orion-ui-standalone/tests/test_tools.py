@@ -1,9 +1,9 @@
-"""Offline tests for tools and runtime policy.
+﻿"""Offline tests for tools and runtime policy.
 
 Run from project root:
     python -m tests.test_tools
 
-No LLM connection required — exercises everything except the live chat call.
+No LLM connection required â€” exercises everything except the live chat call.
 """
 
 import json
@@ -12,11 +12,12 @@ import sys
 import tempfile
 import shutil
 
-# ── ensure project root is on path ──
+# â”€â”€ ensure project root is on path â”€â”€
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from src.tools.echo import EchoTool
 from src.tools.continuation_update import ContinuationUpdateTool
+from src.tools.email_tool import EmailTool
 from src.runtime_policy import RuntimePolicy
 
 PASS = 0
@@ -33,9 +34,9 @@ def check(label, condition, detail=""):
         print(f"  [FAIL] {label}  {detail}")
 
 
-# ─────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 # 1. Echo tool
-# ─────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 def test_echo():
     print("\n=== Echo Tool ===")
     tool = EchoTool()
@@ -47,9 +48,9 @@ def test_echo():
     check("echo returns message", result == "hello world", f"got: {result!r}")
 
 
-# ─────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 # 2. Continuation Update tool
-# ─────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 def test_continuation_update():
     print("\n=== Continuation Update Tool ===")
     import src.data_paths as dp
@@ -120,9 +121,9 @@ def test_continuation_update():
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
-# ─────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 # 3. Runtime Policy
-# ─────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 def test_policy():
     print("\n=== Runtime Policy ===")
     import time
@@ -142,13 +143,65 @@ def test_policy():
     check("tool_failure_mode=stop", stop_policy.tool_failure_mode == "stop")
 
 
-# ─────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# 4. Email tool
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+def test_email():
+    print("\n=== Email Tool ===")
+    tool = EmailTool()
+
+    # Definition
+    defn = tool.definition()
+    check("email definition name", defn["name"] == "email")
+    check("email has parameters", "parameters" in defn)
+    actions = defn["parameters"]["properties"]["action"]["enum"]
+    check("email has send action", "send" in actions)
+    check("email has status action", "status" in actions)
+    check("email has accounts action", "accounts" in actions)
+
+    # Accounts (should return list even if empty)
+    r = json.loads(tool.execute({"action": "accounts"}))
+    check("accounts returns list", "accounts" in r)
+    check("accounts is list type", isinstance(r["accounts"], list))
+
+    # Status check
+    r = json.loads(tool.execute({"action": "status"}))
+    check("status has accounts_configured", "accounts_configured" in r)
+
+    # Send â€” missing fields
+    r = json.loads(tool.execute({"action": "send"}))
+    check("send w/o subject â†’ error", "error" in r)
+
+    r = json.loads(tool.execute({"action": "send", "subject": "test"}))
+    check("send w/o body â†’ error", "error" in r)
+
+    r = json.loads(tool.execute({"action": "send", "subject": "test", "body": "hello"}))
+    check("send w/o recipients â†’ error", "error" in r)
+
+    # Send â€” invalid email address
+    r = json.loads(tool.execute({
+        "action": "send", "subject": "test", "body": "hello",
+        "recipients": ["not-an-email"],
+    }))
+    check("send invalid email â†’ error", "error" in r)
+
+    # Unknown action
+    r = json.loads(tool.execute({"action": "explode"}))
+    check("unknown action â†’ error", "error" in r)
+
+    # Execute with agent_name parameter
+    r = json.loads(tool.execute({"action": "accounts"}, agent_name="astraea"))
+    check("accounts with agent_name", "accounts" in r)
+
+
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 # Run all
-# ─────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 if __name__ == "__main__":
     test_echo()
     test_continuation_update()
     test_policy()
+    test_email()
 
     print(f"\n{'='*40}")
     print(f"Results: {PASS} passed, {FAIL} failed")
@@ -156,3 +209,4 @@ if __name__ == "__main__":
         sys.exit(1)
     else:
         print("All tests passed.")
+

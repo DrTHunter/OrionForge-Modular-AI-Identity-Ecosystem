@@ -30,6 +30,7 @@ _TOOL_MAP: Dict[str, Tuple[str, str, bool]] = {
     "cost_tracker":        ("src.tools.cost_tracker",        "CostTrackerTool",       False),
     "continuation_update": ("src.tools.continuation_update", "ContinuationUpdateTool", False),
     "web_search":          ("src.tools.web_search",          "WebSearchTool",         True),
+    "email":               ("src.tools.email_tool",          "EmailTool",             True),
 }
 
 # Singleton cache for stateful tool instances
@@ -95,7 +96,7 @@ def get_tool_defs_for_agent(agent: str) -> List[Dict[str, Any]]:
     return defs
 
 
-def execute_tool(name: str, arguments: Dict[str, Any]) -> str:
+def execute_tool(name: str, arguments: Dict[str, Any], agent_name: str = "") -> str:
     """Run a tool by name with the given arguments.  Returns the result string.
 
     Raises ``KeyError`` if the tool is unknown, ``RuntimeError`` on exec failure.
@@ -111,7 +112,13 @@ def execute_tool(name: str, arguments: Dict[str, Any]) -> str:
         # Use cached singleton
         if name not in _instances:
             _instances[name] = cls()
-        result = _instances[name].execute(arguments)
+        # Some tools (e.g. email) accept agent_name for context-aware behaviour
+        import inspect
+        sig = inspect.signature(_instances[name].execute)
+        if "agent_name" in sig.parameters:
+            result = _instances[name].execute(arguments, agent_name=agent_name)
+        else:
+            result = _instances[name].execute(arguments)
     else:
         result = cls.execute(arguments)
 

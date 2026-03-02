@@ -17,6 +17,8 @@ Covers:
   - Memory types (topic_id omission in to_dict, extra keys in from_dict)
   - Chunker edge cases (mixed headers, paragraph > max_chunk, vault memory >1200)
   - Cross-module integration: MemoryTool → VaultStore, build_memory_block pipeline
+  - EmailTool (definition, all actions, account CRUD, validation, confirmation gate,
+    agent_name resolution, SMTP error paths, password masking, edge cases)
 """
 
 import json
@@ -1629,6 +1631,360 @@ def test_model_router_config():
         shutil.rmtree(tmp, ignore_errors=True)
 
 
+
+# ═════════════════════════════════════════════
+# EMAIL TOOL — comprehensive torture tests
+# ═════════════════════════════════════════════
+
+def test_email_tool_torture():
+    """Exhaustive tests for EmailTool: definition, actions, account CRUD,
+    validation, confirmation gate, agent_name resolution, SMTP error paths."""
+    print("\n=== TORTURE: Email Tool — Full Coverage ===")
+    from src.tools.email_tool import (
+        EmailTool, get_accounts, get_accounts_raw, get_default_account,
+        get_user_account, get_agent_default_account, get_account_by_id,
+        save_account, delete_account, get_effective_config,
+        _load_settings, _save_settings, _load_tool_config,
+        _SETTINGS_FILE,
+    )
+    from pathlib import Path
+    import src.tools.email_tool as et_mod
+
+    tool = EmailTool()
+
+    # ── 1. Definition ──
+    defn = tool.definition()
+    check("email def name", defn["name"] == "email")
+    check("email def has description", len(defn["description"]) > 20)
+    props = defn["parameters"]["properties"]
+    check("action in params", "action" in props)
+    check("subject in params", "subject" in props)
+    check("body in params", "body" in props)
+    check("recipients in params", "recipients" in props)
+    check("account_id in params", "account_id" in props)
+    check("confirmation in params", "confirmation" in props)
+    check("action required", "action" in defn["parameters"]["required"])
+    actions = props["action"]["enum"]
+    check("3 actions", len(actions) == 3)
+    for a in ("send", "status", "accounts"):
+        check(f"action '{a}'", a in actions)
+
+    # ── 2. Isolated account CRUD (temp settings file) ──
+    orig_settings = et_mod._SETTINGS_FILE
+    tmp = tempfile.mkdtemp()
+    tmp_settings = Path(tmp) / "config" / "settings.json"
+    et_mod._SETTINGS_FILE = tmp_settings
+
+    try:
+        # Empty state
+        check("no accounts initially", len(get_accounts()) == 0)
+        check("no raw accounts", len(get_accounts_raw()) == 0)
+        check("default account → None", get_default_account() is None)
+        check("user account → None", get_user_account() is None)
+        check("agent default → None", get_agent_default_account("astraea") is None)
+        check("account by id → None", get_account_by_id("nope") is None)
+
+        # effective_config defaults
+        cfg = get_effective_config()
+        check("cfg has api_base_url", "api_base_url" in cfg)
+        check("cfg has timeout", cfg["timeout"] == 30)
+        check("cfg require_confirmation default True", cfg["require_confirmation"] is True)
+        check("cfg accounts empty", len(cfg["accounts"]) == 0)
+
+        # Create first account
+        acct1 = save_account({
+            "label": "Work",
+            "email": "work@example.com",
+            "password": "secret123",
+            "smtp_server": "smtp.example.com",
+            "smtp_port": 465,
+            "signature": "Best regards",
+            "is_default": True,
+            "is_user_email": False,
+            "agent_default": "",
+        })
+        check("acct1 got id", acct1.get("id") is not None and acct1["id"].startswith("acct_"))
+        check("acct1 label", acct1["label"] == "Work")
+        check("1 account now", len(get_accounts_raw()) == 1)
+
+        # Password masking
+        masked = get_accounts()
+        check("password masked", masked[0]["password"] == "••••••••")
+        check("password_set True", masked[0]["password_set"] is True)
+
+        # Default fallback
+        check("default → acct1", get_default_account()["id"] == acct1["id"])
+
+        # Create second account (agent default for astraea)
+        acct2 = save_account({
+            "label": "Agent Mail",
+            "email": "agent@example.com",
+            "password": "agentpwd",
+            "smtp_server": "smtp.example.com",
+            "smtp_port": 587,
+            "signature": "",
+            "is_default": False,
+            "is_user_email": True,
+            "agent_default": "astraea",
+        })
+        check("acct2 created", acct2.get("id") is not None)
+        check("2 accounts now", len(get_accounts_raw()) == 2)
+        check("agent default astraea", get_agent_default_account("astraea")["id"] == acct2["id"])
+        check("user account → acct2", get_user_account()["id"] == acct2["id"])
+        check("lookup by id", get_account_by_id(acct2["id"])["label"] == "Agent Mail")
+
+        # Update account (keep masked password)
+        acct2_updated = dict(acct2)
+        acct2_updated["label"] = "Agent Mail Updated"
+        acct2_updated["password"] = "••••••••"  # masked placeholder
+        saved = save_account(acct2_updated)
+        check("update preserves password",
+              get_account_by_id(acct2["id"])["password"] == "agentpwd")
+        check("update changes label",
+              get_account_by_id(acct2["id"])["label"] == "Agent Mail Updated")
+
+        # Uniqueness: set acct2 as default → acct1 loses default
+        acct2_def = dict(get_account_by_id(acct2["id"]))
+        acct2_def["is_default"] = True
+        save_account(acct2_def)
+        check("acct1 no longer default",
+              get_account_by_id(acct1["id"]).get("is_default") is False)
+        check("acct2 now default",
+              get_account_by_id(acct2["id"]).get("is_default") is True)
+
+        # Agent default uniqueness: new account for astraea → acct2 loses it
+        acct3 = save_account({
+            "label": "New Astraea Mail",
+            "email": "new@example.com",
+            "password": "pwd3",
+            "smtp_server": "smtp.example.com",
+            "smtp_port": 465,
+            "is_default": False,
+            "agent_default": "astraea",
+        })
+        check("acct2 lost agent_default",
+              get_account_by_id(acct2["id"]).get("agent_default", "") == "")
+        check("acct3 has agent_default",
+              get_account_by_id(acct3["id"]).get("agent_default") == "astraea")
+
+        # Delete
+        check("delete acct3", delete_account(acct3["id"]) is True)
+        check("delete nonexistent", delete_account("fake_id") is False)
+        check("2 accounts remain", len(get_accounts_raw()) == 2)
+
+        # ── 3. Execute: accounts action ──
+        r = json.loads(tool.execute({"action": "accounts"}))
+        check("exec accounts has list", isinstance(r["accounts"], list))
+        check("exec accounts total", r["total"] == 2)
+
+        # ── 4. Execute: status action ──
+        r = json.loads(tool.execute({"action": "status"}))
+        check("exec status has accounts_configured", r["accounts_configured"] == 2)
+        # API server likely not running → api_server_running false
+        check("exec status api field", "api_server_running" in r)
+
+        # ── 5. Execute: unknown action ──
+        r = json.loads(tool.execute({"action": "nope"}))
+        check("exec unknown action → error", "error" in r)
+
+        # ── 6. Execute: send — validation ──
+        # Missing subject
+        r = json.loads(tool.execute({"action": "send"}))
+        check("send no subject → error", "error" in r)
+        check("send error mentions subject", "subject" in r["error"].lower())
+
+        # Missing body
+        r = json.loads(tool.execute({"action": "send", "subject": "Hi"}))
+        check("send no body → error", "error" in r)
+
+        # Missing recipients
+        r = json.loads(tool.execute({
+            "action": "send", "subject": "Hi", "body": "Hello",
+        }))
+        check("send no recipients → error", "error" in r)
+
+        # Empty recipients list
+        r = json.loads(tool.execute({
+            "action": "send", "subject": "Hi", "body": "Hello", "recipients": [],
+        }))
+        check("send empty recipients → error", "error" in r)
+
+        # Invalid email format
+        r = json.loads(tool.execute({
+            "action": "send", "subject": "Hi", "body": "Hello",
+            "recipients": ["badformat"],
+        }))
+        check("send invalid email → error", "error" in r)
+        check("send error names bad addr", "badformat" in r["error"])
+
+        # Mixed valid/invalid
+        r = json.loads(tool.execute({
+            "action": "send", "subject": "Hi", "body": "Hello",
+            "recipients": ["good@test.com", "bad"],
+        }))
+        check("send mixed addrs → error", "error" in r)
+
+        # Nonexistent account_id
+        r = json.loads(tool.execute({
+            "action": "send", "subject": "Hi", "body": "Hello",
+            "recipients": ["ok@test.com"], "account_id": "nonexistent",
+        }))
+        check("send bad account_id → error", "error" in r)
+
+        # ── 7. Confirmation gate ──
+        r = json.loads(tool.execute({
+            "action": "send", "subject": "Test", "body": "Hello World",
+            "recipients": ["user@test.com"],
+        }))
+        check("send gate=awaiting", r.get("gate") == "awaiting_confirmation")
+        check("gate has preview", "preview" in r)
+        check("preview has from_email", "from_email" in r["preview"])
+        check("preview has subject", r["preview"]["subject"] == "Test")
+        check("preview has recipients", "user@test.com" in r["preview"]["recipients"])
+
+        # ── 8. Confirmation gate with agent_name resolution ──
+        # re-create astraea default
+        acct4 = save_account({
+            "label": "Astraea Default",
+            "email": "astraea@example.com",
+            "password": "pwd4",
+            "smtp_server": "smtp.example.com",
+            "smtp_port": 465,
+            "agent_default": "astraea",
+            "is_default": False,
+        })
+        r = json.loads(tool.execute({
+            "action": "send", "subject": "Agent Test", "body": "Hello",
+            "recipients": ["dest@test.com"],
+        }, agent_name="astraea"))
+        check("agent_name resolves to astraea account",
+              r.get("preview", {}).get("from_email") == "astraea@example.com")
+
+        # ── Mock SMTP and HTTP for all remaining send tests ──
+        # Mock smtplib to avoid real SMTP connections
+        import smtplib as _smtplib
+        _orig_smtp_ssl = _smtplib.SMTP_SSL
+        _orig_smtp = _smtplib.SMTP
+        class _MockSMTP:
+            def __init__(self, *a, **kw): pass
+            def ehlo(self): pass
+            def starttls(self): pass
+            def login(self, *a): pass
+            def sendmail(self, *a): pass
+            def quit(self): pass
+        _smtplib.SMTP_SSL = _MockSMTP
+        _smtplib.SMTP = _MockSMTP
+
+        # Mock requests.Session to avoid real HTTP calls to API fallback
+        import requests as _requests_mod
+        _OrigSession = _requests_mod.Session
+        class _MockSession:
+            def get(self, *a, **kw):
+                raise _requests_mod.exceptions.ConnectionError("mocked")
+            def post(self, *a, **kw):
+                raise _requests_mod.exceptions.ConnectionError("mocked")
+        _requests_mod.Session = _MockSession
+
+        try:
+            # ── 9. Disable confirmation gate and attempt send ──
+            settings = _load_settings()
+            settings.setdefault("tool_config", {}).setdefault("email", {})["require_confirmation"] = False
+            _save_settings(settings)
+
+            # Re-create tool so it gets the mocked Session
+            tool = EmailTool()
+
+            r = json.loads(tool.execute({
+                "action": "send", "subject": "No Gate", "body": "Hello",
+                "recipients": ["user@test.com"],
+            }))
+            # Will succeed with mock SMTP — should NOT show gate
+            check("no gate when disabled", r.get("gate") is None)
+            # Expect "sent" (mocked) or "error" — not gate
+            check("send attempted (no gate)", "error" in r or "status" in r)
+
+            # ── 10. Send with confirmation='confirmed' (bypass gate) ──
+            # Re-enable confirmation
+            settings["tool_config"]["email"]["require_confirmation"] = True
+            _save_settings(settings)
+
+            r = json.loads(tool.execute({
+                "action": "send", "subject": "Confirmed", "body": "Go",
+                "recipients": ["user@test.com"], "confirmation": "confirmed",
+            }))
+            check("confirmed bypasses gate", r.get("gate") is None)
+            check("confirmed attempts send", "error" in r or "status" in r)
+
+            # ── 11. Account with no password → incomplete error ──
+            save_account({
+                "id": "nopwd_acct",
+                "label": "No Password",
+                "email": "nopwd@example.com",
+                "password": "",
+                "smtp_server": "smtp.example.com",
+                "smtp_port": 465,
+                "is_default": False,
+            })
+            r = json.loads(tool.execute({
+                "action": "send", "subject": "Test", "body": "Body",
+                "recipients": ["dest@test.com"],
+                "account_id": "nopwd_acct",
+                "confirmation": "confirmed",
+            }))
+            check("no password -> incomplete error", "error" in r)
+            check("error mentions credentials", "credential" in r["error"].lower() or "password" in r["error"].lower())
+
+            # ── 12. Delete all accounts → send fails ──
+            for acct in get_accounts_raw():
+                delete_account(acct["id"])
+            check("all accounts deleted", len(get_accounts_raw()) == 0)
+
+            r = json.loads(tool.execute({
+                "action": "send", "subject": "X", "body": "Y",
+                "recipients": ["a@b.com"],
+            }))
+            check("send with no accounts -> error", "error" in r)
+            check("error mentions no accounts", "no email" in r["error"].lower() or "account" in r["error"].lower())
+
+            # accounts action with 0 accounts
+            r = json.loads(tool.execute({"action": "accounts"}))
+            check("0 accounts message", "message" in r)
+
+            # ── 13. Edge: whitespace-only fields ──
+            r = json.loads(tool.execute({
+                "action": "send", "subject": "   ", "body": "hello",
+                "recipients": ["a@b.com"],
+            }))
+            check("whitespace subject -> error", "error" in r)
+
+            r = json.loads(tool.execute({
+                "action": "send", "subject": "ok", "body": "   ",
+                "recipients": ["a@b.com"],
+            }))
+            check("whitespace body -> error", "error" in r)
+
+            # ── 14. effective_config masks passwords ──
+            save_account({
+                "label": "Final",
+                "email": "final@test.com",
+                "password": "supersecret",
+                "smtp_server": "smtp.test.com",
+                "smtp_port": 465,
+            })
+            cfg = get_effective_config()
+            check("effective_config masks pwd",
+                  all(a["password"] == "••••••••" for a in cfg["accounts"] if a.get("password_set")))
+
+        finally:
+            _smtplib.SMTP_SSL = _orig_smtp_ssl
+            _smtplib.SMTP = _orig_smtp
+            _requests_mod.Session = _OrigSession
+
+    finally:
+        et_mod._SETTINGS_FILE = orig_settings
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
 # ═════════════════════════════════════════════
 if __name__ == "__main__":
     test_boundary_policy()
@@ -1656,6 +2012,7 @@ if __name__ == "__main__":
     test_llm_types()
     test_directive_injector_with_manifest()
     test_model_router_config()
+    test_email_tool_torture()
 
     print(f"\n{'='*40}")
     print(f"Results: {PASS} passed, {FAIL} failed")
