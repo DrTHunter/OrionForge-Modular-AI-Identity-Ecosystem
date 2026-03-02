@@ -9,16 +9,27 @@ Covers:
   - Note collector helpers
   - Memory injector build_memory_block
   - CostTrackerTool untested actions (cost_summary, cost_log, session_cost)
+  - CostTrackerTool pricing actions (get_pricing, set_pricing, list_models)
   - PII guard edge cases (bearer, auth_token, 9-digit SSN, case variants)
   - RuntimePolicy self_refine clamping
   - Manifest helpers (_estimate_tokens, _heading_to_id collisions, manifest_path)
+  - Manifest validation (validate_manifest full coverage)
+  - Manifest audit_changes (live vs persisted diff)
   - Directive parser edge cases (H1-only, unicode headings, empty bodies)
   - Directive store edge cases (missing scope file, empty scopes, substring bonus)
+  - DirectivesTool (all 5 actions: search, list, get, manifest, changes)
+  - Tool Registry (dispatch, resolution, listing, error paths)
   - Memory types (topic_id omission in to_dict, extra keys in from_dict)
   - Chunker edge cases (mixed headers, paragraph > max_chunk, vault memory >1200)
   - Cross-module integration: MemoryTool → VaultStore, build_memory_block pipeline
   - EmailTool (definition, all actions, account CRUD, validation, confirmation gate,
     agent_name resolution, SMTP error paths, password masking, edge cases)
+  - WebSearchTool extended (_remove_emojis, definition, knowledge gate, scrape action)
+  - Metering helpers (meter_response, zero_metering, meter_from_raw_usage, get_price,
+    compute_cost, reset_pricing_cache, serialisation round-trips)
+  - LLM Client factory (create_client dispatch, unknown provider)
+  - App helpers (_strip_memory_tags, _extract_and_save_memories patterns)
+  - Seed UI Knowledge script (MEMORIES list structure validation)
 """
 
 import json
@@ -2011,6 +2022,741 @@ def test_email_tool_torture():
 
 
 # ═════════════════════════════════════════════
+# 26. DirectivesTool — all 5 actions
+# ═════════════════════════════════════════════
+def test_directives_tool_torture():
+    """Exhaustive tests for DirectivesTool: search, list, get, manifest, changes."""
+    print("\n=== TORTURE: DirectivesTool — All 5 Actions ===")
+    from src.tools.directives_tool import DirectivesTool
+    import src.tools.directives_tool as dt_mod
+
+    tool = DirectivesTool()
+
+    # Definition
+    defn = tool.definition()
+    check("dt def name", defn["name"] == "directives")
+    check("dt def has description", len(defn["description"]) > 20)
+    actions = defn["parameters"]["properties"]["action"]["enum"]
+    check("dt 5 actions", len(actions) == 5)
+    for a in ("search", "list", "get", "manifest", "changes"):
+        check(f"dt action '{a}'", a in actions)
+
+    tmp = tempfile.mkdtemp()
+    orig_dir = dt_mod._DIRECTIVES_DIR
+    dt_mod._DIRECTIVES_DIR = tmp
+
+    try:
+        # Create scope files
+        shared_path = os.path.join(tmp, "shared.md")
+        with open(shared_path, "w", encoding="utf-8") as f:
+            f.write("## Core Values\nBe helpful, honest, and harmless.\n\n"
+                    "## Communication Style\nBe concise and clear.\n\n"
+                    "## Safety Rules\nNever reveal secrets or passwords.\n")
+
+        agent_path = os.path.join(tmp, "astraea.md")
+        with open(agent_path, "w", encoding="utf-8") as f:
+            f.write("## Star Protocol\nGuide users through stargazing.\n\n"
+                    "## Curiosity Mode\nAsk clarifying questions.\n")
+
+        # --- search ---
+        r = json.loads(tool.execute({"action": "search", "query": "helpful"}))
+        check("dt search ok", r["status"] == "ok")
+        check("dt search has count", r["count"] > 0)
+        check("dt search has sections", len(r["sections"]) > 0)
+
+        # search: missing query
+        r = json.loads(tool.execute({"action": "search"}))
+        check("dt search no query → error", r["status"] == "error")
+
+        # search: with limit
+        r = json.loads(tool.execute({"action": "search", "query": "values", "limit": 1}))
+        check("dt search limit=1", r["count"] <= 1)
+
+        # --- list ---
+        r = json.loads(tool.execute({"action": "list"}))
+        check("dt list ok", r["status"] == "ok")
+        check("dt list count > 0", r["count"] > 0)
+        check("dt list has headings", len(r["headings"]) > 0)
+
+        # --- get ---
+        r = json.loads(tool.execute({"action": "get", "heading": "Core Values"}))
+        check("dt get ok", r["status"] == "ok")
+        check("dt get heading", r["heading"] == "Core Values")
+        check("dt get body", "helpful" in r["body"])
+
+        # get: missing heading param
+        r = json.loads(tool.execute({"action": "get"}))
+        check("dt get no heading → error", r["status"] == "error")
+
+        # get: nonexistent heading
+        r = json.loads(tool.execute({"action": "get", "heading": "Nonexistent"}))
+        check("dt get missing → not_found", r["status"] == "not_found")
+
+        # --- manifest ---
+        r = json.loads(tool.execute({"action": "manifest"}))
+        check("dt manifest ok", r["status"] == "ok")
+        check("dt manifest has count", r["count"] > 0)
+        check("dt manifest has directives", len(r["directives"]) > 0)
+
+        # --- changes ---
+        r = json.loads(tool.execute({"action": "changes"}))
+        check("dt changes ok", r["status"] == "ok")
+        check("dt changes has totals", "total_added" in r)
+
+        # --- unknown action ---
+        r = json.loads(tool.execute({"action": "BOGUS"}))
+        check("dt unknown action → error", r["status"] == "error")
+
+    finally:
+        dt_mod._DIRECTIVES_DIR = orig_dir
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ═════════════════════════════════════════════
+# 27. Tool Registry — dispatch + resolution
+# ═════════════════════════════════════════════
+def test_tool_registry_torture():
+    """Test tool registry: listing, resolve, execute, error paths."""
+    print("\n=== TORTURE: Tool Registry — Dispatch & Resolution ===")
+    from src.tools.registry import list_registered_tools, execute_tool, _resolve_tool
+
+    # list_registered_tools
+    tools = list_registered_tools()
+    check("registry: list returns list", isinstance(tools, list))
+    check("registry: 7 tools", len(tools) == 7, f"got {len(tools)}: {tools}")
+    for expected in ("echo", "memory", "directives", "cost_tracker",
+                     "continuation_update", "web_search", "email"):
+        check(f"registry: has '{expected}'", expected in tools)
+
+    # _resolve_tool — known tool
+    resolved = _resolve_tool("echo")
+    check("resolve echo → dict", isinstance(resolved, dict))
+    check("resolve echo has type", resolved["type"] == "function")
+    check("resolve echo has function.name", resolved["function"]["name"] == "echo")
+
+    # _resolve_tool — unknown tool
+    resolved_unknown = _resolve_tool("nonexistent_tool_xyz")
+    check("resolve unknown → None", resolved_unknown is None)
+
+    # execute_tool — echo
+    result = execute_tool("echo", {"message": "Torture test!"})
+    check("execute echo", "Torture test!" in result)
+
+    # execute_tool — unknown raises KeyError
+    try:
+        execute_tool("nonexistent_tool_xyz", {})
+        check("execute unknown → KeyError", False, "no exception raised")
+    except KeyError:
+        check("execute unknown → KeyError", True)
+
+    # execute_tool — pass agent_name to email (which accepts it)
+    # Just test it doesn't crash
+    try:
+        result = execute_tool("echo", {"message": "agent test"}, agent_name="astraea")
+        check("execute with agent_name", isinstance(result, str))
+    except Exception as e:
+        check("execute with agent_name", False, str(e))
+
+
+# ═════════════════════════════════════════════
+# 28. validate_manifest — full coverage
+# ═════════════════════════════════════════════
+def test_validate_manifest():
+    """Test manifest validation: valid, missing keys, bad enums, duplicate IDs, etc."""
+    print("\n=== TORTURE: validate_manifest — Full Coverage ===")
+    from src.directives.manifest import (
+        validate_manifest, generate_manifest, _sha256,
+    )
+
+    tmp = tempfile.mkdtemp()
+    try:
+        # Create a scope file
+        shared_path = os.path.join(tmp, "shared.md")
+        with open(shared_path, "w", encoding="utf-8") as f:
+            f.write("## Test Heading\nTest body content.\n")
+
+        # Generate a valid manifest from our tmp dir
+        manifest = generate_manifest(directives_dir=tmp, scopes=("shared",))
+        check("generated manifest has directives", len(manifest["directives"]) > 0)
+
+        # Fix path references for validation: create proper directory structure
+        # validate_manifest resolves path as: parent_of(directives_dir) / entry["path"]
+        # So we need the file at: tmp_parent/directives/shared.md
+        directives_subdir = os.path.join(tmp, "directives")
+        os.makedirs(directives_subdir, exist_ok=True)
+        shutil.copy(shared_path, os.path.join(directives_subdir, "shared.md"))
+        for d in manifest["directives"]:
+            d["path"] = "directives/shared.md"
+        result = validate_manifest(manifest, directives_dir=directives_subdir, check_hashes=False)
+        check("valid manifest → valid", result["valid"] is True, f"errors={result['errors']}")
+        check("valid manifest → 0 errors", len(result["errors"]) == 0, f"errors={result['errors']}")
+
+        # Missing top-level key
+        bad = dict(manifest)
+        del bad["hash_algo"]
+        result2 = validate_manifest(bad, directives_dir=tmp, check_hashes=False)
+        check("missing top key → invalid", result2["valid"] is False)
+        check("error mentions hash_algo", any("hash_algo" in e for e in result2["errors"]))
+
+        # Missing entry key
+        bad2 = json.loads(json.dumps(manifest))
+        del bad2["directives"][0]["sha256"]
+        result3 = validate_manifest(bad2, directives_dir=tmp, check_hashes=False)
+        check("missing entry key → invalid", result3["valid"] is False)
+        check("error mentions sha256", any("sha256" in e for e in result3["errors"]))
+
+        # Invalid scope
+        bad3 = json.loads(json.dumps(manifest))
+        bad3["directives"][0]["scope"] = "bogus_scope_xyz"
+        result4 = validate_manifest(bad3, directives_dir=tmp, check_hashes=False)
+        check("bad scope → invalid", result4["valid"] is False)
+
+        # Invalid status
+        bad4 = json.loads(json.dumps(manifest))
+        bad4["directives"][0]["status"] = "deleted"
+        result5 = validate_manifest(bad4, directives_dir=tmp, check_hashes=False)
+        check("bad status → invalid", result5["valid"] is False)
+
+        # Invalid risk
+        bad5 = json.loads(json.dumps(manifest))
+        bad5["directives"][0]["risk"] = "extreme"
+        result6 = validate_manifest(bad5, directives_dir=tmp, check_hashes=False)
+        check("bad risk → invalid", result6["valid"] is False)
+
+        # Duplicate IDs
+        bad6 = json.loads(json.dumps(manifest))
+        bad6["directives"].append(dict(bad6["directives"][0]))  # exact copy → same id
+        result7 = validate_manifest(bad6, directives_dir=tmp, check_hashes=False)
+        check("duplicate id → invalid", result7["valid"] is False)
+        check("error mentions duplicate", any("duplicate" in e for e in result7["errors"]))
+
+        # directives not a list
+        bad7 = dict(manifest)
+        bad7["directives"] = "not a list"
+        result8 = validate_manifest(bad7, directives_dir=tmp, check_hashes=False)
+        check("directives not list → invalid", result8["valid"] is False)
+
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ═════════════════════════════════════════════
+# 29. audit_changes
+# ═════════════════════════════════════════════
+def test_audit_changes():
+    """Test audit_changes: no persisted manifest, matching, diffs."""
+    print("\n=== TORTURE: audit_changes — Live vs Persisted ===")
+    from src.directives.manifest import audit_changes, generate_manifest, save_manifest
+
+    tmp = tempfile.mkdtemp()
+    try:
+        shared_path = os.path.join(tmp, "shared.md")
+        with open(shared_path, "w", encoding="utf-8") as f:
+            f.write("## Rule One\nFirst rule content.\n\n"
+                    "## Rule Two\nSecond rule content.\n")
+
+        manifest_path = os.path.join(tmp, "manifest.json")
+
+        # No persisted manifest → all added
+        diff = audit_changes(directives_dir=tmp, manifest_path_override=manifest_path)
+        check("no persisted → all added", diff["total_added"] >= 2)
+        check("no persisted → 0 removed", diff["total_removed"] == 0)
+
+        # Save manifest, then diff again → 0 changes
+        m = generate_manifest(directives_dir=tmp, scopes=("shared",))
+        save_manifest(m, path=manifest_path)
+        diff2 = audit_changes(directives_dir=tmp, manifest_path_override=manifest_path)
+        check("matching → 0 added", diff2["total_added"] == 0)
+        check("matching → 0 removed", diff2["total_removed"] == 0)
+        check("matching → 0 changed", diff2["total_changed"] == 0)
+        check("matching → 2 unchanged", diff2["unchanged_count"] == 2)
+
+        # Modify a directive → detect change
+        with open(shared_path, "w", encoding="utf-8") as f:
+            f.write("## Rule One\nModified first rule.\n\n"
+                    "## Rule Two\nSecond rule content.\n\n"
+                    "## Rule Three\nBrand new rule.\n")
+        diff3 = audit_changes(directives_dir=tmp, manifest_path_override=manifest_path)
+        check("modified → 1 changed", diff3["total_changed"] == 1)
+        check("new rule → 1 added", diff3["total_added"] == 1)
+        check("unchanged → 1", diff3["unchanged_count"] == 1)
+
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ═════════════════════════════════════════════
+# 30. CostTrackerTool — pricing actions
+# ═════════════════════════════════════════════
+def test_cost_tracker_pricing_actions():
+    """Test get_pricing, set_pricing, list_models actions."""
+    print("\n=== TORTURE: CostTrackerTool — Pricing Actions ===")
+    from src.tools.cost_tracker import CostTrackerTool
+    import src.tools.cost_tracker as ct_mod
+
+    tool = CostTrackerTool()
+
+    tmp = tempfile.mkdtemp()
+    orig_pricing_path = ct_mod._pricing_path
+    orig_connections_path = ct_mod._connections_path
+
+    pricing_file = os.path.join(tmp, "pricing.yaml")
+    conn_file = os.path.join(tmp, "connections.json")
+
+    ct_mod._pricing_path = lambda: pricing_file
+    ct_mod._connections_path = lambda: conn_file
+
+    try:
+        # get_pricing — empty (no file)
+        r = json.loads(tool.execute({"action": "get_pricing"}))
+        check("get_pricing empty → providers dict", "providers" in r)
+
+        # set_pricing — create new entry
+        r = json.loads(tool.execute({
+            "action": "set_pricing", "provider": "openai", "model": "gpt-4o",
+            "input_per_1m": 2.50, "output_per_1m": 10.00,
+        }))
+        check("set_pricing ok", r.get("ok") is True)
+        check("set_pricing provider", r["provider"] == "openai")
+        check("set_pricing model", r["model"] == "gpt-4o")
+        check("set_pricing input", r["pricing"]["input_per_1m"] == 2.50)
+        check("set_pricing output", r["pricing"]["output_per_1m"] == 10.00)
+
+        # get_pricing — specific model
+        r = json.loads(tool.execute({
+            "action": "get_pricing", "provider": "openai", "model": "gpt-4o",
+        }))
+        check("get_pricing specific", r["pricing"]["input_per_1m"] == 2.50)
+
+        # get_pricing — provider only
+        r = json.loads(tool.execute({
+            "action": "get_pricing", "provider": "openai",
+        }))
+        check("get_pricing provider", "gpt-4o" in r["models"])
+
+        # set_pricing — missing fields
+        r = json.loads(tool.execute({"action": "set_pricing"}))
+        check("set_pricing missing → error", "error" in r)
+
+        # set_pricing — another model with cached_input
+        r = json.loads(tool.execute({
+            "action": "set_pricing", "provider": "anthropic",
+            "model": "claude-sonnet-4-20250514",
+            "input_per_1m": 3.00, "cached_input_per_1m": 0.30,
+            "output_per_1m": 15.00,
+        }))
+        check("set_pricing cached", r["pricing"]["cached_input_per_1m"] == 0.30)
+
+        # list_models — no connections file
+        r = json.loads(tool.execute({"action": "list_models"}))
+        check("list_models empty", "connections" in r)
+
+        # list_models — with connections file
+        conns = {
+            "connections": [
+                {"name": "Local Ollama", "provider": "ollama",
+                 "enabled": True, "models": ["llama3:8b", "qwen2.5:7b"]},
+                {"name": "Disabled", "provider": "openai",
+                 "enabled": False, "models": ["gpt-4"]},
+            ],
+            "agent_connections": {},
+        }
+        with open(conn_file, "w") as f:
+            json.dump(conns, f)
+
+        r = json.loads(tool.execute({"action": "list_models"}))
+        check("list_models has Ollama", "Local Ollama" in r["connections"])
+        check("list_models disabled excluded", "Disabled" not in r["connections"])
+        check("list_models models list",
+              r["connections"]["Local Ollama"]["models"] == ["llama3:8b", "qwen2.5:7b"])
+
+    finally:
+        ct_mod._pricing_path = orig_pricing_path
+        ct_mod._connections_path = orig_connections_path
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ═════════════════════════════════════════════
+# 31. WebSearchTool — extended coverage
+# ═════════════════════════════════════════════
+def test_web_search_tool_extended():
+    """Test _remove_emojis, definition, knowledge gate, scrape action, get_effective_config."""
+    print("\n=== TORTURE: WebSearchTool — Extended Coverage ===")
+    from src.tools.web_search import (
+        WebSearchTool, _remove_emojis, get_effective_config,
+    )
+
+    # _remove_emojis
+    check("remove_emojis basic", "Hello" in _remove_emojis("Hello 🌍 World") and "World" in _remove_emojis("Hello 🌍 World"))
+    check("remove_emojis no emoji char", "🌍" not in _remove_emojis("Hello 🌍 World"))
+    check("remove_emojis multiple", "test" == _remove_emojis("🔥test🎉").strip())
+    check("remove_emojis empty", "" == _remove_emojis(""))
+    check("remove_emojis no emoji", "plain text" == _remove_emojis("plain text"))
+    check("remove_emojis keeps CJK", "日本語" in _remove_emojis("日本語🏯"))
+
+    # Definition
+    tool = WebSearchTool()
+    defn = tool.definition()
+    check("ws def name", defn["name"] == "web_search")
+    check("ws def has description", len(defn["description"]) > 20)
+    props = defn["parameters"]["properties"]
+    check("ws action in params", "action" in props)
+    check("ws query in params", "query" in props)
+    check("ws url in params", "url" in props)
+    check("ws mode in params", "mode" in props)
+    check("ws knowledge_check in params", "knowledge_check" in props)
+    check("ws reason in params", "reason" in props)
+    actions = props["action"]["enum"]
+    check("ws 2 actions", len(actions) == 2)
+    check("ws action search", "search" in actions)
+    check("ws action scrape", "scrape" in actions)
+
+    # get_effective_config
+    cfg = get_effective_config()
+    check("cfg has searxng_url", "searxng_url" in cfg)
+    check("cfg has ignored_sites", isinstance(cfg["ignored_sites"], str))
+    check("cfg has require_justification", "require_justification" in cfg)
+    check("cfg has modes", "modes" in cfg)
+    for mode in ("fast", "normal", "deep"):
+        check(f"cfg mode '{mode}' present", mode in cfg["modes"])
+        check(f"cfg mode '{mode}' has pages", "pages" in cfg["modes"][mode])
+
+    # Knowledge gate — blocked via skip signal
+    r = json.loads(tool.execute({
+        "action": "search", "query": "test",
+        "knowledge_check": "I already know the answer",
+        "reason": "just testing",
+    }))
+    check("knowledge gate blocked", r.get("gate") == "blocked")
+
+    # Knowledge gate — missing reason
+    r = json.loads(tool.execute({
+        "action": "search", "query": "test",
+    }))
+    check("knowledge gate missing reason",
+          r.get("gate") == "missing_justification" or "error" in r)
+
+    # Scrape — no URL
+    r = json.loads(tool.execute({"action": "scrape"}))
+    check("scrape no url → error", "error" in r)
+
+    # Scrape — empty URL
+    r = json.loads(tool.execute({"action": "scrape", "url": ""}))
+    check("scrape empty url → error", "error" in r)
+
+
+# ═════════════════════════════════════════════
+# 32. Metering — extended helpers
+# ═════════════════════════════════════════════
+def test_metering_helpers_extended():
+    """Test meter_response, zero_metering, meter_from_raw_usage, get_price,
+    compute_cost, reset_pricing_cache, serialisation round-trips."""
+    print("\n=== TORTURE: Metering — Extended Helpers ===")
+    from src.observability.metering import (
+        meter_response, zero_metering, meter_from_raw_usage,
+        get_price, compute_cost, reset_pricing_cache,
+        TokenUsage, CostBreakdown, Metering,
+    )
+    from src.llm_client.base import LLMResponse
+
+    # zero_metering
+    z = zero_metering()
+    check("zero_metering usage", z.usage.prompt_tokens == 0)
+    check("zero_metering cost", z.cost.total_cost == 0.0)
+    check("zero_metering model", z.model == "")
+    check("zero_metering provider", z.provider == "")
+
+    # zero_metering accumulation
+    z2 = z + z
+    check("zero + zero = zero", z2.cost.total_cost == 0.0)
+
+    # get_price with custom pricing dict
+    pricing = {
+        "openai": {
+            "gpt-4o": {"input_per_1m": 2.50, "output_per_1m": 10.00},
+            "gpt-4": {"input_per_1m": 30.00, "output_per_1m": 60.00},
+            "_default": {"input_per_1m": 1.00, "output_per_1m": 2.00},
+        },
+        "ollama": {
+            "_default": {"input_per_1m": 0.00, "output_per_1m": 0.00},
+        },
+    }
+    inp, cached, out, train = get_price("openai", "gpt-4o", pricing)
+    check("get_price exact input", inp == 2.50)
+    check("get_price exact output", out == 10.00)
+
+    # Prefix match: "gpt-4o-mini" starts with "gpt-4o"
+    inp2, _, out2, _ = get_price("openai", "gpt-4o-mini", pricing)
+    check("get_price prefix match", inp2 == 2.50)
+
+    # Provider default fallback
+    inp3, _, out3, _ = get_price("openai", "unknown-model-xyz", pricing)
+    check("get_price default fallback", inp3 == 1.00)
+
+    # Unknown provider
+    inp4, _, out4, _ = get_price("nonexistent_provider", "any", pricing)
+    check("get_price unknown provider → 0", inp4 == 0.0 and out4 == 0.0)
+
+    # compute_cost
+    usage = TokenUsage(prompt_tokens=1000, completion_tokens=500, total_tokens=1500)
+    cost = compute_cost(usage, "openai", "gpt-4o", pricing)
+    expected_input = 1000 * 2.50 / 1_000_000
+    expected_output = 500 * 10.00 / 1_000_000
+    check("compute_cost input", abs(cost.input_cost - expected_input) < 0.0001)
+    check("compute_cost output", abs(cost.output_cost - expected_output) < 0.0001)
+    check("compute_cost total", abs(cost.total_cost - (expected_input + expected_output)) < 0.0001)
+
+    # compute_cost with cached tokens
+    cost2 = compute_cost(usage, "openai", "gpt-4o", pricing, cached_tokens=200)
+    check("cached reduces input cost", cost2.input_cost < cost.input_cost)
+
+    # meter_response with usage populated
+    resp = LLMResponse(
+        content="Hello",
+        model="gpt-4o",
+        usage={"prompt_tokens": 100, "completion_tokens": 50, "total_tokens": 150},
+    )
+    m = meter_response(resp, provider="openai", pricing=pricing)
+    check("meter_response model", m.model == "gpt-4o")
+    check("meter_response not estimated", m.usage.is_estimated is False)
+    check("meter_response prompt_tokens", m.usage.prompt_tokens == 100)
+
+    # meter_response without usage (estimation)
+    resp2 = LLMResponse(content="Hello world", model="gpt-4o", usage=None)
+    messages = [{"role": "user", "content": "Say hello"}]
+    m2 = meter_response(resp2, provider="openai", messages=messages, pricing=pricing)
+    check("meter_response estimated", m2.usage.is_estimated is True)
+    check("meter_response est prompt > 0", m2.usage.prompt_tokens > 0)
+
+    # meter_from_raw_usage
+    raw = {"prompt_tokens": 200, "completion_tokens": 100, "total_tokens": 300}
+    m3 = meter_from_raw_usage(raw, "openai", "gpt-4o", pricing)
+    check("meter_from_raw prompt", m3.usage.prompt_tokens == 200)
+    check("meter_from_raw cost > 0", m3.cost.total_cost > 0)
+
+    # meter_from_raw_usage with cached tokens
+    raw2 = {
+        "prompt_tokens": 200, "completion_tokens": 100, "total_tokens": 300,
+        "prompt_tokens_details": {"cached_tokens": 50},
+    }
+    m4 = meter_from_raw_usage(raw2, "openai", "gpt-4o", pricing)
+    check("meter_from_raw cached", m4.cost.cached_input_cost >= 0)
+
+    # Serialisation round-trips
+    d = m.to_dict()
+    check("metering to_dict has usage", "usage" in d)
+    check("metering to_dict has cost", "cost" in d)
+    m_back = Metering.from_dict(d)
+    check("metering round-trip model", m_back.model == m.model)
+    check("metering round-trip tokens", m_back.usage.prompt_tokens == m.usage.prompt_tokens)
+
+    tu_d = m.usage.to_dict()
+    tu_back = TokenUsage.from_dict(tu_d)
+    check("token_usage round-trip", tu_back.prompt_tokens == m.usage.prompt_tokens)
+
+    cb_d = m.cost.to_dict()
+    cb_back = CostBreakdown.from_dict(cb_d)
+    check("cost_breakdown round-trip", abs(cb_back.total_cost - m.cost.total_cost) < 0.0001)
+
+    # reset_pricing_cache — should not crash
+    reset_pricing_cache()
+    check("reset_pricing_cache ok", True)
+
+
+# ═════════════════════════════════════════════
+# 33. LLM Client Factory
+# ═════════════════════════════════════════════
+def test_llm_client_factory():
+    """Test create_client dispatch and unknown provider."""
+    print("\n=== TORTURE: LLM Client Factory ===")
+    from src.llm_client.factory import create_client, _PROVIDERS
+    from src.llm_client.base import LLMClient
+
+    # Check provider map
+    check("factory has openai", "openai" in _PROVIDERS)
+    check("factory has deepseek", "deepseek" in _PROVIDERS)
+    check("factory has ollama", "ollama" in _PROVIDERS)
+    check("factory has anthropic", "anthropic" in _PROVIDERS)
+
+    # create_client for each provider (just instantiate, don't call)
+    for provider in ("openai", "deepseek", "ollama", "anthropic"):
+        try:
+            profile = {
+                "provider": provider,
+                "api_url": "http://localhost:11434",
+                "api_key": "test-key-123",
+                "model": "test-model",
+            }
+            client = create_client(profile)
+            check(f"factory {provider} → LLMClient", isinstance(client, LLMClient))
+        except Exception as e:
+            check(f"factory {provider} → ok", False, str(e))
+
+    # Unknown provider
+    try:
+        create_client({"provider": "nonexistent_xyz"})
+        check("factory unknown → ValueError", False, "no exception raised")
+    except ValueError as e:
+        check("factory unknown → ValueError", "nonexistent_xyz" in str(e))
+
+
+# ═════════════════════════════════════════════
+# 34. App helpers — memory tag extraction
+# ═════════════════════════════════════════════
+def test_app_memory_helpers():
+    """Test _strip_memory_tags pattern matching."""
+    print("\n=== TORTURE: App — Memory Tag Helpers ===")
+    import re
+
+    # Replicate the pattern from app.py
+    _MEMORY_TAG_PATTERN = r'\[MEMORY_SAVE:\s*(?:category=[\w]+\s*\|)?\s*.+?\]'
+
+    def strip_memory_tags(text):
+        return re.sub(_MEMORY_TAG_PATTERN, '', text).strip()
+
+    # Basic tag removal
+    text = "Hello [MEMORY_SAVE: some note] world"
+    result = strip_memory_tags(text)
+    check("strip basic tag", "MEMORY_SAVE" not in result)
+    check("strip preserves text", "Hello" in result and "world" in result)
+
+    # Tag with category
+    text2 = "Start [MEMORY_SAVE: category=bio | User likes hiking] end"
+    result2 = strip_memory_tags(text2)
+    check("strip category tag", "MEMORY_SAVE" not in result2)
+    check("strip category preserves", "Start" in result2 and "end" in result2)
+
+    # Multiple tags
+    text3 = "[MEMORY_SAVE: note1] text [MEMORY_SAVE: category=pref | note2] done"
+    result3 = strip_memory_tags(text3)
+    check("strip multiple tags", "MEMORY_SAVE" not in result3)
+    check("strip multiple preserves", "text" in result3 and "done" in result3)
+
+    # No tags → unchanged
+    text4 = "Plain text with no memory tags at all."
+    result4 = strip_memory_tags(text4)
+    check("strip no tags → unchanged", result4 == text4)
+
+    # Empty string
+    result5 = strip_memory_tags("")
+    check("strip empty → empty", result5 == "")
+
+    # Extract pattern
+    _EXTRACT_PATTERN = r'\[MEMORY_SAVE:\s*(?:category=([\w]+)\s*\|)?\s*(.+?)\]'
+
+    matches = re.findall(_EXTRACT_PATTERN, text2, re.DOTALL)
+    check("extract has match", len(matches) == 1)
+    check("extract category", matches[0][0] == "bio")
+    check("extract text", "hiking" in matches[0][1])
+
+    # Multiple extracts
+    matches2 = re.findall(_EXTRACT_PATTERN, text3, re.DOTALL)
+    check("extract multiple", len(matches2) == 2)
+
+
+# ═════════════════════════════════════════════
+# 35. Seed UI Knowledge — MEMORIES structure validation
+# ═════════════════════════════════════════════
+def test_seed_ui_knowledge_structure():
+    """Validate the MEMORIES list in seed_ui_knowledge.py has correct structure."""
+    print("\n=== TORTURE: Seed UI Knowledge — Structure ===")
+    from scripts.seed_ui_knowledge import MEMORIES
+
+    check("MEMORIES is list", isinstance(MEMORIES, list))
+    check("MEMORIES not empty", len(MEMORIES) > 0)
+    check("MEMORIES > 30 entries", len(MEMORIES) > 30, f"got {len(MEMORIES)}")
+
+    required_keys = {"text", "scope", "category", "tags", "source", "tier"}
+    valid_tiers = {"canon", "register"}
+    valid_sources = {"operator", "tool", "chat", "system"}
+
+    for i, m in enumerate(MEMORIES):
+        prefix = f"MEMORIES[{i}]"
+        for key in required_keys:
+            check(f"{prefix} has {key}", key in m, f"missing {key}")
+
+        # Text not empty
+        check(f"{prefix} text non-empty", len(m.get("text", "")) > 10,
+              f"text too short: {m.get('text', '')[:30]}")
+
+        # Valid tier
+        check(f"{prefix} tier valid", m.get("tier") in valid_tiers,
+              f"tier={m.get('tier')}")
+
+        # Valid source
+        check(f"{prefix} source valid", m.get("source") in valid_sources,
+              f"source={m.get('source')}")
+
+        # Tags is a list
+        check(f"{prefix} tags is list", isinstance(m.get("tags", []), list))
+
+        # Tags not empty
+        check(f"{prefix} tags non-empty", len(m.get("tags", [])) > 0)
+
+        # Scope is string
+        check(f"{prefix} scope is str", isinstance(m.get("scope"), str))
+
+    # Check diversity of categories
+    categories = {m["category"] for m in MEMORIES}
+    check("has meta category", "meta" in categories)
+    check("has capability category", "capability" in categories)
+    check("multiple categories", len(categories) >= 2, f"categories={categories}")
+
+    # Check all have "ui" or dashboard-related tags
+    has_ui_tag = sum(1 for m in MEMORIES if "ui" in m.get("tags", []))
+    check("most have 'ui' tag", has_ui_tag > len(MEMORIES) * 0.5,
+          f"{has_ui_tag}/{len(MEMORIES)}")
+
+
+# ═════════════════════════════════════════════
+# 36. Metering data class ops
+# ═════════════════════════════════════════════
+def test_metering_dataclass_ops():
+    """Test TokenUsage, CostBreakdown, Metering addition and serialisation."""
+    print("\n=== TORTURE: Metering — Data Class Operations ===")
+    from src.observability.metering import TokenUsage, CostBreakdown, Metering
+
+    # TokenUsage addition
+    u1 = TokenUsage(prompt_tokens=100, completion_tokens=50, total_tokens=150)
+    u2 = TokenUsage(prompt_tokens=200, completion_tokens=100, total_tokens=300,
+                    is_estimated=True)
+    u3 = u1 + u2
+    check("usage add prompt", u3.prompt_tokens == 300)
+    check("usage add completion", u3.completion_tokens == 150)
+    check("usage add total", u3.total_tokens == 450)
+    check("usage add estimated propagation", u3.is_estimated is True)
+
+    # CostBreakdown addition with all fields
+    c1 = CostBreakdown(input_cost=0.01, cached_input_cost=0.001,
+                       output_cost=0.02, training_cost=0.003, total_cost=0.034)
+    c2 = CostBreakdown(input_cost=0.02, output_cost=0.04, total_cost=0.06)
+    c3 = c1 + c2
+    check("cost add input", abs(c3.input_cost - 0.03) < 0.0001)
+    check("cost add cached", abs(c3.cached_input_cost - 0.001) < 0.0001)
+    check("cost add output", abs(c3.output_cost - 0.06) < 0.0001)
+    check("cost add total", abs(c3.total_cost - 0.094) < 0.0001)
+    check("cost currency", c3.currency == "USD")
+
+    # to_dict / from_dict round-trip
+    d = c3.to_dict()
+    check("cost to_dict currency", d["currency"] == "USD")
+    c4 = CostBreakdown.from_dict(d)
+    check("cost from_dict round-trip", abs(c4.total_cost - c3.total_cost) < 0.0001)
+
+    # Metering addition preserves model/provider from first non-empty
+    m1 = Metering(usage=u1, cost=c1, model="gpt-4o", provider="openai")
+    m2 = Metering(usage=u2, cost=c2, model="", provider="")
+    m3 = m1 + m2
+    check("metering add model", m3.model == "gpt-4o")
+    check("metering add provider", m3.provider == "openai")
+    check("metering add usage", m3.usage.prompt_tokens == 300)
+
+    # Empty + filled → filled
+    m4 = Metering() + m1
+    check("empty + filled model", m4.model == "gpt-4o")
+
+
+# ═════════════════════════════════════════════
 if __name__ == "__main__":
     test_boundary_policy()
     test_pii_guard_extended()
@@ -2038,6 +2784,17 @@ if __name__ == "__main__":
     test_directive_injector_with_manifest()
     test_model_router_config()
     test_email_tool_torture()
+    test_directives_tool_torture()
+    test_tool_registry_torture()
+    test_validate_manifest()
+    test_audit_changes()
+    test_cost_tracker_pricing_actions()
+    test_web_search_tool_extended()
+    test_metering_helpers_extended()
+    test_llm_client_factory()
+    test_app_memory_helpers()
+    test_seed_ui_knowledge_structure()
+    test_metering_dataclass_ops()
 
     print(f"\n{'='*40}")
     print(f"Results: {PASS} passed, {FAIL} failed")

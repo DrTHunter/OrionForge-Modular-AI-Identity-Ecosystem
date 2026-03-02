@@ -294,8 +294,42 @@ def _append_agent_line_to_chat(chat_id: str, line: str):
 
 
 # ═══════════════════════════════════════════════════════════════════
-#  KNOWLEDGE (Notes)
+#  KNOWLEDGE (Notes) — with folder organisation
 # ═══════════════════════════════════════════════════════════════════
+
+_FOLDERS_FILE = _NOTES_DIR / "folders.json"
+
+# Pinned default folder — guaranteed to always exist, cannot be deleted.
+_SOUL_SCRIPTS_FOLDER_ID = "soul_scripts"
+
+_DEFAULT_FOLDERS: list[dict] = [
+    {"id": _SOUL_SCRIPTS_FOLDER_ID, "name": "Soul Scripts", "emoji": "🧬",
+     "pinned": True, "color": "#818cf8"},
+]
+
+
+def _load_folders() -> list[dict]:
+    """Load knowledge folders from disk, seeding defaults if missing."""
+    folders = _read_json(_FOLDERS_FILE, [])
+    # Ensure pinned defaults always present
+    existing_ids = {f["id"] for f in folders}
+    changed = False
+    for default in _DEFAULT_FOLDERS:
+        if default["id"] not in existing_ids:
+            folders.insert(0, dict(default))
+            changed = True
+    # Ensure pinned folders are always first
+    if changed:
+        pinned = [f for f in folders if f.get("pinned")]
+        regular = [f for f in folders if not f.get("pinned")]
+        folders = pinned + regular
+        _save_folders(folders)
+    return folders
+
+
+def _save_folders(data: list[dict]):
+    _write_json(_FOLDERS_FILE, data)
+
 
 def _load_notes_index() -> list[dict]:
     return _read_json(_NOTES_DIR / "index.json", [])
@@ -309,6 +343,60 @@ def _load_note(note_id: str) -> dict | None:
 
 def _save_note(note_id: str, data: dict):
     _write_json(_NOTES_DIR / f"{note_id}.json", data)
+
+
+# Seed folders on import so the file exists on first run
+_load_folders()
+
+
+def _migrate_legacy_sections():
+    """One-time migration: convert old free-text section names to folder IDs.
+
+    Previously, notes had free-text like "Soul Scripts", "Knowledge", etc.
+    Now `section` stores a folder ID.  This creates matching folders for
+    any legacy text values and updates notes to use the folder IDs.
+    """
+    _MIGRATION_MARKER = _NOTES_DIR / ".folders_migrated"
+    if _MIGRATION_MARKER.exists():
+        return  # already migrated
+
+    folders = _load_folders()
+    folder_names = {f["name"].lower(): f["id"] for f in folders}
+    # Also map the pinned folder names
+    idx = _load_notes_index()
+    changed = False
+
+    for entry in idx:
+        section = entry.get("section", "Uncategorized")
+        # If it's already a valid folder ID, skip
+        if section in {f["id"] for f in folders} or section == "Uncategorized":
+            continue
+        # Map legacy name → folder ID, creating folder if needed
+        key = section.lower()
+        if key in folder_names:
+            fid = folder_names[key]
+        else:
+            # Create a new folder for this legacy section name
+            fid = str(uuid.uuid4())[:8]
+            folders.append({"id": fid, "name": section, "emoji": "📁",
+                            "pinned": False, "color": "#6366f1"})
+            folder_names[key] = fid
+        entry["section"] = fid
+        # Also update the individual note file
+        note = _load_note(entry["id"])
+        if note:
+            note["section"] = fid
+            _save_note(entry["id"], note)
+        changed = True
+
+    if changed:
+        _save_notes_index(idx)
+        _save_folders(folders)
+
+    _MIGRATION_MARKER.write_text("migrated", encoding="utf-8")
+
+
+_migrate_legacy_sections()
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -634,8 +722,10 @@ async def page_vault(request: Request, q: str = "", scope: str = "", category: s
 @app.get("/knowledge", response_class=HTMLResponse)
 async def page_knowledge(request: Request):
     notes = [n for n in _load_notes_index() if not n.get("trashed")]
+    folders = _load_folders()
     return templates.TemplateResponse("knowledge.html", {
         "request": request, "page": "knowledge", "notes": notes,
+        "folders": folders,
     })
 
 @app.get("/knowledge/{note_id}/edit", response_class=HTMLResponse)
@@ -643,8 +733,10 @@ async def page_knowledge_edit(request: Request, note_id: str):
     note = _load_note(note_id)
     if not note:
         return RedirectResponse(url="/knowledge", status_code=302)
+    folders = _load_folders()
     return templates.TemplateResponse("knowledge_edit.html", {
         "request": request, "page": "knowledge", "note": note,
+        "folders": folders,
     })
 
 @app.get("/settings", response_class=HTMLResponse)
@@ -1993,6 +2085,69 @@ async def api_vault_compact():
     before = fm.stats().get("raw_lines", 0)
     fm.rebuild_index()
     return {"before_lines": before, "after_lines": fm.stats().get("raw_lines", 0)}
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  KNOWLEDGE FOLDERS API
+# ═══════════════════════════════════════════════════════════════════
+
+@app.get("/api/knowledge/folders")
+async def api_knowledge_folders_list():
+    return JSONResponse(_load_folders())
+
+@app.post("/api/knowledge/folders")
+async def api_knowledge_folders_create(request: Request):
+    body = await request.json()
+    name = (body.get("name") or "").strip()
+    if not name:
+        return JSONResponse({"error": "Folder name is required"}, 400)
+    folders = _load_folders()
+    folder_id = str(uuid.uuid4())[:8]
+    folder = {
+        "id": folder_id,
+        "name": name,
+        "emoji": body.get("emoji", "📁"),
+        "pinned": False,
+        "color": body.get("color", "#6366f1"),
+    }
+    folders.append(folder)
+    _save_folders(folders)
+    return JSONResponse(folder)
+
+@app.put("/api/knowledge/folders/{folder_id}")
+async def api_knowledge_folders_update(folder_id: str, request: Request):
+    body = await request.json()
+    folders = _load_folders()
+    for f in folders:
+        if f["id"] == folder_id:
+            for key in ("name", "emoji", "color"):
+                if key in body:
+                    f[key] = body[key]
+            _save_folders(folders)
+            return JSONResponse(f)
+    return JSONResponse({"error": "Folder not found"}, 404)
+
+@app.delete("/api/knowledge/folders/{folder_id}")
+async def api_knowledge_folders_delete(folder_id: str):
+    folders = _load_folders()
+    target = next((f for f in folders if f["id"] == folder_id), None)
+    if not target:
+        return JSONResponse({"error": "Folder not found"}, 404)
+    if target.get("pinned"):
+        return JSONResponse({"error": "Cannot delete a pinned folder"}, 403)
+    # Move notes in this folder to Uncategorized
+    idx = _load_notes_index()
+    for entry in idx:
+        if entry.get("section") == folder_id:
+            entry["section"] = "Uncategorized"
+            note = _load_note(entry["id"])
+            if note:
+                note["section"] = "Uncategorized"
+                _save_note(entry["id"], note)
+    _save_notes_index(idx)
+    folders = [f for f in folders if f["id"] != folder_id]
+    _save_folders(folders)
+    return JSONResponse({"ok": True})
 
 
 # ═══════════════════════════════════════════════════════════════════
