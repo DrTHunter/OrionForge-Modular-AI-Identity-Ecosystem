@@ -1,9 +1,7 @@
 {
-  "id": "memory_profile.default_v1",
-  "name": "Default Memory Profile",
+  "name": "Test Name",
   "version": "1.0.0",
   "description": "Balanced memory profile optimized for general-purpose agent conversations.",
-  "author_id": "system",
   "write_policy": {
     "auto_write_enabled": true,
     "importance_threshold": 0.65,
@@ -14,18 +12,7 @@
     "write_frequency_mode": "balanced",
     "write_granularity": "chunk",
     "allow_user_tagged_write_boost": true,
-    "user_star_boost_amount": 0.2,
-    "auto_write_for": [
-      "breakthrough",
-      "decision",
-      "commitment",
-      "history",
-      "preference"
-    ],
-    "ignore_categories": [
-      "smalltalk",
-      "ephemeral_updates"
-    ]
+    "user_star_boost_amount": 0.2
   },
   "retention_policy": {
     "max_total_memories": 5000,
@@ -60,17 +47,7 @@
     "importance_weight": 0.7,
     "prefer_user_marked": true,
     "user_marked_weight": 0.9,
-    "category_priorities": {
-      "relationship": 1,
-      "projects": 0.9,
-      "health": 0.7,
-      "smalltalk": 0.2
-    },
     "filter_sensitive_in_context": true,
-    "sensitive_categories": [
-      "trauma",
-      "medical"
-    ],
     "deduplicate_similar_results": true,
     "max_similar_recall_per_topic": 3
   },
@@ -109,18 +86,10 @@
   },
   "safety_policy": {
     "store_sensitive_topics": "limited",
-    "sensitive_topics": [
-      "self_harm",
-      "abuse",
-      "illegal_activities"
-    ],
     "sensitive_retention_days": 30,
     "anonymize_sensitive_details": true,
     "respect_user_forget_requests": true,
-    "log_forget_actions": true,
-    "never_store_raw_credentials": true,
-    "never_store_exact_addresses": true,
-    "never_store_payment_info": true
+    "log_forget_actions": true
   },
   "performance_policy": {
     "depth_mode": "balanced",
@@ -139,6 +108,5 @@
     "show_memory_ids_to_user": false,
     "log_memory_decisions": true,
     "log_level": "summary"
-  },
-  "_pinned": true
+  }
 }
