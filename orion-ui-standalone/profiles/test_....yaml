@@ -1,0 +1,4 @@
+model: ''
+name: test_...
+system_prompt: test_....system.md
+temperature: 0.7
