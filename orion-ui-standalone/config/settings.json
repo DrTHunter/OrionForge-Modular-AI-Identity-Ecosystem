@@ -48,7 +48,9 @@
         "email",
         "memory",
         "web_search"
-      ]
+      ],
+      "identity_faiss_profile": "__default__",
+      "memory_vault_profile": "__default__"
     }
   },
   "tool_config": {

@@ -762,6 +762,8 @@
   {% set current_model = cfg.get('model', ad.profile.get('model', '')) %}
   {% set current_voice = cfg.get('voice_id', ad.profile.get('voice_id', '')) %}
   {% set current_edge_voice = cfg.get('edge_voice', ad.profile.get('edge_voice', 'alloy')) %}
+  {% set current_identity_profile = ad.profile.get('identity_faiss_profile', '') %}
+  {% set current_memory_profile = ad.profile.get('memory_vault_profile', '') %}
   {% set current_tools = ad.profile.get('allowed_tools', []) %}
   <div class="editor-view" id="editor-{{ name }}">
 
@@ -879,6 +881,27 @@
                 <option value="nova-hd" {{ 'selected' if current_edge_voice == 'nova-hd' else '' }}>nova (HD)</option>
                 <option value="shimmer-hd" {{ 'selected' if current_edge_voice == 'shimmer-hd' else '' }}>shimmer (HD)</option>
               </optgroup>
+            </select>
+          </div>
+        </div>
+
+        <!-- ── Memory Profiles ── -->
+        <div class="modal-section-title">🧠 Memory</div>
+        <div class="config-grid">
+          <div class="config-cell">
+            <div class="config-cell-label"><i class="fas fa-fingerprint" style="font-size:0.65rem;"></i> Identity FAISS Profile</div>
+            <div class="config-cell-value" id="identity-profile-display-{{ name }}">{{ current_identity_profile or '— Select Profile —' }}</div>
+            <select id="identity-profile-{{ name }}" data-current="{{ current_identity_profile }}"
+                    onchange="onMemoryProfileSelect('{{ name }}', 'identity', this)">
+              <option value="">— Select Profile —</option>
+            </select>
+          </div>
+          <div class="config-cell">
+            <div class="config-cell-label"><i class="fas fa-database" style="font-size:0.65rem;"></i> Memory Vault Profile</div>
+            <div class="config-cell-value" id="memory-profile-display-{{ name }}">{{ current_memory_profile or '— Select Profile —' }}</div>
+            <select id="memory-profile-{{ name }}" data-current="{{ current_memory_profile }}"
+                    onchange="onMemoryProfileSelect('{{ name }}', 'memory', this)">
+              <option value="">— Select Profile —</option>
             </select>
           </div>
         </div>
@@ -1230,6 +1253,19 @@
     saveField(agent, 'model', sel.value);
   }
 
+  // ── Memory profile handler ──
+  function onMemoryProfileSelect(agent, type, sel) {
+    if (type === 'identity') {
+      const display = document.getElementById('identity-profile-display-' + agent);
+      if (display) display.textContent = sel.options[sel.selectedIndex]?.textContent || '— Select Profile —';
+      saveField(agent, 'identity_faiss_profile', sel.value);
+    } else {
+      const display = document.getElementById('memory-profile-display-' + agent);
+      if (display) display.textContent = sel.options[sel.selectedIndex]?.textContent || '— Select Profile —';
+      saveField(agent, 'memory_vault_profile', sel.value);
+    }
+  }
+
   // ── Voice / TTS handlers ──
   function onVoiceSelect(agent, type, sel) {
     if (type === 'paid') {
@@ -1499,9 +1535,52 @@
 
   function _esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
+  // Fetch saved memory profiles and populate dropdowns
+  async function populateMemoryProfileDropdowns() {
+    // Identity FAISS profiles
+    try {
+      const resp = await fetch('/api/tools/memory/identity/profiles');
+      const profiles = await resp.json();
+      document.querySelectorAll('select[id^="identity-profile-"]').forEach(sel => {
+        const current = sel.dataset.current || '';
+        let selectedText = '— Select Profile —';
+        profiles.forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p.filename;
+          opt.textContent = p.name + (p.pinned ? ' ★' : '');
+          if (p.filename === current) { opt.selected = true; selectedText = p.name + (p.pinned ? ' ★' : ''); }
+          sel.appendChild(opt);
+        });
+        const agName = sel.id.replace('identity-profile-', '');
+        const disp = document.getElementById('identity-profile-display-' + agName);
+        if (disp && current) disp.textContent = selectedText;
+      });
+    } catch (e) { console.warn('Could not load identity profiles', e); }
+    // Memory Vault profiles
+    try {
+      const resp = await fetch('/api/tools/memory/profiles');
+      const profiles = await resp.json();
+      document.querySelectorAll('select[id^="memory-profile-"]').forEach(sel => {
+        const current = sel.dataset.current || '';
+        let selectedText = '— Select Profile —';
+        profiles.forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p.filename;
+          opt.textContent = p.name + (p.pinned ? ' ★' : '');
+          if (p.filename === current) { opt.selected = true; selectedText = p.name + (p.pinned ? ' ★' : ''); }
+          sel.appendChild(opt);
+        });
+        const agName = sel.id.replace('memory-profile-', '');
+        const disp = document.getElementById('memory-profile-display-' + agName);
+        if (disp && current) disp.textContent = selectedText;
+      });
+    } catch (e) { console.warn('Could not load memory vault profiles', e); }
+  }
+
   populateModelDropdowns();
   populateElevenLabsVoices();
   populateEdgeTTSVoices();
+  populateMemoryProfileDropdowns();
 
   // ══════════════════════════════════════════════
   // Photo Position Editor
