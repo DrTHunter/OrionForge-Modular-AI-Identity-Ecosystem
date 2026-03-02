@@ -3,14 +3,18 @@
 Read-only: agents cannot modify directive files.
 Self-contained: creates its own DirectiveStore on each call so edits
 to directive files are picked up immediately.
+
+Scopes are discovered dynamically from profile YAML files via
+``manifest.SCOPES`` — new agents get their directives picked up
+automatically without code changes.
 """
 
 import json
 import os
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from src.directives.store import DirectiveStore
-from src.directives.manifest import load_manifest, generate_manifest, audit_changes
+from src.directives.manifest import load_manifest, generate_manifest, audit_changes, SCOPES
 
 _BASE_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", ".."))
 _DIRECTIVES_DIR = os.path.join(_BASE_DIR, "directives")
@@ -68,17 +72,24 @@ class DirectivesTool:
         }
 
     @staticmethod
+    def _resolve_scopes(scope: str | None) -> List[str]:
+        """Resolve the scope parameter into a list of scopes to search.
+
+        - Explicit scope  → ``["shared", <scope>]`` (always includes shared)
+        - No scope        → all dynamically-discovered scopes from profiles
+        """
+        if scope:
+            s = scope.lower()
+            return ["shared", s] if s != "shared" else ["shared"]
+        return list(SCOPES)
+
+    @staticmethod
     def execute(arguments: Dict[str, Any]) -> str:
         action = arguments.get("action", "")
         scope = arguments.get("scope")
+        scopes = DirectivesTool._resolve_scopes(scope)
 
-        if scope:
-            scopes = ["shared", scope.lower()] if scope.lower() != "shared" else ["shared"]
-        else:
-            # Discover all scopes from profile YAML files
-            from src.directives.manifest import SCOPES
-            scopes = list(SCOPES)
-
+        # Fresh store each call — picks up file edits immediately
         store = DirectiveStore(_DIRECTIVES_DIR, scopes=scopes)
 
         if action == "search":
