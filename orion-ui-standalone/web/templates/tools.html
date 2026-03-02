@@ -4603,25 +4603,31 @@
     if (cnt === 0) {
       listEl.innerHTML = '<div style="color:#64748b;font-size:0.85rem;padding:1rem;text-align:center;">No saved identity profiles yet. Use <strong>Save As…</strong> to create one.</div>';
     } else {
-      listEl.innerHTML = _savedIdentityProfilesList.map(p => `
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0.75rem;background:rgba(24,24,27,0.5);border:1px solid rgba(42,42,58,0.4);border-radius:0.5rem;margin-bottom:0.375rem;">
+      listEl.innerHTML = _savedIdentityProfilesList.map(p => {
+        const isPinned = !!p.pinned;
+        const pinIcon = isPinned ? '<span style="color:#fbbf24;margin-right:0.35rem;" title="Pinned — cannot be deleted">&#128204;</span>' : '';
+        const borderColor = isPinned ? 'rgba(251,191,36,0.35)' : 'rgba(42,42,58,0.4)';
+        const deleteBtn = isPinned ? '' : `<button class="btn btn-secondary" style="font-size:0.7rem;padding:0.25rem 0.6rem;color:#f87171;" onclick="deleteSavedIdentityProfileByName('${p.filename}')">Delete</button>`;
+        return `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0.75rem;background:rgba(24,24,27,0.5);border:1px solid ${borderColor};border-radius:0.5rem;margin-bottom:0.375rem;">
           <div style="flex:1;min-width:0;">
-            <div style="font-weight:600;color:#e2e8f0;font-size:0.85rem;">${p.name || p.filename}</div>
+            <div style="font-weight:600;color:#e2e8f0;font-size:0.85rem;">${pinIcon}${p.name || p.filename}</div>
             <div style="font-size:0.72rem;color:#64748b;">${p.description || 'No description'} &middot; v${p.version || '?'}</div>
           </div>
           <div style="display:flex;gap:0.5rem;">
             <button class="btn btn-primary" style="font-size:0.7rem;padding:0.25rem 0.6rem;" onclick="loadSavedIdentityProfileByName('${p.filename}')">Load</button>
-            <button class="btn btn-secondary" style="font-size:0.7rem;padding:0.25rem 0.6rem;color:#f87171;" onclick="deleteSavedIdentityProfileByName('${p.filename}')">Delete</button>
+            ${deleteBtn}
           </div>
-        </div>
-      `).join('');
+        </div>`;
+      }).join('');
     }
     // Update Identity dropdown
     const sel = document.getElementById('ip-saved-profiles-select');
     if (sel) {
-      sel.innerHTML = '<option value="">— Load a Saved Profile —</option>' + _savedIdentityProfilesList.map(p =>
-        `<option value="${p.filename}">${p.name || p.filename} (v${p.version || '?'})</option>`
-      ).join('');
+      sel.innerHTML = '<option value="">— Load a Saved Profile —</option>' + _savedIdentityProfilesList.map(p => {
+        const pin = p.pinned ? '\uD83D\uDCCC ' : '';
+        return `<option value="${p.filename}">${pin}${p.name || p.filename} (v${p.version || '?'})</option>`;
+      }).join('');
     }
   }
 
@@ -4679,6 +4685,7 @@
   function deleteSavedIdentityProfile() {
     const sel = document.getElementById('ip-saved-profiles-select');
     if (!sel || !sel.value) { showToast('Select a profile first', true); return; }
+    if (sel.value === '__default__') { showToast('The Default profile cannot be deleted', true); return; }
     deleteSavedIdentityProfileByName(sel.value);
   }
 
@@ -4697,25 +4704,31 @@
     if (cnt === 0) {
       listEl.innerHTML = '<div style="color:#64748b;font-size:0.85rem;padding:1rem;text-align:center;">No saved memory profiles yet. Use <strong>Save As…</strong> to create one.</div>';
     } else {
-      listEl.innerHTML = _savedMemoryProfilesList.map(p => `
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0.75rem;background:rgba(24,24,27,0.5);border:1px solid rgba(42,42,58,0.4);border-radius:0.5rem;margin-bottom:0.375rem;">
+      listEl.innerHTML = _savedMemoryProfilesList.map(p => {
+        const isPinned = !!p.pinned;
+        const pinIcon = isPinned ? '<span style="color:#fbbf24;margin-right:0.35rem;" title="Pinned — cannot be deleted">&#128204;</span>' : '';
+        const borderColor = isPinned ? 'rgba(251,191,36,0.35)' : 'rgba(42,42,58,0.4)';
+        const deleteBtn = isPinned ? '' : `<button class="btn btn-secondary" style="font-size:0.7rem;padding:0.25rem 0.6rem;color:#f87171;" onclick="deleteSavedMemoryProfileByName('${p.filename}')">Delete</button>`;
+        return `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0.75rem;background:rgba(24,24,27,0.5);border:1px solid ${borderColor};border-radius:0.5rem;margin-bottom:0.375rem;">
           <div style="flex:1;min-width:0;">
-            <div style="font-weight:600;color:#e2e8f0;font-size:0.85rem;">${p.name || p.filename}</div>
+            <div style="font-weight:600;color:#e2e8f0;font-size:0.85rem;">${pinIcon}${p.name || p.filename}</div>
             <div style="font-size:0.72rem;color:#64748b;">${p.description || 'No description'} &middot; v${p.version || '?'}</div>
           </div>
           <div style="display:flex;gap:0.5rem;">
             <button class="btn btn-primary" style="font-size:0.7rem;padding:0.25rem 0.6rem;" onclick="loadSavedMemoryProfileByName('${p.filename}')">Load</button>
-            <button class="btn btn-secondary" style="font-size:0.7rem;padding:0.25rem 0.6rem;color:#f87171;" onclick="deleteSavedMemoryProfileByName('${p.filename}')">Delete</button>
+            ${deleteBtn}
           </div>
-        </div>
-      `).join('');
+        </div>`;
+      }).join('');
     }
     // Update Memory dropdown
     const sel = document.getElementById('mp-saved-profiles-select');
     if (sel) {
-      sel.innerHTML = '<option value="">— Load a Saved Profile —</option>' + _savedMemoryProfilesList.map(p =>
-        `<option value="${p.filename}">${p.name || p.filename} (v${p.version || '?'})</option>`
-      ).join('');
+      sel.innerHTML = '<option value="">— Load a Saved Profile —</option>' + _savedMemoryProfilesList.map(p => {
+        const pin = p.pinned ? '\uD83D\uDCCC ' : '';
+        return `<option value="${p.filename}">${pin}${p.name || p.filename} (v${p.version || '?'})</option>`;
+      }).join('');
     }
   }
 
@@ -4773,6 +4786,7 @@
   function deleteSavedMemoryProfile() {
     const sel = document.getElementById('mp-saved-profiles-select');
     if (!sel || !sel.value) { showToast('Select a profile first', true); return; }
+    if (sel.value === '__default__') { showToast('The Default profile cannot be deleted', true); return; }
     deleteSavedMemoryProfileByName(sel.value);
   }
 
