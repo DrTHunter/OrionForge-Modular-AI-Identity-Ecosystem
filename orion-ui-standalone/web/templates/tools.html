@@ -2303,8 +2303,7 @@
       <!-- Save / Reset -->
       <div style="display:flex;justify-content:flex-end;gap:0.75rem;margin-top:1.5rem;padding-bottom:1rem;">
         <button class="btn btn-secondary" onclick="resetIdentityProfile()">Reset to Defaults</button>
-        <button class="btn btn-primary" onclick="saveIdentityProfile()">Save Identity Profile</button>
-        <button class="btn btn-secondary" style="margin-left:0.25rem;" onclick="openSaveAsIdentityPopup()">&#128190; Save As&hellip;</button>
+        <button class="btn btn-primary" onclick="openSaveAsIdentityPopup()">&#128190; Save Profile&hellip;</button>
       </div>
 
     </div>
@@ -3341,8 +3340,7 @@
       <!-- Save Bar -->
       <div class="action-bar">
         <button class="btn btn-secondary" onclick="resetMemoryProfile()">Reset to Defaults</button>
-        <button class="btn btn-primary" onclick="saveMemoryProfile()">Save Memory Profile</button>
-        <button class="btn btn-secondary" style="margin-left:0.25rem;" onclick="openSaveAsMemoryPopup()">&#128190; Save As&hellip;</button>
+        <button class="btn btn-primary" onclick="openSaveAsMemoryPopup()">&#128190; Save Profile&hellip;</button>
       </div>
     </div>
   </div>
@@ -3993,32 +3991,7 @@
     };
   }
 
-  async function saveIdentityProfile() {
-    const profile = _collectIdentityProfile();
-    try {
-      // Save to active identity_profile.json
-      const resp = await fetch('/api/tools/memory/identity', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(profile),
-      });
-      // Also save as a named identity profile using the profile name
-      const fname = (profile.name || 'Default Identity Profile').replace(/[^\w\-]/g, '_');
-      await fetch('/api/tools/memory/identity/profiles', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filename: fname, profile }),
-      });
-      refreshSavedIdentityProfilesList();
-      if (resp.ok) {
-        showToast('Identity profile saved + stored as "' + fname + '"');
-      } else {
-        showToast('Save failed', true);
-      }
-    } catch (e) {
-      showToast('Save failed: ' + e.message, true);
-    }
-  }
+  // saveIdentityProfile removed — all saves go through Save As popup
 
   async function resetIdentityProfile() {
     if (!confirm('Reset all identity profile settings to defaults? This cannot be undone.')) return;
@@ -4191,32 +4164,7 @@
     };
   }
 
-  async function saveMemoryProfile() {
-    const profile = _collectMemoryProfile();
-    try {
-      // Save to active memory_profile.json
-      const resp = await fetch('/api/tools/memory/profile', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(profile),
-      });
-      // Also save as a named profile using the profile name
-      const fname = (profile.name || 'Default Memory Profile').replace(/[^\w\-]/g, '_');
-      await fetch('/api/tools/memory/profiles', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filename: fname, profile }),
-      });
-      refreshSavedMemoryProfilesList();
-      if (resp.ok) {
-        showToast('Memory profile saved + stored as "' + fname + '"');
-      } else {
-        showToast('Save failed', true);
-      }
-    } catch (e) {
-      showToast('Save failed: ' + e.message, true);
-    }
-  }
+  // saveMemoryProfile removed — all saves go through Save As popup
 
   async function resetMemoryProfile() {
     if (!confirm('Reset all memory profile settings to defaults? This cannot be undone.')) return;
@@ -4576,11 +4524,21 @@
   function closeDimsPopup() { _hidePopup('dims-popup-overlay'); }
   function openSavedIdentityProfilesPopup() { refreshSavedIdentityProfilesList(); _showPopup('identity-profiles-popup-overlay'); }
   function closeSavedIdentityProfilesPopup() { _hidePopup('identity-profiles-popup-overlay'); }
-  function openSaveAsIdentityPopup() { _showPopup('identity-saveas-popup-overlay'); document.getElementById('identity-saveas-filename').focus(); }
+  function openSaveAsIdentityPopup() {
+    const name = (document.getElementById('ip-name').value || '').trim();
+    document.getElementById('identity-saveas-filename').value = name;
+    _showPopup('identity-saveas-popup-overlay');
+    document.getElementById('identity-saveas-filename').focus();
+  }
   function closeSaveAsIdentityPopup() { _hidePopup('identity-saveas-popup-overlay'); }
   function openSavedMemoryProfilesPopup() { refreshSavedMemoryProfilesList(); _showPopup('memory-profiles-popup-overlay'); }
   function closeSavedMemoryProfilesPopup() { _hidePopup('memory-profiles-popup-overlay'); }
-  function openSaveAsMemoryPopup() { _showPopup('memory-saveas-popup-overlay'); document.getElementById('memory-saveas-filename').focus(); }
+  function openSaveAsMemoryPopup() {
+    const name = (document.getElementById('mp-name').value || '').trim();
+    document.getElementById('memory-saveas-filename').value = name;
+    _showPopup('memory-saveas-popup-overlay');
+    document.getElementById('memory-saveas-filename').focus();
+  }
   function closeSaveAsMemoryPopup() { _hidePopup('memory-saveas-popup-overlay'); }
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
@@ -4635,7 +4593,16 @@
     const fname = document.getElementById('identity-saveas-filename').value.trim();
     if (!fname) { showToast('Enter a profile name', true); return; }
     const profile = _collectIdentityProfile();
+    // Use the Save As filename as the profile's display name
+    profile.name = fname;
     try {
+      // Save to active identity_profile.json
+      await fetch('/api/tools/memory/identity', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(profile),
+      });
+      // Save as named profile file
       const resp = await fetch('/api/tools/memory/identity/profiles', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -4644,7 +4611,8 @@
       if (resp.ok) {
         showToast('Identity profile saved as "' + fname + '"');
         closeSaveAsIdentityPopup();
-        document.getElementById('identity-saveas-filename').value = '';
+        // Update the Profile Info name field to match
+        document.getElementById('ip-name').value = fname;
         refreshSavedIdentityProfilesList();
       } else { showToast('Save failed', true); }
     } catch (e) { showToast('Save failed: ' + e.message, true); }
@@ -4736,7 +4704,16 @@
     const fname = document.getElementById('memory-saveas-filename').value.trim();
     if (!fname) { showToast('Enter a profile name', true); return; }
     const profile = _collectMemoryProfile();
+    // Use the Save As filename as the profile's display name
+    profile.name = fname;
     try {
+      // Save to active memory_profile.json
+      await fetch('/api/tools/memory/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(profile),
+      });
+      // Save as named profile file
       const resp = await fetch('/api/tools/memory/profiles', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -4745,7 +4722,8 @@
       if (resp.ok) {
         showToast('Memory profile saved as "' + fname + '"');
         closeSaveAsMemoryPopup();
-        document.getElementById('memory-saveas-filename').value = '';
+        // Update the Profile Info name field to match
+        document.getElementById('mp-name').value = fname;
         refreshSavedMemoryProfilesList();
       } else { showToast('Save failed', true); }
     } catch (e) { showToast('Save failed: ' + e.message, true); }
