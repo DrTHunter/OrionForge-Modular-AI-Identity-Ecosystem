@@ -649,6 +649,45 @@
   }
   .task-map-select:focus { border-color: #6366f1; }
   .task-map-select option { background: #1a1a24; color: #d4d4d8; }
+
+  /* ── Embedding Model Info Popup ── */
+  .embed-info-card { cursor: pointer; position: relative; transition: box-shadow 0.2s, border-color 0.2s; }
+  .embed-info-card:hover { border-color: #6366f1; box-shadow: 0 0 12px rgba(99,102,241,0.25); }
+  .embed-popup-overlay {
+    display: none; position: fixed; inset: 0; z-index: 9998;
+    background: rgba(0,0,0,0.45); backdrop-filter: blur(3px);
+  }
+  .embed-popup-overlay.active { display: flex; align-items: center; justify-content: center; }
+  .embed-popup {
+    background: #1a1a2e; border: 1px solid #3b3b5c; border-radius: 0.75rem;
+    padding: 1.75rem 2rem; max-width: 520px; width: 92vw;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.55); color: #e2e8f0;
+    animation: popIn 0.18s ease-out;
+  }
+  @keyframes popIn { from { transform: scale(0.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .embed-popup h3 {
+    margin: 0 0 0.75rem; font-size: 1.125rem; color: #a5b4fc;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .embed-popup .ep-row {
+    display: grid; grid-template-columns: 140px 1fr; gap: 0.25rem 0.75rem;
+    font-size: 0.85rem; line-height: 1.7;
+  }
+  .embed-popup .ep-label { color: #94a3b8; font-weight: 600; text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.04em; }
+  .embed-popup .ep-val   { color: #e2e8f0; }
+  .embed-popup .ep-badge {
+    display: inline-block; padding: 0.15rem 0.5rem; border-radius: 999px;
+    font-size: 0.7rem; font-weight: 600; margin-left: 0.25rem;
+  }
+  .embed-popup .ep-badge.green  { background: rgba(34,211,238,0.12); color: #22d3ee; }
+  .embed-popup .ep-badge.yellow { background: rgba(251,191,36,0.12); color: #fbbf24; }
+  .embed-popup .ep-divider { border: none; border-top: 1px solid #2a2a3a; margin: 0.75rem 0; }
+  .embed-popup .ep-note { font-size: 0.78rem; color: #64748b; line-height: 1.6; margin-top: 0.25rem; }
+  .embed-popup .ep-close {
+    position: absolute; top: 0.75rem; right: 1rem; background: none; border: none;
+    color: #64748b; font-size: 1.25rem; cursor: pointer; padding: 0.25rem;
+  }
+  .embed-popup .ep-close:hover { color: #e2e8f0; }
 </style>
 
 <div class="tools-shell p-6 md:p-10">
@@ -1431,10 +1470,10 @@
           <div class="ct-card-value" style="color:#22d3ee;">{{ faiss_stats.total_memories }}</div>
           <div class="ct-card-sub">entries in vault</div>
         </div>
-        <div class="ct-card">
-          <div class="ct-card-label">Embedding Model</div>
+        <div class="ct-card embed-info-card" onclick="openEmbedPopup()">
+          <div class="ct-card-label">Embedding Model &#9432;</div>
           <div class="ct-card-value" style="font-size:1rem;color:#a5b4fc;">{{ faiss_stats.embedding_model }}</div>
-          <div class="ct-card-sub">sentence-transformers</div>
+          <div class="ct-card-sub">sentence-transformers &middot; click for details</div>
         </div>
         <div class="ct-card">
           <div class="ct-card-label">Index Type</div>
@@ -2283,10 +2322,10 @@
           <div class="ct-card-value" style="color:#22d3ee;">{{ faiss_stats.total_memories }}</div>
           <div class="ct-card-sub">entries in vault</div>
         </div>
-        <div class="ct-card">
-          <div class="ct-card-label">Embedding Model</div>
+        <div class="ct-card embed-info-card" onclick="openEmbedPopup()">
+          <div class="ct-card-label">Embedding Model &#9432;</div>
           <div class="ct-card-value" style="font-size:1rem;color:#a5b4fc;">{{ faiss_stats.embedding_model }}</div>
-          <div class="ct-card-sub">sentence-transformers</div>
+          <div class="ct-card-sub">sentence-transformers &middot; click for details</div>
         </div>
         <div class="ct-card">
           <div class="ct-card-label">Index Type</div>
@@ -4477,5 +4516,54 @@
   if (location.hash === '#router') {
     setTimeout(() => showRouterPanel(), 100);
   }
+
+  // ── Embedding Model Info Popup ──
+  function openEmbedPopup() {
+    document.getElementById('embed-popup-overlay').classList.add('active');
+  }
+  function closeEmbedPopup() {
+    document.getElementById('embed-popup-overlay').classList.remove('active');
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeEmbedPopup(); });
 </script>
+
+<!-- Embedding Model Popup -->
+<div id="embed-popup-overlay" class="embed-popup-overlay" onclick="if(event.target===this)closeEmbedPopup()">
+  <div class="embed-popup" style="position:relative;">
+    <button class="ep-close" onclick="closeEmbedPopup()">&times;</button>
+    <h3>&#129504; Embedding Model Details</h3>
+    <div class="ep-row">
+      <span class="ep-label">Model</span>
+      <span class="ep-val"><strong>{{ faiss_stats.embedding_model }}</strong></span>
+      <span class="ep-label">Library</span>
+      <span class="ep-val">sentence-transformers (Hugging Face)</span>
+      <span class="ep-label">Dimensions</span>
+      <span class="ep-val">{{ faiss_stats.vector_dimensions }} floats per embedding</span>
+      <span class="ep-label">Max Tokens</span>
+      <span class="ep-val">384 word-pieces (~250&ndash;300 words)</span>
+      <span class="ep-label">Similarity</span>
+      <span class="ep-val">Cosine (inner-product on normalized vectors)</span>
+      <span class="ep-label">Runs On</span>
+      <span class="ep-val">Local CPU <span class="ep-badge green">No API Key</span></span>
+      <span class="ep-label">Speed</span>
+      <span class="ep-val">~5&ndash;15 ms per embedding (CPU)</span>
+      <span class="ep-label">MTEB Rank</span>
+      <span class="ep-val">Top-tier open-source (768d class)</span>
+    </div>
+    <hr class="ep-divider">
+    <div class="ep-note">
+      <strong>Why this model?</strong> &mdash; <em>all-mpnet-base-v2</em> is the highest-quality general-purpose sentence encoder
+      in the sentence-transformers family. It produces 768-dimensional vectors that capture rich semantic meaning,
+      runs entirely offline with zero API costs, and uses only ~400 MB of RAM. It consistently ranks at the top
+      of Hugging Face's Massive Text Embedding Benchmark (MTEB) for models in this size class.
+    </div>
+    <hr class="ep-divider">
+    <div class="ep-note">
+      <strong>vs OpenAI text-embedding-3-large</strong> &mdash; OpenAI's model scores ~2&ndash;4% higher on academic
+      benchmarks and supports up to 3,072 dimensions, but requires an API key, incurs per-token costs, adds network
+      latency, and sends your data to external servers. For local, private identity memory, <em>all-mpnet-base-v2</em>
+      provides excellent quality with full data sovereignty.
+    </div>
+  </div>
+</div>
 {% endblock %}
