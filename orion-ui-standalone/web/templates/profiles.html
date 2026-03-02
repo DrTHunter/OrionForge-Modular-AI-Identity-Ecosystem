@@ -167,7 +167,7 @@
   }
   .agent-card-header .agent-photo {
     width: 100%; height: 100%;
-    object-fit: cover; position: absolute; inset: 0;
+    object-fit: cover; object-position: top; position: absolute; inset: 0;
     z-index: 2;
   }
   /* Status badge */
@@ -573,6 +573,64 @@
     background-repeat: no-repeat; background-position: right 0.75rem center;
     padding-right: 2rem;
   }
+
+  /* ══ Photo Position Editor Modal ══ */
+  .photo-editor-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+    display: none; align-items: center; justify-content: center; z-index: 200;
+  }
+  .photo-editor-overlay.open { display: flex; }
+  .photo-editor-box {
+    background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 1rem;
+    padding: 1.5rem; width: 480px; max-width: 94vw;
+    display: flex; flex-direction: column; gap: 1.25rem;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.5);
+  }
+  .photo-editor-title {
+    font-size: 1rem; font-weight: 700; color: #fff;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .photo-editor-viewport {
+    width: 100%; aspect-ratio: 320 / 130;
+    border-radius: 0.75rem; overflow: hidden;
+    position: relative; cursor: grab;
+    background: #0d1224; border: 2px solid rgba(99,102,241,0.3);
+  }
+  .photo-editor-viewport:active { cursor: grabbing; }
+  .photo-editor-viewport img {
+    position: absolute; top: 0; left: 0;
+    transform-origin: 0 0; pointer-events: none;
+    user-select: none; -webkit-user-select: none;
+  }
+  .photo-editor-hint {
+    font-size: 0.75rem; color: #71717a; text-align: center;
+    margin-top: -0.5rem;
+  }
+  .photo-editor-controls {
+    display: flex; align-items: center; gap: 1rem;
+  }
+  .photo-editor-controls label {
+    font-size: 0.75rem; font-weight: 600; color: #a1a1aa;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .photo-editor-controls input[type=range] {
+    flex: 1; accent-color: #6366f1; height: 6px;
+  }
+  .photo-editor-zoom-val {
+    font-size: 0.75rem; font-weight: 700; color: #818cf8;
+    min-width: 3rem; text-align: right;
+  }
+  .photo-editor-actions {
+    display: flex; justify-content: flex-end; gap: 0.75rem;
+    padding-top: 0.5rem; border-top: 1px solid #2a2a3a;
+  }
+  .photo-editor-reset {
+    margin-right: auto; background: none; border: 1px solid #2a2a3a;
+    color: #71717a; padding: 0.45rem 1rem; border-radius: 0.5rem;
+    font-size: 0.8125rem; font-weight: 600; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .photo-editor-reset:hover { border-color: #ef4444; color: #fca5a5; }
 </style>
 
 {% set _COLORS = ['#4f46e5','#6366f1','#818cf8','#9333ea','#a855f7','#db2777','#ec4899','#ef4444','#f97316','#ea580c','#f59e0b','#eab308','#10b981','#059669','#0891b2','#06b6d4','#3b82f6','#2563eb','#71717a','#a1a1aa'] %}
@@ -661,7 +719,8 @@
         <div class="agent-card-header"
              style="background: linear-gradient(135deg, {{ agent_color }}33, {{ agent_color }}0d);">
           {% if av.get('image') %}
-          <img class="agent-photo" src="{{ av.image }}" alt="{{ name }}">
+          <img class="agent-photo" src="{{ av.image }}" alt="{{ name }}"
+               style="{{ 'object-position: %s%% %s%%; transform: scale(%s); transform-origin: %s%% %s%%;'|format(av.get('photo_x', 50), av.get('photo_y', 0), av.get('photo_zoom', 1), av.get('photo_x', 50), av.get('photo_y', 0)) if av.get('photo_zoom') else '' }}">
           {% else %}
           <i class="fas fa-user-astronaut agent-icon" style="color: {{ agent_color }};"></i>
           {% endif %}
@@ -726,6 +785,9 @@
           <div class="avatar-menu" id="avatar-menu-{{ name }}">
             <button class="avatar-menu-item" onclick="document.getElementById('file-{{ name }}').click(); closeAvatarMenu('{{ name }}')">
               📷 Change Picture
+            </button>
+            <button class="avatar-menu-item" onclick="openPhotoEditor('{{ name }}'); closeAvatarMenu('{{ name }}')">
+              ✂ Edit Position
             </button>
             <button class="avatar-menu-item danger" onclick="clearImage('{{ name }}'); closeAvatarMenu('{{ name }}')">
               ✕ Remove Picture
@@ -950,11 +1012,33 @@
 </div>
 
 
+<!-- ══ PHOTO POSITION EDITOR MODAL ══ -->
+<div class="photo-editor-overlay" id="photo-editor-modal">
+  <div class="photo-editor-box">
+    <div class="photo-editor-title">✂ Adjust Photo Position</div>
+    <div class="photo-editor-viewport" id="photo-editor-viewport">
+      <img id="photo-editor-img" src="" alt="Preview">
+    </div>
+    <div class="photo-editor-hint">Drag to reposition · Scroll or use slider to zoom</div>
+    <div class="photo-editor-controls">
+      <label>Zoom</label>
+      <input type="range" id="photo-editor-zoom" min="100" max="300" value="100" step="1">
+      <span class="photo-editor-zoom-val" id="photo-editor-zoom-val">100%</span>
+    </div>
+    <div class="photo-editor-actions">
+      <button class="photo-editor-reset" onclick="resetPhotoEditor()">Reset</button>
+      <button class="btn btn-secondary" onclick="closePhotoEditor()">Cancel</button>
+      <button class="btn btn-primary" onclick="savePhotoPosition()">Apply</button>
+    </div>
+  </div>
+</div>
+
 <script>
   // ── DATA ──
   const _allNotes = {{ notes | tojson }};
   const _connections = {{ connections | tojson }};
   const _allToolNames = {{ all_tool_names | tojson }};
+  const _avatarMap = {{ avatar_map | tojson }};
 
   let _currentEditor = null;
   let _addNotesAgent = null;
@@ -1418,6 +1502,204 @@
   populateModelDropdowns();
   populateElevenLabsVoices();
   populateEdgeTTSVoices();
+
+  // ══════════════════════════════════════════════
+  // Photo Position Editor
+  // ══════════════════════════════════════════════
+  let _peAgent = null;
+  let _peZoom = 1;
+  let _peX = 50;   // percent offset X (0-100)
+  let _peY = 0;    // percent offset Y (0-100)
+  let _peDragging = false;
+  let _peDragStart = {x:0, y:0};
+  let _peStartX = 50;
+  let _peStartY = 0;
+
+  function openPhotoEditor(agent) {
+    const av = _avatarMap[agent];
+    if (!av || !av.image) { showToast('No photo to edit', true); return; }
+    _peAgent = agent;
+    _peZoom = parseFloat(av.photo_zoom || 1);
+    _peX = parseFloat(av.photo_x ?? 50);
+    _peY = parseFloat(av.photo_y ?? 0);
+
+    const img = document.getElementById('photo-editor-img');
+    img.src = av.image;
+    img.onload = () => { _peApplyTransform(); };
+
+    const slider = document.getElementById('photo-editor-zoom');
+    slider.value = Math.round(_peZoom * 100);
+    document.getElementById('photo-editor-zoom-val').textContent = Math.round(_peZoom * 100) + '%';
+
+    document.getElementById('photo-editor-modal').classList.add('open');
+  }
+
+  function closePhotoEditor() {
+    document.getElementById('photo-editor-modal').classList.remove('open');
+    _peAgent = null;
+  }
+
+  function resetPhotoEditor() {
+    _peZoom = 1; _peX = 50; _peY = 0;
+    const slider = document.getElementById('photo-editor-zoom');
+    slider.value = 100;
+    document.getElementById('photo-editor-zoom-val').textContent = '100%';
+    _peApplyTransform();
+  }
+
+  function _peApplyTransform() {
+    const viewport = document.getElementById('photo-editor-viewport');
+    const img = document.getElementById('photo-editor-img');
+    const vw = viewport.clientWidth;
+    const vh = viewport.clientHeight;
+    const nw = img.naturalWidth;
+    const nh = img.naturalHeight;
+    if (!nw || !nh) return;
+
+    // Fit image to cover the viewport at zoom=1
+    const coverScale = Math.max(vw / nw, vh / nh);
+    const scaledW = nw * coverScale * _peZoom;
+    const scaledH = nh * coverScale * _peZoom;
+    img.style.width = scaledW + 'px';
+    img.style.height = scaledH + 'px';
+
+    // Compute position from percentage offsets
+    const maxPanX = Math.max(0, scaledW - vw);
+    const maxPanY = Math.max(0, scaledH - vh);
+    const px = -(_peX / 100) * maxPanX;
+    const py = -(_peY / 100) * maxPanY;
+    img.style.left = px + 'px';
+    img.style.top = py + 'px';
+    img.style.transform = 'none';
+  }
+
+  // Zoom slider
+  document.getElementById('photo-editor-zoom').addEventListener('input', function() {
+    _peZoom = this.value / 100;
+    document.getElementById('photo-editor-zoom-val').textContent = this.value + '%';
+    _peApplyTransform();
+  });
+
+  // Mouse wheel zoom
+  document.getElementById('photo-editor-viewport').addEventListener('wheel', function(e) {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -5 : 5;
+    const slider = document.getElementById('photo-editor-zoom');
+    let val = parseInt(slider.value) + delta;
+    val = Math.max(100, Math.min(300, val));
+    slider.value = val;
+    _peZoom = val / 100;
+    document.getElementById('photo-editor-zoom-val').textContent = val + '%';
+    _peApplyTransform();
+  }, {passive: false});
+
+  // Drag to pan
+  const _peVP = document.getElementById('photo-editor-viewport');
+  _peVP.addEventListener('mousedown', function(e) {
+    e.preventDefault();
+    _peDragging = true;
+    _peDragStart = {x: e.clientX, y: e.clientY};
+    _peStartX = _peX;
+    _peStartY = _peY;
+  });
+  document.addEventListener('mousemove', function(e) {
+    if (!_peDragging) return;
+    const viewport = document.getElementById('photo-editor-viewport');
+    const img = document.getElementById('photo-editor-img');
+    const vw = viewport.clientWidth;
+    const vh = viewport.clientHeight;
+    const nw = img.naturalWidth;
+    const nh = img.naturalHeight;
+    const coverScale = Math.max(vw / nw, vh / nh);
+    const scaledW = nw * coverScale * _peZoom;
+    const scaledH = nh * coverScale * _peZoom;
+    const maxPanX = Math.max(1, scaledW - vw);
+    const maxPanY = Math.max(1, scaledH - vh);
+
+    const dx = e.clientX - _peDragStart.x;
+    const dy = e.clientY - _peDragStart.y;
+    _peX = Math.max(0, Math.min(100, _peStartX - (dx / maxPanX) * 100));
+    _peY = Math.max(0, Math.min(100, _peStartY - (dy / maxPanY) * 100));
+    _peApplyTransform();
+  });
+  document.addEventListener('mouseup', function() { _peDragging = false; });
+
+  // Touch drag
+  _peVP.addEventListener('touchstart', function(e) {
+    if (e.touches.length !== 1) return;
+    _peDragging = true;
+    _peDragStart = {x: e.touches[0].clientX, y: e.touches[0].clientY};
+    _peStartX = _peX;
+    _peStartY = _peY;
+  }, {passive: true});
+  document.addEventListener('touchmove', function(e) {
+    if (!_peDragging || e.touches.length !== 1) return;
+    const viewport = document.getElementById('photo-editor-viewport');
+    const img = document.getElementById('photo-editor-img');
+    const vw = viewport.clientWidth;
+    const vh = viewport.clientHeight;
+    const nw = img.naturalWidth;
+    const nh = img.naturalHeight;
+    const coverScale = Math.max(vw / nw, vh / nh);
+    const scaledW = nw * coverScale * _peZoom;
+    const scaledH = nh * coverScale * _peZoom;
+    const maxPanX = Math.max(1, scaledW - vw);
+    const maxPanY = Math.max(1, scaledH - vh);
+
+    const dx = e.touches[0].clientX - _peDragStart.x;
+    const dy = e.touches[0].clientY - _peDragStart.y;
+    _peX = Math.max(0, Math.min(100, _peStartX - (dx / maxPanX) * 100));
+    _peY = Math.max(0, Math.min(100, _peStartY - (dy / maxPanY) * 100));
+    _peApplyTransform();
+  }, {passive: true});
+  document.addEventListener('touchend', function() { _peDragging = false; });
+
+  async function savePhotoPosition() {
+    if (!_peAgent) return;
+    const payload = {
+      photo_zoom: Math.round(_peZoom * 1000) / 1000,
+      photo_x: Math.round(_peX * 100) / 100,
+      photo_y: Math.round(_peY * 100) / 100,
+    };
+    await fetch(`/api/profiles/${_peAgent}/avatar`, {
+      method: 'PUT', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload),
+    });
+
+    // Update live avatar_map so re-opening works
+    if (_avatarMap[_peAgent]) {
+      _avatarMap[_peAgent].photo_zoom = payload.photo_zoom;
+      _avatarMap[_peAgent].photo_x = payload.photo_x;
+      _avatarMap[_peAgent].photo_y = payload.photo_y;
+    }
+
+    // Apply to card header photo
+    _applyPhotoCrop(_peAgent, payload);
+
+    showToast('Photo position saved');
+    closePhotoEditor();
+  }
+
+  function _applyPhotoCrop(agent, crop) {
+    // Apply to the agent card in the grid
+    const card = document.querySelector(`.agent-card[data-agent="${agent}"] .agent-photo`);
+    if (card) {
+      if (crop.photo_zoom && crop.photo_zoom !== 1) {
+        card.style.objectPosition = `${crop.photo_x}% ${crop.photo_y}%`;
+        card.style.transform = `scale(${crop.photo_zoom})`;
+        card.style.transformOrigin = `${crop.photo_x}% ${crop.photo_y}%`;
+      } else {
+        card.style.objectPosition = `${crop.photo_x}% ${crop.photo_y}%`;
+        card.style.transform = '';
+        card.style.transformOrigin = '';
+      }
+    }
+    // Apply to editor avatar too
+    const edAvatar = document.querySelector(`#avatar-${agent} img`);
+    if (edAvatar) {
+      edAvatar.style.objectPosition = `${crop.photo_x}% ${crop.photo_y}%`;
+    }
+  }
 
   // ── Save All ──
   async function saveAll(agent) {
