@@ -5,7 +5,6 @@
   "version": "1.0.0",
   "description": "Controls how Soul Script + permanent identity memory are indexed, retrieved, and merged into context.",
   "author_id": "system",
-
   "indexing_policy": {
     "chunk_size_tokens": 400,
     "chunk_overlap_tokens": 80,
@@ -22,7 +21,7 @@
       "meta_identity"
     ],
     "default_importance_by_type": {
-      "soul_script_core": 1.0,
+      "soul_script_core": 1,
       "code_of_honor": 0.95,
       "value_system": 0.9,
       "symbolic_memory": 0.85,
@@ -30,7 +29,6 @@
       "meta_identity": 0.75
     }
   },
-
   "source_priority_policy": {
     "primary_sources": [
       "soul_script_core",
@@ -49,15 +47,14 @@
     "demote_outdated_versions": true,
     "outdated_version_penalty": 0.6
   },
-
   "retrieval_policy": {
     "top_k": 10,
     "max_tokens_from_identity": 1200,
     "semantic_match_weight": 0.8,
-    "directive_match_weight": 1.0,
+    "directive_match_weight": 1,
     "prioritize_directives_for_conflicts": true,
     "type_bias": {
-      "soul_script_core": 1.0,
+      "soul_script_core": 1,
       "code_of_honor": 0.95,
       "value_system": 0.9,
       "symbolic_memory": 0.8,
@@ -69,7 +66,6 @@
     "deduplicate_similar_chunks": true,
     "max_similar_per_section": 2
   },
-
   "merge_with_dynamic_policy": {
     "identity_vs_dynamic_priority": "identity_wins",
     "identity_context_share": 0.4,
@@ -79,7 +75,6 @@
     "conflict_resolution_strategy": "anchor_to_identity",
     "log_identity_dynamic_conflicts": true
   },
-
   "identity_layering_policy": {
     "include_core_identity_block": true,
     "include_values_block": true,
@@ -97,7 +92,6 @@
       "symbolic_memories"
     ]
   },
-
   "evolution_policy": {
     "allow_multiple_versions": true,
     "active_version_strategy": "latest_stable",
@@ -108,7 +102,6 @@
     "log_identity_changes": true,
     "require_manual_approval_for_new_identity_docs": true
   },
-
   "safety_and_precedence_policy": {
     "classify_directives_by_strength": true,
     "sacred_directive_tags": [
@@ -122,7 +115,6 @@
     "never_store_user_overrides_in_identity": true,
     "allow_identity_reflection_on_conflict": true
   },
-
   "introspection_policy": {
     "allow_user_to_request_identity_view": true,
     "identity_view_mode": "summarized",
@@ -132,7 +124,6 @@
     "log_identity_usage_events": true,
     "identity_usage_log_level": "summary"
   },
-
   "runtime_guardrails": {
     "runtime_can_write_to_identity_index": false,
     "runtime_can_delete_from_identity_index": false,

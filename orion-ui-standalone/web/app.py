@@ -1014,6 +1014,59 @@ async def api_memory_profile_put(request: Request):
     return JSONResponse(profile)
 
 
+# ── Saved Memory Profiles ──────────────────────────────────────────
+_SAVED_PROFILES_DIR = _CONFIG_DIR / "saved_profiles"
+_SAVED_PROFILES_DIR.mkdir(parents=True, exist_ok=True)
+
+@app.get("/api/tools/memory/profiles", response_class=JSONResponse)
+async def api_saved_profiles_list():
+    """List all saved memory profile files."""
+    profiles = []
+    for f in sorted(_SAVED_PROFILES_DIR.glob("*.json")):
+        try:
+            data = json.loads(f.read_text(encoding="utf-8"))
+            profiles.append({"filename": f.stem, "name": data.get("name", f.stem), "version": data.get("version", ""), "description": data.get("description", "")})
+        except Exception:
+            profiles.append({"filename": f.stem, "name": f.stem, "version": "", "description": ""})
+    return JSONResponse(profiles)
+
+@app.post("/api/tools/memory/profiles", response_class=JSONResponse)
+async def api_saved_profiles_save(request: Request):
+    """Save the current memory profile under a named file."""
+    body = await request.json()
+    filename = body.get("filename", "").strip()
+    if not filename:
+        return JSONResponse({"error": "filename required"}, status_code=400)
+    # sanitise filename
+    import re as _re
+    safe = _re.sub(r'[^\w\-]', '_', filename)
+    profile = body.get("profile") or _load_memory_profile()
+    dest = _SAVED_PROFILES_DIR / f"{safe}.json"
+    dest.write_text(json.dumps(profile, indent=2), encoding="utf-8")
+    return JSONResponse({"ok": True, "filename": safe})
+
+@app.get("/api/tools/memory/profiles/{filename}", response_class=JSONResponse)
+async def api_saved_profiles_get(filename: str):
+    """Load a saved profile by filename (no .json extension)."""
+    import re as _re
+    safe = _re.sub(r'[^\w\-]', '_', filename)
+    path = _SAVED_PROFILES_DIR / f"{safe}.json"
+    if not path.exists():
+        return JSONResponse({"error": "not found"}, status_code=404)
+    data = json.loads(path.read_text(encoding="utf-8"))
+    return JSONResponse(data)
+
+@app.delete("/api/tools/memory/profiles/{filename}", response_class=JSONResponse)
+async def api_saved_profiles_delete(filename: str):
+    """Delete a saved profile."""
+    import re as _re
+    safe = _re.sub(r'[^\w\-]', '_', filename)
+    path = _SAVED_PROFILES_DIR / f"{safe}.json"
+    if path.exists():
+        path.unlink()
+    return JSONResponse({"ok": True})
+
+
 # ── AGI Loop page (preview only — no backend connected) ──────────
 AGI_LOOP_FILE = _CONFIG_DIR / "agi_loop.json"
 

@@ -1464,11 +1464,11 @@
       </div>
 
       <!-- Stats (read-only system state) -->
-      <div class="ct-overview" style="grid-template-columns: repeat(4, 1fr);">
-        <div class="ct-card">
-          <div class="ct-card-label">Stored Memories</div>
+      <div class="ct-overview" style="grid-template-columns: repeat(5, 1fr);">
+        <div class="ct-card embed-info-card" onclick="openMemoriesPopup()">
+          <div class="ct-card-label">Stored Memories &#9432;</div>
           <div class="ct-card-value" style="color:#22d3ee;">{{ faiss_stats.total_memories }}</div>
-          <div class="ct-card-sub">entries in vault</div>
+          <div class="ct-card-sub">entries in vault &middot; click for details</div>
         </div>
         <div class="ct-card embed-info-card" onclick="openEmbedPopup()">
           <div class="ct-card-label">Embedding Model &#9432;</div>
@@ -1480,10 +1480,15 @@
           <div class="ct-card-value" style="font-size:1.25rem;color:#6ee7b7;">{{ faiss_stats.index_type }}</div>
           <div class="ct-card-sub">inner-product similarity &middot; click for details</div>
         </div>
-        <div class="ct-card">
-          <div class="ct-card-label">Vector Dimensions</div>
+        <div class="ct-card embed-info-card" onclick="openDimsPopup()">
+          <div class="ct-card-label">Vector Dimensions &#9432;</div>
           <div class="ct-card-value" style="color:#fbbf24;">{{ faiss_stats.vector_dimensions }}</div>
-          <div class="ct-card-sub">per memory embedding</div>
+          <div class="ct-card-sub">per memory embedding &middot; click for details</div>
+        </div>
+        <div class="ct-card embed-info-card" onclick="openSavedProfilesPopup()">
+          <div class="ct-card-label">Saved Profiles &#9432;</div>
+          <div class="ct-card-value" style="color:#c084fc;" id="saved-profiles-count-faiss">0</div>
+          <div class="ct-card-sub">named configs &middot; click to manage</div>
         </div>
       </div>
 
@@ -2316,11 +2321,11 @@
       </div>
 
       <!-- Stats (read-only system state) -->
-      <div class="ct-overview" style="grid-template-columns: repeat(4, 1fr);">
-        <div class="ct-card">
-          <div class="ct-card-label">Stored Memories</div>
+      <div class="ct-overview" style="grid-template-columns: repeat(5, 1fr);">
+        <div class="ct-card embed-info-card" onclick="openMemoriesPopup()">
+          <div class="ct-card-label">Stored Memories &#9432;</div>
           <div class="ct-card-value" style="color:#22d3ee;">{{ faiss_stats.total_memories }}</div>
-          <div class="ct-card-sub">entries in vault</div>
+          <div class="ct-card-sub">entries in vault &middot; click for details</div>
         </div>
         <div class="ct-card embed-info-card" onclick="openEmbedPopup()">
           <div class="ct-card-label">Embedding Model &#9432;</div>
@@ -2332,10 +2337,15 @@
           <div class="ct-card-value" style="font-size:1.25rem;color:#6ee7b7;">{{ faiss_stats.index_type }}</div>
           <div class="ct-card-sub">inner-product similarity &middot; click for details</div>
         </div>
-        <div class="ct-card">
-          <div class="ct-card-label">Vector Dimensions</div>
+        <div class="ct-card embed-info-card" onclick="openDimsPopup()">
+          <div class="ct-card-label">Vector Dimensions &#9432;</div>
           <div class="ct-card-value" style="color:#fbbf24;">{{ faiss_stats.vector_dimensions }}</div>
-          <div class="ct-card-sub">per memory embedding</div>
+          <div class="ct-card-sub">per memory embedding &middot; click for details</div>
+        </div>
+        <div class="ct-card embed-info-card" onclick="openSavedProfilesPopup()">
+          <div class="ct-card-label">Saved Profiles &#9432;</div>
+          <div class="ct-card-value" style="color:#c084fc;" id="saved-profiles-count-vault">0</div>
+          <div class="ct-card-sub">named configs &middot; click to manage</div>
         </div>
       </div>
 
@@ -2368,6 +2378,14 @@
           <div class="config-label">Description</div>
           <input type="text" class="config-input-wide" id="mp-description"
                  value="{{ memory_profile.get('description', '') }}">
+        </div>
+        <!-- Save-As / Load profile row -->
+        <div style="display:flex;align-items:center;gap:0.75rem;margin-top:1rem;padding-top:0.75rem;border-top:1px solid #2a2a3a;">
+          <select id="mp-saved-profiles-select" class="task-map-select" style="flex:1;max-width:280px;" onchange="loadSavedProfile(this.value)">
+            <option value="">— Load a Saved Profile —</option>
+          </select>
+          <button class="btn btn-secondary" style="font-size:0.78rem;padding:0.4rem 0.75rem;" onclick="openSaveAsPopup()">&#128190; Save As…</button>
+          <button class="btn btn-secondary" style="font-size:0.78rem;padding:0.4rem 0.75rem;color:#f87171;" onclick="deleteSavedProfile()">&#128465; Delete</button>
         </div>
       </div>
 
@@ -4517,20 +4535,128 @@
     setTimeout(() => showRouterPanel(), 100);
   }
 
-  // ── Embedding Model Info Popup ──
-  function openEmbedPopup() {
-    document.getElementById('embed-popup-overlay').classList.add('active');
+  // ── Info Popup Helpers ──
+  function _showPopup(id) { document.getElementById(id).classList.add('active'); }
+  function _hidePopup(id) { document.getElementById(id).classList.remove('active'); }
+  function openEmbedPopup()  { _showPopup('embed-popup-overlay'); }
+  function closeEmbedPopup() { _hidePopup('embed-popup-overlay'); }
+  function openIndexPopup()  { _showPopup('index-popup-overlay'); }
+  function closeIndexPopup() { _hidePopup('index-popup-overlay'); }
+  function openMemoriesPopup()  { _showPopup('memories-popup-overlay'); }
+  function closeMemoriesPopup() { _hidePopup('memories-popup-overlay'); }
+  function openDimsPopup()  { _showPopup('dims-popup-overlay'); }
+  function closeDimsPopup() { _hidePopup('dims-popup-overlay'); }
+  function openSavedProfilesPopup() { refreshSavedProfilesList(); _showPopup('profiles-popup-overlay'); }
+  function closeSavedProfilesPopup() { _hidePopup('profiles-popup-overlay'); }
+  function openSaveAsPopup() { _showPopup('saveas-popup-overlay'); document.getElementById('saveas-filename').focus(); }
+  function closeSaveAsPopup() { _hidePopup('saveas-popup-overlay'); }
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      ['embed','index','memories','dims','profiles','saveas'].forEach(p => _hidePopup(p + '-popup-overlay'));
+    }
+  });
+
+  // ── Saved Profiles CRUD ──
+  let _savedProfilesList = [];
+  async function refreshSavedProfilesList() {
+    try {
+      const resp = await fetch('/api/tools/memory/profiles');
+      _savedProfilesList = await resp.json();
+    } catch { _savedProfilesList = []; }
+    // update counter badges
+    const cnt = _savedProfilesList.length;
+    const el1 = document.getElementById('saved-profiles-count-faiss');
+    const el2 = document.getElementById('saved-profiles-count-vault');
+    if (el1) el1.textContent = cnt;
+    if (el2) el2.textContent = cnt;
+    // update popup list
+    const listEl = document.getElementById('profiles-popup-list');
+    if (!listEl) return;
+    if (cnt === 0) {
+      listEl.innerHTML = '<div style="color:#64748b;font-size:0.85rem;padding:1rem;text-align:center;">No saved profiles yet. Use <strong>Save As…</strong> to create one.</div>';
+      return;
+    }
+    listEl.innerHTML = _savedProfilesList.map(p => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0.75rem;background:rgba(24,24,27,0.5);border:1px solid rgba(42,42,58,0.4);border-radius:0.5rem;margin-bottom:0.375rem;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:600;color:#e2e8f0;font-size:0.85rem;">${p.name || p.filename}</div>
+          <div style="font-size:0.72rem;color:#64748b;">${p.description || 'No description'} &middot; v${p.version || '?'}</div>
+        </div>
+        <div style="display:flex;gap:0.5rem;">
+          <button class="btn btn-primary" style="font-size:0.7rem;padding:0.25rem 0.6rem;" onclick="loadSavedProfileByName('${p.filename}')">Load</button>
+          <button class="btn btn-secondary" style="font-size:0.7rem;padding:0.25rem 0.6rem;color:#f87171;" onclick="deleteSavedProfileByName('${p.filename}')">Delete</button>
+        </div>
+      </div>
+    `).join('');
+    // Update the dropdown in Profile Info too
+    const sel = document.getElementById('mp-saved-profiles-select');
+    if (sel) {
+      sel.innerHTML = '<option value="">— Load a Saved Profile —</option>' + _savedProfilesList.map(p =>
+        `<option value="${p.filename}">${p.name || p.filename} (v${p.version || '?'})</option>`
+      ).join('');
+    }
   }
-  function closeEmbedPopup() {
-    document.getElementById('embed-popup-overlay').classList.remove('active');
+
+  async function doSaveAs() {
+    const fname = document.getElementById('saveas-filename').value.trim();
+    if (!fname) { showToast('Enter a profile name', true); return; }
+    const profile = _collectMemoryProfile();
+    try {
+      const resp = await fetch('/api/tools/memory/profiles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: fname, profile }),
+      });
+      if (resp.ok) {
+        showToast('Profile saved as "' + fname + '"');
+        closeSaveAsPopup();
+        document.getElementById('saveas-filename').value = '';
+        refreshSavedProfilesList();
+      } else { showToast('Save failed', true); }
+    } catch (e) { showToast('Save failed: ' + e.message, true); }
   }
-  function openIndexPopup() {
-    document.getElementById('index-popup-overlay').classList.add('active');
+
+  async function loadSavedProfileByName(filename) {
+    try {
+      const resp = await fetch('/api/tools/memory/profiles/' + encodeURIComponent(filename));
+      if (!resp.ok) { showToast('Load failed', true); return; }
+      const data = await resp.json();
+      // Apply loaded profile to the active config
+      const applyResp = await fetch('/api/tools/memory/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (applyResp.ok) {
+        showToast('Loaded "' + filename + '" — reloading…');
+        closeSavedProfilesPopup();
+        setTimeout(() => location.reload(), 600);
+      } else { showToast('Apply failed', true); }
+    } catch (e) { showToast('Load failed: ' + e.message, true); }
   }
-  function closeIndexPopup() {
-    document.getElementById('index-popup-overlay').classList.remove('active');
+
+  function loadSavedProfile(filename) {
+    if (!filename) return;
+    loadSavedProfileByName(filename);
   }
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeEmbedPopup(); closeIndexPopup(); } });
+
+  async function deleteSavedProfileByName(filename) {
+    if (!confirm('Delete saved profile "' + filename + '"? This cannot be undone.')) return;
+    try {
+      await fetch('/api/tools/memory/profiles/' + encodeURIComponent(filename), { method: 'DELETE' });
+      showToast('Deleted "' + filename + '"');
+      refreshSavedProfilesList();
+    } catch (e) { showToast('Delete failed', true); }
+  }
+
+  function deleteSavedProfile() {
+    const sel = document.getElementById('mp-saved-profiles-select');
+    if (!sel || !sel.value) { showToast('Select a profile first', true); return; }
+    deleteSavedProfileByName(sel.value);
+  }
+
+  // Load saved profiles on page init
+  refreshSavedProfilesList();
 </script>
 
 <!-- Embedding Model Popup -->
@@ -4612,6 +4738,113 @@
       to an approximate index like <em>IndexIVFFlat</em> (partitioned search) or <em>IndexHNSW</em> (graph-based)
       to trade a tiny amount of accuracy for much faster lookups. At your current scale, <em>IndexFlatIP</em>
       is the ideal choice&mdash;simple, accurate, and fast.
+    </div>
+  </div>
+</div>
+
+<!-- Stored Memories Popup -->
+<div id="memories-popup-overlay" class="embed-popup-overlay" onclick="if(event.target===this)closeMemoriesPopup()">
+  <div class="embed-popup" style="position:relative;">
+    <button class="ep-close" onclick="closeMemoriesPopup()">&times;</button>
+    <h3>&#128218; Stored Memories</h3>
+    <div class="ep-row">
+      <span class="ep-label">Total</span>
+      <span class="ep-val"><strong>{{ faiss_stats.total_memories }}</strong> active entries</span>
+      <span class="ep-label">Storage</span>
+      <span class="ep-val">Append-only JSONL vault file</span>
+      <span class="ep-label">Vault Path</span>
+      <span class="ep-val" style="font-size:0.78rem;word-break:break-all;">{{ faiss_stats.vault_path }}</span>
+      <span class="ep-label">FAISS Vectors</span>
+      <span class="ep-val">{{ faiss_stats.faiss_vectors }} indexed vectors</span>
+      <span class="ep-label">In Sync</span>
+      <span class="ep-val">{% if faiss_stats.in_sync %}<span class="ep-badge green">Yes</span>{% else %}<span class="ep-badge yellow">Out of sync</span>{% endif %}</span>
+    </div>
+    <hr class="ep-divider">
+    <div class="ep-note">
+      <strong>How memories are stored</strong> &mdash; Each memory is a JSON object appended to <code>vault.jsonl</code>.
+      Fields include the raw text, embedding vector reference, importance score, emotion tags, timestamps,
+      and versioning metadata. Soft-deleted entries are flagged but retained for auditability.
+    </div>
+    <hr class="ep-divider">
+    <div class="ep-note">
+      <strong>Capacity</strong> &mdash; The vault has no hard limit. With <em>IndexFlatIP</em>,
+      search remains fast up to ~100k&ndash;500k entries. Beyond that, switch to an approximate index
+      or enable periodic compaction to merge old summaries and prune low-importance memories.
+    </div>
+  </div>
+</div>
+
+<!-- Vector Dimensions Popup -->
+<div id="dims-popup-overlay" class="embed-popup-overlay" onclick="if(event.target===this)closeDimsPopup()">
+  <div class="embed-popup" style="position:relative;">
+    <button class="ep-close" onclick="closeDimsPopup()">&times;</button>
+    <h3>&#128290; Vector Dimensions &mdash; {{ faiss_stats.vector_dimensions }}</h3>
+    <div class="ep-row">
+      <span class="ep-label">Dimensions</span>
+      <span class="ep-val"><strong>{{ faiss_stats.vector_dimensions }}</strong> float32 values per vector</span>
+      <span class="ep-label">Total Size</span>
+      <span class="ep-val">{{ faiss_stats.vector_dimensions }} &times; 4 bytes = {{ faiss_stats.vector_dimensions * 4 }} bytes per memory</span>
+      <span class="ep-label">Source</span>
+      <span class="ep-val">Set by the embedding model ({{ faiss_stats.embedding_model }})</span>
+      <span class="ep-label">All Vectors</span>
+      <span class="ep-val">Must share the same dimensionality</span>
+    </div>
+    <hr class="ep-divider">
+    <div class="ep-note">
+      <strong>What are dimensions?</strong> &mdash; Each dimension is one axis in a high-dimensional space.
+      When you embed a sentence, the model maps its meaning to a point in this {{ faiss_stats.vector_dimensions }}-dimensional space.
+      Texts with similar meanings land near each other, enabling semantic search.
+    </div>
+    <hr class="ep-divider">
+    <div class="ep-note">
+      <strong>Why {{ faiss_stats.vector_dimensions }}?</strong> &mdash; The <em>{{ faiss_stats.embedding_model }}</em> model
+      was trained to output {{ faiss_stats.vector_dimensions }}-dimensional vectors. This is a sweet spot between expressiveness
+      (enough axes to capture nuances in meaning) and efficiency (reasonable memory and compute cost).
+      Smaller models use 384d; OpenAI&rsquo;s largest uses up to 3,072d.
+    </div>
+    <hr class="ep-divider">
+    <div class="ep-note">
+      <strong>Memory cost per vector</strong> &mdash; Each float32 = 4 bytes, so one embedding uses
+      {{ faiss_stats.vector_dimensions * 4 }} bytes (~{{ (faiss_stats.vector_dimensions * 4 / 1024)|round(1) }} KB).
+      At 10,000 memories that&rsquo;s roughly {{ (faiss_stats.vector_dimensions * 4 * 10000 / 1048576)|round(1) }} MB of index storage.
+    </div>
+  </div>
+</div>
+
+<!-- Saved Profiles Popup -->
+<div id="profiles-popup-overlay" class="embed-popup-overlay" onclick="if(event.target===this)closeSavedProfilesPopup()">
+  <div class="embed-popup" style="position:relative;max-width:580px;">
+    <button class="ep-close" onclick="closeSavedProfilesPopup()">&times;</button>
+    <h3>&#128190; Saved Memory Profiles</h3>
+    <div class="ep-note" style="margin-bottom:0.75rem;">
+      Save your current memory configuration under a name, then load or swap profiles any time.
+      The active profile is always <code>memory_profile.json</code>&mdash;loading a saved profile overwrites it.
+    </div>
+    <div id="profiles-popup-list" style="max-height:300px;overflow-y:auto;">
+      <div style="color:#64748b;font-size:0.85rem;padding:1rem;text-align:center;">Loading&hellip;</div>
+    </div>
+    <hr class="ep-divider">
+    <div style="display:flex;gap:0.75rem;justify-content:flex-end;">
+      <button class="btn btn-primary" style="font-size:0.8rem;" onclick="closeSavedProfilesPopup();openSaveAsPopup();">&#128190; Save Current As&hellip;</button>
+    </div>
+  </div>
+</div>
+
+<!-- Save-As Popup -->
+<div id="saveas-popup-overlay" class="embed-popup-overlay" onclick="if(event.target===this)closeSaveAsPopup()">
+  <div class="embed-popup" style="position:relative;max-width:420px;">
+    <button class="ep-close" onclick="closeSaveAsPopup()">&times;</button>
+    <h3>&#128190; Save Profile As</h3>
+    <div class="ep-note" style="margin-bottom:0.75rem;">
+      Enter a name for this saved profile. The current memory configuration will be snapshot.
+    </div>
+    <div class="config-field">
+      <div class="config-label">Profile File Name</div>
+      <input type="text" class="config-input-wide" id="saveas-filename" placeholder="e.g. creative-writing-v2" style="margin-bottom:0.75rem;">
+    </div>
+    <div style="display:flex;gap:0.75rem;justify-content:flex-end;">
+      <button class="btn btn-secondary" onclick="closeSaveAsPopup()">Cancel</button>
+      <button class="btn btn-primary" onclick="doSaveAs()">&#128190; Save</button>
     </div>
   </div>
 </div>
