@@ -1438,20 +1438,24 @@
         </div>
         <div class="ct-card">
           <div class="ct-card-label">Index Type</div>
-          <div class="ct-card-value" style="font-size:1.25rem;color:#6ee7b7;">IndexFlatIP</div>
+          <div class="ct-card-value" style="font-size:1.25rem;color:#6ee7b7;">{{ faiss_stats.index_type }}</div>
           <div class="ct-card-sub">inner-product similarity</div>
         </div>
         <div class="ct-card">
           <div class="ct-card-label">Vector Dimensions</div>
-          <div class="ct-card-value" style="color:#fbbf24;">768</div>
+          <div class="ct-card-value" style="color:#fbbf24;">{{ faiss_stats.vector_dimensions }}</div>
           <div class="ct-card-sub">per memory embedding</div>
         </div>
       </div>
 
       <!-- Config notice -->
-      <div class="ct-status-bar" style="margin-bottom:1.5rem;">
-        <span class="ct-status-dot ok"></span>
+      <div class="ct-status-bar{% if not faiss_stats.in_sync %} warn{% endif %}" style="margin-bottom:1.5rem;">
+        <span class="ct-status-dot {% if faiss_stats.in_sync %}ok{% else %}warn{% endif %}"></span>
+        {% if faiss_stats.in_sync %}
         FAISS memory data is <strong>read-only</strong>. Configuration policies below are <strong>editable</strong> &mdash; changes are applied at next index build/retrieval.
+        {% else %}
+        FAISS index is <strong>out of sync</strong> with vault. Rebuild the index to restore consistency.
+        {% endif %}
       </div>
 
       <!-- Profile Info -->
@@ -2286,20 +2290,24 @@
         </div>
         <div class="ct-card">
           <div class="ct-card-label">Index Type</div>
-          <div class="ct-card-value" style="font-size:1.25rem;color:#6ee7b7;">IndexFlatIP</div>
+          <div class="ct-card-value" style="font-size:1.25rem;color:#6ee7b7;">{{ faiss_stats.index_type }}</div>
           <div class="ct-card-sub">inner-product similarity</div>
         </div>
         <div class="ct-card">
           <div class="ct-card-label">Vector Dimensions</div>
-          <div class="ct-card-value" style="color:#fbbf24;">768</div>
+          <div class="ct-card-value" style="color:#fbbf24;">{{ faiss_stats.vector_dimensions }}</div>
           <div class="ct-card-sub">per memory embedding</div>
         </div>
       </div>
 
       <!-- Config notice -->
-      <div class="ct-status-bar" style="margin-bottom:1.5rem;">
-        <span class="ct-status-dot ok"></span>
+      <div class="ct-status-bar{% if not faiss_stats.in_sync %} warn{% endif %}" style="margin-bottom:1.5rem;">
+        <span class="ct-status-dot {% if faiss_stats.in_sync %}ok{% else %}warn{% endif %}"></span>
+        {% if faiss_stats.in_sync %}
         FAISS memory data is <strong>read-only</strong>. Configuration policies below are <strong>editable</strong> &mdash; changes are applied at next index build/retrieval.
+        {% else %}
+        FAISS index is <strong>out of sync</strong> with vault. Rebuild the index to restore consistency.
+        {% endif %}
       </div>
 
       <!-- Profile Meta -->
