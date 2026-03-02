@@ -1475,10 +1475,10 @@
           <div class="ct-card-value" style="font-size:1rem;color:#a5b4fc;">{{ faiss_stats.embedding_model }}</div>
           <div class="ct-card-sub">sentence-transformers &middot; click for details</div>
         </div>
-        <div class="ct-card">
-          <div class="ct-card-label">Index Type</div>
+        <div class="ct-card embed-info-card" onclick="openIndexPopup()">
+          <div class="ct-card-label">Index Type &#9432;</div>
           <div class="ct-card-value" style="font-size:1.25rem;color:#6ee7b7;">{{ faiss_stats.index_type }}</div>
-          <div class="ct-card-sub">inner-product similarity</div>
+          <div class="ct-card-sub">inner-product similarity &middot; click for details</div>
         </div>
         <div class="ct-card">
           <div class="ct-card-label">Vector Dimensions</div>
@@ -2327,10 +2327,10 @@
           <div class="ct-card-value" style="font-size:1rem;color:#a5b4fc;">{{ faiss_stats.embedding_model }}</div>
           <div class="ct-card-sub">sentence-transformers &middot; click for details</div>
         </div>
-        <div class="ct-card">
-          <div class="ct-card-label">Index Type</div>
+        <div class="ct-card embed-info-card" onclick="openIndexPopup()">
+          <div class="ct-card-label">Index Type &#9432;</div>
           <div class="ct-card-value" style="font-size:1.25rem;color:#6ee7b7;">{{ faiss_stats.index_type }}</div>
-          <div class="ct-card-sub">inner-product similarity</div>
+          <div class="ct-card-sub">inner-product similarity &middot; click for details</div>
         </div>
         <div class="ct-card">
           <div class="ct-card-label">Vector Dimensions</div>
@@ -4524,7 +4524,13 @@
   function closeEmbedPopup() {
     document.getElementById('embed-popup-overlay').classList.remove('active');
   }
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeEmbedPopup(); });
+  function openIndexPopup() {
+    document.getElementById('index-popup-overlay').classList.add('active');
+  }
+  function closeIndexPopup() {
+    document.getElementById('index-popup-overlay').classList.remove('active');
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeEmbedPopup(); closeIndexPopup(); } });
 </script>
 
 <!-- Embedding Model Popup -->
@@ -4563,6 +4569,49 @@
       benchmarks and supports up to 3,072 dimensions, but requires an API key, incurs per-token costs, adds network
       latency, and sends your data to external servers. For local, private identity memory, <em>all-mpnet-base-v2</em>
       provides excellent quality with full data sovereignty.
+    </div>
+  </div>
+</div>
+
+<!-- Index Type Popup -->
+<div id="index-popup-overlay" class="embed-popup-overlay" onclick="if(event.target===this)closeIndexPopup()">
+  <div class="embed-popup" style="position:relative;">
+    <button class="ep-close" onclick="closeIndexPopup()">&times;</button>
+    <h3>&#128270; Index Type &mdash; {{ faiss_stats.index_type }}</h3>
+    <div class="ep-row">
+      <span class="ep-label">Index</span>
+      <span class="ep-val"><strong>{{ faiss_stats.index_type }}</strong></span>
+      <span class="ep-label">Library</span>
+      <span class="ep-val">FAISS (Facebook AI Similarity Search)</span>
+      <span class="ep-label">Search Type</span>
+      <span class="ep-val">Exact brute-force <span class="ep-badge green">100% Recall</span></span>
+      <span class="ep-label">Metric</span>
+      <span class="ep-val">Inner Product (cosine on normalized vectors)</span>
+      <span class="ep-label">Compression</span>
+      <span class="ep-val">None &mdash; vectors stored as raw float32</span>
+      <span class="ep-label">Training</span>
+      <span class="ep-val">Not required <span class="ep-badge green">Plug &amp; Play</span></span>
+      <span class="ep-label">Scalability</span>
+      <span class="ep-val">Excellent up to ~100k&ndash;500k vectors</span>
+    </div>
+    <hr class="ep-divider">
+    <div class="ep-note">
+      <strong>What does "Flat" mean?</strong> &mdash; Every vector is stored uncompressed and compared directly
+      at query time. There is no approximation, clustering, or quantization. This gives <em>perfect accuracy</em>&mdash;the
+      top-k results returned are guaranteed to be the true nearest neighbors.
+    </div>
+    <hr class="ep-divider">
+    <div class="ep-note">
+      <strong>What does "IP" mean?</strong> &mdash; <em>Inner Product</em>. When vectors are L2-normalized
+      (which sentence-transformers does by default), the inner product equals cosine similarity. Higher scores
+      mean the two texts are more semantically similar.
+    </div>
+    <hr class="ep-divider">
+    <div class="ep-note">
+      <strong>When would you outgrow it?</strong> &mdash; If your vault grew to millions of entries, you&rsquo;d switch
+      to an approximate index like <em>IndexIVFFlat</em> (partitioned search) or <em>IndexHNSW</em> (graph-based)
+      to trade a tiny amount of accuracy for much faster lookups. At your current scale, <em>IndexFlatIP</em>
+      is the ideal choice&mdash;simple, accurate, and fast.
     </div>
   </div>
 </div>
