@@ -1585,7 +1585,7 @@ async def api_profile_config(name: str, request: Request):
 
 @app.put("/api/profiles/{name}/avatar")
 async def api_profile_avatar(name: str, request: Request):
-    """Update avatar image or colour for an agent."""
+    """Update avatar image, colour, or photo crop/position for an agent."""
     body = await request.json()
     settings = _load_settings()
     avatars = settings.setdefault("agent_avatars", {})
@@ -1597,6 +1597,10 @@ async def api_profile_avatar(name: str, request: Request):
             entry["image"] = body["image"]
         else:
             entry.pop("image", None)
+    # Photo crop / position fields
+    for key in ("photo_zoom", "photo_x", "photo_y"):
+        if key in body:
+            entry[key] = body[key]
     avatars[name] = entry
     _save_settings(settings)
     return {"ok": True}
