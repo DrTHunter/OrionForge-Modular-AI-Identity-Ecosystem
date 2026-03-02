@@ -610,7 +610,7 @@ async def page_knowledge_edit(request: Request, note_id: str):
     })
 
 @app.get("/settings", response_class=HTMLResponse)
-async def page_settings(request: Request, tab: str = "connections"):
+async def page_settings(request: Request, tab: str = "api_keys"):
     store = _load_connections()
     return templates.TemplateResponse("settings.html", {
         "request": request, "page": "settings",
@@ -1688,10 +1688,11 @@ async def api_profile_config(name: str, request: Request):
     body = await request.json()
     cfg = _get_agent_config(name)
     for key in ("display_name", "description", "model", "allowed_tools",
-                "voice_id", "edge_voice", "tts_paid_provider", "tts_free_provider"):
+                "voice_id", "edge_voice", "tts_paid_provider", "tts_free_provider",
+                "identity_faiss_profile", "memory_vault_profile"):
         if key in body:
             cfg[key] = body[key]
-    # Also persist model + voice + allowed_tools to profile yaml for compatibility
+    # Also persist model + voice + allowed_tools + memory profiles to profile yaml for compatibility
     profile = _load_profile(name)
     if "model" in body:
         profile["model"] = body["model"]
@@ -1701,6 +1702,10 @@ async def api_profile_config(name: str, request: Request):
         profile["edge_voice"] = body["edge_voice"]
     if "allowed_tools" in body:
         profile["allowed_tools"] = body["allowed_tools"]
+    if "identity_faiss_profile" in body:
+        profile["identity_faiss_profile"] = body["identity_faiss_profile"]
+    if "memory_vault_profile" in body:
+        profile["memory_vault_profile"] = body["memory_vault_profile"]
     _save_profile(name, profile)
     # Also persist system_prompt_text if sent
     if "system_prompt_text" in body:
@@ -2731,23 +2736,29 @@ async def api_get_api_keys():
 
 @app.put("/api/settings/voice")
 async def api_save_voice_settings(request: Request):
-    """Save STT (Whisper) and TTS (ElevenLabs, Edge TTS) settings."""
+    """Save STT and TTS settings (keys, URLs, voice selections)."""
     body = await request.json()
     settings = _load_settings()
 
     stt = body.get("stt", {})
     settings["stt"] = {
-        "provider":        stt.get("provider", "none"),
-        "whisper_api_key": stt.get("whisper_api_key", ""),
-        "whisper_model":   stt.get("whisper_model", "base"),
+        "provider":             stt.get("provider", "none"),
+        "whisper_api_key":      stt.get("whisper_api_key", ""),
+        "whisper_local_url":    stt.get("whisper_local_url", "http://localhost:8080"),
+        "whisper_local_api_key":stt.get("whisper_local_api_key", ""),
+        "whisper_model":        stt.get("whisper_model", "base"),
     }
 
     tts = body.get("tts", {})
     settings["tts"] = {
-        "provider":            tts.get("provider", "none"),
-        "elevenlabs_api_key":  tts.get("elevenlabs_api_key", ""),
-        "elevenlabs_voice_id": tts.get("elevenlabs_voice_id", ""),
-        "edge_tts_voice":      tts.get("edge_tts_voice", "en-US-AriaNeural"),
+        "provider":             tts.get("provider", "none"),
+        "elevenlabs_api_key":   tts.get("elevenlabs_api_key", ""),
+        "elevenlabs_voice_id":  tts.get("elevenlabs_voice_id", ""),
+        "elevenlabs_voice_name":tts.get("elevenlabs_voice_name", ""),
+        "openedai_cloud_url":       tts.get("openedai_cloud_url", ""),
+        "openedai_cloud_api_key":   tts.get("openedai_cloud_api_key", ""),
+        "openedai_cloud_voice":     tts.get("openedai_cloud_voice", ""),
+        "openedai_cloud_model":     tts.get("openedai_cloud_model", "tts-1"),
     }
 
     _save_settings(settings)
@@ -2762,6 +2773,109 @@ async def api_get_voice_settings():
         "stt": settings.get("stt", {"provider": "none"}),
         "tts": settings.get("tts", {"provider": "none"}),
     })
+
+
+# ── Voice provider proxy endpoints (fetch available voices) ──────
+
+@app.post("/api/settings/voice/elevenlabs/voices")
+async def api_elevenlabs_voices_proxy(request: Request):
+    """Fetch available ElevenLabs voices using the provided API key."""
+    body = await request.json()
+    api_key = body.get("api_key", "").strip()
+    if not api_key:
+        return JSONResponse({"voices": [], "error": "No API key provided"})
+    url = "https://api.elevenlabs.io/v1/voices"
+    headers = {"xi-api-key": api_key}
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.get(url, headers=headers)
+            resp.raise_for_status()
+            data = resp.json()
+        voices = [
+            {"voice_id": v["voice_id"], "name": v["name"], "category": v.get("category", "")}
+            for v in data.get("voices", [])
+        ]
+        return JSONResponse({"voices": voices})
+    except httpx.HTTPStatusError as e:
+        detail = str(e)
+        try:
+            detail = e.response.json().get("detail", {}).get("message", str(e))
+        except Exception:
+            pass
+        return JSONResponse({"voices": [], "error": f"ElevenLabs: {detail}"})
+    except Exception as e:
+        return JSONResponse({"voices": [], "error": str(e)})
+
+
+@app.post("/api/settings/voice/openedai/voices")
+async def api_openedai_voices_proxy(request: Request):
+    """Fetch available voices from an OpenedAI Speech local server."""
+    body = await request.json()
+    base_url = (body.get("url", "") or "").rstrip("/")
+    api_key = body.get("api_key", "")
+    if not base_url:
+        return JSONResponse({"voices": [], "error": "No server URL provided"})
+    headers = {}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+
+    VOICE_ENGINE_MAP = {
+        "tts-1": {"engine": "piper", "label": "Piper (CPU · fast)"},
+        "tts-1-hd": {"engine": "xtts", "label": "XTTS v2 (GPU · HD)"},
+    }
+    default_voices = {
+        "tts-1": ["alloy", "echo", "echo-alt", "fable", "onyx", "nova", "shimmer"],
+        "tts-1-hd": ["alloy", "alloy-alt", "echo", "fable", "onyx", "nova", "shimmer"],
+    }
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.get(f"{base_url}/v1/models", headers=headers)
+            resp.raise_for_status()
+            models_data = resp.json()
+        voices = []
+        seen = set()
+        for m in models_data.get("data", []):
+            mid = m["id"]
+            ei = VOICE_ENGINE_MAP.get(mid, {"engine": "unknown", "label": mid})
+            for vn in default_voices.get(mid, []):
+                key = f"{vn}|{mid}"
+                if key not in seen:
+                    seen.add(key)
+                    voices.append({
+                        "voice_id": vn, "name": vn,
+                        "model": mid, "engine": ei["engine"],
+                        "engine_label": ei["label"],
+                    })
+        return JSONResponse({"voices": voices})
+    except httpx.HTTPStatusError as e:
+        detail = str(e)
+        try:
+            detail = e.response.text[:300]
+        except Exception:
+            pass
+        return JSONResponse({"voices": [], "error": f"OpenedAI: {detail}"})
+    except Exception as e:
+        return JSONResponse({"voices": [], "error": str(e)})
+
+
+@app.post("/api/settings/voice/whisper/test")
+async def api_whisper_test_proxy(request: Request):
+    """Test connectivity to a local Whisper server."""
+    body = await request.json()
+    base_url = (body.get("url", "") or "").rstrip("/")
+    api_key = body.get("api_key", "")
+    if not base_url:
+        return JSONResponse({"available": False, "reason": "No URL provided"})
+    headers = {}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+    try:
+        async with httpx.AsyncClient(timeout=8) as client:
+            resp = await client.get(f"{base_url}/v1/models", headers=headers)
+            resp.raise_for_status()
+        return JSONResponse({"available": True})
+    except Exception as e:
+        return JSONResponse({"available": False, "reason": str(e)})
 
 
 # ═══════════════════════════════════════════════════════════════════

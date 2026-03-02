@@ -15,6 +15,7 @@ directives:
   - shared
   - astraea
 edge_voice: alloy
+identity_faiss_profile: __default__
 memory:
   enabled: true
   max_items: 20
@@ -22,6 +23,7 @@ memory:
   - shared
   - astraea
   similarity_threshold: 0.85
+memory_vault_profile: __default__
 model: ''
 name: astraea
 policy:
