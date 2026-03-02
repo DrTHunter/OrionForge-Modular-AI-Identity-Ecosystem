@@ -3333,6 +3333,7 @@
       <div class="action-bar">
         <button class="btn btn-secondary" onclick="resetMemoryProfile()">Reset to Defaults</button>
         <button class="btn btn-primary" onclick="saveMemoryProfile()">Save Memory Profile</button>
+        <button class="btn btn-secondary" style="margin-left:0.25rem;" onclick="openSaveAsPopup()">&#128190; Save As&hellip;</button>
       </div>
     </div>
   </div>
@@ -4175,13 +4176,22 @@
   async function saveMemoryProfile() {
     const profile = _collectMemoryProfile();
     try {
+      // Save to active memory_profile.json
       const resp = await fetch('/api/tools/memory/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(profile),
       });
+      // Also save as a named profile using the profile name
+      const fname = (profile.name || 'Default Memory Profile').replace(/[^\w\-]/g, '_');
+      await fetch('/api/tools/memory/profiles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: fname, profile }),
+      });
+      refreshSavedProfilesList();
       if (resp.ok) {
-        showToast('Memory profile saved');
+        showToast('Memory profile saved + stored as "' + fname + '"');
       } else {
         showToast('Save failed', true);
       }

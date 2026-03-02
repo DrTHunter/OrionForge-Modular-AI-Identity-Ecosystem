@@ -1,7 +1,7 @@
 {
   "id": "identity_profile.default_v1",
   "type": "identity_faiss_profile",
-  "name": "Default Identity Profile",
+  "name": "Best Ide ntity Profile",
   "version": "1.0.0",
   "description": "Controls how Soul Script + permanent identity memory are indexed, retrieved, and merged into context.",
   "author_id": "system",
