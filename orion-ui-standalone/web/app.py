@@ -12,10 +12,12 @@ Prompt Injection Order
 5. Conversation       — Recent user/assistant messages (truncated to budget)
 """
 
+import asyncio
 import json
 import logging
 import os
 import queue
+import re
 import subprocess
 import sys
 import threading
@@ -31,6 +33,8 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Resp
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
+
+from web.image_gen import _generate_image
 
 # ── Project paths ────────────────────────────────────────────────
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -403,6 +407,40 @@ def _build_chat_messages(agent: str, messages: list[dict]) -> tuple[list[dict], 
         "Always confirm to the user what you saved.\n"
         "The MEMORY_SAVE tag will be hidden from the user — they only see your natural text."
     )
+
+    # ── Image generation instruction (only if a provider is configured) ──
+    img_cfg = _load_settings().get("image", {})
+    img_preferred = img_cfg.get("preferred", "none")
+    if img_preferred and img_preferred != "none":
+        _IMG_MODEL_LABELS = {
+            "openai_dalle3": "DALL-E 3", "openai_dalle2": "DALL-E 2",
+            "openai_gpt_image": "GPT Image", "google_imagen": "Google Imagen 3",
+            "stability_ultra": "Stable Image Ultra", "stability_core": "Stable Image Core",
+            "stability_sd3_large": "SD3 Large", "stability_sd3_large_turbo": "SD3 Large Turbo",
+            "stability_sd3_medium": "SD3 Medium",
+            "ideogram": "Ideogram V2", "ideogram_turbo": "Ideogram V2 Turbo",
+            "replicate_flux_pro": "Flux Pro", "replicate_flux_schnell": "Flux Schnell",
+            "replicate_flux_dev": "Flux Dev", "replicate_playground": "Playground v2.5",
+            "fal_flux_pro": "Flux Pro (FAL)", "fal_flux_schnell": "Flux Schnell (FAL)",
+            "fal_flux_dev": "Flux Dev (FAL)",
+            "leonardo_diffusion_xl": "Leonardo Diffusion XL",
+            "leonardo_lightning_xl": "Leonardo Lightning XL",
+            "leonardo_vision_xl": "Leonardo Vision XL",
+            "leonardo_kino_xl": "Leonardo Kino XL",
+            "banana": "Banana Dev", "midjourney": "Midjourney",
+        }
+        model_label = _IMG_MODEL_LABELS.get(img_preferred, img_preferred)
+        system_prompt += (
+            f"\n\n## Image Generation\n\n"
+            f"You can generate images using {model_label}. When the user asks you to "
+            "create, generate, draw, illustrate, or design an image, include an image "
+            "generation tag in your response like this:\n\n"
+            "```\n[IMAGE_GEN: A photorealistic sunset over a mountain lake with reflections]\n```\n\n"
+            "Write a detailed, descriptive prompt inside the tag — the more detail the better. "
+            "You may include exactly ONE [IMAGE_GEN: ...] tag per response. "
+            "Place it after your introductory text. The system will generate the image "
+            "and display it inline in the chat. The tag itself will be hidden from the user."
+        )
 
     # ── 5. Conversation history (truncated to budget) ──
     MAX_CONTEXT_CHARS = 30_000
@@ -1510,6 +1548,28 @@ async def api_chat_send(req: ChatRequest):
     # Strip memory tags from the text shown to the user
     response_text = _strip_memory_tags(raw_response)
 
+    # ── Image generation: detect [IMAGE_GEN: ...] tag ──
+    generated_image = None
+    img_match = re.search(r'\[IMAGE_GEN:\s*(.+?)\]', response_text, re.DOTALL)
+    if img_match:
+        img_prompt = img_match.group(1).strip()
+        response_text = response_text[:img_match.start()] + response_text[img_match.end():]
+        response_text = response_text.strip()
+        try:
+            settings = _load_settings()
+            img_cfg = settings.get("image", {})
+            provider = img_cfg.get("preferred", "none")
+            if provider and provider != "none":
+                result = await _generate_image(provider, img_prompt, img_cfg, settings)
+                if "error" not in result:
+                    generated_image = {**result, "prompt": img_prompt}
+                else:
+                    log.warning("[image-gen] %s", result["error"])
+                    response_text += f"\n\n*Image generation failed: {result['error']}*"
+        except Exception as exc:
+            log.warning("[image-gen] Image generation failed: %s", exc)
+            response_text += f"\n\n*Image generation failed: {exc}*"
+
     # Add tool layer to metadata
     layers["tools"]["calls"] = tool_call_log
 
@@ -1520,6 +1580,7 @@ async def api_chat_send(req: ChatRequest):
             "agent": req.agent, "model": model,
             "usage": total_usage, "cost": cost_data,
             "tool_calls": tool_call_log,
+            "generated_image": generated_image,
         },
         "layers": layers,
     })
@@ -1537,6 +1598,7 @@ async def api_chat_send(req: ChatRequest):
         "model": model, "usage": total_usage, "cost": cost_data, "layers": layers,
         "saved_memories": saved_memories,
         "tool_calls": tool_call_log,
+        "generated_image": generated_image,
     }
 
 @app.get("/api/chat/history")
@@ -2728,6 +2790,61 @@ async def api_get_api_keys():
         else:
             masked[k] = ""
     return JSONResponse(masked)
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  IMAGE GENERATION SETTINGS & API
+# ═══════════════════════════════════════════════════════════════════
+
+@app.put("/api/settings/image")
+async def api_save_image_settings(request: Request):
+    """Save image-generation provider keys and preferred model."""
+    body = await request.json()
+    settings = _load_settings()
+    settings["image"] = {
+        "preferred":          body.get("preferred", "none"),
+        "openai_api_key":     body.get("openai_api_key", ""),
+        "google_api_key":     body.get("google_api_key", ""),
+        "stability_api_key":  body.get("stability_api_key", ""),
+        "ideogram_api_key":   body.get("ideogram_api_key", ""),
+        "replicate_api_key":  body.get("replicate_api_key", ""),
+        "fal_api_key":        body.get("fal_api_key", ""),
+        "leonardo_api_key":   body.get("leonardo_api_key", ""),
+        "banana_api_key":     body.get("banana_api_key", ""),
+        "banana_model_key":   body.get("banana_model_key", ""),
+        "midjourney_url":     body.get("midjourney_url", ""),
+        "midjourney_api_key": body.get("midjourney_api_key", ""),
+    }
+    _save_settings(settings)
+    return JSONResponse({"status": "ok"})
+
+
+@app.get("/api/settings/image")
+async def api_get_image_settings():
+    """Return current image generation settings."""
+    settings = _load_settings()
+    return JSONResponse(settings.get("image", {"preferred": "none"}))
+
+
+@app.post("/api/image/generate")
+async def api_image_generate(request: Request):
+    """Generate an image using the preferred (or requested) provider."""
+    body = await request.json()
+    prompt = body.get("prompt", "").strip()
+    if not prompt:
+        return JSONResponse({"error": "No prompt provided"}, 400)
+
+    settings = _load_settings()
+    img_cfg = settings.get("image", {})
+    provider = body.get("provider") or img_cfg.get("preferred", "none")
+
+    if provider == "none":
+        return JSONResponse({"error": "No image provider configured. Set one in Settings → Image Generation."}, 400)
+
+    result = await _generate_image(provider, prompt, img_cfg, settings)
+    if "error" in result:
+        return JSONResponse(result, 502)
+    return JSONResponse(result)
 
 
 # ═══════════════════════════════════════════════════════════════════

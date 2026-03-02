@@ -1689,12 +1689,30 @@ function _renderEntry(role, text, data, timeStr, layers) {
           </div>`;
       }
 
+      // Generated image (if present in data)
+      let imageHtml = '';
+      if (d.generated_image && d.generated_image.url) {
+        const gi = d.generated_image;
+        const altText = gi.prompt ? gi.prompt.substring(0, 120) : 'Generated image';
+        const provLabel = gi.provider || '';
+        imageHtml = `<div class="msg-generated-image" style="margin:0.75rem 0 0.5rem; max-width:512px;">
+          <img src="${gi.url}" alt="${esc(altText)}"
+               style="width:100%; border-radius:0.5rem; cursor:pointer; border:1px solid rgba(255,255,255,0.08);"
+               onclick="window.open(this.src, '_blank')" title="Click to open full size">
+          <div style="display:flex; align-items:center; gap:0.375rem; margin-top:0.375rem; font-size:0.7rem; color:#71717a;">
+            <span>🎨</span>
+            <span>${esc(provLabel)}</span>
+            ${gi.revised_prompt ? `<span title="${esc(gi.revised_prompt)}" style="cursor:help; text-decoration:underline dotted;">revised prompt</span>` : ''}
+          </div>
+        </div>`;
+      }
+
       el.innerHTML = `<div class="msg-header">
         ${avatarHtml}
         <span class="msg-name">${agentLabel}</span>
         <span class="msg-time">${timeStr}</span>
       </div>
-      <div class="msg-body-wrap"><div class="msg-body">${formatAssistantText(text)}</div></div>${metaHtml}${layersHtml}`;
+      <div class="msg-body-wrap"><div class="msg-body">${formatAssistantText(text)}</div></div>${imageHtml}${metaHtml}${layersHtml}`;
       thread.appendChild(el);
 
       // Tool calls indicator
@@ -2097,7 +2115,7 @@ async function sendChatMsg() {
 
     document.getElementById('chat-title').textContent = agentCap;
 
-    const msgData = {agent, model: data.model||'', usage: data.usage||{}, cost: data.cost||{}, tool_calls: data.tool_calls||[], _live: true};
+    const msgData = {agent, model: data.model||'', usage: data.usage||{}, cost: data.cost||{}, tool_calls: data.tool_calls||[], generated_image: data.generated_image||null, _live: true};
     pushMsg('assistant', data.response, msgData, data.layers);
 
     // Memory save indicator

@@ -76,6 +76,7 @@
   <!-- ═══ Tab Bar ═══ -->
   <div class="settings-tabs">
     <button class="settings-tab {{ 'active' if tab == 'api_keys' }}" onclick="switchSettingsTab('api_keys')">API Keys</button>
+    <button class="settings-tab {{ 'active' if tab == 'image' }}" onclick="switchSettingsTab('image')">Image Generation</button>
     <button class="settings-tab {{ 'active' if tab == 'voice' }}" onclick="switchSettingsTab('voice')">Voice</button>
     <button class="settings-tab {{ 'active' if tab == 'chat' }}" onclick="switchSettingsTab('chat')">Chat</button>
     <button class="settings-tab {{ 'active' if tab == 'general' }}" onclick="switchSettingsTab('general')">General</button>
@@ -145,6 +146,141 @@
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════
+       TAB — Image Generation
+       ═══════════════════════════════════════════════════════════ -->
+  <div class="settings-panel {{ 'active' if tab == 'image' }}" id="panel-image">
+
+    <p class="text-xs text-forge-muted mb-4" style="max-width:40rem;">
+      Configure image-generation providers below. Only models whose API keys are
+      filled in will appear in the <strong>Preferred Image Model</strong> dropdown.
+    </p>
+
+    <!-- ── Preferred default provider (populated dynamically by JS) ── -->
+    <div class="settings-section">
+      <div class="settings-section-title">Preferred Image Model</div>
+      <div class="settings-section-desc">This model is called automatically when you ask an agent to generate an image in chat. Only models with valid API keys appear here.</div>
+      <div class="mb-3">
+        <select id="img-preferred" class="search-input" style="max-width:28rem;">
+          <option value="none">Disabled — no image generation</option>
+        </select>
+      </div>
+    </div>
+
+    <hr style="border-color:rgba(255,255,255,0.06); margin:1.25rem 0;">
+
+    <!-- ── OpenAI ──────────────────────────────────────── -->
+    <div class="settings-section">
+      <div class="settings-section-title">OpenAI — DALL-E 3 / DALL-E 2 / GPT Image</div>
+      <div class="settings-section-desc">Supports DALL-E 3, DALL-E 2, and GPT Image (gpt-image-1).</div>
+      <div class="mb-3">
+        <label class="block text-xs text-forge-muted mb-1">API Key <span class="text-zinc-600">(auto-filled from API Keys tab)</span></label>
+        <input id="img-openai-key" type="password" class="search-input w-full img-key-input" style="max-width:32rem;"
+               placeholder="sk-..." value="{{ settings.get('image', {}).get('openai_api_key') or settings.get('api_keys', {}).get('openai', '') }}">
+      </div>
+    </div>
+
+    <!-- ── Google ──────────────────────────────────────── -->
+    <div class="settings-section">
+      <div class="settings-section-title">Google — Imagen 3</div>
+      <div class="settings-section-desc">Uses Google Generative AI / Vertex AI for Imagen 3.</div>
+      <div class="mb-3">
+        <label class="block text-xs text-forge-muted mb-1">API Key <span class="text-zinc-600">(auto-filled from API Keys tab)</span></label>
+        <input id="img-google-key" type="password" class="search-input w-full img-key-input" style="max-width:32rem;"
+               placeholder="AIza..." value="{{ settings.get('image', {}).get('google_api_key') or settings.get('api_keys', {}).get('google_gemini', '') }}">
+      </div>
+    </div>
+
+    <!-- ── Stability AI ───────────────────────────────── -->
+    <div class="settings-section">
+      <div class="settings-section-title">Stability AI — Stable Diffusion</div>
+      <div class="settings-section-desc">Stable Image Ultra, Core, SD3 Large, SD3 Large Turbo, SD3 Medium via platform.stability.ai.</div>
+      <div class="mb-3">
+        <label class="block text-xs text-forge-muted mb-1">API Key</label>
+        <input id="img-stability-key" type="password" class="search-input w-full img-key-input" style="max-width:32rem;"
+               placeholder="sk-..." value="{{ settings.get('image', {}).get('stability_api_key', '') }}">
+      </div>
+    </div>
+
+    <!-- ── Ideogram ────────────────────────────────────── -->
+    <div class="settings-section">
+      <div class="settings-section-title">Ideogram</div>
+      <div class="settings-section-desc">High-quality typographic and artistic image generation. Supports V2 and V2 Turbo.</div>
+      <div class="mb-3">
+        <label class="block text-xs text-forge-muted mb-1">API Key</label>
+        <input id="img-ideogram-key" type="password" class="search-input w-full img-key-input" style="max-width:32rem;"
+               placeholder="ig-..." value="{{ settings.get('image', {}).get('ideogram_api_key', '') }}">
+      </div>
+    </div>
+
+    <!-- ── Replicate ───────────────────────────────────── -->
+    <div class="settings-section">
+      <div class="settings-section-title">Replicate</div>
+      <div class="settings-section-desc">Access Flux Pro, Flux Schnell, Flux Dev, and Playground v2.5 via Replicate API.</div>
+      <div class="mb-3">
+        <label class="block text-xs text-forge-muted mb-1">API Token</label>
+        <input id="img-replicate-key" type="password" class="search-input w-full img-key-input" style="max-width:32rem;"
+               placeholder="r8_..." value="{{ settings.get('image', {}).get('replicate_api_key', '') }}">
+      </div>
+    </div>
+
+    <!-- ── FAL.ai ──────────────────────────────────────── -->
+    <div class="settings-section">
+      <div class="settings-section-title">FAL.ai</div>
+      <div class="settings-section-desc">Fast inference for Flux Pro v1.1, Flux Schnell, and Flux Dev via fal.run.</div>
+      <div class="mb-3">
+        <label class="block text-xs text-forge-muted mb-1">API Key</label>
+        <input id="img-fal-key" type="password" class="search-input w-full img-key-input" style="max-width:32rem;"
+               placeholder="fal-..." value="{{ settings.get('image', {}).get('fal_api_key', '') }}">
+      </div>
+    </div>
+
+    <!-- ── Leonardo AI ─────────────────────────────────── -->
+    <div class="settings-section">
+      <div class="settings-section-title">Leonardo AI</div>
+      <div class="settings-section-desc">Leonardo Diffusion XL, Lightning XL, Vision XL, and Kino XL.</div>
+      <div class="mb-3">
+        <label class="block text-xs text-forge-muted mb-1">API Key</label>
+        <input id="img-leonardo-key" type="password" class="search-input w-full img-key-input" style="max-width:32rem;"
+               placeholder="Bearer token" value="{{ settings.get('image', {}).get('leonardo_api_key', '') }}">
+      </div>
+    </div>
+
+    <!-- ── Banana Dev ──────────────────────────────────── -->
+    <div class="settings-section">
+      <div class="settings-section-title">Banana Dev</div>
+      <div class="settings-section-desc">Run custom image models deployed on banana.dev (SDXL, custom fine-tunes, etc.).</div>
+      <div class="mb-3">
+        <label class="block text-xs text-forge-muted mb-1">API Key</label>
+        <input id="img-banana-key" type="password" class="search-input w-full img-key-input" style="max-width:32rem;"
+               placeholder="API key" value="{{ settings.get('image', {}).get('banana_api_key', '') }}">
+      </div>
+      <div class="mb-3">
+        <label class="block text-xs text-forge-muted mb-1">Model Key</label>
+        <input id="img-banana-model-key" type="text" class="search-input w-full" style="max-width:32rem;"
+               placeholder="Model deployment key" value="{{ settings.get('image', {}).get('banana_model_key', '') }}">
+      </div>
+    </div>
+
+    <!-- ── Midjourney ──────────────────────────────────── -->
+    <div class="settings-section">
+      <div class="settings-section-title">Midjourney</div>
+      <div class="settings-section-desc">Midjourney image generation via third-party API proxy (e.g. GoAPI, ImagineAPI).</div>
+      <div class="mb-3">
+        <label class="block text-xs text-forge-muted mb-1">API Proxy URL</label>
+        <input id="img-midjourney-url" type="text" class="search-input w-full img-key-input" style="max-width:32rem;"
+               placeholder="https://api.goapi.ai/mj" value="{{ settings.get('image', {}).get('midjourney_url', '') }}">
+      </div>
+      <div class="mb-3">
+        <label class="block text-xs text-forge-muted mb-1">API Key / Token</label>
+        <input id="img-midjourney-key" type="password" class="search-input w-full img-key-input" style="max-width:32rem;"
+               placeholder="Bearer token" value="{{ settings.get('image', {}).get('midjourney_api_key', '') }}">
+      </div>
+    </div>
+
+    <button class="filter-btn active" onclick="saveImageSettings()" style="cursor:pointer;">Save Image Settings</button>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
        TAB — Voice (STT / TTS)
        ═══════════════════════════════════════════════════════════ -->
   <div class="settings-panel {{ 'active' if tab == 'voice' }}" id="panel-voice">
@@ -174,31 +310,15 @@
 
       <!-- Whisper Local fields -->
       <div id="stt-whisper-local-fields" style="display:none;">
-        <div class="mb-3">
-          <label class="block text-xs text-forge-muted mb-1">Whisper Server URL</label>
-          <input id="stt-whisper-local-url" type="text" class="search-input w-full" style="max-width:32rem;"
-                 placeholder="http://localhost:8080" value="{{ settings.get('stt', {}).get('whisper_local_url', 'http://localhost:8080') }}">
-        </div>
-        <div class="mb-3">
-          <label class="block text-xs text-forge-muted mb-1">API Key <span class="text-zinc-600">(optional — only if your server requires auth)</span></label>
-          <input id="stt-whisper-local-api-key" type="password" class="search-input w-full" style="max-width:32rem;"
-                 placeholder="Bearer token (optional)" value="{{ settings.get('stt', {}).get('whisper_local_api_key', '') }}">
-        </div>
-        <div class="mb-3">
-          <label class="block text-xs text-forge-muted mb-1">Model Size</label>
-          <select id="stt-whisper-model" class="search-input" style="max-width:14rem;">
-            <option value="tiny" {{ 'selected' if settings.get('stt', {}).get('whisper_model') == 'tiny' }}>Tiny</option>
-            <option value="base" {{ 'selected' if settings.get('stt', {}).get('whisper_model', 'base') == 'base' }}>Base</option>
-            <option value="small" {{ 'selected' if settings.get('stt', {}).get('whisper_model') == 'small' }}>Small</option>
-            <option value="medium" {{ 'selected' if settings.get('stt', {}).get('whisper_model') == 'medium' }}>Medium</option>
-            <option value="large" {{ 'selected' if settings.get('stt', {}).get('whisper_model') == 'large' }}>Large</option>
-          </select>
-        </div>
-        <div class="flex items-center gap-2 mb-1">
-          <button type="button" class="filter-btn text-xs" onclick="testWhisperLocal()" style="cursor:pointer;" id="btn-test-whisper">
-            🔗 Test Connection
-          </button>
-          <span id="whisper-local-status" class="text-xs"></span>
+        <div class="p-4 rounded-lg border border-amber-500/20 bg-amber-500/5 mb-3" style="max-width:32rem;">
+          <div class="flex items-center gap-2 mb-1">
+            <span style="font-size:1.1rem;">🚧</span>
+            <span class="text-sm font-semibold text-amber-300">Feature Coming Soon</span>
+          </div>
+          <p class="text-xs text-amber-200/70">
+            Local Whisper STT integration (self-hosted Whisper server) is under active development.
+            Use the <strong>Whisper OpenAI API</strong> option above for immediate access, or check back in a future release.
+          </p>
         </div>
       </div>
     </div>
@@ -412,6 +532,77 @@ async function saveApiKeys() {
   showToast(data.status === 'ok' ? 'API keys saved' : 'Error saving keys', data.status === 'ok' ? 'ok' : 'error');
 }
 
+/* ── Image Generation — dynamic model population ─────── */
+const _savedImgPreferred = '{{ settings.get("image", {}).get("preferred", "none") }}';
+const IMAGE_MODELS = [
+  {v:'openai_dalle3',          l:'OpenAI · DALL-E 3',                 k:'img-openai-key'},
+  {v:'openai_dalle2',          l:'OpenAI · DALL-E 2',                 k:'img-openai-key'},
+  {v:'openai_gpt_image',       l:'OpenAI · GPT Image (gpt-image-1)',  k:'img-openai-key'},
+  {v:'google_imagen',          l:'Google · Imagen 3',                 k:'img-google-key'},
+  {v:'stability_ultra',        l:'Stability AI · Stable Image Ultra', k:'img-stability-key'},
+  {v:'stability_core',         l:'Stability AI · Stable Image Core',  k:'img-stability-key'},
+  {v:'stability_sd3_large',    l:'Stability AI · SD3 Large',          k:'img-stability-key'},
+  {v:'stability_sd3_large_turbo',l:'Stability AI · SD3 Large Turbo',  k:'img-stability-key'},
+  {v:'stability_sd3_medium',   l:'Stability AI · SD3 Medium',         k:'img-stability-key'},
+  {v:'ideogram',               l:'Ideogram · V2',                     k:'img-ideogram-key'},
+  {v:'ideogram_turbo',         l:'Ideogram · V2 Turbo',               k:'img-ideogram-key'},
+  {v:'replicate_flux_pro',     l:'Replicate · Flux Pro',              k:'img-replicate-key'},
+  {v:'replicate_flux_schnell', l:'Replicate · Flux Schnell',          k:'img-replicate-key'},
+  {v:'replicate_flux_dev',     l:'Replicate · Flux Dev',              k:'img-replicate-key'},
+  {v:'replicate_playground',   l:'Replicate · Playground v2.5',       k:'img-replicate-key'},
+  {v:'fal_flux_pro',           l:'FAL.ai · Flux Pro v1.1',            k:'img-fal-key'},
+  {v:'fal_flux_schnell',       l:'FAL.ai · Flux Schnell',             k:'img-fal-key'},
+  {v:'fal_flux_dev',           l:'FAL.ai · Flux Dev',                 k:'img-fal-key'},
+  {v:'leonardo_diffusion_xl',  l:'Leonardo AI · Diffusion XL',        k:'img-leonardo-key'},
+  {v:'leonardo_lightning_xl',  l:'Leonardo AI · Lightning XL',        k:'img-leonardo-key'},
+  {v:'leonardo_vision_xl',     l:'Leonardo AI · Vision XL',           k:'img-leonardo-key'},
+  {v:'leonardo_kino_xl',       l:'Leonardo AI · Kino XL',             k:'img-leonardo-key'},
+  {v:'banana',                 l:'Banana Dev · Custom Model',         k:'img-banana-key'},
+  {v:'midjourney',             l:'Midjourney (Proxy)',                 k:'img-midjourney-key'},
+];
+function refreshImageModels() {
+  const sel = document.getElementById('img-preferred');
+  const cur = sel.value || _savedImgPreferred;
+  const avail = IMAGE_MODELS.filter(m => {
+    const el = document.getElementById(m.k);
+    return el && el.value.trim().length > 0;
+  });
+  sel.innerHTML = '<option value="none">Disabled — no image generation</option>';
+  if (!avail.length) sel.innerHTML += '<option disabled>— add API keys below to unlock models —</option>';
+  avail.forEach(m => {
+    const o = document.createElement('option');
+    o.value = m.v; o.textContent = m.l;
+    if (m.v === cur) o.selected = true;
+    sel.appendChild(o);
+  });
+  if (cur && cur !== 'none' && avail.find(m => m.v === cur)) sel.value = cur;
+}
+document.querySelectorAll('.img-key-input').forEach(el => el.addEventListener('input', refreshImageModels));
+refreshImageModels();
+
+async function saveImageSettings() {
+  const payload = {
+    preferred:            document.getElementById('img-preferred').value,
+    openai_api_key:       document.getElementById('img-openai-key').value,
+    google_api_key:       document.getElementById('img-google-key').value,
+    stability_api_key:    document.getElementById('img-stability-key').value,
+    ideogram_api_key:     document.getElementById('img-ideogram-key').value,
+    replicate_api_key:    document.getElementById('img-replicate-key').value,
+    fal_api_key:          document.getElementById('img-fal-key').value,
+    leonardo_api_key:     document.getElementById('img-leonardo-key').value,
+    banana_api_key:       document.getElementById('img-banana-key').value,
+    banana_model_key:     document.getElementById('img-banana-model-key').value,
+    midjourney_url:       document.getElementById('img-midjourney-url').value,
+    midjourney_api_key:   document.getElementById('img-midjourney-key').value,
+  };
+  const resp = await fetch('/api/settings/image', {
+    method: 'PUT', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(payload),
+  });
+  const data = await resp.json();
+  showToast(data.status === 'ok' ? 'Image settings saved' : 'Error saving image settings', data.status === 'ok' ? 'ok' : 'error');
+}
+
 /* ── Voice (STT / TTS) ────────────────────────────────── */
 function toggleSttFields() {
   const p = document.getElementById('stt-provider').value;
@@ -433,9 +624,6 @@ async function saveVoiceSettings() {
     stt: {
       provider:             document.getElementById('stt-provider').value,
       whisper_api_key:      document.getElementById('stt-whisper-api-key').value,
-      whisper_local_url:    document.getElementById('stt-whisper-local-url').value,
-      whisper_local_api_key:document.getElementById('stt-whisper-local-api-key').value,
-      whisper_model:        document.getElementById('stt-whisper-model').value,
     },
     tts: {
       provider:                 document.getElementById('tts-provider').value,
@@ -529,35 +717,6 @@ async function fetchOpenedaiCloudVoices() {
     showToast('Fetch failed: ' + e.message, 'error');
   } finally {
     btn.disabled = false; btn.textContent = '↓ Fetch Voices';
-  }
-}
-
-/* ── Test Whisper local connection ─────────────────────── */
-async function testWhisperLocal() {
-  const url = document.getElementById('stt-whisper-local-url').value.trim();
-  const apiKey = document.getElementById('stt-whisper-local-api-key').value.trim();
-  const btn = document.getElementById('btn-test-whisper');
-  const status = document.getElementById('whisper-local-status');
-  if (!url) { showToast('Enter a Whisper server URL first', 'error'); return; }
-  btn.disabled = true; btn.textContent = '⏳ Testing...';
-  status.textContent = '';
-  try {
-    const resp = await fetch('/api/settings/voice/whisper/test', {
-      method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ url, api_key: apiKey }),
-    });
-    const data = await resp.json();
-    if (data.available) {
-      status.innerHTML = '<span style="color:#86efac;">✓ Connected</span>';
-      showToast('Whisper server reachable', 'ok');
-    } else {
-      status.innerHTML = `<span style="color:#fca5a5;">✕ ${data.reason || 'Unreachable'}</span>`;
-      showToast('Cannot reach Whisper server', 'error');
-    }
-  } catch (e) {
-    status.innerHTML = `<span style="color:#fca5a5;">✕ ${e.message}</span>`;
-  } finally {
-    btn.disabled = false; btn.textContent = '🔗 Test Connection';
   }
 }
 
