@@ -4,7 +4,7 @@
     "title": "S0ul Script 1",
     "emoji": "\u26a1",
     "preview": "",
-    "section": "Soul Scripts",
+    "section": "soul_scripts",
     "created": "2026-02-28T12:44:04.757457+00:00",
     "updated": "2026-02-28T13:58:06.733876+00:00"
   },
@@ -13,8 +13,17 @@
     "title": "User Biographicsal Data",
     "emoji": "\ud83d\udcc4",
     "preview": "",
-    "section": "Knowledge",
+    "section": "42d32ef3",
     "created": "2026-02-28T13:58:11.690241+00:00",
     "updated": "2026-02-28T13:58:27.866578+00:00"
+  },
+  {
+    "id": "b2aee407",
+    "title": "Untitled",
+    "emoji": "\ud83d\udcc4",
+    "preview": "",
+    "section": "Uncategorized",
+    "created": "2026-03-02T18:04:11.970470+00:00",
+    "updated": "2026-03-02T18:04:11.970470+00:00"
   }
 ]

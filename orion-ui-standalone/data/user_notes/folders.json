@@ -1,0 +1,16 @@
+[
+  {
+    "id": "soul_scripts",
+    "name": "Soul Scripts",
+    "emoji": "\ud83e\uddec",
+    "pinned": true,
+    "color": "#818cf8"
+  },
+  {
+    "id": "42d32ef3",
+    "name": "Knowledge",
+    "emoji": "\ud83d\udcc1",
+    "pinned": false,
+    "color": "#6366f1"
+  }
+]
