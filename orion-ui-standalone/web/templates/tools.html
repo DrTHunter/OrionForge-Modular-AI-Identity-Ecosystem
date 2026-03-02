@@ -827,18 +827,26 @@
 
       {% elif tool.name == 'email' %}
       <div class="about-text">
-        Draft, preview, and send emails through SMTP. A confirmation gate ensures the user can review every email before it is actually sent.
+        Send emails through configured SMTP accounts or an API relay backend. Supports multiple accounts, confirmation gating, per-agent defaults, and signature appending.
       </div>
       <div class="about-sub">Commands</div>
       <div class="about-commands">
         <div class="about-cmd">
           <span class="about-cmd-name">send</span>
-          <span class="about-cmd-desc">Compose an email with <code>to</code>, <code>subject</code>, and <code>body</code>. The first call returns a preview. The agent must call again with <code>confirmation=&quot;confirmed&quot;</code> after user approval to actually send.</span>
+          <span class="about-cmd-desc">Compose and send an email. Requires <code>subject</code>, <code>body</code>, and <code>recipients</code>. The first call returns a preview for user approval. Call again with <code>confirmation=&quot;confirmed&quot;</code> to actually send.</span>
+        </div>
+        <div class="about-cmd">
+          <span class="about-cmd-name">status</span>
+          <span class="about-cmd-desc">Check configured email accounts and optional API relay server connectivity.</span>
+        </div>
+        <div class="about-cmd">
+          <span class="about-cmd-name">accounts</span>
+          <span class="about-cmd-desc">List all configured email accounts (passwords masked).</span>
         </div>
       </div>
       <div class="about-sub">How the AI uses this tool</div>
       <div class="about-text">
-        When asked to send an email, the agent drafts the message and calls the tool. The tool returns a preview for the user to review. Only after explicit approval does the agent re-call with the confirmation flag to dispatch the email via SMTP.
+        When asked to send an email, the agent drafts the message and calls <code>send</code>. The tool returns a preview for the user to review. Only after explicit approval does the agent re-call with the confirmation flag to dispatch via SMTP (with API relay as fallback).
       </div>
 
       {% elif tool.name == 'memory' %}
@@ -1142,11 +1150,121 @@
     </div>
     {% endif %}
 
+    <!-- ── Email Tool Config Panel ── -->
+    {% if tool.name == 'email' %}
+    <div class="section-card">
+      <div class="section-title"><span class="sec-icon">&#9881;</span> Email Configuration</div>
+
+      <!-- Confirmation Gate -->
+      <div class="toggle-row" style="margin-bottom:1rem;">
+        <div class="toggle-label">
+          <div class="toggle-label-title">Require Confirmation</div>
+          <div class="toggle-label-desc">
+            When enabled, the agent must get user approval before actually sending any email.
+            The first call returns a preview; only a second call with confirmation sends it.
+          </div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="cfg-email-require-confirmation"
+                 {% if email_config.require_confirmation %}checked{% endif %}>
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+
+      <!-- API Base URL -->
+      <div class="config-field" style="margin-bottom:1rem;">
+        <div class="config-label">API Relay URL (optional fallback)</div>
+        <input type="text" class="config-input-wide" id="cfg-email-api-url"
+               value="{{ email_config.api_base_url }}"
+               placeholder="http://127.0.0.1:8000">
+        <div class="config-hint">FastAPI email service URL. Used as fallback when direct SMTP fails. Leave default if not using a relay.</div>
+      </div>
+
+      <!-- Timeout -->
+      <div class="config-field" style="margin-bottom:1rem;">
+        <div class="config-label">Timeout (seconds)</div>
+        <input type="number" class="config-input" id="cfg-email-timeout"
+               value="{{ email_config.timeout }}" min="5" max="120">
+      </div>
+    </div>
+
+    <!-- Email Accounts -->
+    <div class="section-card">
+      <div class="section-title"><span class="sec-icon">&#128231;</span> Email Accounts</div>
+      <div id="email-accounts-list" style="margin-bottom:1rem;">
+        <!-- Populated by JS -->
+      </div>
+      <button class="btn btn-secondary" onclick="emailShowAccountForm()" style="margin-top:0.5rem;">+ Add Account</button>
+    </div>
+
+    <!-- Account Form (hidden by default) -->
+    <div class="section-card" id="email-account-form" style="display:none;">
+      <div class="section-title"><span class="sec-icon">&#128221;</span> <span id="email-form-title">Add Account</span></div>
+      <input type="hidden" id="email-acct-id">
+      <div class="config-field" style="margin-bottom:0.75rem;">
+        <div class="config-label">Label / Display Name</div>
+        <input type="text" class="config-input-wide" id="email-acct-label" placeholder="e.g. Work Gmail">
+      </div>
+      <div class="config-field" style="margin-bottom:0.75rem;">
+        <div class="config-label">Email Address</div>
+        <input type="email" class="config-input-wide" id="email-acct-email" placeholder="you@example.com">
+      </div>
+      <div class="config-field" style="margin-bottom:0.75rem;">
+        <div class="config-label">Password / App Password</div>
+        <input type="password" class="config-input-wide" id="email-acct-password" placeholder="App-specific password">
+      </div>
+      <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+        <div class="config-field" style="flex:1;min-width:200px;">
+          <div class="config-label">SMTP Server</div>
+          <input type="text" class="config-input-wide" id="email-acct-smtp-server" placeholder="smtp.gmail.com">
+        </div>
+        <div class="config-field" style="width:120px;">
+          <div class="config-label">SMTP Port</div>
+          <input type="number" class="config-input" id="email-acct-smtp-port" value="465" min="1" max="65535">
+        </div>
+      </div>
+      <div class="config-field" style="margin:0.75rem 0;">
+        <div class="config-label">Signature (appended to outgoing emails)</div>
+        <textarea class="config-input-wide" id="email-acct-signature" rows="3" placeholder="— Sent via Orion Forge" style="resize:vertical;font-family:inherit;"></textarea>
+      </div>
+      <div style="display:flex;gap:1.5rem;flex-wrap:wrap;margin-bottom:0.75rem;">
+        <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;">
+          <input type="checkbox" id="email-acct-is-default"> Default account
+        </label>
+        <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;">
+          <input type="checkbox" id="email-acct-is-user-email"> User&rsquo;s personal email
+        </label>
+      </div>
+      <div class="config-field" style="margin-bottom:0.75rem;">
+        <div class="config-label">Agent Default (optional — auto-use for this agent)</div>
+        <input type="text" class="config-input-wide" id="email-acct-agent-default" placeholder="e.g. astraea">
+      </div>
+      <div style="display:flex;gap:0.75rem;">
+        <button class="btn btn-primary" onclick="emailSaveAccount()">Save Account</button>
+        <button class="btn btn-secondary" onclick="emailCancelForm()">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Test Email -->
+    <div class="section-card">
+      <div class="section-title"><span class="sec-icon">&#128232;</span> Send Test Email</div>
+      <div class="config-field" style="margin-bottom:0.75rem;">
+        <div class="config-label">Recipient</div>
+        <input type="email" class="config-input-wide" id="email-test-recipient" placeholder="test@example.com">
+      </div>
+      <button class="btn btn-secondary" onclick="emailSendTest()">Send Test</button>
+      <div id="email-test-result" style="margin-top:0.5rem;font-size:0.8125rem;"></div>
+    </div>
+    {% endif %}
+
     <!-- Action Bar -->
     <div class="action-bar">
       <button class="btn btn-secondary" onclick="showToolsList()">&larr; Back to Tools</button>
       {% if tool.name == 'web_search' %}
       <button class="btn btn-primary" onclick="saveToolConfig('web_search')">Save Configuration</button>
+      {% endif %}
+      {% if tool.name == 'email' %}
+      <button class="btn btn-primary" onclick="saveToolConfig('email')">Save Configuration</button>
       {% endif %}
     </div>
   </div>
@@ -3272,6 +3390,13 @@
           word_limit:   parseInt(document.getElementById('cfg-' + mode + '-words').value)  || 1500,
         };
       }
+    } else if (toolName === 'email') {
+      url = '/api/tools/email/config';
+      body = {
+        require_confirmation: document.getElementById('cfg-email-require-confirmation').checked,
+        api_base_url: document.getElementById('cfg-email-api-url').value.trim(),
+        timeout: parseInt(document.getElementById('cfg-email-timeout').value) || 30,
+      };
     } else {
       return;
     }
@@ -3291,6 +3416,130 @@
       showToast('Save failed: ' + e.message, true);
     }
   }
+
+  /* ═══ Email Tool — Account Management ═══════════════════════ */
+  let _emailAccounts = {{ email_config.accounts | tojson }};
+
+  function emailRenderAccounts() {
+    const container = document.getElementById('email-accounts-list');
+    if (!container) return;
+    if (!_emailAccounts.length) {
+      container.innerHTML = '<div style="color:#71717a;font-size:0.8125rem;">No accounts configured yet.</div>';
+      return;
+    }
+    container.innerHTML = _emailAccounts.map(a => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:0.625rem 0.75rem;border:1px solid rgba(63,63,70,0.18);border-radius:0.5rem;margin-bottom:0.5rem;background:rgba(24,24,27,0.03);">
+        <div>
+          <div style="font-weight:600;font-size:0.875rem;">${_esc(a.label || a.email || 'Unnamed')}</div>
+          <div style="font-size:0.75rem;color:#71717a;">${_esc(a.email || '')}${a.is_default ? ' &bull; <span style="color:#6366f1;">Default</span>' : ''}${a.is_user_email ? ' &bull; <span style="color:#10b981;">User</span>' : ''}${a.agent_default ? ' &bull; Agent: ' + _esc(a.agent_default) : ''}</div>
+          <div style="font-size:0.6875rem;color:#a1a1aa;">${_esc(a.smtp_server || 'smtp.gmail.com')}:${a.smtp_port || 465} &bull; Password: ${a.password_set ? '&#10004; set' : '&#10008; not set'}</div>
+        </div>
+        <div style="display:flex;gap:0.5rem;">
+          <button class="btn btn-secondary" style="padding:0.25rem 0.625rem;font-size:0.75rem;" onclick="emailEditAccount('${a.id}')">Edit</button>
+          <button class="btn btn-secondary" style="padding:0.25rem 0.625rem;font-size:0.75rem;color:#ef4444;" onclick="emailDeleteAccount('${a.id}')">Delete</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function emailShowAccountForm(acct) {
+    document.getElementById('email-account-form').style.display = '';
+    document.getElementById('email-form-title').textContent = acct ? 'Edit Account' : 'Add Account';
+    document.getElementById('email-acct-id').value = acct ? acct.id : '';
+    document.getElementById('email-acct-label').value = acct ? (acct.label || '') : '';
+    document.getElementById('email-acct-email').value = acct ? (acct.email || '') : '';
+    document.getElementById('email-acct-password').value = '';
+    document.getElementById('email-acct-smtp-server').value = acct ? (acct.smtp_server || 'smtp.gmail.com') : 'smtp.gmail.com';
+    document.getElementById('email-acct-smtp-port').value = acct ? (acct.smtp_port || 465) : 465;
+    document.getElementById('email-acct-signature').value = acct ? (acct.signature || '') : '';
+    document.getElementById('email-acct-is-default').checked = acct ? !!acct.is_default : false;
+    document.getElementById('email-acct-is-user-email').checked = acct ? !!acct.is_user_email : false;
+    document.getElementById('email-acct-agent-default').value = acct ? (acct.agent_default || '') : '';
+  }
+
+  function emailCancelForm() {
+    document.getElementById('email-account-form').style.display = 'none';
+  }
+
+  function emailEditAccount(id) {
+    const acct = _emailAccounts.find(a => a.id === id);
+    if (acct) emailShowAccountForm(acct);
+  }
+
+  async function emailSaveAccount() {
+    const data = {
+      id: document.getElementById('email-acct-id').value || undefined,
+      label: document.getElementById('email-acct-label').value.trim(),
+      email: document.getElementById('email-acct-email').value.trim(),
+      password: document.getElementById('email-acct-password').value || '••••••••',
+      smtp_server: document.getElementById('email-acct-smtp-server').value.trim() || 'smtp.gmail.com',
+      smtp_port: parseInt(document.getElementById('email-acct-smtp-port').value) || 465,
+      signature: document.getElementById('email-acct-signature').value,
+      is_default: document.getElementById('email-acct-is-default').checked,
+      is_user_email: document.getElementById('email-acct-is-user-email').checked,
+      agent_default: document.getElementById('email-acct-agent-default').value.trim(),
+    };
+    try {
+      const resp = await fetch('/api/tools/email/accounts', {
+        method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)
+      });
+      if (resp.ok) {
+        showToast('Account saved');
+        emailCancelForm();
+        await emailRefreshAccounts();
+      } else {
+        showToast('Save failed', true);
+      }
+    } catch (e) { showToast('Save failed: ' + e.message, true); }
+  }
+
+  async function emailDeleteAccount(id) {
+    if (!confirm('Delete this email account?')) return;
+    try {
+      const resp = await fetch('/api/tools/email/accounts/' + id, { method: 'DELETE' });
+      if (resp.ok) {
+        showToast('Account deleted');
+        await emailRefreshAccounts();
+      } else { showToast('Delete failed', true); }
+    } catch (e) { showToast('Delete failed: ' + e.message, true); }
+  }
+
+  async function emailRefreshAccounts() {
+    try {
+      const resp = await fetch('/api/tools/email/accounts');
+      const data = await resp.json();
+      _emailAccounts = data.accounts || [];
+      emailRenderAccounts();
+    } catch (e) { /* ignore */ }
+  }
+
+  async function emailSendTest() {
+    const recipient = document.getElementById('email-test-recipient').value.trim();
+    const resultEl = document.getElementById('email-test-result');
+    if (!recipient || !recipient.includes('@')) {
+      resultEl.innerHTML = '<span style="color:#ef4444;">Enter a valid email address.</span>';
+      return;
+    }
+    resultEl.innerHTML = '<span style="color:#71717a;">Sending...</span>';
+    try {
+      const acct = _emailAccounts.find(a => a.is_default) || _emailAccounts[0];
+      const resp = await fetch('/api/tools/email/test', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ recipient, account_id: acct ? acct.id : '' })
+      });
+      const data = await resp.json();
+      if (data.status === 'sent') {
+        resultEl.innerHTML = '<span style="color:#10b981;">&#10004; ' + _esc(data.message) + '</span>';
+      } else {
+        resultEl.innerHTML = '<span style="color:#ef4444;">&#10008; ' + _esc(data.error || 'Failed') + '</span>';
+      }
+    } catch (e) {
+      resultEl.innerHTML = '<span style="color:#ef4444;">&#10008; ' + _esc(e.message) + '</span>';
+    }
+  }
+
+  // Initialize email accounts list on load
+  document.addEventListener('DOMContentLoaded', () => { emailRenderAccounts(); });
 
   /* ═══ Cost Tracker — Pricing Management ═══════════════════════ */
   const _ctPricing = {{ pricing | tojson }};

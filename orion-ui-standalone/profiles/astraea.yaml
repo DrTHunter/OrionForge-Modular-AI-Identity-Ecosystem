@@ -2,6 +2,7 @@ allowed_tools:
 - continuation_update
 - directives
 - echo
+- email
 - memory
 - web_search
 base_url: https://api.openai.com/v1

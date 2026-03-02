@@ -10,6 +10,7 @@ allowed_tools:
 - continuation_update
 - directives
 - echo
+- email
 - memory
 policy:
   max_iterations: 25

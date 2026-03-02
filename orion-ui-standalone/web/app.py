@@ -649,15 +649,18 @@ _TOOL_CATALOGUE = [
     },
     {
         "name": "email",
+        "display_name": "Email Tool",
         "icon": "📧",
         "icon_bg": "rgba(244,114,182,0.12)",
         "icon_color": "#f472b6",
-        "description": "Draft, preview, and send emails via SMTP. Supports confirmation gating so the user can approve before sending.",
-        "status": "planned",
+        "description": "Send emails through configured SMTP accounts or API relay. Supports multiple accounts, confirmation gating, and per-agent defaults.",
+        "status": "ready",
         "parameters": [
-            {"name": "to", "type": "string", "required": True, "description": "Recipient email address", "enum": []},
-            {"name": "subject", "type": "string", "required": True, "description": "Email subject line", "enum": []},
-            {"name": "body", "type": "string", "required": True, "description": "Email body text", "enum": []},
+            {"name": "action", "type": "string", "required": True, "description": "send, status, or accounts", "enum": ["send", "status", "accounts"]},
+            {"name": "subject", "type": "string", "required": False, "description": "Email subject line (required for send)", "enum": []},
+            {"name": "body", "type": "string", "required": False, "description": "Email body text (required for send)", "enum": []},
+            {"name": "recipients", "type": "array", "required": False, "description": "List of recipient email addresses (required for send)", "enum": []},
+            {"name": "account_id", "type": "string", "required": False, "description": "Specific account ID to send from", "enum": []},
             {"name": "confirmation", "type": "string", "required": False, "description": "Set to 'confirmed' after user approval", "enum": ["confirmed"]},
         ],
     },
@@ -819,6 +822,12 @@ async def page_tools(request: Request):
         }
     except Exception:
         faiss_stats = {"total_memories": 0, "vault_path": str(_VAULT_PATH), "faiss_dir": str(_FAISS_DIR), "embedding_model": "all-mpnet-base-v2"}
+    # Email tool config
+    try:
+        from src.tools.email_tool import get_effective_config as _email_cfg
+        email_config = _email_cfg()
+    except Exception:
+        email_config = {"api_base_url": "http://127.0.0.1:8000", "timeout": 30, "require_confirmation": True, "accounts": []}
     return templates.TemplateResponse("tools.html", {
         "request": request,
         "page": "tools",
@@ -833,6 +842,7 @@ async def page_tools(request: Request):
         "memory_profile": memory_profile,
         "faiss_stats": faiss_stats,
         "router_config": _load_model_router_config(),
+        "email_config": email_config,
     })
 
 
@@ -855,6 +865,84 @@ async def api_web_search_config_put(request: Request):
     _save_settings(settings)
     from src.tools.web_search import get_effective_config
     return JSONResponse(get_effective_config())
+
+
+# ── Email Tool Config API ──────────────────────────────────────────
+@app.get("/api/tools/email/config", response_class=JSONResponse)
+async def api_email_config_get():
+    """Return the effective email configuration (passwords masked)."""
+    from src.tools.email_tool import get_effective_config as email_cfg
+    return JSONResponse(email_cfg())
+
+
+@app.put("/api/tools/email/config", response_class=JSONResponse)
+async def api_email_config_put(request: Request):
+    """Save top-level email configuration (api_base_url, timeout, require_confirmation)."""
+    body = await request.json()
+    settings = _load_settings()
+    if "tool_config" not in settings:
+        settings["tool_config"] = {}
+    if "email" not in settings["tool_config"]:
+        settings["tool_config"]["email"] = {}
+    ecfg = settings["tool_config"]["email"]
+    # Only update non-account fields
+    for key in ("api_base_url", "timeout", "require_confirmation"):
+        if key in body:
+            ecfg[key] = body[key]
+    _save_settings(settings)
+    from src.tools.email_tool import get_effective_config as email_cfg
+    return JSONResponse(email_cfg())
+
+
+@app.get("/api/tools/email/accounts", response_class=JSONResponse)
+async def api_email_accounts_list():
+    """List all email accounts (passwords masked)."""
+    from src.tools.email_tool import get_accounts
+    return JSONResponse({"accounts": get_accounts()})
+
+
+@app.post("/api/tools/email/accounts", response_class=JSONResponse)
+async def api_email_accounts_save(request: Request):
+    """Create or update an email account."""
+    body = await request.json()
+    from src.tools.email_tool import save_account
+    saved = save_account(body)
+    # Mask password for response
+    resp = dict(saved)
+    if resp.get("password"):
+        resp["password"] = "••••••••"
+        resp["password_set"] = True
+    return JSONResponse(resp)
+
+
+@app.delete("/api/tools/email/accounts/{account_id}", response_class=JSONResponse)
+async def api_email_accounts_delete(account_id: str):
+    """Delete an email account."""
+    from src.tools.email_tool import delete_account
+    if delete_account(account_id):
+        return JSONResponse({"deleted": True, "id": account_id})
+    return JSONResponse({"error": "Account not found"}, status_code=404)
+
+
+@app.post("/api/tools/email/test", response_class=JSONResponse)
+async def api_email_test(request: Request):
+    """Send a test email through a specific account."""
+    body = await request.json()
+    account_id = body.get("account_id", "")
+    recipient = body.get("recipient", "")
+    if not recipient or "@" not in recipient:
+        return JSONResponse({"error": "Valid recipient email required"}, status_code=400)
+    from src.tools.email_tool import get_account_by_id, get_default_account, _send_via_smtp
+    account = get_account_by_id(account_id) if account_id else get_default_account()
+    if not account:
+        return JSONResponse({"error": "No account found"}, status_code=404)
+    import json as _json
+    result = _send_via_smtp(
+        account, "Orion Forge — Email Test",
+        "This is a test email sent from Orion Forge to verify your email configuration.",
+        [recipient],
+    )
+    return JSONResponse(_json.loads(result))
 
 
 # ── Identity Profile Config API ────────────────────────────────────
@@ -1264,7 +1352,7 @@ async def api_chat_send(req: ChatRequest):
                 # Execute
                 log.info("[tools] Round %d — calling %s(%s)", _round + 1, fn_name, fn_args)
                 try:
-                    result = execute_tool(fn_name, fn_args)
+                    result = execute_tool(fn_name, fn_args, agent_name=req.agent)
                 except Exception as exc:
                     result = f"Error: {exc}"
                     log.error("[tools] %s failed: %s", fn_name, exc)

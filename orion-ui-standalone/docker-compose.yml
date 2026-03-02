@@ -11,4 +11,19 @@ services:
       - ./data:/app/data
     environment:
       - PYTHONUNBUFFERED=1
+      - EMAIL_API_URL=http://mailpit:8025
+    depends_on:
+      - mailpit
+    restart: unless-stopped
+
+  # Lightweight SMTP test server — catches all outgoing mail
+  # Web UI: http://localhost:8025   SMTP: localhost:1025
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "8025:8025"   # Web UI
+      - "1025:1025"   # SMTP
+    environment:
+      - MP_SMTP_AUTH_ACCEPT_ANY=true
+      - MP_SMTP_AUTH_ALLOW_INSECURE=true
     restart: unless-stopped
