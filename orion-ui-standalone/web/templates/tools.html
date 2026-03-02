@@ -2272,6 +2272,36 @@
         </div>
       </div>
 
+      <!-- Stats (read-only system state) -->
+      <div class="ct-overview" style="grid-template-columns: repeat(4, 1fr);">
+        <div class="ct-card">
+          <div class="ct-card-label">Stored Memories</div>
+          <div class="ct-card-value" style="color:#22d3ee;">{{ faiss_stats.total_memories }}</div>
+          <div class="ct-card-sub">entries in vault</div>
+        </div>
+        <div class="ct-card">
+          <div class="ct-card-label">Embedding Model</div>
+          <div class="ct-card-value" style="font-size:1rem;color:#a5b4fc;">{{ faiss_stats.embedding_model }}</div>
+          <div class="ct-card-sub">sentence-transformers</div>
+        </div>
+        <div class="ct-card">
+          <div class="ct-card-label">Index Type</div>
+          <div class="ct-card-value" style="font-size:1.25rem;color:#6ee7b7;">IndexFlatIP</div>
+          <div class="ct-card-sub">inner-product similarity</div>
+        </div>
+        <div class="ct-card">
+          <div class="ct-card-label">Vector Dimensions</div>
+          <div class="ct-card-value" style="color:#fbbf24;">768</div>
+          <div class="ct-card-sub">per memory embedding</div>
+        </div>
+      </div>
+
+      <!-- Config notice -->
+      <div class="ct-status-bar" style="margin-bottom:1.5rem;">
+        <span class="ct-status-dot ok"></span>
+        FAISS memory data is <strong>read-only</strong>. Configuration policies below are <strong>editable</strong> &mdash; changes are applied at next index build/retrieval.
+      </div>
+
       <!-- Profile Meta -->
       <div class="section-card">
         <div class="section-title"><span class="sec-icon">&#128196;</span> Profile Info</div>

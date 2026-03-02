@@ -45,54 +45,6 @@
     <p class="text-sm text-forge-muted mt-1">Browse, search, and manage persistent agent memories (FAISS-indexed)</p>
   </div>
 
-  <!-- FAISS System Info Banner -->
-  <style>
-    .vault-overview { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 1rem; }
-    @media (max-width: 768px) { .vault-overview { grid-template-columns: repeat(2, 1fr); } }
-    @media (max-width: 480px) { .vault-overview { grid-template-columns: 1fr; } }
-    .vault-card {
-      background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 0.75rem;
-      padding: 1.125rem 1.25rem;
-    }
-    .vault-card-label { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #52525b; margin-bottom: 0.25rem; }
-    .vault-card-value { font-size: 1.5rem; font-weight: 800; color: #fff; font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace; }
-    .vault-card-sub { font-size: 0.75rem; color: #52525b; margin-top: 0.25rem; }
-    .vault-status-bar {
-      display: flex; align-items: center; gap: 0.75rem; padding: 0.625rem 1rem;
-      background: rgba(16,185,129,0.06); border: 1px solid rgba(16,185,129,0.15);
-      border-radius: 0.5rem; margin-bottom: 1.5rem; font-size: 0.8125rem; color: #6ee7b7;
-    }
-    .vault-status-dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; flex-shrink: 0; background: #10b981; }
-  </style>
-
-  <div class="vault-overview">
-    <div class="vault-card">
-      <div class="vault-card-label">Stored Memories</div>
-      <div class="vault-card-value" style="color:#22d3ee;">{{ faiss_stats.total_memories }}</div>
-      <div class="vault-card-sub">entries in vault</div>
-    </div>
-    <div class="vault-card">
-      <div class="vault-card-label">Embedding Model</div>
-      <div class="vault-card-value" style="font-size:1rem;color:#a5b4fc;">{{ faiss_stats.embedding_model }}</div>
-      <div class="vault-card-sub">sentence-transformers</div>
-    </div>
-    <div class="vault-card">
-      <div class="vault-card-label">Index Type</div>
-      <div class="vault-card-value" style="font-size:1.25rem;color:#6ee7b7;">IndexFlatIP</div>
-      <div class="vault-card-sub">inner-product similarity</div>
-    </div>
-    <div class="vault-card">
-      <div class="vault-card-label">Vector Dimensions</div>
-      <div class="vault-card-value" style="color:#fbbf24;">768</div>
-      <div class="vault-card-sub">per memory embedding</div>
-    </div>
-  </div>
-
-  <div class="vault-status-bar">
-    <span class="vault-status-dot"></span>
-    FAISS memory data is <strong style="color:#22d3ee;">read-only</strong>. Configuration policies below are <strong style="color:#a5b4fc;">editable</strong> &mdash; changes are applied at next index build/retrieval.
-  </div>
-
   <!-- Stats -->
   <div class="card mb-6">
     <div class="flex flex-wrap items-center gap-6">

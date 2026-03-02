@@ -586,23 +586,11 @@ async def page_vault(request: Request, q: str = "", scope: str = "", category: s
         scopes = sorted({getattr(m, "scope", "") for m in all_raw} - {""})
         categories = sorted({getattr(m, "category", "") for m in all_raw} - {""})
 
-    # FAISS system stats for the info banner
-    try:
-        faiss_stats = {
-            "total_memories": stats.get("active_count", 0),
-            "vault_path": str(_VAULT_PATH),
-            "faiss_dir": str(_FAISS_DIR),
-            "embedding_model": "all-mpnet-base-v2",
-        }
-    except Exception:
-        faiss_stats = {"total_memories": 0, "vault_path": str(_VAULT_PATH), "faiss_dir": str(_FAISS_DIR), "embedding_model": "all-mpnet-base-v2"}
-
     return templates.TemplateResponse("vault.html", {
         "request": request, "page": "vault",
         "memories": memories, "stats": stats,
         "scopes": scopes, "categories": categories,
         "search_query": q, "current_scope": scope, "current_category": category,
-        "faiss_stats": faiss_stats,
     })
 
 @app.get("/knowledge", response_class=HTMLResponse)
