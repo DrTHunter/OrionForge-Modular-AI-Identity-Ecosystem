@@ -87,11 +87,11 @@ class CostTrackerTool:
                     },
                     "provider": {
                         "type": "string",
-                        "description": "LLM provider name (openai, anthropic, deepseek, ollama).",
+                        "description": "LLM provider name (openai, anthropic, google, deepseek, xai, mistral, ollama).",
                     },
                     "model": {
                         "type": "string",
-                        "description": "Model name (e.g. gpt-4o, claude-sonnet-4-20250514).",
+                        "description": "Model name (e.g. gpt-5.2, gpt-4.1, o3, claude-opus-4-6, gemini-2.5-pro, deepseek-chat, grok-4, mistral-large).",
                     },
                     "input_per_1m": {
                         "type": "number",
