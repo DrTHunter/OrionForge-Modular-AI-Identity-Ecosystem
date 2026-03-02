@@ -8,7 +8,6 @@ Supported providers:
   Replicate    — Flux Pro, Flux Schnell, Flux Dev, Playground v2.5
   FAL.ai       — Flux Pro v1.1, Flux Schnell, Flux Dev
   Leonardo AI  — Diffusion XL, Lightning XL, Vision XL, Kino XL
-  Banana Dev   — Custom deployed models
   Midjourney   — Via third-party API proxy
 """
 
@@ -304,49 +303,6 @@ async def _generate_image(provider: str, prompt: str, img_cfg: dict, settings: d
             return {"error": f"Leonardo AI {exc.response.status_code}: {exc.response.text[:300]}"}
         except Exception as exc:
             return {"error": f"Leonardo AI error: {exc}"}
-
-    # ── Banana Dev ───────────────────────────────────────────────
-    if provider == "banana":
-        api_key = img_cfg.get("banana_api_key", "")
-        model_key = img_cfg.get("banana_model_key", "")
-        if not api_key or not model_key:
-            return {"error": "Banana Dev API key and model key must be set"}
-        try:
-            async with httpx.AsyncClient(timeout=180) as c:
-                sr = await c.post(
-                    "https://api.banana.dev/start/v4/",
-                    headers={"Content-Type": "application/json"},
-                    json={"apiKey": api_key, "modelKey": model_key,
-                          "modelInputs": {"prompt": prompt, "num_outputs": 1,
-                                          "width": 1024, "height": 1024}},
-                )
-                sr.raise_for_status()
-                call_id = sr.json().get("callID", "")
-                if not call_id:
-                    return {"error": "No callID from Banana Dev"}
-                for _ in range(60):
-                    await asyncio.sleep(3)
-                    ck = await c.post(
-                        "https://api.banana.dev/check/v4/",
-                        headers={"Content-Type": "application/json"},
-                        json={"apiKey": api_key, "callID": call_id},
-                    )
-                    ck.raise_for_status()
-                    cd = ck.json()
-                    msg = cd.get("message", "").lower()
-                    if msg == "success":
-                        out = cd.get("modelOutputs", [{}])[0]
-                        img_url = out.get("image") or out.get("url") or out.get("output", "")
-                        if img_url:
-                            return {"url": img_url, "provider": "banana"}
-                        return {"error": "No image in Banana Dev response"}
-                    elif msg == "error":
-                        return {"error": f"Banana Dev error: {cd}"}
-                return {"error": "Banana Dev prediction timed out"}
-        except httpx.HTTPStatusError as exc:
-            return {"error": f"Banana Dev {exc.response.status_code}: {exc.response.text[:300]}"}
-        except Exception as exc:
-            return {"error": f"Banana Dev error: {exc}"}
 
     # ── Midjourney (via proxy) ───────────────────────────────────
     if provider == "midjourney":

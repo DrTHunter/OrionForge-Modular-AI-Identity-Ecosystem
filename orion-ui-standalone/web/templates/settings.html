@@ -245,22 +245,6 @@
       </div>
     </div>
 
-    <!-- ── Banana Dev ──────────────────────────────────── -->
-    <div class="settings-section">
-      <div class="settings-section-title">Banana Dev</div>
-      <div class="settings-section-desc">Run custom image models deployed on banana.dev (SDXL, custom fine-tunes, etc.).</div>
-      <div class="mb-3">
-        <label class="block text-xs text-forge-muted mb-1">API Key</label>
-        <input id="img-banana-key" type="password" class="search-input w-full img-key-input" style="max-width:32rem;"
-               placeholder="API key" value="{{ settings.get('image', {}).get('banana_api_key', '') }}">
-      </div>
-      <div class="mb-3">
-        <label class="block text-xs text-forge-muted mb-1">Model Key</label>
-        <input id="img-banana-model-key" type="text" class="search-input w-full" style="max-width:32rem;"
-               placeholder="Model deployment key" value="{{ settings.get('image', {}).get('banana_model_key', '') }}">
-      </div>
-    </div>
-
     <!-- ── Midjourney ──────────────────────────────────── -->
     <div class="settings-section">
       <div class="settings-section-title">Midjourney</div>
@@ -557,7 +541,6 @@ const IMAGE_MODELS = [
   {v:'leonardo_lightning_xl',  l:'Leonardo AI · Lightning XL',        k:'img-leonardo-key'},
   {v:'leonardo_vision_xl',     l:'Leonardo AI · Vision XL',           k:'img-leonardo-key'},
   {v:'leonardo_kino_xl',       l:'Leonardo AI · Kino XL',             k:'img-leonardo-key'},
-  {v:'banana',                 l:'Banana Dev · Custom Model',         k:'img-banana-key'},
   {v:'midjourney',             l:'Midjourney (Proxy)',                 k:'img-midjourney-key'},
 ];
 function refreshImageModels() {
@@ -590,8 +573,6 @@ async function saveImageSettings() {
     replicate_api_key:    document.getElementById('img-replicate-key').value,
     fal_api_key:          document.getElementById('img-fal-key').value,
     leonardo_api_key:     document.getElementById('img-leonardo-key').value,
-    banana_api_key:       document.getElementById('img-banana-key').value,
-    banana_model_key:     document.getElementById('img-banana-model-key').value,
     midjourney_url:       document.getElementById('img-midjourney-url').value,
     midjourney_api_key:   document.getElementById('img-midjourney-key').value,
   };

@@ -75,6 +75,9 @@
           <span class="nav-icon">∞</span><span class="nav-label">AGI Loop</span>
         </a>
         <div class="border-t border-forge-border my-3 nav-divider"></div>
+        <a href="/skins" class="nav-link {% if page == 'skins' %}active{% endif %}">
+          <span class="nav-icon">🎨</span><span class="nav-label">Skins</span>
+        </a>
         <a href="/settings" class="nav-link {% if page == 'settings' %}active{% endif %}">
           <span class="nav-icon">⚙</span><span class="nav-label">Settings</span>
         </a>
@@ -107,6 +110,66 @@
       document.getElementById('main-nav').classList.add('collapsed');
       document.getElementById('main-content').classList.add('nav-collapsed');
     }
+
+    /* ── Global Skin Loader ──────────────────────────────────── */
+    (function loadSkinOnBoot() {
+      const SKIN_MAP = {
+        cyberpunk_neon:   { bg:"#0a0a12",card:"#14101e",border:"#2a1a3a",accent:"#ec4899",accent2:"#f472b6",highlight:"#22d3ee",sidebar:"#0d0d18" },
+        retro_terminal:   { bg:"#0a0a00",card:"#111108",border:"#2a2a10",accent:"#f59e0b",accent2:"#fbbf24",highlight:"#f59e0b",sidebar:"#08080a" },
+        dark_forest:      { bg:"#070d07",card:"#0f170f",border:"#1a2a1a",accent:"#22c55e",accent2:"#4ade80",highlight:"#a3e635",sidebar:"#060b06" },
+        paper_white:      { bg:"#f5f5fa",card:"#ffffff",border:"#e2e2ea",accent:"#6366f1",accent2:"#818cf8",highlight:"#0ea5e9",sidebar:"#ebebf2",text:"#1e1e2e",textMuted:"#6b7280" },
+        midnight_ocean:   { bg:"#070b16",card:"#0d1525",border:"#1a2a4a",accent:"#0ea5e9",accent2:"#38bdf8",highlight:"#67e8f9",sidebar:"#060a14" },
+        blood_moon:       { bg:"#0d0808",card:"#1a0e0e",border:"#3a1a1a",accent:"#ef4444",accent2:"#f87171",highlight:"#fbbf24",sidebar:"#0a0606" },
+        aurora_borealis:  { bg:"#0a0812",card:"#120e1e",border:"#2a1e3e",accent:"#a855f7",accent2:"#c084fc",highlight:"#22d3ee",sidebar:"#08060e" },
+        solarized_dark:   { bg:"#002b36",card:"#073642",border:"#1a4a5a",accent:"#b58900",accent2:"#cb4b16",highlight:"#2aa198",sidebar:"#001f27" },
+        frost_glass:      { bg:"#0c1017",card:"#151c28",border:"#243042",accent:"#64748b",accent2:"#94a3b8",highlight:"#38bdf8",sidebar:"#0a0d14" },
+        synthwave_84:     { bg:"#12081e",card:"#1c1035",border:"#35205a",accent:"#e879f9",accent2:"#f0abfc",highlight:"#fbbf24",sidebar:"#0e0618" },
+        dracula:          { bg:"#282a36",card:"#343746",border:"#44475a",accent:"#bd93f9",accent2:"#ff79c6",highlight:"#8be9fd",sidebar:"#21222c" },
+      };
+
+      function applySkinGlobal(id) {
+        const c = SKIN_MAP[id];
+        if (!c) return; // default — no overrides
+        const text = c.text || '#e4e4e7';
+        const textMuted = c.textMuted || '#a1a1aa';
+        let el = document.getElementById('skin-global-css');
+        if (!el) { el = document.createElement('style'); el.id = 'skin-global-css'; document.head.appendChild(el); }
+        el.textContent = `
+          body { background: ${c.bg} !important; color: ${text} !important; }
+          .main-nav { background: ${c.sidebar} !important; border-right-color: ${c.border} !important; }
+          .nav-link.active { background: ${c.accent}22 !important; color: ${c.accent2} !important; }
+          .nav-link:hover { background: ${c.accent}18 !important; }
+          .card, .section-card, .tool-card, .agent-card, [class*="stat-card"],
+          .skin-card, .memory-entry { background: ${c.card} !important; border-color: ${c.border} !important; }
+          .filter-btn { background: ${c.card} !important; border-color: ${c.border} !important; color: ${textMuted} !important; }
+          .filter-btn.active { background: ${c.accent}33 !important; color: ${c.accent2} !important; border-color: ${c.accent}50 !important; }
+          .search-input { background: ${c.card} !important; border-color: ${c.border} !important; color: ${text} !important; }
+          .search-input:focus { border-color: ${c.accent} !important; }
+          .badge-scope { background: ${c.accent}25 !important; color: ${c.accent2} !important; }
+          .badge-category { background: ${c.highlight}20 !important; color: ${c.highlight} !important; }
+          .tab-btn.active, .tab-btn[class*="active"] { color: ${c.accent2} !important; border-color: ${c.accent} !important; }
+          ::-webkit-scrollbar-thumb { background: ${c.border} !important; }
+          .nav-footer { border-top-color: ${c.border} !important; }
+          .border-forge-border { border-color: ${c.border} !important; }
+          .bg-forge-bg { background-color: ${c.bg} !important; }
+          .bg-forge-card { background-color: ${c.card} !important; }
+          .text-forge-accent { color: ${c.accent} !important; }
+          .text-forge-accent2 { color: ${c.accent2} !important; }
+          .text-forge-highlight { color: ${c.highlight} !important; }
+        `;
+        // Also update Tailwind palette if available
+        if (typeof tailwind !== 'undefined' && tailwind.config) {
+          const f = tailwind.config.theme.extend.colors.forge;
+          f.bg = c.bg; f.card = c.card; f.border = c.border;
+          f.accent = c.accent; f.accent2 = c.accent2; f.highlight = c.highlight;
+        }
+      }
+
+      // Fetch active skin and apply immediately
+      fetch('/api/skin').then(r => r.json()).then(d => {
+        if (d.skin && d.skin !== 'default') applySkinGlobal(d.skin);
+      }).catch(() => {});
+    })();
   </script>
 </body>
 </html>
