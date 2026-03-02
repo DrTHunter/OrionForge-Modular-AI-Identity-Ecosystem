@@ -30,6 +30,9 @@ Covers:
   - LLM Client factory (create_client dispatch, unknown provider)
   - App helpers (_strip_memory_tags, _extract_and_save_memories patterns)
   - Seed UI Knowledge script (MEMORIES list structure validation)
+  - InboxTool (all 4 actions: send, add_task, next_task, ack; validation,
+    edge cases, JSONL+MD persistence, dry_run, priority, needs_approval,
+    registry dispatch)
 """
 
 import json
@@ -2197,9 +2200,9 @@ def test_tool_registry_torture():
     # list_registered_tools
     tools = list_registered_tools()
     check("registry: list returns list", isinstance(tools, list))
-    check("registry: 7 tools", len(tools) == 7, f"got {len(tools)}: {tools}")
+    check("registry: 8 tools", len(tools) == 8, f"got {len(tools)}: {tools}")
     for expected in ("echo", "memory", "directives", "cost_tracker",
-                     "continuation_update", "web_search", "email"):
+                     "continuation_update", "web_search", "email", "inbox"):
         check(f"registry: has '{expected}'", expected in tools)
 
     # _resolve_tool — known tool
@@ -2831,6 +2834,281 @@ def test_metering_dataclass_ops():
 
 
 # ═════════════════════════════════════════════
+# INBOX TOOL — full coverage
+# ═════════════════════════════════════════════
+def test_inbox_tool_torture():
+    print("\n=== TORTURE: InboxTool — Full Coverage ===")
+    import src.data_paths as dp
+    from src.tools.inbox import InboxTool
+
+    orig_root = dp.DATA_ROOT
+    tmp = tempfile.mkdtemp()
+    dp.DATA_ROOT = tmp
+
+    try:
+        # ── Definition ────────────────────────────────────────
+        defn = InboxTool.definition()
+        check("inbox def name", defn["name"] == "inbox")
+        check("inbox def has parameters", "parameters" in defn)
+        props = defn["parameters"]["properties"]
+        check("inbox def has action", "action" in props)
+        check("inbox def has type", "type" in props)
+        check("inbox def has priority", "priority" in props)
+        check("inbox def has subject", "subject" in props)
+        check("inbox def has body", "body" in props)
+        check("inbox def has task", "task" in props)
+        check("inbox def has task_id", "task_id" in props)
+        check("inbox def has needs_approval", "needs_approval" in props)
+        check("inbox def has dry_run", "dry_run" in props)
+        check("inbox action enum", set(props["action"]["enum"]) == {"send", "add_task", "next_task", "ack"})
+
+        # ── Unknown action ────────────────────────────────────
+        r = InboxTool.execute({"action": "delete"})
+        check("unknown action → error", "error" in r.lower())
+        check("unknown action lists valid", "send" in r)
+
+        # ── send: validation ──────────────────────────────────
+        r = InboxTool.execute({"action": "send"})
+        check("send no subject → error", "error" in r.lower())
+
+        r = InboxTool.execute({"action": "send", "subject": "Hi"})
+        check("send no body → error", "error" in r.lower())
+
+        r = InboxTool.execute({"action": "send", "subject": "", "body": "text"})
+        check("send empty subject → error", "error" in r.lower())
+
+        r = InboxTool.execute({"action": "send", "subject": "Hi", "body": ""})
+        check("send empty body → error", "error" in r.lower())
+
+        r = InboxTool.execute({"action": "send", "subject": "x" * 121, "body": "ok"})
+        check("send subject too long → error", "120" in r)
+
+        r = InboxTool.execute({"action": "send", "subject": "ok", "body": "x" * 2001})
+        check("send body too long → error", "2000" in r)
+
+        r = InboxTool.execute({"action": "send", "type": "invalid_type",
+                               "subject": "ok", "body": "ok"})
+        check("send invalid type → error", "error" in r.lower())
+
+        r = InboxTool.execute({"action": "send", "priority": "critical",
+                               "subject": "ok", "body": "ok"})
+        check("send invalid priority → error", "error" in r.lower())
+
+        # ── send: success paths ───────────────────────────────
+        r = InboxTool.execute({"action": "send", "type": "message",
+                               "subject": "Hello operator", "body": "Testing.",
+                               "_from": "orion"})
+        check("send message ok", "sent" in r.lower())
+        check("send message has id", "id=" in r)
+
+        r = InboxTool.execute({"action": "send", "type": "warning",
+                               "priority": "urgent", "subject": "Boundary hit",
+                               "body": "Safety concern.", "needs_approval": True,
+                               "_from": "astraea"})
+        check("send warning ok", "sent" in r.lower())
+
+        r = InboxTool.execute({"action": "send", "type": "tool_request",
+                               "subject": "Need web access", "body": "Please enable.",
+                               "_from": "callum"})
+        check("send tool_request ok", "sent" in r.lower())
+
+        r = InboxTool.execute({"action": "send", "type": "idea",
+                               "subject": "Could do X", "body": "Proposal details.",
+                               "profile": "orion"})
+        check("send idea ok (profile as sender)", "sent" in r.lower())
+
+        # Default type (message) when type omitted
+        r = InboxTool.execute({"action": "send", "subject": "No type",
+                               "body": "Should default to message."})
+        check("send default type ok", "sent" in r.lower())
+
+        # ── add_task: validation ──────────────────────────────
+        r = InboxTool.execute({"action": "add_task"})
+        check("add_task no task → error", "error" in r.lower())
+
+        r = InboxTool.execute({"action": "add_task", "task": "  "})
+        check("add_task whitespace → error", "error" in r.lower())
+
+        # ── add_task: success ─────────────────────────────────
+        r = InboxTool.execute({"action": "add_task",
+                               "task": "Review inbox implementation",
+                               "profile": "orion"})
+        check("add_task ok", "added" in r.lower())
+        check("add_task has id", "id=" in r)
+        # Extract the task ID for later
+        task_id_1 = r.split("id=")[1].split(")")[0]
+
+        r = InboxTool.execute({"action": "add_task",
+                               "task": "Second task",
+                               "priority": "high"})
+        check("add_task second ok", "added" in r.lower())
+        task_id_2 = r.split("id=")[1].split(")")[0]
+
+        # ── add_task: dry_run ─────────────────────────────────
+        r = InboxTool.execute({"action": "add_task",
+                               "task": "Dry run task", "dry_run": True})
+        check("add_task dry_run prefix", "DRY_RUN" in r)
+        check("add_task dry_run no write", "Would add" in r)
+
+        # ── next_task ─────────────────────────────────────────
+        r = InboxTool.execute({"action": "next_task"})
+        check("next_task found", "TASK_FOUND" in r)
+        check("next_task has first task", "Review inbox" in r)
+
+        # Second next_task should return the second task
+        r = InboxTool.execute({"action": "next_task"})
+        check("next_task second found", "TASK_FOUND" in r)
+        check("next_task has second task", "Second task" in r)
+
+        # Third next_task — no more pending
+        r = InboxTool.execute({"action": "next_task"})
+        check("next_task empty", "NO_TASK" in r)
+
+        # next_task with profile filter — add a scoped task
+        InboxTool.execute({"action": "add_task", "task": "Scoped task",
+                           "profile": "astraea"})
+        InboxTool.execute({"action": "add_task", "task": "Other task",
+                           "profile": "orion"})
+        r = InboxTool.execute({"action": "next_task", "profile": "astraea"})
+        check("next_task scoped", "Scoped task" in r)
+
+        # next_task dry_run
+        r = InboxTool.execute({"action": "next_task", "dry_run": True})
+        check("next_task dry_run", "DRY_RUN" in r)
+
+        # ── ack ───────────────────────────────────────────────
+        r = InboxTool.execute({"action": "ack"})
+        check("ack no id → error", "error" in r.lower())
+
+        r = InboxTool.execute({"action": "ack", "task_id": ""})
+        check("ack empty id → error", "error" in r.lower())
+
+        r = InboxTool.execute({"action": "ack", "task_id": "nonexistent"})
+        check("ack nonexistent → error", "not found" in r.lower())
+
+        # Ack a real entry (task_id_1 was marked done by next_task, should still be ackable)
+        r = InboxTool.execute({"action": "ack", "task_id": task_id_1})
+        check("ack real task ok", "acknowledged" in r.lower())
+
+        # Ack again → already acknowledged
+        r = InboxTool.execute({"action": "ack", "task_id": task_id_1})
+        check("ack duplicate → already", "already" in r.lower())
+
+        # Ack dry_run
+        r = InboxTool.execute({"action": "ack", "task_id": task_id_2,
+                               "dry_run": True})
+        check("ack dry_run", "DRY_RUN" in r)
+
+        # ── JSONL persistence check ───────────────────────────
+        jsonl_path = os.path.join(tmp, "shared", "inbox.jsonl")
+        check("JSONL file exists", os.path.isfile(jsonl_path))
+        with open(jsonl_path, "r", encoding="utf-8") as f:
+            lines = [l.strip() for l in f if l.strip()]
+        check("JSONL has entries", len(lines) >= 5)
+
+        # Parse each line as valid JSON
+        all_valid = True
+        for line in lines:
+            try:
+                obj = json.loads(line)
+                if "id" not in obj or "created_at" not in obj:
+                    all_valid = False
+            except json.JSONDecodeError:
+                all_valid = False
+        check("JSONL all valid JSON with id+created_at", all_valid)
+
+        # Check for expected fields in a send entry
+        first_send = json.loads(lines[0])
+        check("send entry has 'from'", "from" in first_send)
+        check("send entry has 'type'", "type" in first_send)
+        check("send entry has 'subject'", "subject" in first_send)
+        check("send entry has 'body'", "body" in first_send)
+        check("send entry has 'status'", "status" in first_send)
+        check("send entry status is unread", first_send["status"] == "unread")
+
+        # Check task entry structures
+        task_entries = [json.loads(l) for l in lines if json.loads(l).get("type") == "task"]
+        check("task entries found", len(task_entries) >= 2)
+        if task_entries:
+            check("task entry has 'task' field", "task" in task_entries[0])
+
+        # ── MD persistence check ──────────────────────────────
+        md_path = os.path.join(tmp, "shared", "inbox.md")
+        check("MD file exists", os.path.isfile(md_path))
+        with open(md_path, "r", encoding="utf-8") as f:
+            md_content = f.read()
+        check("MD has header", "# Inbox" in md_content)
+        check("MD has entries", "---" in md_content)
+        check("MD has subject lines", "**Subject:**" in md_content)
+        check("MD has id refs", "*id:" in md_content)
+
+        # Check specific entries in MD
+        check("MD has message type", "message" in md_content)
+        check("MD has warning type", "warning" in md_content)
+        check("MD has priority tag", "[URGENT]" in md_content)
+        check("MD has approval tag", "[NEEDS APPROVAL]" in md_content)
+
+    finally:
+        dp.DATA_ROOT = orig_root
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def test_inbox_registry_dispatch():
+    print("\n=== TORTURE: Inbox — Registry Dispatch ===")
+    import src.data_paths as dp
+    from src.tools.registry import execute_tool, list_registered_tools
+
+    orig_root = dp.DATA_ROOT
+    tmp = tempfile.mkdtemp()
+    dp.DATA_ROOT = tmp
+
+    try:
+        # Inbox is registered
+        tools = list_registered_tools()
+        check("inbox in registry", "inbox" in tools)
+
+        # Execute via registry
+        r = execute_tool("inbox", {"action": "send", "type": "message",
+                                   "subject": "Registry test",
+                                   "body": "Dispatched through registry."})
+        check("registry send ok", "sent" in r.lower())
+
+        # Execute add_task via registry
+        r = execute_tool("inbox", {"action": "add_task",
+                                   "task": "Registry task test"})
+        check("registry add_task ok", "added" in r.lower())
+
+        # Execute next_task via registry
+        r = execute_tool("inbox", {"action": "next_task"})
+        check("registry next_task ok", "TASK_FOUND" in r)
+
+    finally:
+        dp.DATA_ROOT = orig_root
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def test_inbox_data_path():
+    print("\n=== TORTURE: inbox_path in data_paths ===")
+    import src.data_paths as dp
+
+    orig_root = dp.DATA_ROOT
+    tmp = tempfile.mkdtemp()
+    dp.DATA_ROOT = tmp
+
+    try:
+        ip = dp.inbox_path()
+        check("inbox_path is string", isinstance(ip, str))
+        check("inbox_path contains inbox", "inbox" in ip.lower())
+        check("inbox_path in shared dir", "shared" in ip)
+        check("inbox_path ends jsonl", ip.endswith(".jsonl"))
+        # shared dir should exist after calling inbox_path
+        check("shared dir created", os.path.isdir(os.path.join(tmp, "shared")))
+    finally:
+        dp.DATA_ROOT = orig_root
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ═════════════════════════════════════════════
 if __name__ == "__main__":
     test_boundary_policy()
     test_pii_guard_extended()
@@ -2869,6 +3147,9 @@ if __name__ == "__main__":
     test_app_memory_helpers()
     test_seed_ui_knowledge_structure()
     test_metering_dataclass_ops()
+    test_inbox_tool_torture()
+    test_inbox_registry_dispatch()
+    test_inbox_data_path()
 
     print(f"\n{'='*40}")
     print(f"Results: {PASS} passed, {FAIL} failed")

@@ -31,6 +31,7 @@ _TOOL_MAP: Dict[str, Tuple[str, str, bool]] = {
     "continuation_update": ("src.tools.continuation_update", "ContinuationUpdateTool", False),
     "web_search":          ("src.tools.web_search",          "WebSearchTool",         True),
     "email":               ("src.tools.email_tool",          "EmailTool",             True),
+    "inbox":               ("src.tools.inbox",               "InboxTool",             False),
 }
 
 # Singleton cache for stateful tool instances

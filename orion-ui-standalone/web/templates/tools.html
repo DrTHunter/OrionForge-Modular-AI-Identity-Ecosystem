@@ -66,6 +66,7 @@
   .meta-chip.status-ready { background: rgba(16,185,129,0.12); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.25); }
   .meta-chip.status-planned { background: rgba(99,102,241,0.15); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.3); }
   .meta-chip.status-concept { background: rgba(245,158,11,0.12); color: #fcd34d; border: 1px solid rgba(245,158,11,0.25); }
+  .meta-chip.tag-agi-loop { background: rgba(236,72,153,0.12); color: #f472b6; border: 1px solid rgba(236,72,153,0.25); }
 
   /* ── Stats row ────────────────────────────────────────────────── */
   .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 1.5rem; }
@@ -180,6 +181,7 @@
   .badge-ready { background: rgba(16,185,129,0.12); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.25); }
   .badge-planned { background: rgba(99,102,241,0.15); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.3); }
   .badge-concept { background: rgba(245,158,11,0.12); color: #fcd34d; border: 1px solid rgba(245,158,11,0.25); }
+  .badge-agi-loop { background: rgba(236,72,153,0.12); color: #f472b6; border: 1px solid rgba(236,72,153,0.25); }
 
   .empty-state {
     text-align: center; padding: 3rem 1rem; color: #52525b;
@@ -765,6 +767,9 @@
             <span class="meta-chip status-{{ tool.status }}">
               {% if tool.status == 'ready' %}&#10004; Ready{% elif tool.status == 'planned' %}&#9678; Planned{% else %}&#9671; Concept{% endif %}
             </span>
+            {% if 'agi_loop' in tool.get('tags', []) %}
+            <span class="meta-chip tag-agi-loop">&#9889; AGI Loop Specific</span>
+            {% endif %}
           </div>
         </div>
       </div>
@@ -795,6 +800,9 @@
         <div class="tool-status-badge badge-{{ tool.status }}">
           {% if tool.status == 'ready' %}&#10004; Ready{% elif tool.status == 'planned' %}&#9678; Planned{% else %}&#9671; Concept{% endif %}
         </div>
+        {% if 'agi_loop' in tool.get('tags', []) %}
+        <div class="tool-status-badge badge-agi-loop">&#9889; AGI Loop Specific</div>
+        {% endif %}
       </div>
     </div>
 
@@ -982,18 +990,22 @@
 
       {% elif tool.name == 'continuation_update' %}
       <div class="about-text">
-        Signals progress during multi-step workflows. Allows the agent to post status updates so the runtime can track long-running operations and decide whether to continue, pause, or escalate.
+        Maintains a single evolving <code>continuation.md</code> file per profile under <code>data/&lt;profile&gt;/</code>. Agents use this to leave pickup notes for future sessions — what was in progress, what to do next, and any important context.
       </div>
       <div class="about-sub">Commands</div>
       <div class="about-commands">
         <div class="about-cmd">
-          <span class="about-cmd-name">update</span>
-          <span class="about-cmd-desc">Post an <code>update</code> message describing current progress. Optional <code>status</code> field: <code>in_progress</code>, <code>completed</code>, or <code>blocked</code>.</span>
+          <span class="about-cmd-name">append</span>
+          <span class="about-cmd-desc">Add a timestamped <code>## YYYY-MM-DD HH:MM:SS</code> block with the provided <code>content</code>. Good for chronological progress notes.</span>
+        </div>
+        <div class="about-cmd">
+          <span class="about-cmd-name">replace_section</span>
+          <span class="about-cmd-desc">Upsert a named <code>## Section</code> heading. If the section exists it is replaced in-place; otherwise it is appended. Requires the <code>section</code> parameter.</span>
         </div>
       </div>
       <div class="about-sub">How the AI uses this tool</div>
       <div class="about-text">
-        During multi-step tasks (research, code generation, analysis), the agent calls this tool between steps to report what it has done and what comes next. If it gets stuck, it sets status to <code>blocked</code> so the runtime can intervene.
+        At the end of a session or between long tasks, the agent writes a continuation note so the next session can pick up seamlessly. Named sections like <code>Status</code>, <code>Next Steps</code>, or <code>Blockers</code> stay current via <code>replace_section</code>, while <code>append</code> builds a running log.
       </div>
 
       {% elif tool.name == 'runtime_info' %}

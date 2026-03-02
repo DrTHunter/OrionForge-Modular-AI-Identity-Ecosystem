@@ -121,6 +121,12 @@ def human_journal_path() -> str:
     return os.path.join(DATA_ROOT, "journal.md")
 
 
+def inbox_path() -> str:
+    """``data/shared/inbox.jsonl`` — unified agent-to-operator inbox."""
+    shared_dir()  # ensure exists
+    return os.path.join(DATA_ROOT, "shared", "inbox.jsonl")
+
+
 def tool_requests_path() -> str:
     """``data/tool_requests.md`` — human-readable tool request log."""
     _ensure(DATA_ROOT)
