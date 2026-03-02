@@ -240,6 +240,94 @@ def test_directive_store_stress():
 
 
 # ═════════════════════════════════════════════
+# 4b. DirectivesTool stress — rapid actions with scope switching
+# ═════════════════════════════════════════════
+def test_directives_tool_stress():
+    print("\n=== STRESS: DirectivesTool — Rapid Actions + Scope Switching ===")
+    from src.tools.directives_tool import DirectivesTool
+    import src.tools.directives_tool as dt_mod
+    import src.directives.manifest as manifest_mod
+
+    tool = DirectivesTool()
+    tmp = tempfile.mkdtemp()
+    orig_dir = dt_mod._DIRECTIVES_DIR
+    orig_scopes = manifest_mod.SCOPES
+    orig_dt_scopes = getattr(dt_mod, 'SCOPES', None)
+
+    dt_mod._DIRECTIVES_DIR = tmp
+
+    try:
+        # Create 10 scope files with 20 sections each = 200+ total sections
+        scope_names = [f"scope_{i}" for i in range(10)]
+        all_scopes = tuple(["shared"] + scope_names)
+        manifest_mod.SCOPES = all_scopes
+        dt_mod.SCOPES = all_scopes
+
+        # Write shared.md
+        lines = ["## Shared Rule {i}\nShared content for rule {i}.\n".format(i=i)
+                 for i in range(20)]
+        with open(os.path.join(tmp, "shared.md"), "w", encoding="utf-8") as f:
+            f.write("\n".join(lines))
+
+        # Write per-scope files
+        for scope in scope_names:
+            lines = ["## {s} Section {i}\n{s} content number {i} keyword_{i}.\n".format(
+                s=scope.title(), i=i) for i in range(20)]
+            with open(os.path.join(tmp, f"{scope}.md"), "w", encoding="utf-8") as f:
+                f.write("\n".join(lines))
+
+        # _resolve_scopes rapidly
+        t0 = time.time()
+        for _ in range(500):
+            DirectivesTool._resolve_scopes(None)
+            DirectivesTool._resolve_scopes("shared")
+            DirectivesTool._resolve_scopes("scope_3")
+        elapsed = time.time() - t0
+        check(f"1500 _resolve_scopes in {elapsed:.3f}s", elapsed < 2.0)
+
+        # Rapid list calls — no scope
+        t0 = time.time()
+        for _ in range(50):
+            r = json.loads(tool.execute({"action": "list"}))
+        elapsed = time.time() - t0
+        check(f"50 list (all scopes) in {elapsed:.2f}s", elapsed < 10.0)
+        check("list all → 220 headings", r["count"] == 220,
+              f"got {r['count']}")
+
+        # Rapid search with scope switching
+        t0 = time.time()
+        for i in range(100):
+            scope = scope_names[i % len(scope_names)]
+            r = json.loads(tool.execute({
+                "action": "search", "query": f"keyword_{i % 20}", "scope": scope,
+            }))
+        elapsed = time.time() - t0
+        check(f"100 scoped searches in {elapsed:.2f}s", elapsed < 10.0)
+
+        # Rapid get calls
+        t0 = time.time()
+        for i in range(50):
+            tool.execute({"action": "get", "heading": f"Shared Rule {i % 20}"})
+        elapsed = time.time() - t0
+        check(f"50 get calls in {elapsed:.2f}s", elapsed < 5.0)
+
+        # Scope isolation: searching scope_0 should not return scope_5 content
+        r = json.loads(tool.execute({
+            "action": "search", "query": "Scope_5", "scope": "scope_0",
+        }))
+        for sec in r.get("sections", []):
+            check(f"scope isolation: {sec['scope']} in (shared, scope_0)",
+                  sec["scope"] in ("shared", "scope_0"))
+
+    finally:
+        dt_mod._DIRECTIVES_DIR = orig_dir
+        manifest_mod.SCOPES = orig_scopes
+        if orig_dt_scopes is not None:
+            dt_mod.SCOPES = orig_dt_scopes
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ═════════════════════════════════════════════
 # 5. Governance: validate_manifest edge cases
 # ═════════════════════════════════════════════
 def test_manifest_validation_stress():
@@ -672,6 +760,7 @@ if __name__ == "__main__":
     test_vault_bulk_delete()
     test_pii_guard_stress()
     test_directive_store_stress()
+    test_directives_tool_stress()
     test_manifest_validation_stress()
     test_active_directives_stress()
     test_runtime_policy_stress()

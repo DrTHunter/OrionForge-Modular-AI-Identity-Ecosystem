@@ -94,5 +94,6 @@
     "elevenlabs_api_key": "",
     "elevenlabs_voice_id": "",
     "edge_tts_voice": "en-US-AriaNeural"
-  }
+  },
+  "skin": "midnight_ocean"
 }

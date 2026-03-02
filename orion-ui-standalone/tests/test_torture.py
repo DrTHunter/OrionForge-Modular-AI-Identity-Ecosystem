@@ -2025,10 +2025,12 @@ def test_email_tool_torture():
 # 26. DirectivesTool — all 5 actions
 # ═════════════════════════════════════════════
 def test_directives_tool_torture():
-    """Exhaustive tests for DirectivesTool: search, list, get, manifest, changes."""
-    print("\n=== TORTURE: DirectivesTool — All 5 Actions ===")
+    """Exhaustive tests for DirectivesTool: search, list, get, manifest, changes,
+    _resolve_scopes helper, dynamic SCOPES import, and scope filtering."""
+    print("\n=== TORTURE: DirectivesTool — All 5 Actions + _resolve_scopes ===")
     from src.tools.directives_tool import DirectivesTool
     import src.tools.directives_tool as dt_mod
+    import src.directives.manifest as manifest_mod
 
     tool = DirectivesTool()
 
@@ -2041,9 +2043,45 @@ def test_directives_tool_torture():
     for a in ("search", "list", "get", "manifest", "changes"):
         check(f"dt action '{a}'", a in actions)
 
+    # --- _resolve_scopes helper ---
+    print("\n  -- _resolve_scopes --")
+    # No scope → returns all SCOPES
+    all_scopes = DirectivesTool._resolve_scopes(None)
+    check("resolve None → all SCOPES", len(all_scopes) > 0)
+    check("resolve None → list", isinstance(all_scopes, list))
+    check("resolve None includes 'shared'", "shared" in all_scopes)
+
+    # Explicit scope → always includes shared
+    scoped = DirectivesTool._resolve_scopes("astraea")
+    check("resolve 'astraea' → 2 items", len(scoped) == 2)
+    check("resolve astraea has shared", "shared" in scoped)
+    check("resolve astraea has astraea", "astraea" in scoped)
+
+    # Scope = shared → just shared (no duplication)
+    scoped_shared = DirectivesTool._resolve_scopes("shared")
+    check("resolve 'shared' → ['shared']", scoped_shared == ["shared"])
+
+    # Case insensitivity
+    scoped_upper = DirectivesTool._resolve_scopes("ASTRAEA")
+    check("resolve case insensitive", "astraea" in scoped_upper)
+    check("resolve case → shared present", "shared" in scoped_upper)
+
+    # SCOPES module-level import is a tuple/list with entries
+    check("SCOPES imported", hasattr(dt_mod, 'SCOPES') or hasattr(manifest_mod, 'SCOPES'))
+    from src.directives.manifest import SCOPES as imported_scopes
+    check("SCOPES is tuple/list", isinstance(imported_scopes, (tuple, list)))
+    check("SCOPES has shared", "shared" in imported_scopes)
+
     tmp = tempfile.mkdtemp()
     orig_dir = dt_mod._DIRECTIVES_DIR
     dt_mod._DIRECTIVES_DIR = tmp
+
+    # Temporarily override SCOPES so the tool uses our tmp scopes
+    orig_scopes = manifest_mod.SCOPES
+    manifest_mod.SCOPES = ("shared", "astraea")
+    # Also patch the module-level reference in directives_tool if it cached it
+    orig_dt_scopes = getattr(dt_mod, 'SCOPES', None)
+    dt_mod.SCOPES = ("shared", "astraea")
 
     try:
         # Create scope files
@@ -2072,17 +2110,39 @@ def test_directives_tool_torture():
         r = json.loads(tool.execute({"action": "search", "query": "values", "limit": 1}))
         check("dt search limit=1", r["count"] <= 1)
 
+        # search: with scope filter
+        r = json.loads(tool.execute({"action": "search", "query": "stargazing", "scope": "astraea"}))
+        check("dt search scoped ok", r["status"] == "ok")
+        check("dt search scoped finds result", r["count"] > 0)
+        # All returned sections should be from shared or astraea
+        for sec in r.get("sections", []):
+            check(f"dt search scoped scope={sec['scope']}",
+                  sec["scope"] in ("shared", "astraea"))
+
         # --- list ---
         r = json.loads(tool.execute({"action": "list"}))
         check("dt list ok", r["status"] == "ok")
-        check("dt list count > 0", r["count"] > 0)
+        check("dt list count = 5 total", r["count"] == 5,
+              f"got {r['count']}: {r.get('headings', [])}")
         check("dt list has headings", len(r["headings"]) > 0)
+
+        # list: with scope filter → only shared
+        r = json.loads(tool.execute({"action": "list", "scope": "shared"}))
+        check("dt list shared only count=3", r["count"] == 3,
+              f"got {r['count']}")
 
         # --- get ---
         r = json.loads(tool.execute({"action": "get", "heading": "Core Values"}))
         check("dt get ok", r["status"] == "ok")
         check("dt get heading", r["heading"] == "Core Values")
         check("dt get body", "helpful" in r["body"])
+        check("dt get scope", r["scope"] == "shared")
+
+        # get: agent-scoped section
+        r = json.loads(tool.execute({"action": "get", "heading": "Star Protocol"}))
+        check("dt get agent section ok", r["status"] == "ok")
+        check("dt get agent heading", r["heading"] == "Star Protocol")
+        check("dt get agent scope", r["scope"] == "astraea")
 
         # get: missing heading param
         r = json.loads(tool.execute({"action": "get"}))
@@ -2098,17 +2158,31 @@ def test_directives_tool_torture():
         check("dt manifest has count", r["count"] > 0)
         check("dt manifest has directives", len(r["directives"]) > 0)
 
+        # manifest: with scope filter
+        r = json.loads(tool.execute({"action": "manifest", "scope": "astraea"}))
+        check("dt manifest scoped ok", r["status"] == "ok")
+        for d in r.get("directives", []):
+            check(f"dt manifest scoped entry scope={d['scope']}",
+                  d["scope"] in ("shared", "astraea"))
+
         # --- changes ---
         r = json.loads(tool.execute({"action": "changes"}))
         check("dt changes ok", r["status"] == "ok")
         check("dt changes has totals", "total_added" in r)
+        check("dt changes has added list", isinstance(r.get("added"), list))
+        check("dt changes has removed list", isinstance(r.get("removed"), list))
+        check("dt changes has changed list", isinstance(r.get("changed"), list))
 
         # --- unknown action ---
         r = json.loads(tool.execute({"action": "BOGUS"}))
         check("dt unknown action → error", r["status"] == "error")
+        check("dt unknown msg mentions action", "BOGUS" in r.get("message", ""))
 
     finally:
         dt_mod._DIRECTIVES_DIR = orig_dir
+        manifest_mod.SCOPES = orig_scopes
+        if orig_dt_scopes is not None:
+            dt_mod.SCOPES = orig_dt_scopes
         shutil.rmtree(tmp, ignore_errors=True)
 
 
