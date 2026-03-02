@@ -1,5 +1,6 @@
 # ──────────────────────────────────────────────────────────
 #  Orion Forge — LLM Pricing Registry
+#  Last updated: 2026-03-02
 # ──────────────────────────────────────────────────────────
 #
 #  All prices are in USD per 1 million tokens.
@@ -17,14 +18,87 @@
 #
 #  This file is auto-managed by the Pricing page UI.
 #  Manual edits are safe — the UI merges, never overwrites blindly.
+#
+#  Sources:
+#    OpenAI    — https://developers.openai.com/api/docs/pricing
+#    Anthropic — https://platform.claude.com/docs/en/about-claude/pricing
+#    Google    — https://ai.google.dev/gemini-api/docs/pricing
+#    DeepSeek  — https://api-docs.deepseek.com/quick_start/pricing
+#    xAI       — https://docs.x.ai/docs/models
+#    Mistral   — https://mistral.ai/pricing
 # ──────────────────────────────────────────────────────────
 
+# ═══════════════════════════════════════════════════════════
+#  OpenAI
+# ═══════════════════════════════════════════════════════════
 openai:
   _default:
     input_per_1m: 2.50
     cached_input_per_1m: 1.25
     output_per_1m: 10.00
     training_per_1m: 0.00
+
+  # ── GPT-5 family ──────────────────────────────────────
+  gpt-5.2:
+    input_per_1m: 1.75
+    cached_input_per_1m: 0.175
+    output_per_1m: 14.00
+    training_per_1m: 0.00
+
+  gpt-5.2-pro:
+    input_per_1m: 21.00
+    cached_input_per_1m: 0.00
+    output_per_1m: 168.00
+    training_per_1m: 0.00
+
+  gpt-5.1:
+    input_per_1m: 1.25
+    cached_input_per_1m: 0.125
+    output_per_1m: 10.00
+    training_per_1m: 0.00
+
+  gpt-5:
+    input_per_1m: 1.25
+    cached_input_per_1m: 0.125
+    output_per_1m: 10.00
+    training_per_1m: 0.00
+
+  gpt-5-pro:
+    input_per_1m: 15.00
+    cached_input_per_1m: 0.00
+    output_per_1m: 120.00
+    training_per_1m: 0.00
+
+  gpt-5-mini:
+    input_per_1m: 0.25
+    cached_input_per_1m: 0.025
+    output_per_1m: 2.00
+    training_per_1m: 0.00
+
+  gpt-5-nano:
+    input_per_1m: 0.05
+    cached_input_per_1m: 0.005
+    output_per_1m: 0.40
+    training_per_1m: 0.00
+
+  # ── GPT-4 family ──────────────────────────────────────
+  gpt-4.1:
+    input_per_1m: 2.00
+    cached_input_per_1m: 0.50
+    output_per_1m: 8.00
+    training_per_1m: 25.00
+
+  gpt-4.1-mini:
+    input_per_1m: 0.40
+    cached_input_per_1m: 0.10
+    output_per_1m: 1.60
+    training_per_1m: 5.00
+
+  gpt-4.1-nano:
+    input_per_1m: 0.10
+    cached_input_per_1m: 0.025
+    output_per_1m: 0.40
+    training_per_1m: 1.50
 
   gpt-4o:
     input_per_1m: 2.50
@@ -36,36 +110,19 @@ openai:
     input_per_1m: 0.15
     cached_input_per_1m: 0.075
     output_per_1m: 0.60
-    training_per_1m: 0.30
+    training_per_1m: 3.00
 
-  gpt-4.1:
-    input_per_1m: 2.00
-    cached_input_per_1m: 0.50
-    output_per_1m: 8.00
-    training_per_1m: 0.00
-
-  gpt-4.1-mini:
-    input_per_1m: 0.40
-    cached_input_per_1m: 0.10
-    output_per_1m: 1.60
-    training_per_1m: 0.00
-
-  gpt-4.1-nano:
-    input_per_1m: 0.10
-    cached_input_per_1m: 0.025
-    output_per_1m: 0.40
-    training_per_1m: 0.00
-
-  gpt-5.1:
-    input_per_1m: 5.00
-    cached_input_per_1m: 1.25
-    output_per_1m: 15.00
-    training_per_1m: 0.00
-
+  # ── Reasoning models (o-series) ───────────────────────
   o1:
     input_per_1m: 15.00
     cached_input_per_1m: 7.50
     output_per_1m: 60.00
+    training_per_1m: 0.00
+
+  o1-pro:
+    input_per_1m: 150.00
+    cached_input_per_1m: 0.00
+    output_per_1m: 600.00
     training_per_1m: 0.00
 
   o1-mini:
@@ -75,6 +132,18 @@ openai:
     training_per_1m: 0.00
 
   o3:
+    input_per_1m: 2.00
+    cached_input_per_1m: 0.50
+    output_per_1m: 8.00
+    training_per_1m: 0.00
+
+  o3-pro:
+    input_per_1m: 20.00
+    cached_input_per_1m: 0.00
+    output_per_1m: 80.00
+    training_per_1m: 0.00
+
+  o3-deep-research:
     input_per_1m: 10.00
     cached_input_per_1m: 2.50
     output_per_1m: 40.00
@@ -92,6 +161,92 @@ openai:
     output_per_1m: 4.40
     training_per_1m: 0.00
 
+  o4-mini-deep-research:
+    input_per_1m: 2.00
+    cached_input_per_1m: 0.50
+    output_per_1m: 8.00
+    training_per_1m: 0.00
+
+  # ── Codex models ──────────────────────────────────────
+  gpt-5.3-codex:
+    input_per_1m: 1.75
+    cached_input_per_1m: 0.175
+    output_per_1m: 14.00
+    training_per_1m: 0.00
+
+  gpt-5.2-codex:
+    input_per_1m: 1.75
+    cached_input_per_1m: 0.175
+    output_per_1m: 14.00
+    training_per_1m: 0.00
+
+  gpt-5.1-codex:
+    input_per_1m: 1.25
+    cached_input_per_1m: 0.125
+    output_per_1m: 10.00
+    training_per_1m: 0.00
+
+  gpt-5.1-codex-mini:
+    input_per_1m: 0.25
+    cached_input_per_1m: 0.025
+    output_per_1m: 2.00
+    training_per_1m: 0.00
+
+  codex-mini-latest:
+    input_per_1m: 1.50
+    cached_input_per_1m: 0.375
+    output_per_1m: 6.00
+    training_per_1m: 0.00
+
+  # ── Computer use ──────────────────────────────────────
+  computer-use-preview:
+    input_per_1m: 3.00
+    cached_input_per_1m: 0.00
+    output_per_1m: 12.00
+    training_per_1m: 0.00
+
+  # ── Embeddings ────────────────────────────────────────
+  text-embedding-3-small:
+    input_per_1m: 0.02
+    cached_input_per_1m: 0.00
+    output_per_1m: 0.00
+    training_per_1m: 0.00
+
+  text-embedding-3-large:
+    input_per_1m: 0.13
+    cached_input_per_1m: 0.00
+    output_per_1m: 0.00
+    training_per_1m: 0.00
+
+  # ── Realtime (text) ──────────────────────────────────
+  gpt-realtime:
+    input_per_1m: 4.00
+    cached_input_per_1m: 0.40
+    output_per_1m: 16.00
+    training_per_1m: 0.00
+
+  gpt-realtime-mini:
+    input_per_1m: 0.60
+    cached_input_per_1m: 0.06
+    output_per_1m: 2.40
+    training_per_1m: 0.00
+
+  # ── Legacy ────────────────────────────────────────────
+  gpt-4-turbo:
+    input_per_1m: 10.00
+    cached_input_per_1m: 0.00
+    output_per_1m: 30.00
+    training_per_1m: 0.00
+
+  gpt-3.5-turbo:
+    input_per_1m: 0.50
+    cached_input_per_1m: 0.00
+    output_per_1m: 1.50
+    training_per_1m: 8.00
+
+# ═══════════════════════════════════════════════════════════
+#  Anthropic
+# ═══════════════════════════════════════════════════════════
 anthropic:
   _default:
     input_per_1m: 3.00
@@ -99,25 +254,20 @@ anthropic:
     output_per_1m: 15.00
     training_per_1m: 0.00
 
-  claude-sonnet-4-20250514:
-    input_per_1m: 3.00
-    cached_input_per_1m: 0.30
-    output_per_1m: 15.00
+  # ── Opus family ───────────────────────────────────────
+  claude-opus-4-6:
+    input_per_1m: 5.00
+    cached_input_per_1m: 0.50
+    output_per_1m: 25.00
     training_per_1m: 0.00
 
-  claude-3.5-sonnet:
-    input_per_1m: 3.00
-    cached_input_per_1m: 0.30
-    output_per_1m: 15.00
+  claude-opus-4-5:
+    input_per_1m: 5.00
+    cached_input_per_1m: 0.50
+    output_per_1m: 25.00
     training_per_1m: 0.00
 
-  claude-3-haiku:
-    input_per_1m: 0.25
-    cached_input_per_1m: 0.03
-    output_per_1m: 1.25
-    training_per_1m: 0.00
-
-  claude-3-opus:
+  claude-opus-4-1:
     input_per_1m: 15.00
     cached_input_per_1m: 1.50
     output_per_1m: 75.00
@@ -129,25 +279,295 @@ anthropic:
     output_per_1m: 75.00
     training_per_1m: 0.00
 
+  claude-3-opus:
+    input_per_1m: 15.00
+    cached_input_per_1m: 1.50
+    output_per_1m: 75.00
+    training_per_1m: 0.00
+
+  # ── Sonnet family ─────────────────────────────────────
+  claude-sonnet-4-6:
+    input_per_1m: 3.00
+    cached_input_per_1m: 0.30
+    output_per_1m: 15.00
+    training_per_1m: 0.00
+
+  claude-sonnet-4-5:
+    input_per_1m: 3.00
+    cached_input_per_1m: 0.30
+    output_per_1m: 15.00
+    training_per_1m: 0.00
+
+  claude-sonnet-4-20250514:
+    input_per_1m: 3.00
+    cached_input_per_1m: 0.30
+    output_per_1m: 15.00
+    training_per_1m: 0.00
+
+  claude-sonnet-4:
+    input_per_1m: 3.00
+    cached_input_per_1m: 0.30
+    output_per_1m: 15.00
+    training_per_1m: 0.00
+
+  claude-3.5-sonnet:
+    input_per_1m: 3.00
+    cached_input_per_1m: 0.30
+    output_per_1m: 15.00
+    training_per_1m: 0.00
+
+  claude-sonnet-3-7:
+    input_per_1m: 3.00
+    cached_input_per_1m: 0.30
+    output_per_1m: 15.00
+    training_per_1m: 0.00
+
+  # ── Haiku family ──────────────────────────────────────
+  claude-haiku-4-5:
+    input_per_1m: 1.00
+    cached_input_per_1m: 0.10
+    output_per_1m: 5.00
+    training_per_1m: 0.00
+
+  claude-haiku-3-5:
+    input_per_1m: 0.80
+    cached_input_per_1m: 0.08
+    output_per_1m: 4.00
+    training_per_1m: 0.00
+
+  claude-3-haiku:
+    input_per_1m: 0.25
+    cached_input_per_1m: 0.03
+    output_per_1m: 1.25
+    training_per_1m: 0.00
+
+# ═══════════════════════════════════════════════════════════
+#  Google — Gemini
+# ═══════════════════════════════════════════════════════════
+google:
+  _default:
+    input_per_1m: 1.25
+    cached_input_per_1m: 0.125
+    output_per_1m: 10.00
+    training_per_1m: 0.00
+
+  # ── Gemini 3.x ────────────────────────────────────────
+  gemini-3.1-pro-preview:
+    input_per_1m: 2.00
+    cached_input_per_1m: 0.20
+    output_per_1m: 12.00
+    training_per_1m: 0.00
+
+  gemini-3-pro-preview:
+    input_per_1m: 2.00
+    cached_input_per_1m: 0.20
+    output_per_1m: 12.00
+    training_per_1m: 0.00
+
+  gemini-3-flash-preview:
+    input_per_1m: 0.50
+    cached_input_per_1m: 0.05
+    output_per_1m: 3.00
+    training_per_1m: 0.00
+
+  # ── Gemini 2.5 ────────────────────────────────────────
+  gemini-2.5-pro:
+    input_per_1m: 1.25
+    cached_input_per_1m: 0.125
+    output_per_1m: 10.00
+    training_per_1m: 0.00
+
+  gemini-2.5-flash:
+    input_per_1m: 0.30
+    cached_input_per_1m: 0.03
+    output_per_1m: 2.50
+    training_per_1m: 0.00
+
+  gemini-2.5-flash-lite:
+    input_per_1m: 0.10
+    cached_input_per_1m: 0.01
+    output_per_1m: 0.40
+    training_per_1m: 0.00
+
+  # ── Gemini 2.0 ────────────────────────────────────────
+  gemini-2.0-flash:
+    input_per_1m: 0.10
+    cached_input_per_1m: 0.025
+    output_per_1m: 0.40
+    training_per_1m: 0.00
+
+  gemini-2.0-flash-lite:
+    input_per_1m: 0.075
+    cached_input_per_1m: 0.00
+    output_per_1m: 0.30
+    training_per_1m: 0.00
+
+  # ── Embeddings ────────────────────────────────────────
+  gemini-embedding-001:
+    input_per_1m: 0.15
+    cached_input_per_1m: 0.00
+    output_per_1m: 0.00
+    training_per_1m: 0.00
+
+# ═══════════════════════════════════════════════════════════
+#  DeepSeek  (V3.2 unified pricing — both models same rate)
+# ═══════════════════════════════════════════════════════════
 deepseek:
   _default:
-    input_per_1m: 0.14
-    cached_input_per_1m: 0.014
-    output_per_1m: 0.28
+    input_per_1m: 0.28
+    cached_input_per_1m: 0.028
+    output_per_1m: 0.42
     training_per_1m: 0.00
 
   deepseek-chat:
-    input_per_1m: 0.14
-    cached_input_per_1m: 0.014
-    output_per_1m: 0.28
+    input_per_1m: 0.28
+    cached_input_per_1m: 0.028
+    output_per_1m: 0.42
     training_per_1m: 0.00
 
   deepseek-reasoner:
-    input_per_1m: 0.55
-    cached_input_per_1m: 0.14
-    output_per_1m: 2.19
+    input_per_1m: 0.28
+    cached_input_per_1m: 0.028
+    output_per_1m: 0.42
     training_per_1m: 0.00
 
+# ═══════════════════════════════════════════════════════════
+#  xAI — Grok
+# ═══════════════════════════════════════════════════════════
+xai:
+  _default:
+    input_per_1m: 3.00
+    cached_input_per_1m: 0.75
+    output_per_1m: 15.00
+    training_per_1m: 0.00
+
+  grok-4:
+    input_per_1m: 3.00
+    cached_input_per_1m: 0.75
+    output_per_1m: 15.00
+    training_per_1m: 0.00
+
+  grok-3:
+    input_per_1m: 3.00
+    cached_input_per_1m: 0.75
+    output_per_1m: 15.00
+    training_per_1m: 0.00
+
+  grok-3-fast:
+    input_per_1m: 5.00
+    cached_input_per_1m: 1.25
+    output_per_1m: 25.00
+    training_per_1m: 0.00
+
+  grok-3-mini:
+    input_per_1m: 0.30
+    cached_input_per_1m: 0.075
+    output_per_1m: 0.50
+    training_per_1m: 0.00
+
+  grok-3-mini-fast:
+    input_per_1m: 0.60
+    cached_input_per_1m: 0.15
+    output_per_1m: 1.00
+    training_per_1m: 0.00
+
+  grok-2:
+    input_per_1m: 2.00
+    cached_input_per_1m: 0.50
+    output_per_1m: 10.00
+    training_per_1m: 0.00
+
+# ═══════════════════════════════════════════════════════════
+#  Mistral AI
+# ═══════════════════════════════════════════════════════════
+mistral:
+  _default:
+    input_per_1m: 2.00
+    cached_input_per_1m: 0.00
+    output_per_1m: 6.00
+    training_per_1m: 0.00
+
+  # ── Flagship ──────────────────────────────────────────
+  mistral-large:
+    input_per_1m: 2.00
+    cached_input_per_1m: 0.00
+    output_per_1m: 6.00
+    training_per_1m: 0.00
+
+  mistral-medium:
+    input_per_1m: 2.00
+    cached_input_per_1m: 0.00
+    output_per_1m: 6.00
+    training_per_1m: 0.00
+
+  mistral-small:
+    input_per_1m: 0.10
+    cached_input_per_1m: 0.00
+    output_per_1m: 0.30
+    training_per_1m: 0.00
+
+  # ── Ministral (edge) ─────────────────────────────────
+  ministral-3b:
+    input_per_1m: 0.04
+    cached_input_per_1m: 0.00
+    output_per_1m: 0.04
+    training_per_1m: 0.00
+
+  ministral-8b:
+    input_per_1m: 0.10
+    cached_input_per_1m: 0.00
+    output_per_1m: 0.10
+    training_per_1m: 0.00
+
+  # ── Reasoning (Magistral) ────────────────────────────
+  magistral-medium:
+    input_per_1m: 2.00
+    cached_input_per_1m: 0.00
+    output_per_1m: 5.00
+    training_per_1m: 0.00
+
+  magistral-small:
+    input_per_1m: 0.50
+    cached_input_per_1m: 0.00
+    output_per_1m: 1.50
+    training_per_1m: 0.00
+
+  # ── Code ──────────────────────────────────────────────
+  codestral:
+    input_per_1m: 0.30
+    cached_input_per_1m: 0.00
+    output_per_1m: 0.90
+    training_per_1m: 0.00
+
+  devstral:
+    input_per_1m: 0.10
+    cached_input_per_1m: 0.00
+    output_per_1m: 0.30
+    training_per_1m: 0.00
+
+  # ── Embeddings ────────────────────────────────────────
+  mistral-embed:
+    input_per_1m: 0.10
+    cached_input_per_1m: 0.00
+    output_per_1m: 0.00
+    training_per_1m: 0.00
+
+  # ── Open source (via Mistral API) ────────────────────
+  open-mistral-nemo:
+    input_per_1m: 0.15
+    cached_input_per_1m: 0.00
+    output_per_1m: 0.15
+    training_per_1m: 0.00
+
+  pixtral-large:
+    input_per_1m: 2.00
+    cached_input_per_1m: 0.00
+    output_per_1m: 6.00
+    training_per_1m: 0.00
+
+# ═══════════════════════════════════════════════════════════
+#  Ollama — local inference, always free
+# ═══════════════════════════════════════════════════════════
 ollama:
   _default:
     input_per_1m: 0.00
