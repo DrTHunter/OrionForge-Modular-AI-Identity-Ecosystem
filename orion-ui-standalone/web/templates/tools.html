@@ -1485,10 +1485,10 @@
           <div class="ct-card-value" style="color:#fbbf24;">{{ faiss_stats.vector_dimensions }}</div>
           <div class="ct-card-sub">per memory embedding &middot; click for details</div>
         </div>
-        <div class="ct-card embed-info-card" onclick="openSavedProfilesPopup()">
+        <div class="ct-card embed-info-card" onclick="openSavedIdentityProfilesPopup()">
           <div class="ct-card-label">Saved Profiles &#9432;</div>
           <div class="ct-card-value" style="color:#c084fc;" id="saved-profiles-count-faiss">0</div>
-          <div class="ct-card-sub">named configs &middot; click to manage</div>
+          <div class="ct-card-sub">identity configs &middot; click to manage</div>
         </div>
       </div>
 
@@ -1521,6 +1521,14 @@
           <div class="config-label">Description</div>
           <input type="text" class="config-input-wide" id="ip-description"
                  value="{{ identity_profile.get('description', '') }}">
+        </div>
+        <!-- Save-As / Load profile row (Identity) -->
+        <div style="display:flex;align-items:center;gap:0.75rem;margin-top:1rem;padding-top:0.75rem;border-top:1px solid #2a2a3a;">
+          <select id="ip-saved-profiles-select" class="task-map-select" style="flex:1;max-width:280px;" onchange="loadSavedIdentityProfile(this.value)">
+            <option value="">— Load a Saved Profile —</option>
+          </select>
+          <button class="btn btn-secondary" style="font-size:0.78rem;padding:0.4rem 0.75rem;" onclick="openSaveAsIdentityPopup()">&#128190; Save As…</button>
+          <button class="btn btn-secondary" style="font-size:0.78rem;padding:0.4rem 0.75rem;color:#f87171;" onclick="deleteSavedIdentityProfile()">&#128465; Delete</button>
         </div>
       </div>
 
@@ -2296,6 +2304,7 @@
       <div style="display:flex;justify-content:flex-end;gap:0.75rem;margin-top:1.5rem;padding-bottom:1rem;">
         <button class="btn btn-secondary" onclick="resetIdentityProfile()">Reset to Defaults</button>
         <button class="btn btn-primary" onclick="saveIdentityProfile()">Save Identity Profile</button>
+        <button class="btn btn-secondary" style="margin-left:0.25rem;" onclick="openSaveAsIdentityPopup()">&#128190; Save As&hellip;</button>
       </div>
 
     </div>
@@ -2342,10 +2351,10 @@
           <div class="ct-card-value" style="color:#fbbf24;">{{ faiss_stats.vector_dimensions }}</div>
           <div class="ct-card-sub">per memory embedding &middot; click for details</div>
         </div>
-        <div class="ct-card embed-info-card" onclick="openSavedProfilesPopup()">
+        <div class="ct-card embed-info-card" onclick="openSavedMemoryProfilesPopup()">
           <div class="ct-card-label">Saved Profiles &#9432;</div>
           <div class="ct-card-value" style="color:#c084fc;" id="saved-profiles-count-vault">0</div>
-          <div class="ct-card-sub">named configs &middot; click to manage</div>
+          <div class="ct-card-sub">memory configs &middot; click to manage</div>
         </div>
       </div>
 
@@ -2379,13 +2388,13 @@
           <input type="text" class="config-input-wide" id="mp-description"
                  value="{{ memory_profile.get('description', '') }}">
         </div>
-        <!-- Save-As / Load profile row -->
+        <!-- Save-As / Load profile row (Memory) -->
         <div style="display:flex;align-items:center;gap:0.75rem;margin-top:1rem;padding-top:0.75rem;border-top:1px solid #2a2a3a;">
-          <select id="mp-saved-profiles-select" class="task-map-select" style="flex:1;max-width:280px;" onchange="loadSavedProfile(this.value)">
+          <select id="mp-saved-profiles-select" class="task-map-select" style="flex:1;max-width:280px;" onchange="loadSavedMemoryProfile(this.value)">
             <option value="">— Load a Saved Profile —</option>
           </select>
-          <button class="btn btn-secondary" style="font-size:0.78rem;padding:0.4rem 0.75rem;" onclick="openSaveAsPopup()">&#128190; Save As…</button>
-          <button class="btn btn-secondary" style="font-size:0.78rem;padding:0.4rem 0.75rem;color:#f87171;" onclick="deleteSavedProfile()">&#128465; Delete</button>
+          <button class="btn btn-secondary" style="font-size:0.78rem;padding:0.4rem 0.75rem;" onclick="openSaveAsMemoryPopup()">&#128190; Save As…</button>
+          <button class="btn btn-secondary" style="font-size:0.78rem;padding:0.4rem 0.75rem;color:#f87171;" onclick="deleteSavedMemoryProfile()">&#128465; Delete</button>
         </div>
       </div>
 
@@ -3333,7 +3342,7 @@
       <div class="action-bar">
         <button class="btn btn-secondary" onclick="resetMemoryProfile()">Reset to Defaults</button>
         <button class="btn btn-primary" onclick="saveMemoryProfile()">Save Memory Profile</button>
-        <button class="btn btn-secondary" style="margin-left:0.25rem;" onclick="openSaveAsPopup()">&#128190; Save As&hellip;</button>
+        <button class="btn btn-secondary" style="margin-left:0.25rem;" onclick="openSaveAsMemoryPopup()">&#128190; Save As&hellip;</button>
       </div>
     </div>
   </div>
@@ -3987,13 +3996,22 @@
   async function saveIdentityProfile() {
     const profile = _collectIdentityProfile();
     try {
+      // Save to active identity_profile.json
       const resp = await fetch('/api/tools/memory/identity', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(profile),
       });
+      // Also save as a named identity profile using the profile name
+      const fname = (profile.name || 'Default Identity Profile').replace(/[^\w\-]/g, '_');
+      await fetch('/api/tools/memory/identity/profiles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: fname, profile }),
+      });
+      refreshSavedIdentityProfilesList();
       if (resp.ok) {
-        showToast('Identity profile saved');
+        showToast('Identity profile saved + stored as "' + fname + '"');
       } else {
         showToast('Save failed', true);
       }
@@ -4189,7 +4207,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ filename: fname, profile }),
       });
-      refreshSavedProfilesList();
+      refreshSavedMemoryProfilesList();
       if (resp.ok) {
         showToast('Memory profile saved + stored as "' + fname + '"');
       } else {
@@ -4556,59 +4574,153 @@
   function closeMemoriesPopup() { _hidePopup('memories-popup-overlay'); }
   function openDimsPopup()  { _showPopup('dims-popup-overlay'); }
   function closeDimsPopup() { _hidePopup('dims-popup-overlay'); }
-  function openSavedProfilesPopup() { refreshSavedProfilesList(); _showPopup('profiles-popup-overlay'); }
-  function closeSavedProfilesPopup() { _hidePopup('profiles-popup-overlay'); }
-  function openSaveAsPopup() { _showPopup('saveas-popup-overlay'); document.getElementById('saveas-filename').focus(); }
-  function closeSaveAsPopup() { _hidePopup('saveas-popup-overlay'); }
+  function openSavedIdentityProfilesPopup() { refreshSavedIdentityProfilesList(); _showPopup('identity-profiles-popup-overlay'); }
+  function closeSavedIdentityProfilesPopup() { _hidePopup('identity-profiles-popup-overlay'); }
+  function openSaveAsIdentityPopup() { _showPopup('identity-saveas-popup-overlay'); document.getElementById('identity-saveas-filename').focus(); }
+  function closeSaveAsIdentityPopup() { _hidePopup('identity-saveas-popup-overlay'); }
+  function openSavedMemoryProfilesPopup() { refreshSavedMemoryProfilesList(); _showPopup('memory-profiles-popup-overlay'); }
+  function closeSavedMemoryProfilesPopup() { _hidePopup('memory-profiles-popup-overlay'); }
+  function openSaveAsMemoryPopup() { _showPopup('memory-saveas-popup-overlay'); document.getElementById('memory-saveas-filename').focus(); }
+  function closeSaveAsMemoryPopup() { _hidePopup('memory-saveas-popup-overlay'); }
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
-      ['embed','index','memories','dims','profiles','saveas'].forEach(p => _hidePopup(p + '-popup-overlay'));
+      ['embed','index','memories','dims','identity-profiles','identity-saveas','memory-profiles','memory-saveas'].forEach(p => _hidePopup(p + '-popup-overlay'));
     }
   });
 
-  // ── Saved Profiles CRUD ──
-  let _savedProfilesList = [];
-  async function refreshSavedProfilesList() {
+  // ── Identity Saved Profiles CRUD ──
+  let _savedIdentityProfilesList = [];
+  async function refreshSavedIdentityProfilesList() {
     try {
-      const resp = await fetch('/api/tools/memory/profiles');
-      _savedProfilesList = await resp.json();
-    } catch { _savedProfilesList = []; }
-    // update counter badges
-    const cnt = _savedProfilesList.length;
-    const el1 = document.getElementById('saved-profiles-count-faiss');
-    const el2 = document.getElementById('saved-profiles-count-vault');
-    if (el1) el1.textContent = cnt;
-    if (el2) el2.textContent = cnt;
-    // update popup list
-    const listEl = document.getElementById('profiles-popup-list');
+      const resp = await fetch('/api/tools/memory/identity/profiles');
+      _savedIdentityProfilesList = await resp.json();
+    } catch { _savedIdentityProfilesList = []; }
+    const cnt = _savedIdentityProfilesList.length;
+    const el = document.getElementById('saved-profiles-count-faiss');
+    if (el) el.textContent = cnt;
+    const listEl = document.getElementById('identity-profiles-popup-list');
     if (!listEl) return;
     if (cnt === 0) {
-      listEl.innerHTML = '<div style="color:#64748b;font-size:0.85rem;padding:1rem;text-align:center;">No saved profiles yet. Use <strong>Save As…</strong> to create one.</div>';
-      return;
+      listEl.innerHTML = '<div style="color:#64748b;font-size:0.85rem;padding:1rem;text-align:center;">No saved identity profiles yet. Use <strong>Save As…</strong> to create one.</div>';
+    } else {
+      listEl.innerHTML = _savedIdentityProfilesList.map(p => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0.75rem;background:rgba(24,24,27,0.5);border:1px solid rgba(42,42,58,0.4);border-radius:0.5rem;margin-bottom:0.375rem;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:600;color:#e2e8f0;font-size:0.85rem;">${p.name || p.filename}</div>
+            <div style="font-size:0.72rem;color:#64748b;">${p.description || 'No description'} &middot; v${p.version || '?'}</div>
+          </div>
+          <div style="display:flex;gap:0.5rem;">
+            <button class="btn btn-primary" style="font-size:0.7rem;padding:0.25rem 0.6rem;" onclick="loadSavedIdentityProfileByName('${p.filename}')">Load</button>
+            <button class="btn btn-secondary" style="font-size:0.7rem;padding:0.25rem 0.6rem;color:#f87171;" onclick="deleteSavedIdentityProfileByName('${p.filename}')">Delete</button>
+          </div>
+        </div>
+      `).join('');
     }
-    listEl.innerHTML = _savedProfilesList.map(p => `
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0.75rem;background:rgba(24,24,27,0.5);border:1px solid rgba(42,42,58,0.4);border-radius:0.5rem;margin-bottom:0.375rem;">
-        <div style="flex:1;min-width:0;">
-          <div style="font-weight:600;color:#e2e8f0;font-size:0.85rem;">${p.name || p.filename}</div>
-          <div style="font-size:0.72rem;color:#64748b;">${p.description || 'No description'} &middot; v${p.version || '?'}</div>
-        </div>
-        <div style="display:flex;gap:0.5rem;">
-          <button class="btn btn-primary" style="font-size:0.7rem;padding:0.25rem 0.6rem;" onclick="loadSavedProfileByName('${p.filename}')">Load</button>
-          <button class="btn btn-secondary" style="font-size:0.7rem;padding:0.25rem 0.6rem;color:#f87171;" onclick="deleteSavedProfileByName('${p.filename}')">Delete</button>
-        </div>
-      </div>
-    `).join('');
-    // Update the dropdown in Profile Info too
-    const sel = document.getElementById('mp-saved-profiles-select');
+    // Update Identity dropdown
+    const sel = document.getElementById('ip-saved-profiles-select');
     if (sel) {
-      sel.innerHTML = '<option value="">— Load a Saved Profile —</option>' + _savedProfilesList.map(p =>
+      sel.innerHTML = '<option value="">— Load a Saved Profile —</option>' + _savedIdentityProfilesList.map(p =>
         `<option value="${p.filename}">${p.name || p.filename} (v${p.version || '?'})</option>`
       ).join('');
     }
   }
 
-  async function doSaveAs() {
-    const fname = document.getElementById('saveas-filename').value.trim();
+  async function doSaveAsIdentity() {
+    const fname = document.getElementById('identity-saveas-filename').value.trim();
+    if (!fname) { showToast('Enter a profile name', true); return; }
+    const profile = _collectIdentityProfile();
+    try {
+      const resp = await fetch('/api/tools/memory/identity/profiles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: fname, profile }),
+      });
+      if (resp.ok) {
+        showToast('Identity profile saved as "' + fname + '"');
+        closeSaveAsIdentityPopup();
+        document.getElementById('identity-saveas-filename').value = '';
+        refreshSavedIdentityProfilesList();
+      } else { showToast('Save failed', true); }
+    } catch (e) { showToast('Save failed: ' + e.message, true); }
+  }
+
+  async function loadSavedIdentityProfileByName(filename) {
+    try {
+      const resp = await fetch('/api/tools/memory/identity/profiles/' + encodeURIComponent(filename));
+      if (!resp.ok) { showToast('Load failed', true); return; }
+      const data = await resp.json();
+      const applyResp = await fetch('/api/tools/memory/identity', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (applyResp.ok) {
+        showToast('Identity profile "' + filename + '" loaded — reloading…');
+        closeSavedIdentityProfilesPopup();
+        setTimeout(() => location.reload(), 600);
+      } else { showToast('Apply failed', true); }
+    } catch (e) { showToast('Load failed: ' + e.message, true); }
+  }
+
+  function loadSavedIdentityProfile(filename) {
+    if (!filename) return;
+    loadSavedIdentityProfileByName(filename);
+  }
+
+  async function deleteSavedIdentityProfileByName(filename) {
+    if (!confirm('Delete saved identity profile "' + filename + '"? This cannot be undone.')) return;
+    try {
+      await fetch('/api/tools/memory/identity/profiles/' + encodeURIComponent(filename), { method: 'DELETE' });
+      showToast('Deleted "' + filename + '"');
+      refreshSavedIdentityProfilesList();
+    } catch (e) { showToast('Delete failed', true); }
+  }
+
+  function deleteSavedIdentityProfile() {
+    const sel = document.getElementById('ip-saved-profiles-select');
+    if (!sel || !sel.value) { showToast('Select a profile first', true); return; }
+    deleteSavedIdentityProfileByName(sel.value);
+  }
+
+  // ── Memory Vault Saved Profiles CRUD ──
+  let _savedMemoryProfilesList = [];
+  async function refreshSavedMemoryProfilesList() {
+    try {
+      const resp = await fetch('/api/tools/memory/profiles');
+      _savedMemoryProfilesList = await resp.json();
+    } catch { _savedMemoryProfilesList = []; }
+    const cnt = _savedMemoryProfilesList.length;
+    const el = document.getElementById('saved-profiles-count-vault');
+    if (el) el.textContent = cnt;
+    const listEl = document.getElementById('memory-profiles-popup-list');
+    if (!listEl) return;
+    if (cnt === 0) {
+      listEl.innerHTML = '<div style="color:#64748b;font-size:0.85rem;padding:1rem;text-align:center;">No saved memory profiles yet. Use <strong>Save As…</strong> to create one.</div>';
+    } else {
+      listEl.innerHTML = _savedMemoryProfilesList.map(p => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0.75rem;background:rgba(24,24,27,0.5);border:1px solid rgba(42,42,58,0.4);border-radius:0.5rem;margin-bottom:0.375rem;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:600;color:#e2e8f0;font-size:0.85rem;">${p.name || p.filename}</div>
+            <div style="font-size:0.72rem;color:#64748b;">${p.description || 'No description'} &middot; v${p.version || '?'}</div>
+          </div>
+          <div style="display:flex;gap:0.5rem;">
+            <button class="btn btn-primary" style="font-size:0.7rem;padding:0.25rem 0.6rem;" onclick="loadSavedMemoryProfileByName('${p.filename}')">Load</button>
+            <button class="btn btn-secondary" style="font-size:0.7rem;padding:0.25rem 0.6rem;color:#f87171;" onclick="deleteSavedMemoryProfileByName('${p.filename}')">Delete</button>
+          </div>
+        </div>
+      `).join('');
+    }
+    // Update Memory dropdown
+    const sel = document.getElementById('mp-saved-profiles-select');
+    if (sel) {
+      sel.innerHTML = '<option value="">— Load a Saved Profile —</option>' + _savedMemoryProfilesList.map(p =>
+        `<option value="${p.filename}">${p.name || p.filename} (v${p.version || '?'})</option>`
+      ).join('');
+    }
+  }
+
+  async function doSaveAsMemory() {
+    const fname = document.getElementById('memory-saveas-filename').value.trim();
     if (!fname) { showToast('Enter a profile name', true); return; }
     const profile = _collectMemoryProfile();
     try {
@@ -4618,55 +4730,55 @@
         body: JSON.stringify({ filename: fname, profile }),
       });
       if (resp.ok) {
-        showToast('Profile saved as "' + fname + '"');
-        closeSaveAsPopup();
-        document.getElementById('saveas-filename').value = '';
-        refreshSavedProfilesList();
+        showToast('Memory profile saved as "' + fname + '"');
+        closeSaveAsMemoryPopup();
+        document.getElementById('memory-saveas-filename').value = '';
+        refreshSavedMemoryProfilesList();
       } else { showToast('Save failed', true); }
     } catch (e) { showToast('Save failed: ' + e.message, true); }
   }
 
-  async function loadSavedProfileByName(filename) {
+  async function loadSavedMemoryProfileByName(filename) {
     try {
       const resp = await fetch('/api/tools/memory/profiles/' + encodeURIComponent(filename));
       if (!resp.ok) { showToast('Load failed', true); return; }
       const data = await resp.json();
-      // Apply loaded profile to the active config
       const applyResp = await fetch('/api/tools/memory/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
       if (applyResp.ok) {
-        showToast('Loaded "' + filename + '" — reloading…');
-        closeSavedProfilesPopup();
+        showToast('Memory profile "' + filename + '" loaded — reloading…');
+        closeSavedMemoryProfilesPopup();
         setTimeout(() => location.reload(), 600);
       } else { showToast('Apply failed', true); }
     } catch (e) { showToast('Load failed: ' + e.message, true); }
   }
 
-  function loadSavedProfile(filename) {
+  function loadSavedMemoryProfile(filename) {
     if (!filename) return;
-    loadSavedProfileByName(filename);
+    loadSavedMemoryProfileByName(filename);
   }
 
-  async function deleteSavedProfileByName(filename) {
-    if (!confirm('Delete saved profile "' + filename + '"? This cannot be undone.')) return;
+  async function deleteSavedMemoryProfileByName(filename) {
+    if (!confirm('Delete saved memory profile "' + filename + '"? This cannot be undone.')) return;
     try {
       await fetch('/api/tools/memory/profiles/' + encodeURIComponent(filename), { method: 'DELETE' });
       showToast('Deleted "' + filename + '"');
-      refreshSavedProfilesList();
+      refreshSavedMemoryProfilesList();
     } catch (e) { showToast('Delete failed', true); }
   }
 
-  function deleteSavedProfile() {
+  function deleteSavedMemoryProfile() {
     const sel = document.getElementById('mp-saved-profiles-select');
     if (!sel || !sel.value) { showToast('Select a profile first', true); return; }
-    deleteSavedProfileByName(sel.value);
+    deleteSavedMemoryProfileByName(sel.value);
   }
 
-  // Load saved profiles on page init
-  refreshSavedProfilesList();
+  // Load both lists on page init
+  refreshSavedIdentityProfilesList();
+  refreshSavedMemoryProfilesList();
 </script>
 
 <!-- Embedding Model Popup -->
@@ -4821,40 +4933,78 @@
   </div>
 </div>
 
-<!-- Saved Profiles Popup -->
-<div id="profiles-popup-overlay" class="embed-popup-overlay" onclick="if(event.target===this)closeSavedProfilesPopup()">
+<!-- Saved Identity Profiles Popup -->
+<div id="identity-profiles-popup-overlay" class="embed-popup-overlay" onclick="if(event.target===this)closeSavedIdentityProfilesPopup()">
   <div class="embed-popup" style="position:relative;max-width:580px;">
-    <button class="ep-close" onclick="closeSavedProfilesPopup()">&times;</button>
+    <button class="ep-close" onclick="closeSavedIdentityProfilesPopup()">&times;</button>
+    <h3>&#128190; Saved Identity Profiles</h3>
+    <div class="ep-note" style="margin-bottom:0.75rem;">
+      Save your current identity FAISS configuration under a name, then load or swap profiles any time.
+      The active profile is always <code>identity_profile.json</code>&mdash;loading a saved profile overwrites it.
+    </div>
+    <div id="identity-profiles-popup-list" style="max-height:300px;overflow-y:auto;">
+      <div style="color:#64748b;font-size:0.85rem;padding:1rem;text-align:center;">Loading&hellip;</div>
+    </div>
+    <hr class="ep-divider">
+    <div style="display:flex;gap:0.75rem;justify-content:flex-end;">
+      <button class="btn btn-primary" style="font-size:0.8rem;" onclick="closeSavedIdentityProfilesPopup();openSaveAsIdentityPopup();">&#128190; Save Current As&hellip;</button>
+    </div>
+  </div>
+</div>
+
+<!-- Save-As Identity Popup -->
+<div id="identity-saveas-popup-overlay" class="embed-popup-overlay" onclick="if(event.target===this)closeSaveAsIdentityPopup()">
+  <div class="embed-popup" style="position:relative;max-width:420px;">
+    <button class="ep-close" onclick="closeSaveAsIdentityPopup()">&times;</button>
+    <h3>&#128190; Save Identity Profile As</h3>
+    <div class="ep-note" style="margin-bottom:0.75rem;">
+      Enter a name for this saved identity profile. The current identity configuration will be snapshot.
+    </div>
+    <div class="config-field">
+      <div class="config-label">Profile File Name</div>
+      <input type="text" class="config-input-wide" id="identity-saveas-filename" placeholder="e.g. core-identity-v2" style="margin-bottom:0.75rem;">
+    </div>
+    <div style="display:flex;gap:0.75rem;justify-content:flex-end;">
+      <button class="btn btn-secondary" onclick="closeSaveAsIdentityPopup()">Cancel</button>
+      <button class="btn btn-primary" onclick="doSaveAsIdentity()">&#128190; Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Saved Memory Profiles Popup -->
+<div id="memory-profiles-popup-overlay" class="embed-popup-overlay" onclick="if(event.target===this)closeSavedMemoryProfilesPopup()">
+  <div class="embed-popup" style="position:relative;max-width:580px;">
+    <button class="ep-close" onclick="closeSavedMemoryProfilesPopup()">&times;</button>
     <h3>&#128190; Saved Memory Profiles</h3>
     <div class="ep-note" style="margin-bottom:0.75rem;">
       Save your current memory configuration under a name, then load or swap profiles any time.
       The active profile is always <code>memory_profile.json</code>&mdash;loading a saved profile overwrites it.
     </div>
-    <div id="profiles-popup-list" style="max-height:300px;overflow-y:auto;">
+    <div id="memory-profiles-popup-list" style="max-height:300px;overflow-y:auto;">
       <div style="color:#64748b;font-size:0.85rem;padding:1rem;text-align:center;">Loading&hellip;</div>
     </div>
     <hr class="ep-divider">
     <div style="display:flex;gap:0.75rem;justify-content:flex-end;">
-      <button class="btn btn-primary" style="font-size:0.8rem;" onclick="closeSavedProfilesPopup();openSaveAsPopup();">&#128190; Save Current As&hellip;</button>
+      <button class="btn btn-primary" style="font-size:0.8rem;" onclick="closeSavedMemoryProfilesPopup();openSaveAsMemoryPopup();">&#128190; Save Current As&hellip;</button>
     </div>
   </div>
 </div>
 
-<!-- Save-As Popup -->
-<div id="saveas-popup-overlay" class="embed-popup-overlay" onclick="if(event.target===this)closeSaveAsPopup()">
+<!-- Save-As Memory Popup -->
+<div id="memory-saveas-popup-overlay" class="embed-popup-overlay" onclick="if(event.target===this)closeSaveAsMemoryPopup()">
   <div class="embed-popup" style="position:relative;max-width:420px;">
-    <button class="ep-close" onclick="closeSaveAsPopup()">&times;</button>
-    <h3>&#128190; Save Profile As</h3>
+    <button class="ep-close" onclick="closeSaveAsMemoryPopup()">&times;</button>
+    <h3>&#128190; Save Memory Profile As</h3>
     <div class="ep-note" style="margin-bottom:0.75rem;">
-      Enter a name for this saved profile. The current memory configuration will be snapshot.
+      Enter a name for this saved memory profile. The current memory configuration will be snapshot.
     </div>
     <div class="config-field">
       <div class="config-label">Profile File Name</div>
-      <input type="text" class="config-input-wide" id="saveas-filename" placeholder="e.g. creative-writing-v2" style="margin-bottom:0.75rem;">
+      <input type="text" class="config-input-wide" id="memory-saveas-filename" placeholder="e.g. creative-writing-v2" style="margin-bottom:0.75rem;">
     </div>
     <div style="display:flex;gap:0.75rem;justify-content:flex-end;">
-      <button class="btn btn-secondary" onclick="closeSaveAsPopup()">Cancel</button>
-      <button class="btn btn-primary" onclick="doSaveAs()">&#128190; Save</button>
+      <button class="btn btn-secondary" onclick="closeSaveAsMemoryPopup()">Cancel</button>
+      <button class="btn btn-primary" onclick="doSaveAsMemory()">&#128190; Save</button>
     </div>
   </div>
 </div>

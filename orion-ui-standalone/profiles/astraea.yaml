@@ -1,5 +1,6 @@
 allowed_tools:
 - continuation_update
+- cost_tracker
 - directives
 - echo
 - email
