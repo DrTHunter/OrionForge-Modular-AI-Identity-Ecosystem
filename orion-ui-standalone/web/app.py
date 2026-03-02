@@ -1759,6 +1759,26 @@ async def api_vault_add(request: Request):
     except Exception as exc:
         return JSONResponse({"error": str(exc)}, 500)
 
+@app.post("/api/vault/batch_add")
+async def api_vault_batch_add(request: Request):
+    """Batch-add multiple memories to the vault in one call."""
+    body = await request.json()
+    items = body.get("memories")
+    if not items or not isinstance(items, list):
+        return JSONResponse({"error": "memories array is required"}, 400)
+    fm = _get_faiss_memory()
+    if not fm:
+        return JSONResponse({"error": "Vault not available"}, 500)
+    try:
+        created = fm.batch_add(items)
+        return {
+            "status": "saved",
+            "count": len(created),
+            "ids": [m.id for m in created],
+        }
+    except Exception as exc:
+        return JSONResponse({"error": str(exc)}, 500)
+
 @app.get("/api/vault/stats")
 async def api_vault_stats():
     fm = _get_faiss_memory()

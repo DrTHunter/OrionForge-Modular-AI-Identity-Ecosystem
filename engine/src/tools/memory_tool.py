@@ -43,6 +43,7 @@ class MemoryTool:
                 "searchable by meaning via FAISS vector embeddings.\n\n"
                 "ACTIONS:\n"
                 "- add: store a new memory (text + scope + category required)\n"
+                "- add_many: batch-store multiple memories in one call\n"
                 "- remember: quick-store with sensible defaults\n"
                 "- search: find memories by meaning (semantic search)\n"
                 "- recall: list memories (newest first, no embedding needed)\n"
@@ -61,8 +62,8 @@ class MemoryTool:
                     "action": {
                         "type": "string",
                         "enum": [
-                            "add", "remember", "search", "recall", "get",
-                            "update", "delete", "bulk_delete", "list",
+                            "add", "add_many", "remember", "search", "recall",
+                            "get", "update", "delete", "bulk_delete", "list",
                             "stats", "compact", "rebuild_index",
                         ],
                         "description": "The operation to perform.",
@@ -104,6 +105,23 @@ class MemoryTool:
                         "items": {"type": "string"},
                         "description": "List of memory IDs (for bulk_delete).",
                     },
+                    "memories": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "text": {"type": "string"},
+                                "scope": {"type": "string"},
+                                "category": {"type": "string"},
+                                "tags": {"type": "array", "items": {"type": "string"}},
+                                "source": {"type": "string"},
+                                "tier": {"type": "string"},
+                                "topic_id": {"type": "string"},
+                            },
+                            "required": ["text", "scope", "category"],
+                        },
+                        "description": "Array of memory objects (for add_many batch).",
+                    },
                     "limit": {
                         "type": "integer",
                         "description": "Max results (default 10 for search, 20 for recall/list).",
@@ -118,6 +136,7 @@ class MemoryTool:
         try:
             handler = {
                 "add": self._add,
+                "add_many": self._add_many,
                 "remember": self._remember,
                 "search": self._search,
                 "recall": self._recall,
@@ -165,6 +184,36 @@ class MemoryTool:
             "id": mem.id,
             "scope": mem.scope,
             "category": mem.category,
+        })
+
+    def _add_many(self, args: Dict[str, Any]) -> str:
+        memories = args.get("memories")
+        if not memories or not isinstance(memories, list):
+            return json.dumps({"status": "error",
+                               "message": "memories array is required"})
+        # Validate each item has required fields before sending to batch.
+        for i, item in enumerate(memories):
+            if not isinstance(item, dict):
+                return json.dumps({"status": "error",
+                                   "message": f"memories[{i}] must be an object"})
+            if not item.get("text"):
+                return json.dumps({"status": "error",
+                                   "message": f"memories[{i}].text is required"})
+            if not item.get("scope"):
+                return json.dumps({"status": "error",
+                                   "message": f"memories[{i}].scope is required"})
+            if not item.get("category"):
+                return json.dumps({"status": "error",
+                                   "message": f"memories[{i}].category is required"})
+            # Default source to "tool" for agent-originated batch writes.
+            item.setdefault("source", "tool")
+            item.setdefault("tier", "register")
+
+        created = self._get_mem().batch_add(memories)
+        return json.dumps({
+            "status": "stored",
+            "count": len(created),
+            "ids": [m.id for m in created],
         })
 
     def _remember(self, args: Dict[str, Any]) -> str:

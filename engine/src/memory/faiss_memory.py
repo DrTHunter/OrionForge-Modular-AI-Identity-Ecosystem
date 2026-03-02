@@ -111,6 +111,54 @@ class FAISSMemory:
         self._save_index()
         return mem
 
+    def batch_add(
+        self,
+        items: List[Dict[str, Any]],
+    ) -> List[Memory]:
+        """Store multiple memories in a single batch operation.
+
+        This is significantly faster than calling ``add()`` in a loop:
+        - Vault writes go through a single file handle (batch context).
+        - All texts are encoded in one ``encoder.encode()`` call.
+        - The FAISS index is written to disk once at the end.
+
+        Each *item* dict may contain: text, scope, category, tags,
+        source, tier, topic_id.  Returns the list of created Memory
+        objects.  Raises ValueError on PII or empty-text.
+        """
+        if not items:
+            return []
+
+        # Step 1: write all records to vault in a single batch.
+        memories = self.vault.batch_create_many(items)
+
+        # Step 2: batch-encode all texts in one model call.
+        texts = [m.text for m in memories]
+        embeddings = self.encoder.encode(
+            texts, batch_size=32, show_progress_bar=False,
+            convert_to_numpy=True,
+        ).astype("float32")
+        faiss.normalize_L2(embeddings)
+
+        # Step 3: add all vectors to the FAISS index at once.
+        if self.index is None:
+            dim = embeddings.shape[1]
+            self.index = faiss.IndexFlatIP(dim)
+        start_idx = self.index.ntotal
+        self.index.add(embeddings)
+        for offset, mem in enumerate(memories):
+            idx = start_idx + offset
+            while len(self._idx_to_id) <= idx:
+                self._idx_to_id.append("")
+            self._idx_to_id[idx] = mem.id
+            self._id_to_idx[mem.id] = idx
+
+        # Step 4: single index save.
+        self._save_index()
+
+        log.info("[faiss] Batch-added %d memories", len(memories))
+        return memories
+
     def remember(
         self,
         text: str,

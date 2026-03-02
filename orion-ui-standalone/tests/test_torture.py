@@ -612,6 +612,8 @@ def test_memory_tool_all_actions():
                 return self._v.compact()
             def rebuild_index(self):
                 return {"status": "ok", "message": "FAISS index rebuilt"}
+            def batch_add(self, items):
+                return self._v.batch_create_many(items)
 
         tool._mem = _LiteMemory(vault)
 
@@ -620,7 +622,7 @@ def test_memory_tool_all_actions():
         check("definition has name", defn["name"] == "memory")
         check("definition has parameters", "parameters" in defn)
         actions = defn["parameters"]["properties"]["action"]["enum"]
-        check("12 actions", len(actions) == 12)
+        check("13 actions", len(actions) == 13)
 
         # Add
         result = json.loads(tool.execute({"action": "add", "text": "Test memory",
@@ -640,6 +642,29 @@ def test_memory_tool_all_actions():
         # Add validation: missing category
         r = json.loads(tool.execute({"action": "add", "text": "x", "scope": "shared"}))
         check("add missing category → error", r["status"] == "error")
+
+        # Add Many (batch)
+        r = json.loads(tool.execute({
+            "action": "add_many",
+            "memories": [
+                {"text": "Batch one", "scope": "shared", "category": "fact"},
+                {"text": "Batch two", "scope": "shared", "category": "preference"},
+            ],
+        }))
+        check("add_many → stored", r["status"] == "stored")
+        check("add_many count 2", r["count"] == 2)
+        check("add_many has ids", len(r["ids"]) == 2)
+
+        # Add Many validation: missing memories array
+        r = json.loads(tool.execute({"action": "add_many"}))
+        check("add_many no memories → error", r["status"] == "error")
+
+        # Add Many validation: item missing text
+        r = json.loads(tool.execute({
+            "action": "add_many",
+            "memories": [{"scope": "shared", "category": "fact"}],
+        }))
+        check("add_many missing text → error", r["status"] == "error")
 
         # Remember (quick-store)
         r = json.loads(tool.execute({"action": "remember", "text": "Quick note"}))
