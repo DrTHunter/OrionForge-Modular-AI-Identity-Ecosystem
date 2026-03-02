@@ -515,7 +515,7 @@ def _build_chat_messages(agent: str, messages: list[dict]) -> tuple[list[dict], 
             "leonardo_lightning_xl": "Leonardo Lightning XL",
             "leonardo_vision_xl": "Leonardo Vision XL",
             "leonardo_kino_xl": "Leonardo Kino XL",
-            "banana": "Banana Dev", "midjourney": "Midjourney",
+            "midjourney": "Midjourney",
         }
         model_label = _IMG_MODEL_LABELS.get(img_preferred, img_preferred)
         system_prompt += (
@@ -752,6 +752,34 @@ async def page_settings(request: Request, tab: str = "api_keys"):
 async def page_pricing_redirect():
     """Redirect old pricing page to tools (cost_tracker tool)."""
     return RedirectResponse(url="/tools#cost_tracker", status_code=302)
+
+
+# ── Skins page ────────────────────────────────────────────────────
+
+@app.get("/skins", response_class=HTMLResponse)
+async def page_skins(request: Request):
+    settings = _load_settings()
+    active_skin = settings.get("skin", "default")
+    return templates.TemplateResponse("skins.html", {
+        "request": request, "page": "skins",
+        "active_skin": active_skin,
+    })
+
+@app.put("/api/skin")
+async def api_set_skin(request: Request):
+    """Save active UI skin to settings.json."""
+    body = await request.json()
+    skin_id = body.get("skin", "default")
+    settings = _load_settings()
+    settings["skin"] = skin_id
+    _save_settings(settings)
+    return {"ok": True, "skin": skin_id}
+
+@app.get("/api/skin")
+async def api_get_skin():
+    """Return the active skin id."""
+    settings = _load_settings()
+    return {"skin": settings.get("skin", "default")}
 
 
 # ── Tools page ────────────────────────────────────────────────────
@@ -2965,8 +2993,6 @@ async def api_save_image_settings(request: Request):
         "replicate_api_key":  body.get("replicate_api_key", ""),
         "fal_api_key":        body.get("fal_api_key", ""),
         "leonardo_api_key":   body.get("leonardo_api_key", ""),
-        "banana_api_key":     body.get("banana_api_key", ""),
-        "banana_model_key":   body.get("banana_model_key", ""),
         "midjourney_url":     body.get("midjourney_url", ""),
         "midjourney_api_key": body.get("midjourney_api_key", ""),
     }
