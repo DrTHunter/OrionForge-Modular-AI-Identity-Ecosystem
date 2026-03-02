@@ -1022,16 +1022,41 @@ _SAVED_MEMORY_PROFILES_DIR.mkdir(parents=True, exist_ok=True)
 
 import re as _re  # used by profile sanitisation below
 
+_DEFAULT_PROFILE_STEM = "__default__"
+
+
+def _seed_default_profile(directory, loader_fn):
+    """Ensure a pinned __default__.json exists in *directory*."""
+    default_path = directory / f"{_DEFAULT_PROFILE_STEM}.json"
+    if not default_path.exists():
+        data = loader_fn()
+        if not data:
+            data = {}
+        data["_pinned"] = True
+        default_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+
+
+_seed_default_profile(_SAVED_IDENTITY_PROFILES_DIR, _load_identity_profile)
+_seed_default_profile(_SAVED_MEMORY_PROFILES_DIR, _load_memory_profile)
+
 
 def _list_profiles_in(directory):
-    profiles = []
+    pinned = []
+    regular = []
     for f in sorted(directory.glob("*.json")):
         try:
             data = json.loads(f.read_text(encoding="utf-8"))
-            profiles.append({"filename": f.stem, "name": data.get("name", f.stem), "version": data.get("version", ""), "description": data.get("description", "")})
+            entry = {"filename": f.stem, "name": data.get("name", f.stem), "version": data.get("version", ""), "description": data.get("description", ""), "pinned": bool(data.get("_pinned"))}
         except Exception:
-            profiles.append({"filename": f.stem, "name": f.stem, "version": "", "description": ""})
-    return profiles
+            entry = {"filename": f.stem, "name": f.stem, "version": "", "description": "", "pinned": False}
+        if entry["pinned"]:
+            # Override display name for the default
+            if entry["filename"] == _DEFAULT_PROFILE_STEM:
+                entry["name"] = "Default"
+            pinned.append(entry)
+        else:
+            regular.append(entry)
+    return pinned + regular
 
 
 # ── Identity saved profiles CRUD ──
@@ -1062,6 +1087,8 @@ async def api_saved_identity_profiles_get(filename: str):
 @app.delete("/api/tools/memory/identity/profiles/{filename}", response_class=JSONResponse)
 async def api_saved_identity_profiles_delete(filename: str):
     safe = _re.sub(r'[^\w\-]', '_', filename)
+    if safe == _DEFAULT_PROFILE_STEM:
+        return JSONResponse({"error": "Cannot delete the default profile"}, status_code=403)
     path = _SAVED_IDENTITY_PROFILES_DIR / f"{safe}.json"
     if path.exists():
         path.unlink()
@@ -1096,6 +1123,8 @@ async def api_saved_memory_profiles_get(filename: str):
 @app.delete("/api/tools/memory/profiles/{filename}", response_class=JSONResponse)
 async def api_saved_memory_profiles_delete(filename: str):
     safe = _re.sub(r'[^\w\-]', '_', filename)
+    if safe == _DEFAULT_PROFILE_STEM:
+        return JSONResponse({"error": "Cannot delete the default profile"}, status_code=403)
     path = _SAVED_MEMORY_PROFILES_DIR / f"{safe}.json"
     if path.exists():
         path.unlink()
