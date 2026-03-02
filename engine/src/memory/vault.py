@@ -13,8 +13,9 @@ persistence, versioning, and compaction.
 import json
 import os
 import uuid
+from contextlib import contextmanager
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any, Dict, Generator, List, Optional, Set, Union
 from zoneinfo import ZoneInfo
 
 from src.memory.types import Memory
@@ -37,6 +38,95 @@ class VaultStore:
         dir_name = os.path.dirname(path)
         if dir_name:
             os.makedirs(dir_name, exist_ok=True)
+
+        # Batch state (managed by the batch() context manager)
+        self._batch_active = False
+        self._batch_file = None
+        self._batch_resolve_cache: Optional[Dict[str, Memory]] = None
+
+    # ------------------------------------------------------------------
+    # Batch context manager
+    # ------------------------------------------------------------------
+
+    @contextmanager
+    def batch(self) -> Generator[None, None, None]:
+        """Context manager that batches writes into a single file handle.
+
+        Within a batch:
+        - ``_append()`` writes are buffered to one open file handle and
+          flushed at the end instead of opening/closing per write.
+        - ``resolve_latest()`` caches in memory and is updated by each
+          ``_append()`` so we never re-read the whole JSONL mid-batch.
+
+        Usage::
+
+            with vault.batch():
+                vault.create_memory("one", "shared", "fact")
+                vault.create_memory("two", "shared", "fact")
+        """
+        if self._batch_active:
+            # Already inside a batch — just pass through (re-entrant).
+            yield
+            return
+
+        # Pre-load the resolve cache so all reads during the batch are
+        # served from memory.
+        self._batch_resolve_cache = self.resolve_latest()
+        self._batch_active = True
+
+        try:
+            with open(self.path, "a", encoding="utf-8") as f:
+                self._batch_file = f
+                yield
+                f.flush()
+        finally:
+            self._batch_file = None
+            self._batch_active = False
+            self._batch_resolve_cache = None
+
+    def batch_create_many(
+        self,
+        items: List[Dict[str, Any]],
+    ) -> List[Memory]:
+        """Create multiple memories in a single batch.
+
+        Each item dict may contain: text, scope, category, tags, source,
+        tier, topic_id.  Returns the list of created Memory objects.
+        PII is checked per-item; a failure on one item raises ValueError
+        and none of the subsequent items are written.
+
+        The caller does **not** need to wrap this in ``batch()`` — it
+        manages the batch internally.
+        """
+        # Validate all items up front before writing anything.
+        prepared: List[Memory] = []
+        for item in items:
+            text = (item.get("text") or "").strip()
+            if not text:
+                raise ValueError("Memory text must not be empty")
+            pii = check_pii(text)
+            if pii:
+                raise ValueError(f"PII detected - memory blocked: {'; '.join(pii)}")
+
+            mem = Memory(
+                id=uuid.uuid4().hex[:12],
+                text=text,
+                scope=(item.get("scope") or "shared").lower(),
+                category=(item.get("category") or "other").lower(),
+                tier=(item.get("tier") or "canon").lower(),
+                topic_id=item.get("topic_id"),
+                tags=item.get("tags") or [],
+                created_at=_now_ct(),
+                source=item.get("source") or "manual",
+            )
+            prepared.append(mem)
+
+        # Write in a single batch (one file open/close).
+        with self.batch():
+            for mem in prepared:
+                self._append(mem)
+
+        return prepared
 
     # ------------------------------------------------------------------
     # Write operations
@@ -188,7 +278,14 @@ class VaultStore:
         return records
 
     def resolve_latest(self) -> Dict[str, Memory]:
-        """Resolve each id to its highest-version record."""
+        """Resolve each id to its highest-version record.
+
+        Inside a ``batch()`` context, returns the in-memory cache
+        (kept in sync by ``_append``) instead of re-reading the file.
+        """
+        if self._batch_active and self._batch_resolve_cache is not None:
+            return dict(self._batch_resolve_cache)  # shallow copy for safety
+
         latest: Dict[str, Memory] = {}
         for m in self.read_all():
             prev = latest.get(m.id)
@@ -256,8 +353,17 @@ class VaultStore:
     # ------------------------------------------------------------------
 
     def _append(self, mem: Memory) -> None:
-        with open(self.path, "a", encoding="utf-8") as f:
-            f.write(json.dumps(mem.to_dict(), ensure_ascii=False) + "\n")
+        line = json.dumps(mem.to_dict(), ensure_ascii=False) + "\n"
+        if self._batch_active and self._batch_file is not None:
+            self._batch_file.write(line)
+            # Keep resolve cache in sync so reads within the batch see
+            # the just-written record without re-reading the file.
+            prev = self._batch_resolve_cache.get(mem.id)
+            if prev is None or mem.version > prev.version:
+                self._batch_resolve_cache[mem.id] = mem
+        else:
+            with open(self.path, "a", encoding="utf-8") as f:
+                f.write(line)
 
 
 # Backward-compat alias so existing `from src.memory.vault import MemoryVault`
