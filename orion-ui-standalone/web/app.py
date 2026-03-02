@@ -814,14 +814,22 @@ async def page_tools(request: Request):
     # FAISS memory stats
     try:
         fm = _get_faiss_memory()
-        faiss_stats = {
-            "total_memories": len(fm.list_all()) if fm else 0,
-            "vault_path": str(_VAULT_PATH),
-            "faiss_dir": str(_FAISS_DIR),
-            "embedding_model": "all-mpnet-base-v2",
-        }
+        if fm:
+            _fs = fm.stats()
+            faiss_stats = {
+                "total_memories": _fs.get("active_count", 0),
+                "vault_path": str(_VAULT_PATH),
+                "faiss_dir": str(_FAISS_DIR),
+                "embedding_model": _fs.get("embedding_model", "all-mpnet-base-v2"),
+                "faiss_vectors": _fs.get("faiss_vectors", 0),
+                "vector_dimensions": fm._embedding_dim or 768,
+                "index_type": type(fm.index).__name__ if fm.index else "IndexFlatIP",
+                "in_sync": _fs.get("in_sync", True),
+            }
+        else:
+            faiss_stats = {"total_memories": 0, "vault_path": str(_VAULT_PATH), "faiss_dir": str(_FAISS_DIR), "embedding_model": "all-mpnet-base-v2", "faiss_vectors": 0, "vector_dimensions": 768, "index_type": "IndexFlatIP", "in_sync": True}
     except Exception:
-        faiss_stats = {"total_memories": 0, "vault_path": str(_VAULT_PATH), "faiss_dir": str(_FAISS_DIR), "embedding_model": "all-mpnet-base-v2"}
+        faiss_stats = {"total_memories": 0, "vault_path": str(_VAULT_PATH), "faiss_dir": str(_FAISS_DIR), "embedding_model": "all-mpnet-base-v2", "faiss_vectors": 0, "vector_dimensions": 768, "index_type": "IndexFlatIP", "in_sync": True}
     # Email tool config
     try:
         from src.tools.email_tool import get_effective_config as _email_cfg
