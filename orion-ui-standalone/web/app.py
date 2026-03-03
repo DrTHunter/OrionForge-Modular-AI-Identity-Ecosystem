@@ -1560,7 +1560,7 @@ async def api_model_router_reset():
     return JSONResponse({"ok": True, "config": _MODEL_ROUTER_DEFAULTS})
 
 
-# ── About page ───────────────────────────────────────────────────
+# ── About / Wiki page ────────────────────────────────────────────
 ABOUT_FILE = _CONFIG_DIR / "about.json"
 
 def _load_about() -> dict:
@@ -1569,11 +1569,50 @@ def _load_about() -> dict:
 def _save_about(data: dict):
     _write_json(ABOUT_FILE, data)
 
+# README key → absolute path for each wiki article
+_WIKI_README_MAP = {
+    "root":               Path(__file__).resolve().parent.parent.parent / "README.md",
+    "orion-ui-standalone": Path(__file__).resolve().parent.parent / "README.md",
+    "engine":             Path(__file__).resolve().parent.parent.parent / "engine" / "README.md",
+    "web":                Path(__file__).resolve().parent / "README.md",
+    "data":               Path(__file__).resolve().parent.parent / "data" / "README.md",
+    "src":                Path(__file__).resolve().parent.parent / "src" / "README.md",
+    "src/memory":         Path(__file__).resolve().parent.parent / "src" / "memory" / "README.md",
+    "src/llm_client":     Path(__file__).resolve().parent.parent / "src" / "llm_client" / "README.md",
+    "src/tools":          Path(__file__).resolve().parent.parent / "src" / "tools" / "README.md",
+    "src/directives":     Path(__file__).resolve().parent.parent / "src" / "directives" / "README.md",
+    "src/governance":     Path(__file__).resolve().parent.parent / "src" / "governance" / "README.md",
+    "src/policy":         Path(__file__).resolve().parent.parent / "src" / "policy" / "README.md",
+    "src/observability":  Path(__file__).resolve().parent.parent / "src" / "observability" / "README.md",
+    "src/storage":        Path(__file__).resolve().parent.parent / "src" / "storage" / "README.md",
+    "config":             Path(__file__).resolve().parent.parent / "config" / "README.md",
+    "profiles":           Path(__file__).resolve().parent.parent / "profiles" / "README.md",
+    "prompts":            Path(__file__).resolve().parent.parent / "prompts" / "README.md",
+    "directives-user":    Path(__file__).resolve().parent.parent / "directives" / "README.md",
+    "notes":              Path(__file__).resolve().parent.parent / "notes" / "README.md",
+    "tests":              Path(__file__).resolve().parent.parent / "tests" / "README.md",
+    "scripts":            Path(__file__).resolve().parent.parent / "scripts" / "README.md",
+}
+
+def _load_wiki_articles() -> dict:
+    """Load all README.md files into a {key: markdown_text} dict."""
+    articles = {}
+    for key, path in _WIKI_README_MAP.items():
+        try:
+            if path.exists():
+                articles[key] = path.read_text(encoding="utf-8")
+        except Exception:
+            pass
+    return articles
+
 @app.get("/about", response_class=HTMLResponse)
 async def page_about(request: Request):
     about = _load_about()
+    wiki_articles = _load_wiki_articles()
     return templates.TemplateResponse("about.html", {
-        "request": request, "page": "about", "about_text": about.get("text", ""),
+        "request": request, "page": "about",
+        "about_text": about.get("text", ""),
+        "wiki_articles": wiki_articles,
     })
 
 class AboutUpdate(BaseModel):
