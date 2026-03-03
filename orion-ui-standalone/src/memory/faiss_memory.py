@@ -1,4 +1,4 @@
-﻿"""FAISS Memory - semantic memory system backed by vault.jsonl storage.
+"""FAISS Memory - semantic memory system backed by vault.jsonl storage.
 
 Architecture
 ------------
@@ -458,9 +458,13 @@ class FAISSMemory:
                     self._save_index()
 
                 # Mark any vault-deleted memories as deleted in index
+                _added_deletions = False
                 for vid in list(indexed_ids):
                     if vid not in active_ids:
                         self._deleted_ids.add(vid)
+                        _added_deletions = True
+                if _added_deletions:
+                    self._save_index()
 
                 log.info(
                     "[faiss] Loaded index: %d vectors (%d active)",

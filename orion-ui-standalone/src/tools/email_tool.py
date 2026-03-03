@@ -256,6 +256,7 @@ def _send_via_smtp(
     msg["Subject"] = subject
     msg.attach(MIMEText(full_body, "plain"))
 
+    server = None
     try:
         if smtp_port == 587:
             server = smtplib.SMTP(smtp_server, smtp_port, timeout=30)
@@ -266,7 +267,6 @@ def _send_via_smtp(
 
         server.login(email_addr, password)
         server.sendmail(email_addr, recipients, msg.as_string())
-        server.quit()
 
         return json.dumps({
             "status": "sent",
@@ -283,6 +283,12 @@ def _send_via_smtp(
         return json.dumps({"error": f"SMTP error: {e}"})
     except Exception as e:
         return json.dumps({"error": f"Failed to send email: {e}"})
+    finally:
+        if server:
+            try:
+                server.quit()
+            except Exception:
+                pass
 
 
 # ---------------------------------------------------------------------------
@@ -300,10 +306,21 @@ class EmailTool:
         return {
             "name": "email",
             "description": (
-                "Send emails through configured email accounts. "
-                "Use action 'send' to compose and send an email. "
-                "Use action 'status' to check configured accounts and server health. "
-                "Use action 'accounts' to list available email accounts. "
+                "Send emails through configured email accounts via SMTP. "
+                "Supports multiple accounts with per-agent defaults.\n\n"
+                "ACTIONS:\n"
+                "- send: compose and send an email. Requires subject, body, "
+                "recipients. The first call returns a PREVIEW for user approval "
+                "(confirmation gate). Call again with confirmation='confirmed' "
+                "to actually send. Uses SMTP directly with API relay fallback.\n"
+                "- status: check configured accounts, server health, and "
+                "API relay connectivity.\n"
+                "- accounts: list all configured email accounts (passwords masked).\n\n"
+                "ACCOUNT RESOLUTION (for send):\n"
+                "1. Explicit account_id if provided\n"
+                "2. Agent-specific default account\n"
+                "3. Global default account\n"
+                "4. First configured account\n\n"
                 "Always confirm recipient addresses with the user before sending "
                 "unless they were explicitly provided."
             ),
@@ -314,42 +331,46 @@ class EmailTool:
                         "type": "string",
                         "enum": ["send", "status", "accounts"],
                         "description": (
-                            "'send' — compose and send an email. "
+                            "'send' — compose and send an email (2-step: preview then confirm). "
                             "'status' — check email configuration and server health. "
                             "'accounts' — list available email accounts."
                         ),
                     },
                     "subject": {
                         "type": "string",
-                        "description": "Email subject line (required for 'send').",
+                        "description": "Email subject line. Required for 'send'.",
                     },
                     "body": {
                         "type": "string",
-                        "description": "Email body text (required for 'send').",
+                        "description": (
+                            "Email body text. Required for 'send'. "
+                            "The account's signature is auto-appended if configured."
+                        ),
                     },
                     "recipients": {
                         "type": "array",
                         "items": {"type": "string"},
                         "description": (
-                            "List of recipient email addresses (required for 'send'). "
-                            "Must be valid email addresses."
+                            "List of recipient email addresses. Required for 'send'. "
+                            "Must be valid email addresses (contain @ and .)."
                         ),
                     },
                     "account_id": {
                         "type": "string",
                         "description": (
                             "Optional: ID of the email account to send from. "
-                            "If omitted, uses the agent's default account, "
-                            "then the global default, then the first account."
+                            "If omitted, the system auto-selects: agent default → "
+                            "global default → first account."
                         ),
                     },
                     "confirmation": {
                         "type": "string",
                         "description": (
-                            "When require_confirmation is enabled, set this to 'confirmed' "
-                            "after the user has approved the email content and recipients. "
-                            "First call send without this field to preview, then call again "
-                            "with confirmation='confirmed' to actually send."
+                            "Set to 'confirmed' to actually send the email. "
+                            "On the first call to 'send', omit this field — you'll "
+                            "receive a preview with from/subject/body/recipients. "
+                            "Show the preview to the user, and if they approve, "
+                            "call send again with confirmation='confirmed'."
                         ),
                     },
                 },

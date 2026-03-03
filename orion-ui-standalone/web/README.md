@@ -14,8 +14,8 @@ python -m uvicorn web.app:app --host 0.0.0.0 --port 8989 --reload
 
 | File | Purpose |
 |------|---------|
-| `app.py` | FastAPI application — all routes, helpers, and API endpoints (113 routes, ~3,370 lines) |
-| `image_gen.py` | Image generation helper (OpenAI DALL-E integration) |
+| `app.py` | FastAPI application — all routes, helpers, and API endpoints (113 routes, ~3,556 lines) |
+| `image_gen.py` | Image generation helper (8 providers: OpenAI DALL-E/GPT Image, Google Imagen, Stability, Ideogram, Replicate, FAL, Leonardo, Midjourney) |
 | `static/style.css` | Stylesheet for the dashboard |
 | `templates/` | Jinja2 HTML templates (12 pages) |
 

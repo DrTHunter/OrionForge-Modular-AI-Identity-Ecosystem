@@ -105,13 +105,13 @@ class VaultStore:
         The caller does **not** need to wrap this in ``batch()`` — it
         manages the batch internally.
         """
-        # ── Hard limit: batch size ────────────────────────────────────
+        # ── Hard limit: batch size ────────────────────────────────
         if len(items) > MAX_BATCH_SIZE:
             raise ValueError(
                 f"Batch too large: {len(items)} items (max {MAX_BATCH_SIZE})"
             )
 
-        # ── Hard limit: total memory count ────────────────────────────
+        # ── Hard limit: total memory count ────────────────────────
         current = self._active_count()
         if current + len(items) > HARD_MAX_TOTAL_MEMORIES:
             room = max(0, HARD_MAX_TOTAL_MEMORIES - current)
@@ -197,7 +197,7 @@ class VaultStore:
                 f"Too many tags: {len(tags)} (max {MAX_TAGS_PER_MEMORY})"
             )
 
-        # ── Hard limit: total memory count ────────────────────────────
+        # ── Hard limit: total memory count ────────────────────────
         current = self._active_count()
         if current >= HARD_MAX_TOTAL_MEMORIES:
             raise ValueError(

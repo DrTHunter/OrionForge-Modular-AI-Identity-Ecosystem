@@ -140,10 +140,18 @@ class InboxTool:
             "name": "inbox",
             "description": (
                 "Unified inbox for agent-to-operator communication. "
-                "Use action 'send' to message the operator (messages, warnings, "
-                "permission requests, ideas). Use 'add_task' to queue a task, "
-                "'next_task' to fetch the oldest pending task, "
-                "or 'ack' to acknowledge a task by ID."
+                "Backed by data/shared/inbox.jsonl with a derived "
+                "inbox.md for human reading.\n\n"
+                "ACTIONS:\n"
+                "- send: message the operator. Requires 'subject' and 'body'. "
+                "Set 'type' to classify (message/warning/tool_request/idea). "
+                "Set 'needs_approval' if you need the operator to approve something.\n"
+                "- add_task: add a task to the shared queue. Requires 'task'. "
+                "Optionally set 'priority' and 'profile'.\n"
+                "- next_task: fetch and auto-complete the oldest pending task. "
+                "Optionally filter by 'profile'. Returns the task text or NO_TASK.\n"
+                "- ack: acknowledge a task or message by its ID. Requires 'task_id'.\n\n"
+                "All actions support 'dry_run' to preview without writing."
             ),
             "parameters": {
                 "type": "object",
@@ -155,14 +163,14 @@ class InboxTool:
                             "'send' to message the operator, "
                             "'add_task' to create a pending task, "
                             "'next_task' to pop the oldest pending task, "
-                            "'ack' to acknowledge a task by ID."
+                            "'ack' to acknowledge a task or message by ID."
                         ),
                     },
                     "type": {
                         "type": "string",
-                        "enum": ["message", "task", "tool_request", "warning", "idea"],
+                        "enum": ["message", "tool_request", "warning", "idea"],
                         "description": (
-                            "Message type (used with 'send'): "
+                            "Message type (used with 'send' action only). Default 'message'. "
                             "'message' for general comms, "
                             "'tool_request' for permission/tool expansion requests, "
                             "'warning' for boundary or safety concerns, "
@@ -173,40 +181,46 @@ class InboxTool:
                         "type": "string",
                         "enum": ["low", "normal", "high", "urgent"],
                         "description": (
-                            "Priority level. Default 'normal'. "
+                            "Priority level for 'send' and 'add_task'. Default 'normal'. "
                             "Use 'urgent' only for safety or boundary issues."
                         ),
                     },
                     "subject": {
                         "type": "string",
-                        "description": "Short one-line summary (max 120 chars). Required for 'send'.",
+                        "description": f"Short one-line summary (max {_MAX_SUBJECT} chars). Required for 'send'.",
                     },
                     "body": {
                         "type": "string",
-                        "description": "Full message text (max 2000 chars). Required for 'send'.",
+                        "description": f"Full message text (max {_MAX_BODY} chars). Required for 'send'.",
                     },
                     "task": {
                         "type": "string",
-                        "description": "Task description (required for 'add_task').",
+                        "description": "Task description text. Required for 'add_task'.",
                     },
                     "task_id": {
                         "type": "string",
-                        "description": "Task ID (required for 'ack').",
+                        "description": "Entry ID to acknowledge. Required for 'ack'.",
                     },
                     "profile": {
                         "type": "string",
-                        "description": "Profile name to scope (for task actions). Default caller profile.",
+                        "description": (
+                            "Profile name. Used as sender identity for send/add_task, "
+                            "and as filter for next_task. Defaults to 'system'."
+                        ),
                     },
                     "needs_approval": {
                         "type": "boolean",
                         "description": (
                             "Set true if this requires operator approval "
-                            "before proceeding. Default false."
+                            "before proceeding (for 'send' action). Default false."
                         ),
                     },
                     "dry_run": {
                         "type": "boolean",
-                        "description": "If true, preview the action without writing. Default false.",
+                        "description": (
+                            "If true, preview the action without writing to the inbox. "
+                            "Works with all actions. Default false."
+                        ),
                     },
                 },
                 "required": ["action"],

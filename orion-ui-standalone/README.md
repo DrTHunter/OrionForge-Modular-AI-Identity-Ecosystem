@@ -22,13 +22,13 @@ Open **http://localhost:8989**.
 
 ```
 orion-ui-standalone/
-├── web/                # FastAPI application (app.py — 3,370 lines, 113 routes, 12 templates)
+├── web/                # FastAPI application (app.py — 3,556 lines, 113 routes, 12 templates)
 │   ├── app.py          # Main application — all page & API routes
-│   ├── image_gen.py    # Image generation helper
+│   ├── image_gen.py    # Image generation helper (8 providers)
 │   ├── static/         # CSS
 │   └── templates/      # Jinja2 HTML (12 pages)
 │
-├── src/                # Soul Script Engine modules
+├── src/                # Soul Script Engine modules (33 source files)
 │   ├── data_paths.py   # Canonical data directory layout & auto-creation
 │   ├── runtime_policy.py # RuntimePolicy dataclass — iteration limits, stasis, self-refine
 │   ├── directives/     # Directive parsing, storage, injection, manifest system
@@ -38,9 +38,9 @@ orion-ui-standalone/
 │   ├── observability/  # Token metering, cost tracking, pricing engine
 │   ├── policy/         # Boundary enforcement — risk classification, denial payloads
 │   ├── storage/        # Note collection & user notes loading
-│   └── tools/          # 10 tool implementations (memory, directives, email, web search, inbox, etc.)
+│   └── tools/          # 8 tool implementations + registry (memory, directives, email, web search, inbox, etc.)
 │
-├── config/             # Runtime configuration (10+ files)
+├── config/             # Runtime configuration (11 files)
 │   ├── connections.json       # LLM provider connections
 │   ├── memory_profile.json    # Memory vault settings (retention, categories, safety)
 │   ├── identity_profile.json  # FAISS identity indexing profile
@@ -55,7 +55,7 @@ orion-ui-standalone/
 ├── notes/              # Developer notes per agent
 ├── scripts/            # Seed scripts (seed_memories.py, seed_ui_knowledge.py)
 ├── data/               # Runtime data (chats, memory vault, FAISS indexes, uploads, knowledge notes)
-└── tests/              # Test suite — 14 files, 184 functions, ~1,658 checks
+└── tests/              # Test suite — 11 files, 205 functions, ~1,905 checks
 ```
 
 ---
@@ -95,38 +95,56 @@ The FastAPI app exposes 113 routes across these domains:
 | Skins | ~2 | get/set active skin |
 | AGI Loop | ~2 | get/set config |
 | Model Router | ~3 | get/set/reset config |
+| Image Gen | ~5 | generate, providers, settings |
+
+---
+
+## Image Generation
+
+8 providers supported via `web/image_gen.py`:
+
+| Provider | Models |
+|----------|--------|
+| **OpenAI** | DALL-E 3, DALL-E 2, GPT Image (`gpt-image-1`) |
+| **Google** | Imagen 3 |
+| **Stability AI** | Stable Image Ultra, Core, SD3 Large/Turbo/Medium |
+| **Ideogram** | V2, V2 Turbo |
+| **Replicate** | Flux Pro, Flux Schnell, Flux Dev, Playground v2.5 |
+| **FAL.ai** | Flux Pro v1.1, Flux Schnell, Flux Dev |
+| **Leonardo AI** | Diffusion XL, Lightning XL, Vision XL, Kino XL |
+| **Midjourney** | Via third-party API proxy |
 
 ---
 
 ## Test Suite
 
-14 test files covering every module. Run all tests:
+11 test files covering every engine module. Run all tests:
 
 ```powershell
 cd orion-ui-standalone
-$env:PYTHONIOENCODING="utf-8"; python tests/test_torture.py
+python tests/run_all.py
 ```
 
-Or run the full suite:
+Or run the torture suite:
 
 ```powershell
-python tests/run_all.py
+$env:PYTHONIOENCODING="utf-8"; python tests/test_torture.py
 ```
 
 | Test File | Functions | Checks | Coverage |
 |-----------|-----------|--------|----------|
-| `test_torture.py` | 51 | ~1,520 | Deep torture of all code paths — memory, vault, sort, policy, tools, templates |
+| `test_torture.py` | 65 | ~1,086 | Deep torture of all code paths — memory, vault, sort, policy, tools, templates |
 | `test_memory.py` | 23 | 155 | VaultStore, MemoryVault, Memory types, PII guard |
-| `test_stress.py` | 15 | 94 | Rapid-fire ops, concurrent access, boundary conditions |
-| `test_directives.py` | 14 | 108 | Parser, store, injector, manifest, DirectivesTool |
-| `test_chunker_injector.py` | 14 | 51 | Chunking logic, merge/split, formatting |
+| `test_stress.py` | 22 | 139 | Rapid-fire ops, concurrent access, boundary conditions |
 | `test_registry_and_tools.py` | 17 | 86 | Tool registry, cost tracker, web search |
 | `test_governance.py` | 16 | 74 | ActiveDirectives, validate_manifest |
+| `test_directives.py` | 14 | 108 | Parser, store, injector, manifest, DirectivesTool |
+| `test_chunker_injector.py` | 14 | 51 | Chunking logic, merge/split, formatting |
 | `test_storage_and_llm.py` | 14 | 45 | User notes loader, LLM client base |
 | `test_metering.py` | 11 | 92 | Token accounting, cost computation, aggregation |
 | `test_data_paths.py` | 5 | 31 | Data directory layout, auto-creation, isolation |
-| `test_tools.py` | 4 | 34 | EchoTool, ContinuationUpdateTool, EmailTool, RuntimePolicy |
-| **Total** | **184** | **~1,658** | |
+| `test_tools.py` | 4 | 38 | EchoTool, ContinuationUpdateTool, EmailTool, RuntimePolicy |
+| **Total** | **205** | **~1,905** | |
 
 ---
 
@@ -144,9 +162,11 @@ python tests/run_all.py
 
 | Technology | Role |
 |------------|------|
-| FastAPI + Uvicorn | Web server & API |
+| FastAPI + Uvicorn | Web server & async API (113 routes) |
 | FAISS (`faiss-cpu`) | Vector similarity search for memory + soul script retrieval |
 | sentence-transformers | Semantic embeddings (`all-mpnet-base-v2`) |
-| Jinja2 | HTML templates |
+| Jinja2 | HTML templates (12 pages) |
+| PyYAML | Agent profile parsing |
+| httpx | Async HTTP for model fetching & LLM proxy calls |
 | PyYAML | Agent profile parsing |
 | httpx | Async HTTP for model fetching & LLM calls |
