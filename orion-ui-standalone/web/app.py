@@ -1547,6 +1547,7 @@ _MODEL_ROUTER_DEFAULTS = {
             "max_iterations": 8, "retries_before_escalate": 3,
             "alt_models": [],
             "cost_per_call": "~$0.00",
+            "default_for": "",
         },
         {
             "id": "t1", "label": "local_strong", "enabled": True,
@@ -1556,6 +1557,7 @@ _MODEL_ROUTER_DEFAULTS = {
             "max_iterations": 10, "retries_before_escalate": 3,
             "alt_models": [],
             "cost_per_call": "~$0.00",
+            "default_for": "",
         },
         {
             "id": "t2", "label": "cheap_cloud", "enabled": True,
@@ -1565,6 +1567,7 @@ _MODEL_ROUTER_DEFAULTS = {
             "max_iterations": 12, "retries_before_escalate": 2,
             "alt_models": [],
             "cost_per_call": "~$0.001",
+            "default_for": "",
         },
         {
             "id": "t3", "label": "expensive_cloud", "enabled": True,
@@ -1574,6 +1577,7 @@ _MODEL_ROUTER_DEFAULTS = {
             "max_iterations": 15, "retries_before_escalate": 2,
             "alt_models": [],
             "cost_per_call": "~$0.01\u20130.10",
+            "default_for": "",
         },
     ],
     "task_tier_map": {
