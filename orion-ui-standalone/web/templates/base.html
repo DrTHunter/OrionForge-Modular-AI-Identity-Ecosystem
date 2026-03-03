@@ -129,35 +129,377 @@
 
       function applySkinGlobal(id) {
         const c = SKIN_MAP[id];
-        if (!c) return; // default — no overrides
-        const text = c.text || '#e4e4e7';
-        const textMuted = c.textMuted || '#a1a1aa';
+        if (!c) return;
+        const t  = c.text      || '#e4e4e7';
+        const tm = c.textMuted || '#a1a1aa';
         let el = document.getElementById('skin-global-css');
         if (!el) { el = document.createElement('style'); el.id = 'skin-global-css'; document.head.appendChild(el); }
         el.textContent = `
-          body { background: ${c.bg} !important; color: ${text} !important; }
-          .main-nav { background: ${c.sidebar} !important; border-right-color: ${c.border} !important; }
-          .nav-link.active { background: ${c.accent}22 !important; color: ${c.accent2} !important; }
-          .nav-link:hover { background: ${c.accent}18 !important; }
-          .card, .section-card, .tool-card, .agent-card, [class*="stat-card"],
-          .skin-card, .memory-entry { background: ${c.card} !important; border-color: ${c.border} !important; }
-          .filter-btn { background: ${c.card} !important; border-color: ${c.border} !important; color: ${textMuted} !important; }
-          .filter-btn.active { background: ${c.accent}33 !important; color: ${c.accent2} !important; border-color: ${c.accent}50 !important; }
-          .search-input { background: ${c.card} !important; border-color: ${c.border} !important; color: ${text} !important; }
-          .search-input:focus { border-color: ${c.accent} !important; }
-          .badge-scope { background: ${c.accent}25 !important; color: ${c.accent2} !important; }
-          .badge-category { background: ${c.highlight}20 !important; color: ${c.highlight} !important; }
-          .tab-btn.active, .tab-btn[class*="active"] { color: ${c.accent2} !important; border-color: ${c.accent} !important; }
-          ::-webkit-scrollbar-thumb { background: ${c.border} !important; }
-          .nav-footer { border-top-color: ${c.border} !important; }
-          .border-forge-border { border-color: ${c.border} !important; }
-          .bg-forge-bg { background-color: ${c.bg} !important; }
-          .bg-forge-card { background-color: ${c.card} !important; }
-          .text-forge-accent { color: ${c.accent} !important; }
-          .text-forge-accent2 { color: ${c.accent2} !important; }
-          .text-forge-highlight { color: ${c.highlight} !important; }
+/* ── CSS Custom Properties ── */
+:root{--s-bg:${c.bg};--s-card:${c.card};--s-border:${c.border};--s-accent:${c.accent};--s-accent2:${c.accent2};--s-hl:${c.highlight};--s-side:${c.sidebar};--s-text:${t};--s-muted:${tm};}
+
+/* ── Base ── */
+body{background:${c.bg}!important;color:${t}!important}
+::-webkit-scrollbar-thumb{background:${c.border}!important}
+::-webkit-scrollbar-track{background:${c.bg}!important}
+::placeholder{color:${tm}!important}
+
+/* ── Tailwind forge tokens ── */
+.bg-forge-bg{background-color:${c.bg}!important}
+.bg-forge-card{background-color:${c.card}!important}
+.text-forge-accent{color:${c.accent}!important}
+.text-forge-accent2{color:${c.accent2}!important}
+.text-forge-highlight{color:${c.highlight}!important}
+.text-forge-muted{color:${tm}!important}
+.border-forge-border{border-color:${c.border}!important}
+.text-white{color:${t}!important}
+.text-zinc-200{color:${t}!important}
+.text-zinc-400,.text-zinc-500{color:${tm}!important}
+
+/* ── Sidebar Nav ── */
+.main-nav{background:${c.sidebar}!important;border-right-color:${c.border}!important}
+.nav-link.active{background:${c.accent}22!important;color:${c.accent2}!important}
+.nav-link:hover{background:${c.accent}18!important}
+.nav-footer{border-top-color:${c.border}!important}
+.nav-logo-text{color:${t}!important}
+.nav-logo-sub{color:${tm}!important}
+.nav-divider,.border-forge-border{border-color:${c.border}!important}
+
+/* ── Cards (all pages) ── */
+.card,.section-card,.tool-card,.agent-card,.user-card,
+[class*="stat-card"],.skin-card,.memory-entry,
+.cost-card,.mode-card,.catmode-card,.ct-card,.rt-card,
+.note-card,.pipeline-stage,.loop-entry,.tier-param-card,
+.ro-field,.ct-table-wrap,.modal-note-row{
+  background:${c.card}!important;border-color:${c.border}!important}
+.config-cell,.tool-toggle-card,.settings-section{
+  background:${c.card}08!important;border-color:${c.border}!important}
+.config-cell:hover,.tool-toggle-card:hover,.settings-section:hover{
+  border-color:${c.accent}40!important}
+.tool-toggle-card.enabled{border-color:${c.accent}59!important;background:${c.accent}0d!important}
+.agent-card{background:${c.card}b3!important;border-color:${c.border}!important}
+.agent-card:hover{border-color:${c.accent}4d!important;box-shadow:0 20px 60px ${c.accent}26!important}
+.agent-add-card{border-color:${c.border}!important;color:${tm}!important}
+.agent-add-card:hover{border-color:${c.accent}!important;color:${c.accent2}!important}
+
+/* ── Tab system ── */
+.tab-bar,.ct-prov-tabs,.provider-tabs{border-color:${c.border}!important}
+.tab-btn,.ct-prov-tab,.prov-tab{color:${tm}!important}
+.tab-btn:hover,.ct-prov-tab:hover,.prov-tab:hover{color:${t}!important}
+.tab-btn.active,.tab-btn[class*="active"],.ct-prov-tab.active,.prov-tab.active{
+  color:${t}!important;border-bottom-color:${c.accent}!important}
+.tab-count,.ct-prov-count{color:${tm}!important;background:${c.border}99!important}
+.tab-btn.active .tab-count,.ct-prov-tab.active .ct-prov-count{
+  color:${c.accent2}!important;background:${c.accent}26!important}
+.settings-tabs .settings-tab{color:${tm}!important;border-color:${c.border}!important;background:transparent!important}
+.settings-tabs .settings-tab:hover{color:${t}!important;border-color:${c.border}!important}
+.settings-tabs .settings-tab.active{background:${c.accent}!important;color:#fff!important;border-color:${c.accent}!important}
+
+/* ── Inputs / Textareas / Selects ── */
+.search-input,.config-input,.price-input,.add-input,
+.max-active-input,.folder-rename-input,.title-input,
+.folder-select,.tier-form-select,.sort-select,
+.text-input,.select-input,.folder-input,.ct-price-input,
+.wiki-search,.tb-sel,.tb-num,.wiki-notes-area{
+  background:${c.card}!important;border-color:${c.border}!important;color:${t}!important}
+.search-input:focus,.config-input:focus,.price-input:focus,
+.title-input:focus,.content-editor:focus,.text-input:focus,
+.select-input:focus,.folder-input:focus,.wiki-search:focus,
+.tb-sel:focus,.tb-num:focus,.wiki-notes-area:focus,
+.folder-select:focus,.sort-select:focus,.max-active-input:focus,
+input:focus,textarea:focus,select:focus{
+  border-color:${c.accent}!important}
+.textarea-prompt,.compose-textarea{
+  background:${c.sidebar}!important;border-color:${c.border}!important;color:${t}!important}
+.content-editor{background:${c.card}!important;border-color:${c.border}!important;color:${t}!important}
+.compose-box{background:${c.card}e6!important;border-color:${c.border}!important}
+.compose-textarea{background:transparent!important;color:${t}!important}
+.prof-name-input,.user-name-input,.prof-desc-input{color:${t}!important}
+.prof-name-input:focus,.user-name-input:focus{border-bottom-color:${c.accent2}!important}
+select option{background:${c.card}!important;color:${t}!important}
+select optgroup{color:${tm}!important}
+
+/* ── Buttons ── */
+.btn-primary,.save-btn,.skin-apply-btn,.new-agent-btn{
+  background:${c.accent}!important;color:#fff!important}
+.btn-primary:hover,.save-btn:hover,.skin-apply-btn:hover,.new-agent-btn:hover{
+  background:${c.accent2}!important}
+.btn-secondary{background:${c.border}80!important;border-color:${c.border}!important;color:${tm}!important}
+.btn-secondary:hover{background:${c.border}cc!important;color:${t}!important}
+.send-btn{background:linear-gradient(135deg,${c.accent},${c.accent2})!important}
+.send-btn:hover{background:linear-gradient(135deg,${c.accent2},${c.accent})!important}
+.filter-btn{background:${c.card}!important;border-color:${c.border}!important;color:${tm}!important}
+.filter-btn:hover{background:${c.border}4d!important;color:${t}!important}
+.filter-btn.active{background:${c.accent}26!important;color:${c.accent2}!important;border-color:${c.accent}4d!important}
+.action-btn{border-color:${c.border}!important;background:${c.card}99!important;color:${t}!important}
+.action-btn:hover{background:${c.border}80!important;color:${t}!important}
+.emoji-btn{border-color:${c.border}!important}
+.emoji-btn:hover{background:${c.accent}1f!important}
+.refresh-btn,.ct-refresh-btn{border-color:${c.accent}33!important;color:${tm}!important;background:${c.accent}14!important}
+.refresh-btn:hover,.ct-refresh-btn:hover{background:${c.accent}26!important;color:${t}!important}
+.new-chat-btn{background:${c.accent}1f!important;border-color:${c.accent}33!important;color:${c.accent2}!important}
+.new-chat-btn:hover{background:${c.accent}33!important}
+.add-notes-btn{background:${c.accent}14!important;border-color:${c.accent}4d!important;color:${c.accent2}!important}
+.add-notes-btn:hover{background:${c.accent}28!important;border-color:${c.accent}!important}
+.manage-toggle{color:${tm}!important}
+.manage-toggle:hover{color:${t}!important;background:${c.border}4d!important}
+
+/* ── Badges & Chips ── */
+.badge-scope{background:${c.accent}25!important;color:${c.accent2}!important}
+.badge-category{background:${c.highlight}20!important;color:${c.highlight}!important}
+.tool-chip{background:${c.accent}1a!important;border-color:${c.accent}40!important;color:${c.accent2}!important}
+.enum-chip{background:${c.accent}1a!important;border-color:${c.accent}33!important;color:${c.accent2}!important}
+.suggestion-chip{background:${c.accent}0f!important;border-color:${c.accent}2e!important;color:${c.accent2}!important}
+.suggestion-chip:hover{background:${c.accent}26!important;border-color:${c.accent}59!important}
+.skin-toast{background:${c.accent}26!important;color:${c.accent2}!important}
+.suggested-chip.on{border-color:${c.accent}!important;background:${c.accent}14!important;color:${c.accent2}!important}
+.suggested-chip.off{border-color:${c.border}!important;background:${c.card}80!important;color:${tm}!important}
+.ct-default-tag{color:${c.accent2}!important;background:${c.accent}1a!important}
+.catmode-card{background:${c.card}80!important;border-color:${c.border}!important}
+.catmode-card:hover{border-color:${c.accent}59!important}
+.catmode-card.active{border-color:${c.accent}!important;background:${c.accent}14!important}
+.catmode-title{color:${t}!important}
+.catmode-desc{color:${tm}!important}
+.catmode-card.active .catmode-title{color:${c.accent2}!important}
+
+/* ── Action / Status Bars ── */
+.action-bar,.save-bar{background:transparent!important;border-color:${c.border}!important}
+.status-bar{background:${c.sidebar}!important;border-color:${c.border}!important}
+.compose-toolbar{border-color:${c.border}!important}
+.tb-sep{background:${c.border}!important}
+
+/* ── Modals ── */
+.modal-overlay{background:${c.bg}99!important}
+.modal-box,.photo-editor-box{background:${c.card}!important;border-color:${c.border}!important}
+.modal-title,.photo-editor-title{color:${t}!important}
+.skin-modal{background:${c.card}!important;border-color:${c.border}!important}
+.skin-modal-close{color:${tm}!important}
+.skin-modal-swatch{border-color:${c.border}!important}
+.tier-modal{background:${c.bg}99!important}
+.tier-modal-head{background:${c.border}66!important;border-color:${c.border}!important}
+.color-dropdown{background:${c.card}!important;border-color:${c.accent}40!important}
+.avatar-menu{background:${c.card}!important;border-color:${c.accent}40!important}
+.avatar-menu-item{color:${t}!important}
+.avatar-menu-item:hover{background:${c.accent}1a!important}
+.tts-vol-popup{background:${c.card}!important;border-color:${c.accent}33!important}
+.photo-editor-viewport{background:${c.sidebar}!important;border-color:${c.accent}4d!important}
+
+/* ── Tables ── */
+.pricing-table thead th,.tier-table th,.ct-table thead th,.param-table th{
+  background:${c.border}66!important;border-color:${c.border}!important;color:${tm}!important}
+.pricing-table tbody tr,.tier-table td,.ct-table tbody tr,.param-table td{
+  border-color:${c.border}!important;color:${t}!important}
+.pricing-table tbody tr:hover,.ct-table tbody tr:hover{background:${c.accent}0a!important}
+.msg-body th{background:${c.accent}14!important;color:${t}!important;border-color:${c.border}!important}
+.msg-body td{border-color:${c.border}!important}
+.wiki-article th{background:${c.border}66!important;border-color:${c.border}!important;color:${t}!important}
+.wiki-article td{color:${tm}!important;border-color:${c.border}!important}
+.wiki-article tr:hover td{background:${c.accent}0a!important}
+
+/* ── Chat page ── */
+.chat-sidebar{background:${c.sidebar}!important;border-right-color:${c.border}!important}
+.sidebar-header{border-color:${c.border}!important}
+.sidebar-scroll::-webkit-scrollbar-thumb{background:${c.border}!important}
+.sb-section-label{color:${tm}!important}
+.sb-folder{color:${tm}!important}
+.sb-folder:hover{background:${c.accent}14!important}
+.sb-folder-icon{color:${tm}!important}
+.sb-chat{color:${t}!important}
+.sb-chat:hover{background:${c.accent}14!important}
+.sb-chat.active{background:${c.accent}26!important;color:${c.accent2}!important}
+.sb-chat-menu,.sb-add-folder{color:${tm}!important}
+.sb-chat-age{color:${tm}!important}
+.sb-folder.drag-over{background:${c.accent}33!important;outline-color:${c.accent}!important}
+.chat-topbar{border-color:${c.border}!important}
+.chat-thread::-webkit-scrollbar-thumb{background:${c.border}!important}
+.msg-name{color:${tm}!important}
+.msg-time{color:${tm}!important}
+.msg-body{color:${t}!important;background:${c.accent}0a!important;border-color:${c.accent}14!important}
+.user-entry .msg-body{background:${c.highlight}0f!important;border-color:${c.highlight}1f!important}
+.msg-meta{background:${c.bg}66!important;border-color:${c.border}!important;color:${tm}!important}
+.ctx-menu{background:${c.card}!important;border-color:${c.border}!important}
+.ctx-item{color:${t}!important}
+.ctx-item:hover{background:${c.accent}1a!important}
+.layers-panel{background:${c.sidebar}f2!important;border-color:${c.accent}26!important}
+.layer-label{color:${t}!important}
+.layer-stat{color:${tm}!important}
+.layer-preview{color:${tm}!important}
+.layer-row{border-color:${c.border}!important}
+.tool-calls-panel{background:${c.sidebar}cc!important;border-color:${c.highlight}26!important}
+.tool-call-name{color:${c.highlight}!important}
+.tool-call-round{color:${tm}!important}
+.tool-call-args{color:${tm}!important}
+.tool-call-result{color:${tm}!important}
+.tool-call-entry{border-color:${c.border}!important}
+.chat-compose{border-color:${c.border}!important}
+.sidebar-expand-float{background:${c.card}d9!important;border-color:${c.border}!important;color:${tm}!important}
+.sidebar-toggle{color:${tm}!important}
+.sidebar-toggle:hover,.sidebar-expand-float:hover{color:${t}!important}
+
+/* Chat — code blocks */
+.code-block-wrap{background:${c.sidebar}!important;border-color:${c.border}!important}
+.code-block-header{background:${c.border}26!important;border-color:${c.border}!important}
+.code-block-lang{color:${tm}!important}
+.code-copy-btn{color:${tm}!important;border-color:${c.border}!important}
+.code-copy-btn:hover{color:${t}!important;border-color:${c.accent}!important;background:${c.accent}14!important}
+.code-block-wrap pre{background:transparent!important}
+.assistant-code{background:${c.sidebar}!important;border-color:${c.border}!important}
+.assistant-inline-code{background:${c.accent}1a!important;color:${c.accent2}!important}
+.msg-body code:not(pre code){background:${c.accent}1a!important;color:${c.accent2}!important}
+
+/* Chat — tick / step sections */
+.tick-header{background:${c.highlight}0a!important;border-color:${c.highlight}1a!important}
+.tick-header:hover{background:${c.highlight}14!important}
+.tick-label{color:${c.highlight}!important}
+.tick-meta{color:${tm}!important}
+.tick-badge{background:${c.highlight}1f!important;color:${c.highlight}!important}
+.step-entry{border-color:${c.border}!important}
+.step-summary{color:${t}!important}
+.step-detail{background:${c.card}99!important;color:${tm}!important}
+.tool-result-block{border-color:${c.border}!important;color:${tm}!important}
+.memory-flush-block{background:${c.highlight}0a!important;border-color:${c.highlight}1a!important}
+.memory-item{color:${tm}!important;border-color:${c.highlight}33!important}
+.memory-item-text{color:${t}!important}
+.memory-item-meta{color:${tm}!important}
+.tick-sub>summary{color:${tm}!important}
+.tick-sub.sub-step>summary{color:${c.accent2}!important}
+
+/* Chat — compose bar extras */
+.tb{color:${tm}!important}
+.tb:hover{background:${c.accent}1a!important;color:${t}!important}
+.tb.on{background:${c.accent}26!important;color:${c.accent2}!important;border-color:${c.accent}33!important}
+.mic-btn{background:${c.accent}1f!important;border-color:${c.accent}33!important;color:${tm}!important}
+.mic-btn:hover{color:${t}!important;background:${c.accent}33!important}
+.msg-action-btn{color:${tm}!important}
+.msg-action-btn:hover{color:${t}!important;background:${c.accent}14!important;border-color:${c.accent}26!important}
+.msg-speak-btn{color:${tm}!important}
+.msg-speak-btn:hover{color:${t}!important}
+.empty-state{color:${tm}!important}
+.system-entry{color:${tm}!important;border-color:${c.border}!important}
+
+/* ── Tools page ── */
+.tool-card-name{color:${t}!important}
+.tool-card-desc{color:${tm}!important}
+.stat-value{color:${t}!important}
+.stat-label{color:${tm}!important}
+.section-title{color:${t}!important}
+.tool-detail-title{color:${t}!important}
+.tool-detail-desc{color:${tm}!important}
+.param-name{color:${c.accent2}!important}
+.param-type{color:${c.highlight}!important}
+.ct-card-label{color:${tm}!important}
+.ct-card-value{color:${t}!important}
+.ct-card-sub{color:${tm}!important}
+.ct-model-name{color:${t}!important}
+.ct-model-provider{color:${tm}!important}
+.ct-price-prefix{color:${tm}!important}
+.ct-table td{color:${t}!important}
+.ct-table thead th{background:${c.sidebar}66!important;border-color:${c.border}!important;color:${tm}!important}
+
+/* ── Profiles page ── */
+.agent-detail-panel{background:${c.card}!important;border-color:${c.border}!important}
+.agent-detail-header::before{background:linear-gradient(135deg,${c.accent}33,${c.accent2}1a)!important}
+.prof-header-info *{color:${t}!important}
+.modal-section-title{color:${c.accent2}!important}
+.modal-trait{background:${c.accent}14!important;color:${tm}!important;border-color:${c.border}!important}
+.config-cell-label{color:${tm}!important}
+.config-cell-value{color:${t}!important}
+.tool-toggle-name{color:${t}!important}
+.tool-toggle-desc{color:${tm}!important}
+.tool-toggle-switch{background:${c.border}!important}
+.tool-toggle-switch.on{background:${c.accent}!important}
+.mode-toggle{background:${c.border}!important}
+.mode-toggle.active{background:${c.accent}!important}
+.agent-card-name{color:${t}!important}
+.agent-card-role{color:${c.accent2}!important}
+.agent-card-desc{color:${tm}!important}
+.agent-tag-llm{background:${c.highlight}1a!important;color:${c.highlight}!important;border-color:${c.highlight}26!important}
+.agent-tag-tools{background:${c.accent}1a!important;color:${c.accent2}!important;border-color:${c.accent}26!important}
+.field-label{color:${tm}!important}
+.field-hint{color:${tm}!important}
+.notes-empty{color:${tm}!important;border-color:${c.border}!important}
+.note-name{color:${t}!important}
+.note-source{color:${tm}!important;background:${c.border}66!important}
+.note-remove-btn{color:${tm}!important}
+.cam-badge{background:${c.card}!important;border-color:${c.border}!important}
+
+/* ── Skins page ── */
+.skins-header h1{color:${t}!important}
+.skins-header p{color:${tm}!important}
+.skins-section-title{color:${tm}!important}
+.skin-card{background:${c.card}!important;border-color:${c.border}!important}
+.skin-card.active{border-color:${c.accent}59!important}
+.skin-preview{border-color:${c.border}!important}
+.skin-name{color:${t}!important}
+.skin-author,.skin-desc{color:${tm}!important}
+.skin-price{color:${c.highlight}!important}
+
+/* ── Knowledge pages ── */
+.folder-item{color:${tm}!important}
+.folder-item:hover{background:${c.accent}0f!important}
+.folder-item.active{background:${c.accent}1a!important;color:${t}!important;border-color:${c.accent}!important}
+.folder-count{color:${tm}!important}
+.folder-add{color:${c.accent2}!important;border-color:${c.border}!important}
+.note-title{color:${t}!important}
+.note-preview{color:${tm}!important}
+.note-meta{color:${tm}!important}
+.add-card{border-color:${c.border}!important;color:${c.accent2}!important}
+
+/* ── Settings page ── */
+.settings-section-title{color:${c.accent2}!important}
+.settings-section-desc{color:${tm}!important}
+.tz-mode-btn{color:${tm}!important;border-color:${c.border}!important}
+.tz-mode-btn:hover{color:${t}!important;border-color:${c.border}!important}
+.tz-mode-btn.active{background:${c.accent}26!important;color:${c.accent2}!important;border-color:${c.accent}66!important}
+.bg-preview-zone{border-color:${c.border}!important}
+.bg-preview-zone:hover{border-color:${c.accent}66!important;background:${c.accent}08!important}
+
+/* ── Vault page ── */
+.mem-meta-item{color:${tm}!important}
+
+/* ── Wiki / About page ── */
+.wiki-sidebar{background:${c.sidebar}f2!important;border-color:${c.border}!important}
+.wiki-sidebar-header{border-color:${c.border}!important}
+.wiki-sidebar-header h2{color:${t}!important}
+.wiki-search{background:${c.card}!important;border-color:${c.border}!important;color:${t}!important}
+.wiki-cat{color:${tm}!important}
+.wiki-link{color:${tm}!important}
+.wiki-link:hover{color:${t}!important;background:${c.accent}0a!important}
+.wiki-link.active{color:${c.accent2}!important;border-left-color:${c.accent}!important;background:${c.accent}1a!important}
+.wiki-toc::-webkit-scrollbar-thumb{background:${c.border}!important}
+.wiki-content::-webkit-scrollbar-thumb{background:${c.border}!important}
+.wiki-breadcrumb{color:${tm}!important}
+.wiki-breadcrumb span{color:${tm}!important}
+.wiki-article h1{color:${t}!important;border-color:${c.border}!important}
+.wiki-article h2{color:${t}!important;border-color:${c.border}!important}
+.wiki-article h3,.wiki-article h4{color:${t}!important}
+.wiki-article p,.wiki-article li{color:${tm}!important}
+.wiki-article strong{color:${t}!important}
+.wiki-article a{color:${c.accent2}!important}
+.wiki-article code{background:${c.accent}1a!important;color:${c.accent2}!important}
+.wiki-article pre{background:${c.sidebar}!important;border-color:${c.border}!important}
+.wiki-article pre code{background:transparent!important;color:${t}!important}
+.wiki-article blockquote{border-color:${c.accent}80!important;background:${c.accent}0a!important;color:${tm}!important}
+.wiki-article table th{background:${c.border}66!important;border-color:${c.border}!important}
+.wiki-article table td{border-color:${c.border}!important}
+.wiki-article hr{border-color:${c.border}!important}
+.wiki-notes-area{background:${c.sidebar}cc!important;border-color:${c.border}!important;color:${t}!important}
+
+/* ── AGI Loop page ── */
+.pipeline-arrow{color:${tm}!important}
+.budget-bar-wrap{background:${c.border}66!important}
+
+/* ── Pricing page ── */
+.add-model-row{border-color:${c.border}!important}
+
+/* ── Markdown rendered body (chat messages) ── */
+.msg-body h1,.msg-body h2,.msg-body h3,.msg-body h4{color:${t}!important}
+.msg-body blockquote{border-color:${c.accent}!important;background:${c.accent}0a!important;color:${tm}!important}
+.msg-body a{color:${c.accent2}!important}
+.msg-body th,.msg-body td{border-color:${c.border}!important}
+.msg-body hr{border-color:${c.border}!important}
+.msg-body img{border-color:${c.border}!important}
         `;
-        // Also update Tailwind palette if available
         if (typeof tailwind !== 'undefined' && tailwind.config) {
           const f = tailwind.config.theme.extend.colors.forge;
           f.bg = c.bg; f.card = c.card; f.border = c.border;
@@ -165,7 +507,10 @@
         }
       }
 
-      // Fetch active skin and apply immediately
+      // Expose globally so skins.html can call the same comprehensive overrides
+      window.__orionSkinApply = applySkinGlobal;
+      window.__orionSkinMap   = SKIN_MAP;
+
       fetch('/api/skin').then(r => r.json()).then(d => {
         if (d.skin && d.skin !== 'default') applySkinGlobal(d.skin);
       }).catch(() => {});
