@@ -1592,6 +1592,7 @@ _WIKI_README_MAP = {
     "notes":              Path(__file__).resolve().parent.parent / "notes" / "README.md",
     "tests":              Path(__file__).resolve().parent.parent / "tests" / "README.md",
     "scripts":            Path(__file__).resolve().parent.parent / "scripts" / "README.md",
+    "soul-scripts":        Path(__file__).resolve().parent.parent / "data" / "orion" / "SOUL_SCRIPTS.md",
 }
 
 def _load_wiki_articles() -> dict:
