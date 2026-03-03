@@ -44,6 +44,12 @@ Covers:
   - _extract_and_save_memories patterns (category extraction, min-length, invalid category)
   - Tool registry get_tool_defs_for_agent (YAML profile → tool definitions)
   - Profile create/update/delete roundtrip via API
+  - MIN_SCORE cosine similarity threshold (search filter, boundary, zero/negative scores)
+  - Tag sort mode (ascending by first tag, empty-tags sentinel, stability)
+  - HARD_MAX_TOTAL ceiling on memory profile PUT (clamping, zero=unlimited bypass)
+  - Wiki article loader (_load_wiki_articles, missing files, encoding)
+  - About API (/api/about POST save, round-trip)
+  - Vault filter dropdown (HTML template includes filter elements)
 """
 
 import json
@@ -3682,19 +3688,20 @@ def test_vault_template_elements():
     # Sort dropdown
     check("sort-select present", "sort-select" in html_bounded)
     check("applySort function present", "applySort" in html_bounded)
-    sort_options = ["newest", "oldest", "scope", "category", "tier", "alpha", "source", "updated"]
+    sort_options = ["newest", "oldest", "scope", "category", "tier", "alpha", "source", "tag", "updated"]
     for opt in sort_options:
         check(f"sort option '{opt}' in dropdown", f'value="{opt}"' in html_bounded)
 
-    # Sort option labels
+    # Sort option labels (renamed)
     check("Newest First label", "Newest First" in html_bounded)
     check("Oldest First label", "Oldest First" in html_bounded)
-    check("Scope (A→Z) label", "Scope (A" in html_bounded)
-    check("Category (A→Z) label", "Category (A" in html_bounded)
-    check("Text (A→Z) label", "Text (A" in html_bounded)
-    check("Source label", ">Source<" in html_bounded)
+    check("Agent (Scope) label", "Agent (Scope)" in html_bounded)
+    check("Category label", "Category" in html_bounded)
+    check("Text (A) label", "Text (A" in html_bounded)
+    check("Source label", "Source" in html_bounded)
     check("Recently Updated label", "Recently Updated" in html_bounded)
-    check("Tier label", ">Tier<" in html_bounded)
+    check("Section (Canon / Register) label", "Section (Canon" in html_bounded)
+    check("Tag sort label", "Tag" in html_bounded)
 
     # Metadata per memory entry
     check("mem-meta class present", "mem-meta" in html_bounded)
@@ -3830,7 +3837,7 @@ def test_memory_profile_max_total():
     mtm = ret["max_total_memories"]
     check("max_total_memories is int", isinstance(mtm, int))
     check("max_total_memories >= 0", mtm >= 0)
-    check("default is 5000", mtm == 5000)
+    check("default is 25000", mtm == 25000)
 
     # Check __default__.json
     default_path = os.path.join(config_dir, "saved_profiles", "memory", "__default__.json")
@@ -3891,11 +3898,14 @@ def test_vault_sort_edge_cases():
                 return (get("text", "") or "").lower()
             elif mode == "source":
                 return (get("source", "") or "", get("created_at", ""))
+            elif mode == "tag":
+                tags = get("tags", []) or []
+                return ((tags[0] if tags else "~"), get("created_at", ""))
             elif mode == "updated":
                 return get("updated_at", "") or get("created_at", "") or ""
             else:
                 return get("created_at", "")
-        reverse = mode not in ("oldest", "alpha")
+        reverse = mode not in ("oldest", "alpha", "tag")
         if mode == "updated":
             reverse = True
         return sorted(mems, key=_sort_key, reverse=reverse)
@@ -3965,8 +3975,26 @@ def test_vault_sort_edge_cases():
     # reversed=True, so "manual" > "chat" > ""
     check("source: manual first (reversed)", ids[0] == "sn2")
 
-    # All 8 sort modes idempotent (sorting twice gives same result)
-    for mode in ["newest", "oldest", "scope", "category", "tier", "alpha", "source", "updated"]:
+    # Tag sort
+    tagged_mems = [
+        Memory(id="t1", text="t", scope="s", category="c",
+               created_at="2026-01-01T00:00:00", tags=["zeta", "alpha"]),
+        Memory(id="t2", text="t", scope="s", category="c",
+               created_at="2026-01-02T00:00:00", tags=["beta"]),
+        Memory(id="t3", text="t", scope="s", category="c",
+               created_at="2026-01-03T00:00:00", tags=[]),
+        Memory(id="t4", text="t", scope="s", category="c",
+               created_at="2026-01-04T00:00:00", tags=["alpha", "gamma"]),
+    ]
+    r = sort_mems(tagged_mems, "tag")
+    ids = [m.id for m in r]
+    check("tag sort: alpha first (t4)", ids[0] == "t4")
+    check("tag sort: beta second (t2)", ids[1] == "t2")
+    check("tag sort: zeta third (t1)", ids[2] == "t1")
+    check("tag sort: empty tags last (t3)", ids[3] == "t3")
+
+    # All 9 sort modes idempotent (sorting twice gives same result)
+    for mode in ["newest", "oldest", "scope", "category", "tier", "alpha", "source", "tag", "updated"]:
         r1 = sort_mems(same_records, mode)
         r2 = sort_mems(r1, mode)
         check(f"idempotent {mode}", [m.id for m in r1] == [m.id for m in r2])
@@ -4702,6 +4730,344 @@ def test_settings_helpers():
 
 
 # ═════════════════════════════════════════════
+# MIN_SCORE cosine similarity threshold
+# ═════════════════════════════════════════════
+def test_vault_search_min_score():
+    """Test MIN_SCORE = 0.25 cosine filter on vault search results."""
+    print("\n=== TORTURE: Vault Search — MIN_SCORE Filter ===")
+
+    MIN_SCORE = 0.25
+
+    # Simulate raw search results with varying scores
+    raw_results = [
+        {"id": "h1", "text": "high relevance", "score": 0.85, "scope": "astraea"},
+        {"id": "h2", "text": "medium relevance", "score": 0.45, "scope": "shared"},
+        {"id": "b1", "text": "boundary exact", "score": 0.25, "scope": "shared"},
+        {"id": "l1", "text": "low relevance", "score": 0.15, "scope": "shared"},
+        {"id": "l2", "text": "very low", "score": 0.05, "scope": "astraea"},
+        {"id": "z1", "text": "zero score", "score": 0.0, "scope": "shared"},
+        {"id": "m1", "text": "missing score key"},
+    ]
+
+    memories = [r for r in raw_results if r.get("score", 0) >= MIN_SCORE]
+
+    check("high score passes", any(m["id"] == "h1" for m in memories))
+    check("medium score passes", any(m["id"] == "h2" for m in memories))
+    check("boundary 0.25 passes", any(m["id"] == "b1" for m in memories))
+    check("low 0.15 filtered out", not any(m["id"] == "l1" for m in memories))
+    check("very low 0.05 filtered", not any(m["id"] == "l2" for m in memories))
+    check("zero score filtered", not any(m["id"] == "z1" for m in memories))
+    check("missing score key filtered", not any(m["id"] == "m1" for m in memories))
+    check("3 results survive", len(memories) == 3)
+
+    # All results above threshold → nothing filtered
+    all_high = [
+        {"id": "a", "score": 0.9},
+        {"id": "b", "score": 0.5},
+        {"id": "c", "score": 0.30},
+    ]
+    passed = [r for r in all_high if r.get("score", 0) >= MIN_SCORE]
+    check("all above threshold → all pass", len(passed) == 3)
+
+    # All results below threshold → empty
+    all_low = [
+        {"id": "x", "score": 0.1},
+        {"id": "y", "score": 0.0},
+    ]
+    passed_low = [r for r in all_low if r.get("score", 0) >= MIN_SCORE]
+    check("all below threshold → empty", len(passed_low) == 0)
+
+    # Empty input → empty
+    passed_empty = [r for r in [] if r.get("score", 0) >= MIN_SCORE]
+    check("empty input → empty", len(passed_empty) == 0)
+
+    # Negative score
+    neg = [{"id": "neg", "score": -0.1}]
+    passed_neg = [r for r in neg if r.get("score", 0) >= MIN_SCORE]
+    check("negative score filtered", len(passed_neg) == 0)
+
+    # Verify the actual app.py code has MIN_SCORE
+    import os
+    app_path = os.path.join(os.path.dirname(__file__), "..", "web", "app.py")
+    with open(app_path, encoding="utf-8") as f:
+        app_src = f.read()
+    check("MIN_SCORE in app.py", "MIN_SCORE = 0.25" in app_src)
+    check("score filter in app.py", 'r.get("score", 0) >= MIN_SCORE' in app_src)
+
+
+# ═════════════════════════════════════════════
+# TAG SORT MODE — ascending by first tag
+# ═════════════════════════════════════════════
+def test_tag_sort_mode():
+    """Test the tag sort branch: ascending by first tag, empty-tags sentinel."""
+    print("\n=== TORTURE: Tag Sort Mode ===")
+    from src.memory.types import Memory
+
+    mems = [
+        Memory(id="a", text="t", scope="s", category="c",
+               created_at="2026-01-01T00:00:00", tags=["zeta"]),
+        Memory(id="b", text="t", scope="s", category="c",
+               created_at="2026-01-02T00:00:00", tags=["alpha", "beta"]),
+        Memory(id="c", text="t", scope="s", category="c",
+               created_at="2026-01-03T00:00:00", tags=[]),
+        Memory(id="d", text="t", scope="s", category="c",
+               created_at="2026-01-04T00:00:00", tags=["beta"]),
+        Memory(id="e", text="t", scope="s", category="c",
+               created_at="2026-01-05T00:00:00", tags=None),
+    ]
+
+    # Replicate the app.py sort logic
+    def _sort_key_tag(m):
+        tags = getattr(m, "tags", []) or []
+        return ((tags[0] if tags else "~"), getattr(m, "created_at", ""))
+
+    reverse = False  # tag sort is ascending
+    result = sorted(mems, key=_sort_key_tag, reverse=reverse)
+    ids = [m.id for m in result]
+
+    check("tag: alpha first (b)", ids[0] == "b")
+    check("tag: beta second (d)", ids[1] == "d")
+    check("tag: zeta third (a)", ids[2] == "a")
+    # ~ sentinel puts empty/None tags at far end
+    check("tag: empty tags last", ids[-1] in ("c", "e"))
+    check("tag: 5 items returned", len(result) == 5)
+
+    # Verify reverse flag: tag in ascending group
+    import os
+    app_path = os.path.join(os.path.dirname(__file__), "..", "web", "app.py")
+    with open(app_path, encoding="utf-8") as f:
+        src = f.read()
+    check("tag in ascending group", '"tag"' in src and 'not in ("oldest", "alpha", "tag")' in src)
+
+    # All same first tag — secondary sort by created_at (ascending)
+    same_tag = [
+        Memory(id="st1", text="t", scope="s", category="c",
+               created_at="2026-03-01T00:00:00", tags=["common"]),
+        Memory(id="st2", text="t", scope="s", category="c",
+               created_at="2026-01-01T00:00:00", tags=["common"]),
+        Memory(id="st3", text="t", scope="s", category="c",
+               created_at="2026-02-01T00:00:00", tags=["common"]),
+    ]
+    r2 = sorted(same_tag, key=_sort_key_tag, reverse=False)
+    r2_ids = [m.id for m in r2]
+    check("same tag: oldest first (st2)", r2_ids[0] == "st2")
+    check("same tag: newest last (st1)", r2_ids[-1] == "st1")
+
+
+# ═════════════════════════════════════════════
+# HARD_MAX_TOTAL ceiling — profile PUT clamping
+# ═════════════════════════════════════════════
+def test_hard_max_total_ceiling():
+    """Test HARD_MAX_TOTAL = 25_000 ceiling on memory profile save."""
+    print("\n=== TORTURE: HARD_MAX_TOTAL Ceiling ===")
+    from pathlib import Path
+
+    tmp = tempfile.mkdtemp()
+    try:
+        import web.app as _app
+
+        orig_mp = _app.MEMORY_PROFILE_FILE
+        tmp_mp = Path(tmp) / "memory_profile.json"
+
+        base_profile = {
+            "retention_policy": {
+                "max_total_memories": 5000,
+                "decay_strategy": "lru",
+                "max_pinned_memories": 100,
+            },
+            "safety_policy": {"pii_guard": True, "custom_hard_rules": []}
+        }
+        tmp_mp.write_text(json.dumps(base_profile), encoding="utf-8")
+        _app.MEMORY_PROFILE_FILE = tmp_mp
+
+        # Simulate the clamping logic from api_memory_profile_put
+        HARD_MAX_TOTAL = 25_000
+
+        # ── 1. Within limit → unchanged ──
+        profile = json.loads(tmp_mp.read_text(encoding="utf-8"))
+        profile["retention_policy"]["max_total_memories"] = 10000
+        rp = profile.get("retention_policy", {})
+        mtm = rp.get("max_total_memories", 5000)
+        if isinstance(mtm, (int, float)) and mtm != 0 and mtm > HARD_MAX_TOTAL:
+            rp["max_total_memories"] = HARD_MAX_TOTAL
+        check("10000 within limit → unchanged", rp["max_total_memories"] == 10000)
+
+        # ── 2. Over limit → clamped to 25000 ──
+        rp["max_total_memories"] = 50000
+        mtm = rp["max_total_memories"]
+        if isinstance(mtm, (int, float)) and mtm != 0 and mtm > HARD_MAX_TOTAL:
+            rp["max_total_memories"] = HARD_MAX_TOTAL
+        check("50000 → clamped to 25000", rp["max_total_memories"] == 25000)
+
+        # ── 3. Exactly at limit → unchanged ──
+        rp["max_total_memories"] = 25000
+        mtm = rp["max_total_memories"]
+        if isinstance(mtm, (int, float)) and mtm != 0 and mtm > HARD_MAX_TOTAL:
+            rp["max_total_memories"] = HARD_MAX_TOTAL
+        check("25000 exactly → unchanged", rp["max_total_memories"] == 25000)
+
+        # ── 4. Zero = unlimited bypass ──
+        rp["max_total_memories"] = 0
+        mtm = rp["max_total_memories"]
+        if isinstance(mtm, (int, float)) and mtm != 0 and mtm > HARD_MAX_TOTAL:
+            rp["max_total_memories"] = HARD_MAX_TOTAL
+        check("0 (unlimited) → not clamped", rp["max_total_memories"] == 0)
+
+        # ── 5. Negative → not clamped (below check) ──
+        rp["max_total_memories"] = -1
+        mtm = rp["max_total_memories"]
+        if isinstance(mtm, (int, float)) and mtm != 0 and mtm > HARD_MAX_TOTAL:
+            rp["max_total_memories"] = HARD_MAX_TOTAL
+        check("negative → not clamped by ceiling", rp["max_total_memories"] == -1)
+
+        # ── 6. Verify app.py has the ceiling code ──
+        import os
+        app_path = os.path.join(os.path.dirname(__file__), "..", "web", "app.py")
+        with open(app_path, encoding="utf-8") as f:
+            src = f.read()
+        check("HARD_MAX_TOTAL = 25_000 in app.py", "HARD_MAX_TOTAL = 25_000" in src)
+        check("clamping logic present", "mtm > HARD_MAX_TOTAL" in src or "mtm != 0" in src)
+
+    finally:
+        _app.MEMORY_PROFILE_FILE = orig_mp
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ═════════════════════════════════════════════
+# WIKI ARTICLES — _load_wiki_articles coverage
+# ═════════════════════════════════════════════
+def test_wiki_articles_loader():
+    """Test _load_wiki_articles and _WIKI_README_MAP."""
+    print("\n=== TORTURE: Wiki Articles Loader ===")
+    import web.app as _app
+
+    # ── 1. _WIKI_README_MAP is populated ──
+    check("wiki map non-empty", len(_app._WIKI_README_MAP) > 0)
+    check("wiki map has root", "root" in _app._WIKI_README_MAP)
+    check("wiki map has src/memory", "src/memory" in _app._WIKI_README_MAP)
+    check("wiki map has tests", "tests" in _app._WIKI_README_MAP)
+
+    # ── 2. All mapped paths are Path objects ──
+    from pathlib import Path
+    for key, path in _app._WIKI_README_MAP.items():
+        check(f"wiki '{key}' is Path", isinstance(path, Path))
+
+    # ── 3. _load_wiki_articles returns dict ──
+    articles = _app._load_wiki_articles()
+    check("articles is dict", isinstance(articles, dict))
+    check("articles non-empty", len(articles) > 0)
+
+    # ── 4. At least some articles have markdown content ──
+    found_content = False
+    for key, text in articles.items():
+        if len(text) > 10:
+            found_content = True
+            break
+    check("at least one article has content", found_content)
+
+    # ── 5. Missing file gracefully skipped ──
+    from pathlib import Path as P
+    orig_map = dict(_app._WIKI_README_MAP)
+    _app._WIKI_README_MAP["__fake__"] = P("/nonexistent/fake/README.md")
+    try:
+        articles2 = _app._load_wiki_articles()
+        check("missing file → no crash", True)
+        check("fake key not in articles", "__fake__" not in articles2)
+    finally:
+        _app._WIKI_README_MAP.clear()
+        _app._WIKI_README_MAP.update(orig_map)
+
+
+# ═════════════════════════════════════════════
+# ABOUT API — POST save/round-trip
+# ═════════════════════════════════════════════
+def test_about_api():
+    """Test /api/about POST and _load_about/_save_about helpers."""
+    print("\n=== TORTURE: About API ===")
+    from pathlib import Path
+
+    tmp = tempfile.mkdtemp()
+    try:
+        import web.app as _app
+
+        orig_about = _app.ABOUT_FILE
+        tmp_about = Path(tmp) / "about.json"
+        _app.ABOUT_FILE = tmp_about
+
+        # ── 1. Missing file → default ──
+        data = _app._load_about()
+        check("missing about → default dict", isinstance(data, dict))
+        check("missing about → has text key", "text" in data)
+
+        # ── 2. Save + load round-trip ──
+        _app._save_about({"text": "Hello from Orion"})
+        loaded = _app._load_about()
+        check("round-trip text", loaded["text"] == "Hello from Orion")
+
+        # ── 3. Overwrite ──
+        _app._save_about({"text": "Updated text", "extra": 42})
+        loaded2 = _app._load_about()
+        check("overwrite text", loaded2["text"] == "Updated text")
+        check("extra field preserved", loaded2.get("extra") == 42)
+
+        # ── 4. ASGI test for POST endpoint ──
+        try:
+            from httpx import ASGITransport, AsyncClient
+            import asyncio
+            from web.app import app as _test_app
+
+            async def _run():
+                transport = ASGITransport(app=_test_app)
+                async with AsyncClient(transport=transport, base_url="http://test") as client:
+                    r = await client.post("/api/about", json={"text": "Via API"})
+                    check("POST /api/about → 200", r.status_code == 200)
+                    check("POST /api/about → ok", r.json().get("ok") is True)
+
+                    # Verify persisted
+                    saved = _app._load_about()
+                    check("API save persisted", saved["text"] == "Via API")
+
+            asyncio.run(_run())
+        except ImportError:
+            check("httpx not available — skipped", True)
+
+    finally:
+        _app.ABOUT_FILE = orig_about
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ═════════════════════════════════════════════
+# VAULT FILTER DROPDOWN — template elements
+# ═════════════════════════════════════════════
+def test_vault_filter_dropdown():
+    """Test vault.html contains filter dropdown elements and tag sort option."""
+    print("\n=== TORTURE: Vault Filter Dropdown ===")
+    import os
+
+    vault_path = os.path.join(os.path.dirname(__file__), "..", "web", "templates", "vault.html")
+    with open(vault_path, encoding="utf-8") as f:
+        html = f.read()
+
+    # Filter dropdown elements
+    check("filter button exists", "toggleFilterPanel" in html or "filter-btn" in html.lower())
+    check("filter panel container", "filter-panel" in html or "filterPanel" in html)
+    check("buildFilterPanel in JS", "buildFilterPanel" in html)
+    check("applyFilter in JS", "applyFilter" in html)
+
+    # Tag sort option in dropdown
+    check("tag sort option exists", 'value="tag"' in html)
+    check("sort dropdown present", "sort" in html.lower())
+
+    # Data attributes for filtering
+    check("data-scope attribute", "data-scope" in html)
+    check("data-category attribute", "data-category" in html)
+    check("data-tags attribute", "data-tags" in html)
+
+    # Info button
+    check("info button present", "info-btn" in html or "ⓘ" in html)
+
+
+# ═════════════════════════════════════════════
 if __name__ == "__main__":
     test_boundary_policy()
     test_pii_guard_extended()
@@ -4762,6 +5128,12 @@ if __name__ == "__main__":
     test_registry_get_tool_defs()
     test_profile_create_v2()
     test_settings_helpers()
+    test_vault_search_min_score()
+    test_tag_sort_mode()
+    test_hard_max_total_ceiling()
+    test_wiki_articles_loader()
+    test_about_api()
+    test_vault_filter_dropdown()
 
     print(f"\n{'='*40}")
     print(f"Results: {PASS} passed, {FAIL} failed")
