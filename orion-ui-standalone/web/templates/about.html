@@ -1,48 +1,213 @@
 {% extends "base.html" %}
-{% block title %}About — SoulScript Engine{% endblock %}
+{% block title %}Wiki — SoulScript Engine{% endblock %}
 
 {% block content %}
 <style>
-  .about-card {
-    background: rgba(26,26,36,0.85);
-    border: 1px solid rgba(42,42,58,0.7);
-    border-radius: 0.75rem;
-    padding: 2rem;
-    max-width: 56rem;
-    margin: 0 auto;
+  /* ── Wiki Layout ─────────────────────────────────── */
+  .wiki-wrap { display:flex; height:calc(100vh - 0px); overflow:hidden; }
+
+  /* ── Sidebar ─────────────────────────────────────── */
+  .wiki-sidebar {
+    width: 260px; min-width: 260px;
+    background: rgba(15,15,20,0.95);
+    border-right: 1px solid rgba(42,42,58,0.6);
+    display: flex; flex-direction: column;
+    overflow: hidden;
   }
-  .about-textarea {
-    width: 100%;
-    min-height: 20rem;
+  .wiki-sidebar-header {
+    padding: 1rem 1rem 0.75rem;
+    border-bottom: 1px solid rgba(42,42,58,0.5);
+  }
+  .wiki-sidebar-header h2 {
+    font-size: 1rem; font-weight: 700; color: #e4e4e7;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .wiki-search {
+    width: 100%; margin-top: 0.5rem;
+    padding: 0.4rem 0.65rem;
+    font-size: 0.8125rem;
+    background: rgba(26,26,36,0.9);
+    border: 1px solid rgba(63,63,70,0.4);
+    border-radius: 0.375rem;
+    color: #d4d4d8;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .wiki-search:focus { border-color: rgba(99,102,241,0.6); }
+  .wiki-search::placeholder { color: #52525b; }
+
+  .wiki-toc {
+    flex: 1; overflow-y: auto; padding: 0.5rem 0;
+  }
+  .wiki-toc::-webkit-scrollbar { width: 4px; }
+  .wiki-toc::-webkit-scrollbar-thumb { background: rgba(63,63,70,0.4); border-radius: 2px; }
+
+  .wiki-cat {
+    padding: 0.35rem 1rem; margin-top: 0.5rem;
+    font-size: 0.6875rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: #71717a;
+    user-select: none;
+  }
+  .wiki-cat:first-child { margin-top: 0.25rem; }
+
+  .wiki-link {
+    display: block;
+    padding: 0.3rem 1rem 0.3rem 1.5rem;
+    font-size: 0.8125rem;
+    color: #a1a1aa;
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    transition: all 0.12s;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .wiki-link:hover { color: #e4e4e7; background: rgba(99,102,241,0.06); }
+  .wiki-link.active {
+    color: #818cf8;
+    border-left-color: #6366f1;
+    background: rgba(99,102,241,0.1);
+    font-weight: 600;
+  }
+
+  /* ── Content Area ────────────────────────────────── */
+  .wiki-content {
+    flex: 1; overflow-y: auto; padding: 2rem 2.5rem 4rem;
+    scroll-behavior: smooth;
+  }
+  .wiki-content::-webkit-scrollbar { width: 6px; }
+  .wiki-content::-webkit-scrollbar-thumb { background: rgba(63,63,70,0.4); border-radius: 3px; }
+
+  /* Breadcrumb */
+  .wiki-breadcrumb {
+    font-size: 0.75rem; color: #71717a;
+    margin-bottom: 0.75rem;
+    display: flex; align-items: center; gap: 0.35rem;
+  }
+  .wiki-breadcrumb span { color: #52525b; }
+
+  /* ── Markdown Rendering ──────────────────────────── */
+  .wiki-article { max-width: 56rem; }
+
+  .wiki-article h1 {
+    font-size: 1.75rem; font-weight: 800; color: #f4f4f5;
+    margin: 0 0 0.75rem; padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(42,42,58,0.5);
+    line-height: 1.3;
+  }
+  .wiki-article h2 {
+    font-size: 1.25rem; font-weight: 700; color: #e4e4e7;
+    margin: 2rem 0 0.75rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid rgba(42,42,58,0.3);
+  }
+  .wiki-article h3 {
+    font-size: 1.05rem; font-weight: 600; color: #d4d4d8;
+    margin: 1.5rem 0 0.5rem;
+  }
+  .wiki-article h4 {
+    font-size: 0.95rem; font-weight: 600; color: #a1a1aa;
+    margin: 1.25rem 0 0.4rem;
+  }
+  .wiki-article p {
+    font-size: 0.9rem; line-height: 1.7; color: #a1a1aa;
+    margin: 0.5rem 0;
+  }
+  .wiki-article a { color: #818cf8; text-decoration: none; }
+  .wiki-article a:hover { text-decoration: underline; }
+
+  .wiki-article ul, .wiki-article ol {
+    margin: 0.5rem 0 0.5rem 1.5rem;
+    font-size: 0.9rem; color: #a1a1aa; line-height: 1.65;
+  }
+  .wiki-article li { margin: 0.15rem 0; }
+  .wiki-article li > ul, .wiki-article li > ol { margin-top: 0.1rem; }
+
+  .wiki-article blockquote {
+    border-left: 3px solid rgba(99,102,241,0.5);
+    padding: 0.5rem 1rem; margin: 0.75rem 0;
+    background: rgba(99,102,241,0.05);
+    border-radius: 0 0.375rem 0.375rem 0;
+    font-size: 0.875rem; color: #a1a1aa;
+  }
+
+  .wiki-article code {
+    background: rgba(26,26,36,0.8);
+    padding: 0.15rem 0.4rem;
+    border-radius: 0.25rem;
+    font-size: 0.82rem;
+    color: #e879f9;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+  }
+  .wiki-article pre {
+    background: rgba(15,15,20,0.9);
+    border: 1px solid rgba(42,42,58,0.5);
+    border-radius: 0.5rem;
     padding: 1rem;
-    font-size: 0.9375rem;
-    line-height: 1.7;
+    margin: 0.75rem 0;
+    overflow-x: auto;
+    font-size: 0.8rem;
+    line-height: 1.55;
+  }
+  .wiki-article pre code {
+    background: none; padding: 0; color: #d4d4d8;
+  }
+
+  .wiki-article table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.75rem 0;
+    font-size: 0.84rem;
+  }
+  .wiki-article th {
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 2px solid rgba(42,42,58,0.6);
+    color: #e4e4e7;
+    font-weight: 600;
+    background: rgba(26,26,36,0.4);
+  }
+  .wiki-article td {
+    padding: 0.45rem 0.75rem;
+    border-bottom: 1px solid rgba(42,42,58,0.3);
+    color: #a1a1aa;
+  }
+  .wiki-article tr:hover td { background: rgba(99,102,241,0.04); }
+
+  .wiki-article hr {
+    border: none;
+    border-top: 1px solid rgba(42,42,58,0.4);
+    margin: 1.5rem 0;
+  }
+  .wiki-article strong { color: #d4d4d8; }
+  .wiki-article em { color: #a1a1aa; font-style: italic; }
+
+  /* ── Custom Notes ────────────────────────────────── */
+  .wiki-notes-area {
+    width: 100%; min-height: 18rem; padding: 1rem;
+    font-size: 0.9rem; line-height: 1.7;
     font-family: 'Segoe UI', system-ui, sans-serif;
     background: rgba(15,15,20,0.8);
     border: 1px solid rgba(63,63,70,0.5);
-    border-radius: 0.5rem;
-    color: #d4d4d8;
-    resize: vertical;
-    transition: border-color 0.15s;
+    border-radius: 0.5rem; color: #d4d4d8;
+    resize: vertical; transition: border-color 0.15s;
   }
-  .about-textarea:focus {
+  .wiki-notes-area:focus {
     outline: none;
     border-color: rgba(99,102,241,0.6);
     box-shadow: 0 0 0 2px rgba(99,102,241,0.15);
   }
   .save-btn {
-    padding: 0.5rem 1.5rem;
-    font-size: 0.875rem;
-    font-weight: 600;
-    border-radius: 0.5rem;
-    border: none;
+    padding: 0.45rem 1.25rem; font-size: 0.8125rem; font-weight: 600;
+    border-radius: 0.5rem; border: none;
     background: linear-gradient(135deg, #6366f1, #818cf8);
-    color: #fff;
-    cursor: pointer;
-    transition: all 0.2s;
+    color: #fff; cursor: pointer; transition: all 0.2s;
   }
   .save-btn:hover { opacity: 0.9; transform: translateY(-1px); }
   .save-btn:disabled { opacity: 0.5; cursor: default; transform: none; }
+
   .toast {
     position: fixed; bottom: 2rem; right: 2rem; padding: 0.75rem 1.25rem;
     background: rgba(16,185,129,0.9); color: #fff; border-radius: 0.5rem;
@@ -50,77 +215,254 @@
   }
   .toast.error { background: rgba(239,68,68,0.9); }
   @keyframes fadeInOut { 0%{opacity:0;transform:translateY(10px)} 10%{opacity:1;transform:translateY(0)} 85%{opacity:1} 100%{opacity:0} }
-  .char-count { font-size: 0.75rem; color: #71717a; }
+
+  /* ── Article count badge ─────────────────────────── */
+  .wiki-count {
+    display: inline-block; padding: 0.1rem 0.45rem;
+    font-size: 0.65rem; font-weight: 600;
+    background: rgba(99,102,241,0.15); color: #818cf8;
+    border-radius: 0.75rem; margin-left: 0.35rem;
+  }
+
+  /* Mobile */
+  @media (max-width: 768px) {
+    .wiki-sidebar { width: 220px; min-width: 220px; }
+    .wiki-content { padding: 1.25rem; }
+  }
 </style>
 
-<div class="p-6 md:p-10">
-  <div class="about-card">
-    <div class="flex items-center justify-between mb-6">
-      <div>
-        <h1 class="text-2xl font-bold text-white tracking-tight">About</h1>
-        <p class="text-sm text-forge-muted mt-1">Describe this system, your agents, or anything you want to remember.</p>
-      </div>
+<div class="wiki-wrap">
+  <!-- ═══ Wiki Sidebar / Table of Contents ═══ -->
+  <aside class="wiki-sidebar">
+    <div class="wiki-sidebar-header">
+      <h2>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+        </svg>
+        Wiki <span class="wiki-count" id="article-count"></span>
+      </h2>
+      <input type="text" class="wiki-search" id="wiki-search" placeholder="Search articles… (Ctrl+K)" oninput="filterWikiLinks()">
     </div>
+    <div class="wiki-toc" id="wiki-toc"></div>
+    <div style="padding:0.5rem 1rem; border-top:1px solid rgba(42,42,58,0.4);">
+      <a class="wiki-link" data-key="__notes__" onclick="showNotes()" style="padding-left:1rem; color:#71717a; font-size:0.75rem;">
+        ✎ Custom Notes
+      </a>
+    </div>
+  </aside>
 
-    <textarea id="about-text" class="about-textarea" placeholder="Write about this SoulScript Engine instance — the agents you've configured, what they're for, architecture notes, or anything else…">{{ about_text }}</textarea>
+  <!-- ═══ Content Area ═══ -->
+  <div class="wiki-content" id="wiki-content">
+    <div class="wiki-breadcrumb" id="wiki-breadcrumb">
+      <span>Wiki</span> <span>/</span> <span id="bread-cat">Overview</span> <span>/</span> <span id="bread-title" style="color:#a1a1aa;">OrionForge</span>
+    </div>
+    <div class="wiki-article" id="wiki-article"></div>
 
-    <div class="flex items-center justify-between mt-4">
-      <span class="char-count" id="char-count"></span>
-      <div class="flex items-center gap-3">
-        <span id="save-status" class="text-xs text-forge-muted"></span>
-        <button class="save-btn" id="save-btn" onclick="saveAbout()">Save</button>
+    <!-- Hidden notes editor -->
+    <div id="wiki-notes-panel" style="display:none; max-width:56rem;">
+      <h1 style="font-size:1.5rem; font-weight:800; color:#f4f4f5; margin-bottom:0.5rem;">Custom Notes</h1>
+      <p style="font-size:0.85rem; color:#71717a; margin-bottom:1rem;">Your personal notes about this system. Saved separately from the wiki articles.</p>
+      <textarea id="about-text" class="wiki-notes-area" placeholder="Write about this SoulScript Engine instance — the agents you've configured, what they're for, architecture notes, or anything else…">{{ about_text }}</textarea>
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-top:0.75rem;">
+        <span style="font-size:0.75rem; color:#71717a;" id="char-count"></span>
+        <button class="save-btn" id="save-btn" onclick="saveAbout()">Save Notes</button>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-  const textarea = document.getElementById('about-text');
-  const charCount = document.getElementById('char-count');
-  const saveBtn = document.getElementById('save-btn');
-  const saveStatus = document.getElementById('save-status');
-  let saved = true;
+// ── Wiki Data (injected from server) ────────────────────────
+const WIKI_ARTICLES = {{ wiki_articles | tojson }};
 
-  function updateCount() {
-    charCount.textContent = textarea.value.length.toLocaleString() + ' characters';
-  }
-  textarea.addEventListener('input', () => { saved = false; updateCount(); });
-  updateCount();
+// ── Table of Contents structure ─────────────────────────────
+const WIKI_TOC = [
+  { cat: "Overview", items: [
+    { key: "root",               label: "OrionForge" },
+    { key: "orion-ui-standalone", label: "Development Branch" },
+    { key: "engine",             label: "Engine — Stable Core" },
+  ]},
+  { cat: "Web Dashboard", items: [
+    { key: "web",     label: "Web App & Routes" },
+    { key: "data",    label: "Runtime Data" },
+  ]},
+  { cat: "Engine Modules", items: [
+    { key: "src",            label: "Source Overview" },
+    { key: "src/memory",     label: "Memory System" },
+    { key: "src/llm_client", label: "LLM Client" },
+    { key: "src/tools",      label: "Tools" },
+    { key: "src/directives", label: "Directives Engine" },
+    { key: "src/governance", label: "Governance" },
+    { key: "src/policy",     label: "Policy & Boundaries" },
+    { key: "src/observability", label: "Observability & Metering" },
+    { key: "src/storage",    label: "Storage & Notes" },
+  ]},
+  { cat: "Configuration", items: [
+    { key: "config",     label: "Config Files" },
+    { key: "profiles",   label: "Agent Profiles" },
+    { key: "prompts",    label: "System Prompts" },
+    { key: "directives-user", label: "Directive Files" },
+    { key: "notes",      label: "Agent Notes" },
+  ]},
+  { cat: "Operations", items: [
+    { key: "tests",   label: "Test Suite" },
+    { key: "scripts", label: "Scripts" },
+  ]},
+];
 
-  async function saveAbout() {
-    saveBtn.disabled = true;
-    saveBtn.textContent = 'Saving…';
-    try {
-      const res = await fetch('/api/about', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: textarea.value }),
-      });
-      if (!res.ok) throw new Error('Save failed');
-      saved = true;
-      showToast('Saved');
-    } catch (e) {
-      showToast(e.message, true);
-    } finally {
-      saveBtn.disabled = false;
-      saveBtn.textContent = 'Save';
+// ── Build sidebar TOC ───────────────────────────────────────
+function buildTOC() {
+  const toc = document.getElementById('wiki-toc');
+  let html = '';
+  let count = 0;
+  for (const section of WIKI_TOC) {
+    html += `<div class="wiki-cat">${section.cat}</div>`;
+    for (const item of section.items) {
+      if (WIKI_ARTICLES[item.key]) {
+        count++;
+        html += `<a class="wiki-link" data-key="${item.key}" data-cat="${section.cat}" onclick="showArticle('${item.key}','${section.cat}')">${item.label}</a>`;
+      }
     }
   }
+  toc.innerHTML = html;
+  document.getElementById('article-count').textContent = count;
+}
 
-  // Ctrl+S shortcut
-  textarea.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-      e.preventDefault();
-      saveAbout();
-    }
+// ── Show article ────────────────────────────────────────────
+let currentKey = null;
+
+function showArticle(key, cat) {
+  const md = WIKI_ARTICLES[key];
+  if (!md) return;
+
+  currentKey = key;
+  location.hash = key;
+
+  // Hide notes, show article
+  document.getElementById('wiki-notes-panel').style.display = 'none';
+  document.getElementById('wiki-article').style.display = '';
+  document.getElementById('wiki-breadcrumb').style.display = '';
+
+  // Render markdown
+  const html = marked.parse(md);
+  document.getElementById('wiki-article').innerHTML = html;
+
+  // Syntax highlight code blocks
+  document.querySelectorAll('.wiki-article pre code').forEach(el => {
+    hljs.highlightElement(el);
   });
 
-  function showToast(msg, isError) {
-    const t = document.createElement('div');
-    t.className = 'toast' + (isError ? ' error' : '');
-    t.textContent = msg;
-    document.body.appendChild(t);
-    setTimeout(() => t.remove(), 3200);
+  // Update breadcrumb
+  const item = WIKI_TOC.flatMap(s => s.items).find(i => i.key === key);
+  document.getElementById('bread-cat').textContent = cat || 'Wiki';
+  document.getElementById('bread-title').textContent = item ? item.label : key;
+
+  // Update active link
+  document.querySelectorAll('.wiki-link').forEach(el => {
+    el.classList.toggle('active', el.dataset.key === key);
+  });
+
+  // Scroll to top
+  document.getElementById('wiki-content').scrollTop = 0;
+}
+
+// ── Show custom notes ───────────────────────────────────────
+function showNotes() {
+  currentKey = '__notes__';
+  location.hash = 'notes';
+  document.getElementById('wiki-article').style.display = 'none';
+  document.getElementById('wiki-breadcrumb').style.display = 'none';
+  document.getElementById('wiki-notes-panel').style.display = '';
+
+  document.querySelectorAll('.wiki-link').forEach(el => {
+    el.classList.toggle('active', el.dataset.key === '__notes__');
+  });
+
+  updateCount();
+  document.getElementById('wiki-content').scrollTop = 0;
+}
+
+// ── Search / filter ─────────────────────────────────────────
+function filterWikiLinks() {
+  const q = document.getElementById('wiki-search').value.toLowerCase().trim();
+  document.querySelectorAll('.wiki-link').forEach(el => {
+    if (el.dataset.key === '__notes__') return;
+    const label = el.textContent.toLowerCase();
+    const content = (WIKI_ARTICLES[el.dataset.key] || '').toLowerCase();
+    const match = !q || label.includes(q) || content.includes(q);
+    el.style.display = match ? '' : 'none';
+  });
+  // Show/hide categories based on visible links
+  document.querySelectorAll('.wiki-cat').forEach(catEl => {
+    let next = catEl.nextElementSibling;
+    let anyVisible = false;
+    while (next && !next.classList.contains('wiki-cat')) {
+      if (next.classList.contains('wiki-link') && next.style.display !== 'none') anyVisible = true;
+      next = next.nextElementSibling;
+    }
+    catEl.style.display = anyVisible ? '' : 'none';
+  });
+}
+
+// ── Notes save (existing about feature) ─────────────────────
+const textarea = document.getElementById('about-text');
+const charCount = document.getElementById('char-count');
+
+function updateCount() {
+  if (textarea && charCount) charCount.textContent = textarea.value.length.toLocaleString() + ' characters';
+}
+if (textarea) textarea.addEventListener('input', updateCount);
+
+async function saveAbout() {
+  const btn = document.getElementById('save-btn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    const res = await fetch('/api/about', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: textarea.value }),
+    });
+    if (!res.ok) throw new Error('Save failed');
+    showToast('Notes saved');
+  } catch (e) {
+    showToast(e.message, true);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Save Notes';
   }
+}
+
+// Ctrl+S in notes
+if (textarea) textarea.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveAbout(); }
+});
+
+function showToast(msg, isError) {
+  const t = document.createElement('div');
+  t.className = 'toast' + (isError ? ' error' : '');
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3200);
+}
+
+// ── Keyboard shortcuts ──────────────────────────────────────
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+    e.preventDefault();
+    document.getElementById('wiki-search').focus();
+  }
+});
+
+// ── Init ────────────────────────────────────────────────────
+buildTOC();
+const hashKey = location.hash.replace('#','');
+if (hashKey && WIKI_ARTICLES[hashKey]) {
+  const section = WIKI_TOC.find(s => s.items.some(i => i.key === hashKey));
+  showArticle(hashKey, section ? section.cat : 'Wiki');
+} else if (hashKey === 'notes') {
+  showNotes();
+} else {
+  showArticle('root', 'Overview');
+}
 </script>
 {% endblock %}
