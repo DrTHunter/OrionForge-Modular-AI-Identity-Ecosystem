@@ -50,6 +50,10 @@ Covers:
   - Wiki article loader (_load_wiki_articles, missing files, encoding)
   - About API (/api/about POST save, round-trip)
   - Vault filter dropdown (HTML template includes filter elements)
+  - ModelRouterTool (classify_task, resolve_model_for_task, resolve_tier,
+    get_next_tier, get_tier_for_connection, all 4 execute actions, enabled field)
+  - AGILoopTool (definition, all 4 actions, AGILoopState singleton, reset,
+    to_dict, tick logging, in-memory cap, pause/resume state transitions)
 """
 
 import json
@@ -1544,10 +1548,16 @@ def test_model_router_config():
         for t in tiers:
             check(f"{t['id']} alt_models is list", isinstance(t["alt_models"], list))
 
+        # ── 1b. Enabled flag ──
+        check("defaults has enabled", "enabled" in _MODEL_ROUTER_DEFAULTS)
+        check("enabled is True by default", _MODEL_ROUTER_DEFAULTS["enabled"] is True)
+
         # ── 2. Task tier map ──
         ttm = _MODEL_ROUTER_DEFAULTS["task_tier_map"]
         expected_tasks = ["coding", "summarization", "planning", "high_stakes",
-                          "final_polish", "memory_ops", "reflection", "general"]
+                          "final_polish", "memory_ops", "reflection", "general",
+                          "tool_use", "agi_tick"]
+        check("10 default task types", len(ttm) == 10, f"got {len(ttm)}")
         for task in expected_tasks:
             check(f"task '{task}' in map", task in ttm, f"missing: {task}")
 
@@ -1567,7 +1577,7 @@ def test_model_router_config():
         check("missing file → has tiers", "tiers" in cfg)
         check("missing file → 4 tiers", len(cfg["tiers"]) == 4)
         check("missing file → has task_tier_map", "task_tier_map" in cfg)
-        check("missing file → 8 tasks", len(cfg["task_tier_map"]) == 8)
+        check("missing file → 10 tasks", len(cfg["task_tier_map"]) == 10)
 
         # ── 4. Save + reload round-trip ──
         custom = {
@@ -1601,7 +1611,7 @@ def test_model_router_config():
         _write_json(tmp_file, {})
         empty_load = _load_model_router_config()
         check("empty file → tiers from defaults", len(empty_load["tiers"]) == 4)
-        check("empty file → task_tier_map from defaults", len(empty_load["task_tier_map"]) == 8)
+        check("empty file → task_tier_map from defaults", len(empty_load["task_tier_map"]) == 10)
 
         # ── 7. API endpoints via TestClient ──
         try:
@@ -1686,6 +1696,353 @@ def test_model_router_config():
         _app_mod.MODEL_ROUTER_FILE = orig_file
         shutil.rmtree(tmp, ignore_errors=True)
 
+
+# ═════════════════════════════════════════════
+# 25b. Model Router TOOL — classify, resolve, tier escalation
+# ═════════════════════════════════════════════
+def test_model_router_tool():
+    """Test the ModelRouterTool callable interface, classify_task,
+    resolve_model_for_task, resolve_tier, get_next_tier, get_tier_for_connection."""
+    print("\n=== TORTURE: Model Router — Tool Interface ===")
+    from src.tools.model_router import (
+        ModelRouterTool, classify_task, resolve_model_for_task,
+        resolve_tier, get_next_tier, get_tier_for_connection,
+        load_router_config, _DEFAULTS, _CLASSIFICATION_RULES,
+    )
+
+    # ── 1. Definition structure ──
+    defn = ModelRouterTool.definition()
+    check("MR def name", defn["name"] == "model_router")
+    check("MR def has params", "parameters" in defn)
+    actions = defn["parameters"]["properties"]["action"]["enum"]
+    check("MR 4 actions", len(actions) == 4)
+    check("MR actions list", set(actions) == {"resolve", "list_tiers", "get_map", "classify"})
+    check("MR has text param", "text" in defn["parameters"]["properties"])
+
+    # ── 2. classify_task — keyword mapping ──
+    check("classify coding", classify_task("write code for a REST API") == "coding")
+    check("classify implement", classify_task("implement the login feature") == "coding")
+    check("classify debug", classify_task("debug this crash") == "coding")
+    check("classify refactor", classify_task("refactor the module") == "coding")
+    check("classify regex", classify_task("write a regex to match emails") == "coding")
+
+    check("classify summarize", classify_task("summarize the meeting notes") == "summarization")
+    check("classify tldr", classify_task("give me a tldr") == "summarization")
+
+    check("classify plan", classify_task("plan the sprint") == "planning")
+    check("classify roadmap", classify_task("create a roadmap for Q3") == "planning")
+    check("classify architect", classify_task("architect the system") == "planning")
+
+    check("classify review", classify_task("review the security audit") == "high_stakes")
+    check("classify deploy", classify_task("deploy to production") == "high_stakes")
+
+    check("classify polish", classify_task("final polish the document") == "final_polish")
+    check("classify proofread", classify_task("proofread the essay") == "final_polish")
+
+    check("classify remember", classify_task("remember this fact") == "memory_ops")
+    check("classify vault", classify_task("store in the vault") == "memory_ops")
+
+    check("classify reflect", classify_task("reflect on today's progress") == "reflection")
+    check("classify journal", classify_task("write a journal entry") == "reflection")
+
+    check("classify search tool", classify_task("search for information about Python") == "tool_use")
+    check("classify web search", classify_task("web search for news") == "tool_use")
+
+    check("classify general", classify_task("hello how are you") == "general")
+    check("classify empty", classify_task("") == "general")
+
+    # Case insensitivity
+    check("classify UPPER", classify_task("SUMMARIZE THIS") == "summarization")
+    check("classify mixed", classify_task("Debug My Script") == "coding")
+
+    # ── 3. Priority ordering — first match wins ──
+    # "write code to plan a deployment" → should classify as coding (first rule)
+    result = classify_task("write code to plan a deployment")
+    check("priority: coding before planning", result == "coding")
+
+    # ── 4. Classification rules structure ──
+    check("rules is list", isinstance(_CLASSIFICATION_RULES, list))
+    check("rules non-empty", len(_CLASSIFICATION_RULES) > 0)
+    for i, (keywords, task_type) in enumerate(_CLASSIFICATION_RULES):
+        check(f"rule {i} has keywords", isinstance(keywords, list) and len(keywords) > 0)
+        check(f"rule {i} has task_type str", isinstance(task_type, str))
+
+    # ── 5. _DEFAULTS structure ──
+    check("defaults has enabled", "enabled" in _DEFAULTS)
+    check("defaults has task_tier_map", "task_tier_map" in _DEFAULTS)
+    check("defaults enabled True", _DEFAULTS["enabled"] is True)
+    check("defaults 10 task types", len(_DEFAULTS["task_tier_map"]) == 10)
+
+    # ── 6. resolve_tier — with mock config ──
+    mock_cfg = {
+        "enabled": True,
+        "tiers": [
+            {"id": "t0", "label": "local_cheap", "enabled": True,
+             "provider": "ollama", "primary_model": "qwen2.5:7b"},
+            {"id": "t1", "label": "cheap_cloud", "enabled": True,
+             "provider": "openai", "primary_model": "gpt-4o-mini"},
+            {"id": "t2", "label": "expensive_cloud", "enabled": True,
+             "provider": "openai", "primary_model": "gpt-4o"},
+            {"id": "t3", "label": "disabled_tier", "enabled": False,
+             "provider": "openai", "primary_model": "gpt-5"},
+        ],
+        "task_tier_map": {
+            "coding": "cheap_cloud",
+            "general": "__auto__",
+            "summarization": "local_cheap",
+            "high_stakes": "disabled_tier",
+        },
+    }
+
+    tier = resolve_tier("coding", mock_cfg)
+    check("resolve coding → cheap_cloud", tier is not None and tier["label"] == "cheap_cloud")
+    check("resolve coding model", tier["primary_model"] == "gpt-4o-mini")
+
+    tier_sum = resolve_tier("summarization", mock_cfg)
+    check("resolve summarization → local_cheap", tier_sum is not None and tier_sum["label"] == "local_cheap")
+
+    tier_gen = resolve_tier("general", mock_cfg)
+    check("resolve general → None (__auto__)", tier_gen is None)
+
+    tier_hs = resolve_tier("high_stakes", mock_cfg)
+    check("resolve disabled tier → None", tier_hs is None)
+
+    tier_unknown = resolve_tier("nonexistent_task", mock_cfg)
+    check("resolve unknown task → None", tier_unknown is None)
+
+    # Disabled router
+    disabled_cfg = {**mock_cfg, "enabled": False}
+    check("disabled router → None", resolve_tier("coding", disabled_cfg) is None)
+
+    # ── 7. resolve_model_for_task ──
+    model, provider, task_type = resolve_model_for_task("write a python function", mock_cfg)
+    check("resolve_model task_type=coding", task_type == "coding")
+    check("resolve_model model set", model == "gpt-4o-mini")
+    check("resolve_model provider set", provider == "openai")
+
+    model2, provider2, task_type2 = resolve_model_for_task("hello there", mock_cfg)
+    check("resolve_model general → None model", model2 is None)
+    check("resolve_model general → None provider", provider2 is None)
+    check("resolve_model general task_type", task_type2 == "general")
+
+    # ── 8. get_next_tier — escalation chain ──
+    next_tier = get_next_tier("t0", mock_cfg)
+    check("escalate t0 → t1", next_tier is not None and next_tier["id"] == "t1")
+
+    next_tier2 = get_next_tier("t1", mock_cfg)
+    check("escalate t1 → t2", next_tier2 is not None and next_tier2["id"] == "t2")
+
+    # t2 is last enabled, t3 is disabled so skipped
+    next_tier3 = get_next_tier("t2", mock_cfg)
+    check("escalate t2 → None (t3 disabled)", next_tier3 is None)
+
+    # Unknown tier ID
+    next_unknown = get_next_tier("nonexistent", mock_cfg)
+    check("escalate unknown → None", next_unknown is None)
+
+    # ── 9. get_tier_for_connection ──
+    t = get_tier_for_connection("cheap_cloud", mock_cfg)
+    check("tier_for_connection found", t is not None and t["provider"] == "openai")
+
+    t_disabled = get_tier_for_connection("disabled_tier", mock_cfg)
+    check("tier_for_connection disabled → None", t_disabled is None)
+
+    t_missing = get_tier_for_connection("nonexistent_label", mock_cfg)
+    check("tier_for_connection missing → None", t_missing is None)
+
+    # ── 10. Tool execute — all 4 actions ──
+    # classify action
+    r = json.loads(ModelRouterTool.execute({"action": "classify", "text": "write a function"}))
+    check("execute classify → coding", r["task_type"] == "coding")
+    check("execute classify has model field", "model" in r)
+
+    # classify missing text
+    r_err = json.loads(ModelRouterTool.execute({"action": "classify"}))
+    check("execute classify no text → error", "error" in r_err)
+
+    # resolve action
+    r2 = json.loads(ModelRouterTool.execute({"action": "resolve", "text": "summarize this"}))
+    check("execute resolve has task_type", "task_type" in r2)
+    check("execute resolve has fallback", "fallback" in r2)
+
+    # resolve missing text
+    r2_err = json.loads(ModelRouterTool.execute({"action": "resolve"}))
+    check("execute resolve no text → error", "error" in r2_err)
+
+    # list_tiers action
+    r3 = json.loads(ModelRouterTool.execute({"action": "list_tiers"}))
+    check("execute list_tiers has tiers", "tiers" in r3)
+    check("execute list_tiers has enabled", "enabled" in r3)
+
+    # get_map action
+    r4 = json.loads(ModelRouterTool.execute({"action": "get_map"}))
+    check("execute get_map has task_tier_map", "task_tier_map" in r4)
+    check("execute get_map has enabled", "enabled" in r4)
+    check("execute get_map 10 tasks", len(r4["task_tier_map"]) >= 10)
+
+    # unknown action
+    r5 = json.loads(ModelRouterTool.execute({"action": "BOGUS"}))
+    check("execute unknown action → error", "error" in r5)
+
+    # default action (no action key)
+    r6 = json.loads(ModelRouterTool.execute({}))
+    check("execute no action → list_tiers", "tiers" in r6)
+
+
+# ═════════════════════════════════════════════
+# 25c. AGI Loop Tool — state, tick logging, pause/resume
+# ═════════════════════════════════════════════
+def test_agi_loop_tool():
+    """Test AGILoopTool: definition, all 4 actions, AGILoopState singleton,
+    state transitions, tick logging, edge cases."""
+    print("\n=== TORTURE: AGI Loop — Tool + State ===")
+    from src.tools.agi_loop import AGILoopTool, AGILoopState, get_loop_state
+
+    state = get_loop_state()
+
+    # ── 1. Singleton behaviour ──
+    state2 = get_loop_state()
+    check("singleton identity", state is state2)
+    s3 = AGILoopState()
+    check("AGILoopState() same instance", s3 is state)
+
+    # ── 2. Reset ──
+    state.reset()
+    check("reset running=False", state.running is False)
+    check("reset paused=False", state.paused is False)
+    check("reset current_tick=0", state.current_tick == 0)
+    check("reset total_ticks=0", state.total_ticks == 0)
+    check("reset total_cost=0", state.total_cost == 0.0)
+    check("reset session_cost=0", state.session_cost == 0.0)
+    check("reset error_streak=0", state.error_streak == 0)
+    check("reset tick_history empty", len(state.tick_history) == 0)
+    check("reset last_error None", state.last_error is None)
+    check("reset started_at None", state.started_at is None)
+    check("reset stopped_at None", state.stopped_at is None)
+    check("reset stop_reason None", state.stop_reason is None)
+    check("reset task None", state.task is None)
+
+    # ── 3. to_dict ──
+    d = state.to_dict()
+    check("to_dict has running", "running" in d)
+    check("to_dict has paused", "paused" in d)
+    check("to_dict has current_tick", "current_tick" in d)
+    check("to_dict has total_ticks", "total_ticks" in d)
+    check("to_dict has total_cost", "total_cost" in d)
+    check("to_dict has session_cost", "session_cost" in d)
+    check("to_dict has error_streak", "error_streak" in d)
+    check("to_dict has last_error", "last_error" in d)
+    check("to_dict has started_at", "started_at" in d)
+    check("to_dict has stopped_at", "stopped_at" in d)
+    check("to_dict has stop_reason", "stop_reason" in d)
+    check("to_dict has recent_ticks", "recent_ticks" in d)
+    check("to_dict recent_ticks is list", isinstance(d["recent_ticks"], list))
+
+    # ── 4. Tick logging ──
+    state.reset()
+    for i in range(5):
+        state.log_tick({"tick": i, "cost": 0.001, "status": "ok"})
+    check("5 ticks logged", len(state.tick_history) == 5)
+    check("tick 0 correct", state.tick_history[0]["tick"] == 0)
+    check("tick 4 correct", state.tick_history[4]["tick"] == 4)
+
+    # to_dict caps recent_ticks at 20
+    state.reset()
+    for i in range(30):
+        state.log_tick({"tick": i})
+    d2 = state.to_dict()
+    check("recent_ticks capped at 20", len(d2["recent_ticks"]) == 20)
+    check("recent_ticks has latest", d2["recent_ticks"][-1]["tick"] == 29)
+
+    # In-memory cap at 200
+    state.reset()
+    for i in range(210):
+        state.log_tick({"tick": i})
+    check("in-memory capped at 200", len(state.tick_history) == 200)
+    check("oldest tick trimmed", state.tick_history[0]["tick"] == 10)
+
+    # ── 5. Definition structure ──
+    defn = AGILoopTool.definition()
+    check("AL def name", defn["name"] == "agi_loop")
+    check("AL def has params", "parameters" in defn)
+    actions = defn["parameters"]["properties"]["action"]["enum"]
+    check("AL 4 actions", len(actions) == 4)
+    check("AL actions list", set(actions) == {"status", "tick_history", "request_pause", "request_resume"})
+    check("AL has limit param", "limit" in defn["parameters"]["properties"])
+
+    # ── 6. execute: status ──
+    state.reset()
+    state.running = True
+    state.current_tick = 42
+    state.total_cost = 1.23456
+    r = json.loads(AGILoopTool.execute({"action": "status"}))
+    check("status running=True", r["running"] is True)
+    check("status current_tick=42", r["current_tick"] == 42)
+    check("status total_cost rounded", r["total_cost"] == 1.23456)
+
+    # ── 7. execute: tick_history ──
+    state.reset()
+    for i in range(15):
+        state.log_tick({"tick": i, "model": "gpt-4o"})
+
+    r2 = json.loads(AGILoopTool.execute({"action": "tick_history"}))
+    check("tick_history default 10", len(r2["ticks"]) == 10)
+    check("tick_history total_recorded", r2["total_recorded"] == 15)
+
+    r3 = json.loads(AGILoopTool.execute({"action": "tick_history", "limit": 3}))
+    check("tick_history limit=3", len(r3["ticks"]) == 3)
+    check("tick_history latest ticks", r3["ticks"][-1]["tick"] == 14)
+
+    # ── 8. execute: request_pause ──
+    state.reset()
+    # Not running → can't pause
+    r4 = json.loads(AGILoopTool.execute({"action": "request_pause"}))
+    check("pause not running → ok=False", r4["ok"] is False)
+    check("pause not running reason", "not running" in r4["reason"].lower())
+
+    # Running → can pause
+    state.running = True
+    r5 = json.loads(AGILoopTool.execute({"action": "request_pause"}))
+    check("pause running → ok=True", r5["ok"] is True)
+    check("state.paused = True", state.paused is True)
+
+    # ── 9. execute: request_resume ──
+    # Already paused
+    r6 = json.loads(AGILoopTool.execute({"action": "request_resume"}))
+    check("resume paused → ok=True", r6["ok"] is True)
+    check("state.paused = False", state.paused is False)
+
+    # Not paused → can't resume
+    r7 = json.loads(AGILoopTool.execute({"action": "request_resume"}))
+    check("resume not paused → ok=False", r7["ok"] is False)
+    check("resume not paused reason", "not paused" in r7["reason"].lower())
+
+    # ── 10. execute: unknown action ──
+    r8 = json.loads(AGILoopTool.execute({"action": "BOGUS"}))
+    check("unknown action → error", "error" in r8)
+
+    # ── 11. execute: default action (no action key) ──
+    r9 = json.loads(AGILoopTool.execute({}))
+    check("no action → status", "running" in r9)
+
+    # ── 12. State mutation round-trip ──
+    state.reset()
+    state.running = True
+    state.started_at = "2026-01-01T00:00:00Z"
+    state.total_cost = 0.05
+    state.session_cost = 0.03
+    state.error_streak = 2
+    state.last_error = "timeout"
+    state.current_loop = 5
+    d_mut = state.to_dict()
+    check("mutated running", d_mut["running"] is True)
+    check("mutated started_at", d_mut["started_at"] == "2026-01-01T00:00:00Z")
+    check("mutated error_streak", d_mut["error_streak"] == 2)
+    check("mutated last_error", d_mut["last_error"] == "timeout")
+    check("mutated current_loop", d_mut["current_loop"] == 5)
+
+    # Clean up singleton for other tests
+    state.reset()
 
 
 # ═════════════════════════════════════════════
@@ -2217,9 +2574,10 @@ def test_tool_registry_torture():
     # list_registered_tools
     tools = list_registered_tools()
     check("registry: list returns list", isinstance(tools, list))
-    check("registry: 8 tools", len(tools) == 8, f"got {len(tools)}: {tools}")
+    check("registry: 11 tools", len(tools) == 11, f"got {len(tools)}: {tools}")
     for expected in ("echo", "memory", "directives", "cost_tracker",
-                     "continuation_update", "web_search", "email", "inbox"):
+                     "continuation_update", "web_search", "email", "inbox",
+                     "runtime_info", "agi_loop", "model_router"):
         check(f"registry: has '{expected}'", expected in tools)
 
     # _resolve_tool — known tool
@@ -5094,6 +5452,8 @@ if __name__ == "__main__":
     test_llm_types()
     test_directive_injector_with_manifest()
     test_model_router_config()
+    test_model_router_tool()
+    test_agi_loop_tool()
     test_email_tool_torture()
     test_directives_tool_torture()
     test_tool_registry_torture()

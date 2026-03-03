@@ -1,10 +1,12 @@
 allowed_tools:
+- agi_loop
 - continuation_update
 - cost_tracker
 - directives
 - echo
 - email
 - memory
+- model_router
 - web_search
 base_url: https://api.openai.com/v1
 description: ''

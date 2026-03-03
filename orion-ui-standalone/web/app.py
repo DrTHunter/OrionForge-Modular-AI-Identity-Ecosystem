@@ -1000,12 +1000,10 @@ _TOOL_CATALOGUE = [
         "icon": "📊",
         "icon_bg": "rgba(56,189,248,0.12)",
         "icon_color": "#38bdf8",
-        "description": "Query runtime state, configuration, and system info. Returns details about loaded profiles, active tools, memory stats, and uptime.",
-        "status": "planned",
+        "description": "Read-only snapshot of runtime state: agent identity, model/provider, policy, allowed tools, memory config, directive state, and vault health. Includes diff tracking between calls. Available even in stasis mode.",
+        "status": "ready",
         "tags": ["agi_loop"],
-        "parameters": [
-            {"name": "query", "type": "string", "required": False, "description": "What info to retrieve", "enum": ["status", "config", "tools", "memory", "all"]},
-        ],
+        "parameters": [],
     },
     {
         "name": "inbox",
@@ -1054,6 +1052,34 @@ _TOOL_CATALOGUE = [
             {"name": "provider", "type": "string", "required": False, "description": "Provider name (openai, anthropic, deepseek, ollama)", "enum": []},
             {"name": "model", "type": "string", "required": False, "description": "Model name", "enum": []},
             {"name": "period", "type": "string", "required": False, "description": "Time period for cost summary", "enum": ["today", "this_week", "this_month", "all_time"]},
+        ],
+    },
+    {
+        "name": "agi_loop",
+        "display_name": "AGI Loop",
+        "icon": "🔁",
+        "icon_bg": "rgba(168,85,247,0.12)",
+        "icon_color": "#a855f7",
+        "description": "Autonomous tick-based execution loop. Runs the agent on a timer with budget caps, error-streak safeguards, and tier-escalation. Agents can query status, tick history, or request pause/resume.",
+        "status": "ready",
+        "tags": ["agi_loop"],
+        "parameters": [
+            {"name": "action", "type": "string", "required": True, "description": "Action to perform", "enum": ["status", "tick_history", "request_pause", "request_resume"]},
+            {"name": "limit", "type": "integer", "required": False, "description": "Max tick history entries to return (default 10)", "enum": []},
+        ],
+    },
+    {
+        "name": "model_router",
+        "display_name": "Model Router",
+        "icon": "🔀",
+        "icon_bg": "rgba(245,158,11,0.12)",
+        "icon_color": "#f59e0b",
+        "description": "Task-aware model tier selection. Classifies prompts by task type (coding, planning, summarization, etc.) and routes them to the optimal model tier. Agents can query routing decisions or inspect the tier map.",
+        "status": "ready",
+        "tags": ["agi_loop"],
+        "parameters": [
+            {"name": "action", "type": "string", "required": True, "description": "Action to perform", "enum": ["resolve", "list_tiers", "get_map", "classify"]},
+            {"name": "text", "type": "string", "required": False, "description": "Stimulus text to classify (for resolve/classify)", "enum": []},
         ],
     },
 ]
@@ -1519,10 +1545,19 @@ async def page_agi_loop(request: Request):
     agents = _list_agents()
     config = _load_agi_loop_config()
     connections = _load_connections().get("connections", [])
+    # Get live loop state
+    try:
+        from src.tools.agi_loop import get_loop_state
+        loop_status = get_loop_state().to_dict()
+    except Exception:
+        loop_status = {"running": False, "paused": False, "total_ticks": 0}
+    router_config = _load_model_router_config()
     return templates.TemplateResponse("agi_loop.html", {
         "request": request, "page": "agi-loop",
         "agents": agents, "config": config,
         "connections": connections,
+        "loop_status": loop_status,
+        "router_config": router_config,
     })
 
 
@@ -1555,10 +1590,393 @@ async def api_agi_loop_config_save(body: AGILoopConfigUpdate):
     return JSONResponse({"ok": True, "config": data})
 
 
+# ── AGI Loop Runner ───────────────────────────────────────────────
+
+async def _execute_agi_tick(agent: str, stimulus: str, agi_config: dict) -> dict:
+    """Execute a single AGI loop tick — send stimulus through the chat pipeline."""
+    try:
+        conn = _resolve_connection(None, agent)
+        if not conn:
+            return {"error": "No connection available", "response": "", "cost": 0.0, "tool_calls": []}
+
+        # Use a dedicated AGI loop chat per agent
+        chat_id = f"agi-loop-{agent}"
+        chat_data = _load_chat(chat_id)
+        if not chat_data:
+            chat_data = {
+                "id": chat_id, "agent": agent,
+                "title": f"AGI Loop — {agent}",
+                "mode": "agi_loop",
+                "messages": [],
+                "created": datetime.now(timezone.utc).isoformat(),
+                "updated": datetime.now(timezone.utc).isoformat(),
+            }
+            _save_chat(chat_id, chat_data)
+            idx = _load_chat_index()
+            idx["chats"].append({
+                "id": chat_id, "title": f"AGI Loop — {agent}",
+                "agent": agent, "mode": "agi_loop",
+                "folder_id": None,
+                "created": chat_data["created"],
+                "updated": chat_data["updated"],
+            })
+            _save_chat_index(idx)
+
+        now = datetime.now(timezone.utc).isoformat()
+        chat_data["messages"].append({"role": "user", "text": stimulus, "time": now})
+
+        llm_messages, layers, tool_defs = _build_chat_messages(agent, chat_data["messages"])
+
+        # Model resolution via router
+        profile = _load_profile(agent)
+        routed_model = None
+        routed_provider = None
+        task_type = "agi_tick"
+        try:
+            from src.tools.model_router import resolve_model_for_task, resolve_tier, load_router_config
+            router_cfg = load_router_config()
+            if router_cfg.get("enabled", True):
+                routed_model, routed_provider, task_type = resolve_model_for_task(stimulus, router_cfg)
+                # If nothing matched, use the agi_tick tier
+                if not routed_model:
+                    tier = resolve_tier("agi_tick", router_cfg)
+                    if tier:
+                        routed_model = tier.get("primary_model")
+                        routed_provider = tier.get("provider")
+        except Exception:
+            pass
+
+        model = (
+            routed_model
+            or profile.get("model", "")
+            or (conn["models"][0] if conn.get("models") else "gpt-4o-mini")
+        )
+
+        # Connection override for routed tier
+        if routed_provider:
+            try:
+                from src.tools.model_router import resolve_tier as _rt
+                tier = _rt(task_type, router_cfg)
+                if tier and tier.get("connection_id"):
+                    tier_conn = _resolve_connection(tier["connection_id"], agent)
+                    if tier_conn:
+                        conn = tier_conn
+            except Exception:
+                pass
+
+        url = conn["url"].rstrip("/")
+        if not url.endswith("/chat/completions"):
+            url += "/chat/completions"
+        headers = {"Content-Type": "application/json"}
+        if conn.get("api_key"):
+            headers["Authorization"] = f"Bearer {conn['api_key']}"
+
+        max_steps = agi_config.get("max_steps_per_tick", 3)
+        tool_call_log: list[dict] = []
+        total_cost = 0.0
+
+        # Inject runtime context
+        try:
+            from src.tools.runtime_info import RuntimeInfoTool
+            from src.runtime_policy import RuntimePolicy
+            policy_cfg = profile.get("policy", {})
+            policy = RuntimePolicy(
+                max_iterations=policy_cfg.get("max_iterations", 25),
+                stasis_mode=policy_cfg.get("stasis_mode", False),
+                tool_failure_mode=policy_cfg.get("tool_failure_mode", "continue"),
+            )
+            RuntimeInfoTool.set_context(profile=profile, policy=policy, execution_mode="agi_loop")
+        except Exception:
+            pass
+
+        running_messages = list(llm_messages)
+
+        response_text = ""
+        for step in range(max_steps + 1):
+            payload = {
+                "model": model,
+                "messages": running_messages,
+                "temperature": profile.get("temperature", 0.7),
+            }
+            if tool_defs:
+                payload["tools"] = tool_defs
+
+            async with httpx.AsyncClient(timeout=120) as client:
+                resp = await client.post(url, json=payload, headers=headers)
+                resp.raise_for_status()
+                data = resp.json()
+
+            choice = data.get("choices", [{}])[0]
+            msg = choice.get("message", {})
+            finish = choice.get("finish_reason", "stop")
+            usage = data.get("usage", {})
+
+            # Cost metering
+            try:
+                from src.observability.metering import meter_from_raw_usage, log_cost_event
+                metering = meter_from_raw_usage(
+                    usage, provider=conn.get("provider", "openai"), model=model,
+                )
+                total_cost += metering.cost.total_cost
+                log_cost_event(metering, agent=agent, chat_id=chat_id)
+            except Exception:
+                pass
+
+            # Tool calls
+            tool_calls = msg.get("tool_calls")
+            if (finish == "tool_calls" or tool_calls) and step < max_steps:
+                running_messages.append(msg)
+                from src.tools.registry import execute_tool
+                import json as _json
+
+                for tc in (tool_calls or []):
+                    fn_name = tc.get("function", {}).get("name", "")
+                    fn_args_raw = tc.get("function", {}).get("arguments", "{}")
+                    tc_id = tc.get("id", "")
+                    try:
+                        fn_args = _json.loads(fn_args_raw) if isinstance(fn_args_raw, str) else fn_args_raw
+                    except _json.JSONDecodeError:
+                        fn_args = {}
+
+                    log.info("[agi_tick] %s calling %s(%s)", agent, fn_name, fn_args)
+                    try:
+                        result = execute_tool(fn_name, fn_args, agent_name=agent)
+                    except PermissionError as exc:
+                        result = f"BLOCKED: {exc}"
+                    except Exception as exc:
+                        result = f"Error: {exc}"
+
+                    tool_call_log.append({
+                        "tool": fn_name, "arguments": fn_args,
+                        "result": result[:500],
+                    })
+                    running_messages.append({
+                        "role": "tool", "tool_call_id": tc_id,
+                        "content": result,
+                    })
+                continue
+
+            # Normal response
+            response_text = msg.get("content", "") or ""
+            break
+
+        # Save memories
+        _extract_and_save_memories(agent, response_text)
+        response_text = _strip_memory_tags(response_text)
+
+        # Save to AGI loop chat
+        chat_data["messages"].append({
+            "role": "assistant", "text": response_text, "time": now,
+        })
+        chat_data["updated"] = now
+        _save_chat(chat_data["id"], chat_data)
+
+        return {
+            "response": response_text,
+            "tool_calls": tool_call_log,
+            "cost": total_cost,
+            "model": model,
+            "task_type": task_type,
+        }
+
+    except Exception as exc:
+        log.error("[agi_tick] Tick failed: %s", exc)
+        return {"error": str(exc), "response": "", "cost": 0.0, "tool_calls": []}
+
+
+async def _agi_loop_runner():
+    """Background coroutine that drives the autonomous AGI loop."""
+    from src.tools.agi_loop import get_loop_state
+
+    state = get_loop_state()
+    config = _load_agi_loop_config()
+
+    agent = config.get("profile", "astraea")
+    stimulus_template = config.get("stimulus", "")
+    ticks_per_loop = config.get("ticks_per_loop", 15)
+    max_loops = config.get("max_loops", 0)  # 0 = infinite
+    interval_secs = config.get("interval_hours", 0) * 3600 + config.get("interval_minutes", 30) * 60
+
+    state.running = True
+    state.paused = False
+    state.session_cost = 0.0
+    state.error_streak = 0
+    state.started_at = datetime.now(timezone.utc).isoformat()
+    state.stopped_at = None
+    state.stop_reason = None
+
+    loop_count = 0
+
+    try:
+        while state.running:
+            loop_count += 1
+            state.current_loop = loop_count
+
+            if max_loops > 0 and loop_count > max_loops:
+                state.stop_reason = "max_loops_reached"
+                break
+
+            for tick in range(1, ticks_per_loop + 1):
+                # Pause gate
+                if state.paused:
+                    log.info("[agi_loop] Paused — waiting for resume")
+                    while state.paused and state.running:
+                        await asyncio.sleep(1)
+                    if not state.running:
+                        break
+
+                if not state.running:
+                    break
+
+                state.current_tick = tick
+                state.total_ticks += 1
+
+                # Build stimulus
+                if stimulus_template:
+                    stim = stimulus_template
+                else:
+                    stim = (
+                        f"[AGI Loop] Tick {tick}/{ticks_per_loop} — loop {loop_count}. "
+                        "Review your directives and continuation notes. "
+                        "Check memory for pending tasks or ideas. "
+                        "Take the most impactful autonomous action available. "
+                        "Use your tools as needed. Report what you did."
+                    )
+
+                # Execute
+                tick_result = await _execute_agi_tick(agent, stim, config)
+
+                tick_cost = tick_result.get("cost", 0.0)
+                state.session_cost += tick_cost
+                state.total_cost += tick_cost
+
+                if tick_result.get("error"):
+                    state.error_streak += 1
+                    state.last_error = tick_result["error"]
+                else:
+                    state.error_streak = 0
+
+                state.log_tick({
+                    "loop": loop_count,
+                    "tick": tick,
+                    "time": datetime.now(timezone.utc).isoformat(),
+                    "agent": agent,
+                    "stimulus": stim[:200],
+                    "response": tick_result.get("response", "")[:500],
+                    "tool_calls": tick_result.get("tool_calls", []),
+                    "cost": tick_cost,
+                    "error": tick_result.get("error"),
+                    "model": tick_result.get("model", ""),
+                    "task_type": tick_result.get("task_type", ""),
+                })
+
+                # Budget checks
+                if config.get("auto_pause_on_budget"):
+                    if config.get("per_tick_cap") and tick_cost > config["per_tick_cap"]:
+                        state.paused = True
+                        state.stop_reason = "per_tick_budget_exceeded"
+                        log.warning("[agi_loop] Per-tick budget exceeded ($%.4f > $%.4f)",
+                                    tick_cost, config["per_tick_cap"])
+                        break
+                    if config.get("per_session_cap") and state.session_cost > config["per_session_cap"]:
+                        state.running = False
+                        state.stop_reason = "session_budget_exceeded"
+                        log.warning("[agi_loop] Session budget exceeded ($%.4f > $%.4f)",
+                                    state.session_cost, config["per_session_cap"])
+                        break
+
+                # Error streak check
+                streak_limit = config.get("auto_pause_on_error_streak", 5)
+                if streak_limit and state.error_streak >= streak_limit:
+                    state.running = False
+                    state.stop_reason = "error_streak_exceeded"
+                    log.warning("[agi_loop] Error streak hit %d — stopping", state.error_streak)
+                    break
+
+            # Wait between loops
+            if state.running and not state.paused and interval_secs > 0:
+                log.info("[agi_loop] Waiting %d seconds before next loop", interval_secs)
+                for _ in range(int(interval_secs)):
+                    if not state.running:
+                        break
+                    await asyncio.sleep(1)
+
+    except asyncio.CancelledError:
+        state.stop_reason = "cancelled"
+    except Exception as exc:
+        state.stop_reason = f"exception: {exc}"
+        log.error("[agi_loop] Runner crashed: %s", exc)
+    finally:
+        state.running = False
+        state.stopped_at = datetime.now(timezone.utc).isoformat()
+        log.info("[agi_loop] Stopped — reason: %s, total ticks: %d, cost: $%.4f",
+                 state.stop_reason, state.total_ticks, state.total_cost)
+
+
+@app.post("/api/agi-loop/start")
+async def api_agi_loop_start():
+    from src.tools.agi_loop import get_loop_state
+    state = get_loop_state()
+    if state.running:
+        return JSONResponse({"ok": False, "reason": "Already running"}, 409)
+    state.reset()
+    state.task = asyncio.create_task(_agi_loop_runner())
+    return JSONResponse({"ok": True, "message": "AGI loop started"})
+
+
+@app.post("/api/agi-loop/stop")
+async def api_agi_loop_stop():
+    from src.tools.agi_loop import get_loop_state
+    state = get_loop_state()
+    if not state.running:
+        return JSONResponse({"ok": False, "reason": "Not running"}, 409)
+    state.running = False
+    if state.task and not state.task.done():
+        state.task.cancel()
+    return JSONResponse({"ok": True, "message": "Stop signal sent"})
+
+
+@app.post("/api/agi-loop/pause")
+async def api_agi_loop_pause():
+    from src.tools.agi_loop import get_loop_state
+    state = get_loop_state()
+    if not state.running:
+        return JSONResponse({"ok": False, "reason": "Not running"}, 409)
+    state.paused = True
+    return JSONResponse({"ok": True, "message": "Pause requested"})
+
+
+@app.post("/api/agi-loop/resume")
+async def api_agi_loop_resume():
+    from src.tools.agi_loop import get_loop_state
+    state = get_loop_state()
+    if not state.paused:
+        return JSONResponse({"ok": False, "reason": "Not paused"}, 409)
+    state.paused = False
+    return JSONResponse({"ok": True, "message": "Resumed"})
+
+
+@app.get("/api/agi-loop/status")
+async def api_agi_loop_status():
+    from src.tools.agi_loop import get_loop_state
+    return JSONResponse(get_loop_state().to_dict())
+
+
+@app.get("/api/agi-loop/history")
+async def api_agi_loop_history(limit: int = Query(50)):
+    from src.tools.agi_loop import get_loop_state
+    state = get_loop_state()
+    return JSONResponse({
+        "ticks": state.tick_history[-limit:],
+        "total": len(state.tick_history),
+    })
+
+
 # ── Model Router config ──────────────────────────────────────────
 MODEL_ROUTER_FILE = _CONFIG_DIR / "model_router.json"
 
 _MODEL_ROUTER_DEFAULTS = {
+    "enabled": True,
     "tiers": [
         {
             "id": "t0", "label": "local_cheap", "enabled": True,
@@ -1609,6 +2027,8 @@ _MODEL_ROUTER_DEFAULTS = {
         "final_polish": "expensive_cloud",
         "memory_ops": "local_cheap",
         "reflection": "local_cheap",
+        "tool_use": "cheap_cloud",
+        "agi_tick": "cheap_cloud",
         "general": "__auto__",
     },
 }
@@ -1620,6 +2040,8 @@ def _load_model_router_config() -> dict:
         merged["tiers"] = _MODEL_ROUTER_DEFAULTS["tiers"]
     if "task_tier_map" not in merged:
         merged["task_tier_map"] = _MODEL_ROUTER_DEFAULTS["task_tier_map"]
+    if "enabled" not in merged:
+        merged["enabled"] = True
     return merged
 
 def _save_model_router_config(data: dict):
@@ -1746,15 +2168,41 @@ async def api_chat_send(req: ChatRequest):
     # Build prompt with all identity layers
     llm_messages, layers, tool_defs = _build_chat_messages(req.agent, chat_data["messages"])
 
-    # Resolve model
+    # Resolve model (with model router task-tier mapping)
     profile = _load_profile(req.agent)
     agent_cfg = _get_agent_config(req.agent)
+
+    # ── Model router: classify task → resolve tier/model ──
+    routed_model = None
+    routed_provider = None
+    task_type = "general"
+    router_tier = None
+    try:
+        from src.tools.model_router import resolve_model_for_task, resolve_tier, load_router_config
+        router_cfg = load_router_config()
+        if router_cfg.get("enabled", True) and not req.model_override:
+            routed_model, routed_provider, task_type = resolve_model_for_task(
+                req.stimulus, router_cfg,
+            )
+            if routed_model:
+                router_tier = resolve_tier(task_type, router_cfg)
+    except Exception as exc:
+        log.warning("[router] Model router failed: %s", exc)
+
     model = (
         req.model_override
+        or routed_model
         or agent_cfg.get("model")
         or profile.get("model", "")
         or (conn["models"][0] if conn.get("models") else "gpt-4o-mini")
     )
+
+    # If the router chose a tier with its own connection, switch to it
+    if router_tier and router_tier.get("connection_id") and not req.model_override:
+        tier_conn = _resolve_connection(router_tier["connection_id"], req.agent)
+        if tier_conn:
+            conn = tier_conn
+            log.info("[router] Switched connection to tier '%s'", router_tier.get("label"))
 
     # Call LLM API (with tool-call loop)
     url = conn["url"].rstrip("/")
@@ -1768,6 +2216,20 @@ async def api_chat_send(req: ChatRequest):
     tool_call_log: list[dict] = []  # track every tool invocation for the UI
     total_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
     cost_data = {}
+
+    # ── Inject runtime context for runtime_info tool ──
+    try:
+        from src.tools.runtime_info import RuntimeInfoTool
+        from src.runtime_policy import RuntimePolicy
+        policy_cfg = profile.get("policy", {})
+        policy = RuntimePolicy(
+            max_iterations=policy_cfg.get("max_iterations", 25),
+            stasis_mode=policy_cfg.get("stasis_mode", False),
+            tool_failure_mode=policy_cfg.get("tool_failure_mode", "continue"),
+        )
+        RuntimeInfoTool.set_context(profile=profile, policy=policy, execution_mode="interactive")
+    except Exception as exc:
+        log.warning("[runtime_info] Failed to set context: %s", exc)
 
     running_messages = list(llm_messages)  # mutable copy for the loop
 
@@ -1828,10 +2290,13 @@ async def api_chat_send(req: ChatRequest):
                 except _json.JSONDecodeError:
                     fn_args = {}
 
-                # Execute
-                log.info("[tools] Round %d — calling %s(%s)", _round + 1, fn_name, fn_args)
+                # Execute (authorization is enforced inside execute_tool)
+                log.info("[tools] Round %d — %s calling %s(%s)", _round + 1, req.agent, fn_name, fn_args)
                 try:
                     result = execute_tool(fn_name, fn_args, agent_name=req.agent)
+                except PermissionError as exc:
+                    result = f"BLOCKED: {exc}"
+                    log.warning("[tools] %s blocked for %s: %s", fn_name, req.agent, exc)
                 except Exception as exc:
                     result = f"Error: {exc}"
                     log.error("[tools] %s failed: %s", fn_name, exc)
@@ -1888,6 +2353,12 @@ async def api_chat_send(req: ChatRequest):
 
     # Add tool layer to metadata
     layers["tools"]["calls"] = tool_call_log
+    layers["router"] = {
+        "task_type": task_type,
+        "routed_model": routed_model,
+        "routed_provider": routed_provider,
+        "tier": router_tier.get("label") if router_tier else None,
+    }
 
     chat_data["messages"].append({
         "role": "assistant", "text": response_text, "time": now,
@@ -1897,6 +2368,8 @@ async def api_chat_send(req: ChatRequest):
             "usage": total_usage, "cost": cost_data,
             "tool_calls": tool_call_log,
             "generated_image": generated_image,
+            "task_type": task_type,
+            "router_tier": router_tier.get("label") if router_tier else None,
         },
         "layers": layers,
     })
@@ -1915,6 +2388,8 @@ async def api_chat_send(req: ChatRequest):
         "saved_memories": saved_memories,
         "tool_calls": tool_call_log,
         "generated_image": generated_image,
+        "task_type": task_type,
+        "router_tier": router_tier.get("label") if router_tier else None,
     }
 
 @app.get("/api/chat/history")
