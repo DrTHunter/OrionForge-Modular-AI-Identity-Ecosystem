@@ -130,7 +130,8 @@
     "log_forget_actions": true,
     "never_store_raw_credentials": true,
     "never_store_exact_addresses": true,
-    "never_store_payment_info": true
+    "never_store_payment_info": true,
+    "custom_hard_rules": []
   },
   "performance_policy": {
     "depth_mode": "balanced",

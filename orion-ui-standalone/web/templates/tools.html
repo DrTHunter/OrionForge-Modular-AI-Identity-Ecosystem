@@ -3321,19 +3321,34 @@
 
         <!-- Hard rules (read-only display) -->
         <div class="about-sub">Hard Safety Rules (Non-Editable)</div>
-        <div style="display:flex;flex-direction:column;gap:0.375rem;">
-          <div style="display:flex;align-items:center;gap:0.625rem;padding:0.5rem 0.75rem;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:0.5rem;">
+        <div id="hard-safety-rules-list" style="display:flex;flex-direction:column;gap:0.375rem;">
+          <!-- Built-in rules (always present, cannot be removed) -->
+          <div class="hard-rule-row" data-builtin="true" style="display:flex;align-items:center;gap:0.625rem;padding:0.5rem 0.75rem;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:0.5rem;">
             <span style="color:#fca5a5;font-size:0.8125rem;">&#128274;</span>
-            <span style="font-size:0.75rem;color:#fca5a5;font-weight:600;">Never store raw credentials</span>
+            <span style="font-size:0.75rem;color:#fca5a5;font-weight:600;flex:1;">Never store raw credentials</span>
           </div>
-          <div style="display:flex;align-items:center;gap:0.625rem;padding:0.5rem 0.75rem;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:0.5rem;">
+          <div class="hard-rule-row" data-builtin="true" style="display:flex;align-items:center;gap:0.625rem;padding:0.5rem 0.75rem;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:0.5rem;">
             <span style="color:#fca5a5;font-size:0.8125rem;">&#128274;</span>
-            <span style="font-size:0.75rem;color:#fca5a5;font-weight:600;">Never store exact addresses</span>
+            <span style="font-size:0.75rem;color:#fca5a5;font-weight:600;flex:1;">Never store exact addresses</span>
           </div>
-          <div style="display:flex;align-items:center;gap:0.625rem;padding:0.5rem 0.75rem;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:0.5rem;">
+          <div class="hard-rule-row" data-builtin="true" style="display:flex;align-items:center;gap:0.625rem;padding:0.5rem 0.75rem;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:0.5rem;">
             <span style="color:#fca5a5;font-size:0.8125rem;">&#128274;</span>
-            <span style="font-size:0.75rem;color:#fca5a5;font-weight:600;">Never store payment information</span>
+            <span style="font-size:0.75rem;color:#fca5a5;font-weight:600;flex:1;">Never store payment information</span>
           </div>
+          <!-- Custom rules rendered here -->
+          {% for rule in memory_profile.get('safety_policy', {}).get('custom_hard_rules', []) %}
+          <div class="hard-rule-row hard-rule-custom" style="display:flex;align-items:center;gap:0.625rem;padding:0.5rem 0.75rem;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:0.5rem;">
+            <span style="color:#fca5a5;font-size:0.8125rem;">&#128274;</span>
+            <span class="hard-rule-text" style="font-size:0.75rem;color:#fca5a5;font-weight:600;flex:1;">{{ rule }}</span>
+            <button onclick="removeCustomHardRule(this)" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:0.9rem;padding:0 0.25rem;line-height:1;opacity:0.6;" title="Remove rule" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">&times;</button>
+          </div>
+          {% endfor %}
+        </div>
+
+        <!-- Add custom rule -->
+        <div style="display:flex;gap:0.5rem;margin-top:0.625rem;">
+          <input type="text" id="mp-safety-new-hard-rule" class="config-input" placeholder="e.g. Never store medical diagnoses" style="flex:1;font-size:0.78rem;" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomHardRule();}">
+          <button class="btn btn-secondary" style="font-size:0.75rem;padding:0.35rem 0.75rem;white-space:nowrap;" onclick="addCustomHardRule()">+ Add Rule</button>
         </div>
       </div>
 
@@ -4237,6 +4252,40 @@
       .filter(Boolean);
   }
 
+  /* ═══ Memory Profile — Custom Hard Rules ═════════════════════ */
+
+  function _getCustomHardRules() {
+    return Array.from(document.querySelectorAll('#hard-safety-rules-list .hard-rule-custom .hard-rule-text'))
+      .map(el => el.textContent.trim())
+      .filter(Boolean);
+  }
+
+  function addCustomHardRule() {
+    const input = document.getElementById('mp-safety-new-hard-rule');
+    const text = (input.value || '').trim();
+    if (!text) { showToast('Enter a rule description', true); input.focus(); return; }
+    // Duplicate check
+    const existing = _getCustomHardRules();
+    if (existing.some(r => r.toLowerCase() === text.toLowerCase())) {
+      showToast('That rule already exists', true); input.focus(); return;
+    }
+    const list = document.getElementById('hard-safety-rules-list');
+    const row = document.createElement('div');
+    row.className = 'hard-rule-row hard-rule-custom';
+    row.style.cssText = 'display:flex;align-items:center;gap:0.625rem;padding:0.5rem 0.75rem;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:0.5rem;';
+    row.innerHTML = `<span style="color:#fca5a5;font-size:0.8125rem;">&#128274;</span>`
+      + `<span class="hard-rule-text" style="font-size:0.75rem;color:#fca5a5;font-weight:600;flex:1;">${text.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</span>`
+      + `<button onclick="removeCustomHardRule(this)" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:0.9rem;padding:0 0.25rem;line-height:1;opacity:0.6;" title="Remove rule" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">&times;</button>`;
+    list.appendChild(row);
+    input.value = '';
+    input.focus();
+  }
+
+  function removeCustomHardRule(btn) {
+    const row = btn.closest('.hard-rule-custom');
+    if (row) row.remove();
+  }
+
   /* ═══ Memory Profile — Save ══════════════════════════════════ */
 
   function _collectMemoryProfile() {
@@ -4355,6 +4404,10 @@
         anonymize_sensitive_details: g('mp-safety-anonymize_sensitive_details'),
         respect_user_forget_requests: g('mp-safety-respect_user_forget_requests'),
         log_forget_actions: g('mp-safety-log_forget_actions'),
+        never_store_raw_credentials: true,
+        never_store_exact_addresses: true,
+        never_store_payment_info: true,
+        custom_hard_rules: _getCustomHardRules(),
       },
 
       performance_policy: {
@@ -4401,7 +4454,7 @@
           context_policy: { max_context_tokens: 6000, history_inclusion_mode: 'windowed', history_window_turns: 12, include_long_term_summary: true, include_persona_summary: true, memory_block_position: 'before_history', system_rules_priority: 'strict', allow_persona_to_soft_override_style: true, attach_memory_metadata: true, metadata_format: 'inline_tags' },
           journaling_policy: { journal_mode_enabled: true, auto_journal_on_key_events: true, journal_entry_style: 'narrative', journal_tone: 'compassionate', separate_journal_namespace: true, journal_search_enabled: true, daily_journal_prompt_enabled: true, daily_journal_prompt_time: '22:00', max_journal_entries_per_day: 3 },
           emotion_and_salience_policy: { use_emotion_signal: true, emotion_detection_mode: 'llm', prioritize_high_emotion_events: true, emotion_importance_multiplier: 1.3, track_emotion_trends: true, trend_window_days: 30, tag_emotional_state_in_memory: true, store_low_emotion_noise: false },
-          safety_policy: { store_sensitive_topics: 'limited', sensitive_retention_days: 30, anonymize_sensitive_details: true, respect_user_forget_requests: true, log_forget_actions: true, never_store_raw_credentials: true, never_store_exact_addresses: true, never_store_payment_info: true },
+          safety_policy: { store_sensitive_topics: 'limited', sensitive_retention_days: 30, anonymize_sensitive_details: true, respect_user_forget_requests: true, log_forget_actions: true, never_store_raw_credentials: true, never_store_exact_addresses: true, never_store_payment_info: true, custom_hard_rules: [] },
           performance_policy: { depth_mode: 'balanced', embedding_precision: 'standard', max_embedding_calls_per_minute: 60, allow_background_summarization: true, background_summarization_aggressiveness: 'low', token_budget_for_memory_ops: 1500, cache_retrieval_results: true, cache_ttl_seconds: 120 },
           introspection_policy: { explain_why_memory_was_stored: 'on_request', explain_why_memory_was_retrieved: 'on_request', include_debug_tags_in_dev_mode: true, show_memory_ids_to_user: false, log_memory_decisions: true, log_level: 'summary' },
         }),
@@ -4959,6 +5012,15 @@
       // Ensure category_policy exists (backfill for profiles saved before this feature)
       if (!data.category_policy) {
         data.category_policy = JSON.parse(JSON.stringify(_DEFAULT_CATEGORY_POLICY));
+      }
+      // Ensure safety_policy has hard rules + custom_hard_rules
+      if (data.safety_policy) {
+        data.safety_policy.never_store_raw_credentials = true;
+        data.safety_policy.never_store_exact_addresses = true;
+        data.safety_policy.never_store_payment_info = true;
+        if (!Array.isArray(data.safety_policy.custom_hard_rules)) {
+          data.safety_policy.custom_hard_rules = [];
+        }
       }
       const applyResp = await fetch('/api/tools/memory/profile', {
         method: 'PUT',
