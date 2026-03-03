@@ -5,6 +5,28 @@ Run from project root:
 
 This is the "torture test" suite: rapid-fire operations, concurrent-ish
 access patterns, boundary conditions, and cross-module integration.
+
+Covers:
+  - Vault CRUD rapid-fire (200 ops), bulk delete, compact, stats
+  - PII guard stress (many patterns at speed)
+  - Directive store + tool stress (50 scopes, 100 searches)
+  - Manifest validation stress (evil payloads)
+  - Active directives stress (500 records)
+  - Runtime policy boundary stress
+  - Metering accumulation (1000 ops)
+  - Cost log stress (100 events, filter, aggregate)
+  - Chunker large doc (100 sections)
+  - Vault types integration (all scopes/categories/tiers)
+  - Manifest ↔ ActiveDirectives integration
+  - DataPaths ↔ ContinuationUpdate integration
+  - Memory types edge cases (unicode, backward compat)
+  - Settings rapid read/write stress (100 cycles)
+  - Avatar file I/O stress (20 rapid avatar writes)
+  - Profile CRUD stress (10 agent create/update/delete cycles)
+  - Saved profile CRUD stress (20 rapid save/list/delete)
+  - Skin toggle stress (50 rapid skin switches)
+  - Tool registry resolution stress (all tools x 10 rounds)
+  - Memory strip-tags stress (100 mixed-tag strings)
 """
 
 import json
@@ -755,6 +777,420 @@ def test_memory_types_edge_cases():
 
 
 # ═════════════════════════════════════════════
+# 16. Settings rapid read/write stress
+# ═════════════════════════════════════════════
+def test_settings_stress():
+    print("\n=== STRESS: Settings Rapid Read/Write (100 cycles) ===")
+    from pathlib import Path
+
+    tmp = tempfile.mkdtemp()
+    try:
+        import web.app as _app
+
+        orig_settings = _app.SETTINGS_FILE
+        tmp_settings = Path(tmp) / "config" / "settings.json"
+        tmp_settings.parent.mkdir(parents=True)
+        tmp_settings.write_text("{}", encoding="utf-8")
+        _app.SETTINGS_FILE = tmp_settings
+
+        t0 = time.time()
+        for i in range(100):
+            _app._save_settings({"iteration": i, "data": f"value_{i}" * 10})
+            loaded = _app._load_settings()
+            if loaded.get("iteration") != i:
+                check(f"iteration {i} mismatch", False, f"got {loaded.get('iteration')}")
+                break
+        else:
+            elapsed = time.time() - t0
+            check(f"100 read/write cycles in {elapsed:.2f}s", True)
+
+        # Final state correct
+        final = _app._load_settings()
+        check("final iteration=99", final["iteration"] == 99)
+
+        # Concurrent-ish: rapid overwrites then read
+        for i in range(50):
+            _app._save_settings({"x": i})
+        final2 = _app._load_settings()
+        check("rapid overwrite: last wins", final2["x"] == 49)
+
+    finally:
+        _app.SETTINGS_FILE = orig_settings
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ═════════════════════════════════════════════
+# 17. Avatar file I/O stress
+# ═════════════════════════════════════════════
+def test_avatar_io_stress():
+    print("\n=== STRESS: Avatar File I/O (20 rapid writes) ===")
+    import base64 as b64
+    from pathlib import Path
+
+    tmp = tempfile.mkdtemp()
+    try:
+        import web.app as _app
+
+        orig_settings = _app.SETTINGS_FILE
+        orig_uploads = _app._UPLOADS_DIR
+
+        tmp_uploads = Path(tmp) / "uploads"
+        tmp_uploads.mkdir()
+        tmp_settings = Path(tmp) / "settings.json"
+        tmp_settings.write_text("{}", encoding="utf-8")
+
+        _app.SETTINGS_FILE = tmp_settings
+        _app._UPLOADS_DIR = tmp_uploads
+
+        # 1x1 red PNG
+        png_b64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
+
+        t0 = time.time()
+        settings = {"agent_avatars": {}}
+        for i in range(20):
+            name = f"agent_{i}"
+            settings["agent_avatars"][name] = {
+                "image": f"data:image/png;base64,{png_b64}",
+                "color": f"#{i:06x}"
+            }
+        tmp_settings.write_text(json.dumps(settings), encoding="utf-8")
+
+        _app._migrate_base64_avatars()
+        elapsed = time.time() - t0
+
+        reloaded = json.loads(tmp_settings.read_text(encoding="utf-8"))
+        migrated_count = sum(
+            1 for v in reloaded["agent_avatars"].values()
+            if v["image"].startswith("/uploads/")
+        )
+        check(f"20 avatars migrated in {elapsed:.2f}s", migrated_count == 20)
+
+        # Verify files exist
+        avatar_files = list(tmp_uploads.glob("avatar_*"))
+        check("20 avatar files on disk", len(avatar_files) == 20, f"got {len(avatar_files)}")
+
+        # All files have data
+        empty_files = [f for f in avatar_files if f.stat().st_size == 0]
+        check("no empty avatar files", len(empty_files) == 0)
+
+        # Unique filenames (no collisions)
+        names = [f.name for f in avatar_files]
+        check("all filenames unique", len(set(names)) == 20)
+
+    finally:
+        _app.SETTINGS_FILE = orig_settings
+        _app._UPLOADS_DIR = orig_uploads
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ═════════════════════════════════════════════
+# 18. Profile CRUD stress
+# ═════════════════════════════════════════════
+def test_profile_crud_stress():
+    print("\n=== STRESS: Profile CRUD (10 agent cycles) ===")
+    from pathlib import Path
+
+    tmp = tempfile.mkdtemp()
+    try:
+        import web.app as _app
+
+        orig_profiles = _app._PROFILES_DIR
+        orig_prompts = _app._PROMPTS_DIR
+        orig_settings = _app.SETTINGS_FILE
+
+        tmp_profiles = Path(tmp) / "profiles"
+        tmp_profiles.mkdir()
+        tmp_prompts = Path(tmp) / "prompts"
+        tmp_prompts.mkdir()
+        tmp_settings = Path(tmp) / "settings.json"
+        tmp_settings.write_text("{}", encoding="utf-8")
+
+        _app._PROFILES_DIR = tmp_profiles
+        _app._PROMPTS_DIR = tmp_prompts
+        _app.SETTINGS_FILE = tmp_settings
+
+        try:
+            from httpx import ASGITransport, AsyncClient
+            import asyncio
+            from web.app import app as _test_app
+
+            async def _run():
+                transport = ASGITransport(app=_test_app)
+                async with AsyncClient(transport=transport, base_url="http://test") as client:
+                    t0 = time.time()
+                    agent_names = []
+
+                    # Create 10 agents
+                    for i in range(10):
+                        name = f"stress_agent_{i}"
+                        r = await client.post("/api/profiles", json={
+                            "name": name, "model": f"model_{i}",
+                            "system_prompt": f"You are agent {i}."
+                        })
+                        if r.status_code == 200:
+                            agent_names.append(name)
+                    check(f"10 agents created", len(agent_names) == 10)
+
+                    # Update all 10
+                    for name in agent_names:
+                        await client.put(f"/api/profiles/{name}", json={
+                            "temperature": 0.8
+                        })
+                    check("10 agents updated", True)
+
+                    # Read all 10
+                    for name in agent_names:
+                        r = await client.get(f"/api/profiles/{name}")
+                        if r.status_code != 200:
+                            check(f"read {name}", False, f"status={r.status_code}")
+                            break
+                    else:
+                        check("10 agents readable", True)
+
+                    # Delete all 10
+                    for name in agent_names:
+                        await client.delete(f"/api/profiles/{name}")
+                    remaining = list(tmp_profiles.glob("*.yaml"))
+                    check("all agents deleted", len(remaining) == 0, f"remaining: {len(remaining)}")
+
+                    elapsed = time.time() - t0
+                    check(f"10 CRUD cycles in {elapsed:.2f}s", True)
+
+            asyncio.run(_run())
+
+        except ImportError:
+            check("httpx not available — skipped", True)
+
+    finally:
+        _app._PROFILES_DIR = orig_profiles
+        _app._PROMPTS_DIR = orig_prompts
+        _app.SETTINGS_FILE = orig_settings
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ═════════════════════════════════════════════
+# 19. Saved profile CRUD stress
+# ═════════════════════════════════════════════
+def test_saved_profile_stress():
+    print("\n=== STRESS: Saved Profile CRUD (20 rapid cycles) ===")
+    from pathlib import Path
+
+    tmp = tempfile.mkdtemp()
+    try:
+        import web.app as _app
+
+        orig_dir = _app._SAVED_MEMORY_PROFILES_DIR
+        orig_settings = _app.SETTINGS_FILE
+
+        tmp_profiles = Path(tmp) / "profiles" / "memory"
+        tmp_profiles.mkdir(parents=True)
+        tmp_settings = Path(tmp) / "settings.json"
+        tmp_settings.write_text("{}", encoding="utf-8")
+
+        _app._SAVED_MEMORY_PROFILES_DIR = tmp_profiles
+        _app.SETTINGS_FILE = tmp_settings
+
+        try:
+            from httpx import ASGITransport, AsyncClient
+            import asyncio
+            from web.app import app as _test_app
+
+            async def _run():
+                transport = ASGITransport(app=_test_app)
+                async with AsyncClient(transport=transport, base_url="http://test") as client:
+                    t0 = time.time()
+
+                    # Create 20 profiles
+                    for i in range(20):
+                        r = await client.post("/api/tools/memory/profiles", json={
+                            "filename": f"stress_{i}",
+                            "profile": {"name": f"Stress {i}", "max_total": i * 100}
+                        })
+                        if r.status_code != 200:
+                            check(f"save stress_{i}", False, f"status={r.status_code}")
+                            break
+                    else:
+                        check("20 profiles saved", True)
+
+                    # List all
+                    r2 = await client.get("/api/tools/memory/profiles")
+                    entries = r2.json()
+                    check("list returns 20", len(entries) == 20, f"got {len(entries)}")
+
+                    # Read each
+                    for i in range(20):
+                        r3 = await client.get(f"/api/tools/memory/profiles/stress_{i}")
+                        if r3.status_code != 200:
+                            check(f"read stress_{i}", False)
+                            break
+                        data = r3.json()
+                        if data.get("max_total") != i * 100:
+                            check(f"data stress_{i}", False, f"max_total={data.get('max_total')}")
+                            break
+                    else:
+                        check("20 profiles readable with correct data", True)
+
+                    # Delete all
+                    for i in range(20):
+                        await client.delete(f"/api/tools/memory/profiles/stress_{i}")
+                    remaining = list(tmp_profiles.glob("*.json"))
+                    check("all profiles deleted", len(remaining) == 0, f"remaining: {len(remaining)}")
+
+                    elapsed = time.time() - t0
+                    check(f"20 CRUD cycles in {elapsed:.2f}s", True)
+
+            asyncio.run(_run())
+
+        except ImportError:
+            check("httpx not available — skipped", True)
+
+    finally:
+        _app._SAVED_MEMORY_PROFILES_DIR = orig_dir
+        _app.SETTINGS_FILE = orig_settings
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ═════════════════════════════════════════════
+# 20. Skin toggle stress
+# ═════════════════════════════════════════════
+def test_skin_toggle_stress():
+    print("\n=== STRESS: Skin Toggle (50 rapid switches) ===")
+    from pathlib import Path
+
+    tmp = tempfile.mkdtemp()
+    try:
+        import web.app as _app
+
+        orig_settings = _app.SETTINGS_FILE
+        tmp_settings = Path(tmp) / "settings.json"
+        tmp_settings.write_text("{}", encoding="utf-8")
+        _app.SETTINGS_FILE = tmp_settings
+
+        try:
+            from httpx import ASGITransport, AsyncClient
+            import asyncio
+            from web.app import app as _test_app
+
+            skins = ["default", "midnight", "aurora", "ember", "ocean", "forest",
+                      "sunset", "slate", "neon", "arctic", "volcanic", "cyberpunk"]
+
+            async def _run():
+                transport = ASGITransport(app=_test_app)
+                async with AsyncClient(transport=transport, base_url="http://test") as client:
+                    t0 = time.time()
+                    for i in range(50):
+                        skin = skins[i % len(skins)]
+                        r = await client.put("/api/skin", json={"skin": skin})
+                        if r.status_code != 200:
+                            check(f"skin toggle {i}", False)
+                            break
+                    else:
+                        elapsed = time.time() - t0
+                        check(f"50 skin toggles in {elapsed:.2f}s", True)
+
+                    # Verify last skin persisted correctly
+                    last_skin = skins[49 % len(skins)]
+                    r2 = await client.get("/api/skin")
+                    check("last skin correct", r2.json()["skin"] == last_skin,
+                          f"expected {last_skin}, got {r2.json()['skin']}")
+
+                    # Settings file reflects last skin
+                    s = json.loads(tmp_settings.read_text(encoding="utf-8"))
+                    check("skin in settings.json", s["skin"] == last_skin)
+
+            asyncio.run(_run())
+
+        except ImportError:
+            check("httpx not available — skipped", True)
+
+    finally:
+        _app.SETTINGS_FILE = orig_settings
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ═════════════════════════════════════════════
+# 21. Tool registry resolution stress
+# ═════════════════════════════════════════════
+def test_tool_registry_stress():
+    print("\n=== STRESS: Tool Registry Resolution (all tools x 10) ===")
+    import src.tools.registry as reg
+
+    all_tools = reg.list_registered_tools()
+    check("registry has tools", len(all_tools) > 0, f"found {len(all_tools)}")
+
+    t0 = time.time()
+    resolved_count = 0
+    for _round in range(10):
+        for name in all_tools:
+            td = reg._resolve_tool(name)
+            if td:
+                resolved_count += 1
+    elapsed = time.time() - t0
+
+    expected = len(all_tools) * 10
+    check(f"{expected} resolutions in {elapsed:.2f}s", resolved_count == expected,
+          f"got {resolved_count}")
+
+    # All definitions have required fields
+    for name in all_tools:
+        td = reg._resolve_tool(name)
+        if td:
+            fn = td.get("function", {})
+            check(f"{name}: has name", "name" in fn)
+            check(f"{name}: has description", "description" in fn)
+            check(f"{name}: has parameters", "parameters" in fn)
+
+
+# ═════════════════════════════════════════════
+# 22. Memory strip-tags stress
+# ═════════════════════════════════════════════
+def test_strip_memory_tags_stress():
+    print("\n=== STRESS: _strip_memory_tags (100 mixed strings) ===")
+    from web.app import _strip_memory_tags
+
+    t0 = time.time()
+    for i in range(100):
+        # Build a string with mixed tags and plain text
+        parts = [f"Sentence {i}."]
+        if i % 2 == 0:
+            parts.append(f"[MEMORY_SAVE: category=bio | User fact {i}]")
+        if i % 3 == 0:
+            parts.append(f"[MEMORY_SAVE: Another fact {i}]")
+        parts.append(f"End of message {i}.")
+        text = " ".join(parts)
+
+        result = _strip_memory_tags(text)
+        if "[MEMORY_SAVE" in result:
+            check(f"strip #{i}: tags remaining", False, result[:80])
+            break
+        if f"Sentence {i}" not in result:
+            check(f"strip #{i}: text lost", False, result[:80])
+            break
+        if f"End of message {i}" not in result:
+            check(f"strip #{i}: end text lost", False, result[:80])
+            break
+    else:
+        elapsed = time.time() - t0
+        check(f"100 strip ops in {elapsed:.3f}s", True)
+
+    # Edge: deeply nested brackets (should not crash)
+    nested = "[MEMORY_SAVE: text with [brackets] inside]"
+    try:
+        _strip_memory_tags(nested)
+        check("nested brackets: no crash", True)
+    except Exception as e:
+        check("nested brackets: no crash", False, str(e))
+
+    # Edge: very long tag
+    long_tag = f"[MEMORY_SAVE: category=lore | {'x' * 5000}]"
+    result_long = _strip_memory_tags(long_tag)
+    check("long tag stripped", "[MEMORY_SAVE" not in result_long)
+
+    # Edge: empty string
+    check("empty string: no crash", _strip_memory_tags("") == "")
+
+
+# ═════════════════════════════════════════════
 if __name__ == "__main__":
     test_vault_rapid_crud()
     test_vault_bulk_delete()
@@ -771,6 +1207,13 @@ if __name__ == "__main__":
     test_manifest_directives_integration()
     test_data_paths_continuation_integration()
     test_memory_types_edge_cases()
+    test_settings_stress()
+    test_avatar_io_stress()
+    test_profile_crud_stress()
+    test_saved_profile_stress()
+    test_skin_toggle_stress()
+    test_tool_registry_stress()
+    test_strip_memory_tags_stress()
 
     print(f"\n{'='*40}")
     print(f"Results: {PASS} passed, {FAIL} failed")

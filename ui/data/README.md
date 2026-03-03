@@ -1,6 +1,6 @@
 # Data — Runtime Data Directory
 
-This directory holds all runtime-generated data for the production OrionForge deployment. Subdirectories are pre-populated with `.gitkeep` files to maintain structure in version control.
+This directory holds all runtime-generated data for the production OrionForge deployment. Subdirectories are pre-populated with placeholder files to maintain the directory structure.
 
 ## Directory Layout
 
@@ -18,7 +18,7 @@ data/
 
 ## Populating Data
 
-All directories start empty (with `.gitkeep` placeholders). Data is created during normal operation:
+All directories start empty (with placeholder files). Data is created during normal operation:
 
 - **Chats** are created when conversations begin via the web UI
 - **Memories** are written to `memory/vault.jsonl` by the Memory tool

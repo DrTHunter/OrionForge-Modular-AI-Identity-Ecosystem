@@ -1189,23 +1189,47 @@
     });
   }
 
+  /* ── Image resize helper (max 300px, JPEG 85%) ── */
+  function resizeImage(file, maxDim = 300) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+          const w = Math.round(img.width * scale);
+          const h = Math.round(img.height * scale);
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', 0.85));
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
   async function uploadAvatar(agent, input) {
     const file = input.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      const dataUrl = e.target.result;
-      const preview = document.getElementById('avatar-' + agent);
-      let img = preview.querySelector('img');
-      if (!img) { img = document.createElement('img'); img.alt = agent; preview.appendChild(img); }
-      img.src = dataUrl;
-      const endpoint = agent === '_user' ? '/api/profiles/user' : `/api/profiles/${agent}/avatar`;
-      await fetch(endpoint, {
-        method: 'PUT', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({image: dataUrl}),
-      });
-    };
-    reader.readAsDataURL(file);
+    const dataUrl = await resizeImage(file, 300);
+    const preview = document.getElementById('avatar-' + agent);
+    let img = preview.querySelector('img');
+    if (!img) { img = document.createElement('img'); img.alt = agent; preview.appendChild(img); }
+    img.src = dataUrl;
+    const endpoint = agent === '_user' ? '/api/profiles/user' : `/api/profiles/${agent}/avatar`;
+    const resp = await fetch(endpoint, {
+      method: 'PUT', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({image: dataUrl}),
+    });
+    // Update preview to use saved URL if returned
+    try {
+      const result = await resp.json();
+      if (result.image) img.src = result.image;
+    } catch(_) {}
+    input.value = '';
   }
 
   async function clearImage(agent) {

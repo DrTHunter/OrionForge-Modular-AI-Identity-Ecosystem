@@ -22,9 +22,11 @@ import subprocess
 import sys
 import threading
 import uuid
+import base64 as _b64
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
+import uuid
 
 import httpx
 import yaml
@@ -80,6 +82,63 @@ templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 _UPLOADS_DIR = _DATA_DIR / "uploads"
 _UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=str(_UPLOADS_DIR)), name="uploads")
+
+
+# ── Migrate base64 avatar images to files (one-time on startup) ─
+def _migrate_base64_avatars():
+    """Convert any base64 data-URL avatars in settings.json to saved files."""
+    try:
+        if not SETTINGS_FILE.exists():
+            return
+        with open(SETTINGS_FILE, "r", encoding="utf-8-sig") as f:
+            settings = json.load(f)
+        changed = False
+        # Migrate agent avatars
+        for name, entry in settings.get("agent_avatars", {}).items():
+            img = entry.get("image", "")
+            if img.startswith("data:image"):
+                try:
+                    header, b64 = img.split(",", 1)
+                    ext = ".png"
+                    if "jpeg" in header or "jpg" in header:
+                        ext = ".jpg"
+                    elif "webp" in header:
+                        ext = ".webp"
+                    raw = _b64.b64decode(b64)
+                    fname = f"avatar_{name}_{uuid.uuid4().hex[:8]}{ext}"
+                    with open(_UPLOADS_DIR / fname, "wb") as f:
+                        f.write(raw)
+                    entry["image"] = f"/uploads/{fname}"
+                    changed = True
+                except Exception:
+                    pass
+        # Migrate user profile avatar
+        up = settings.get("user_profile", {})
+        img = up.get("image", "")
+        if img.startswith("data:image"):
+            try:
+                header, b64 = img.split(",", 1)
+                ext = ".png"
+                if "jpeg" in header or "jpg" in header:
+                    ext = ".jpg"
+                elif "webp" in header:
+                    ext = ".webp"
+                raw = _b64.b64decode(b64)
+                fname = f"user_avatar_{uuid.uuid4().hex[:8]}{ext}"
+                with open(_UPLOADS_DIR / fname, "wb") as f:
+                    f.write(raw)
+                up["image"] = f"/uploads/{fname}"
+                changed = True
+            except Exception:
+                pass
+        if changed:
+            SETTINGS_FILE.parent.mkdir(parents=True, exist_ok=True)
+            with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
+                json.dump(settings, f, indent=2)
+    except Exception:
+        pass
+
+_migrate_base64_avatars()
 
 # ── FAISS memory (lazy singleton) ────────────────────────────────
 _faiss_memory = None
@@ -1929,6 +1988,59 @@ async def api_chat_auto_title(chat_id: str):
 #  PROFILES API
 # ═══════════════════════════════════════════════════════════════════
 
+# ── User profile must come BEFORE the {name} wildcard routes ─────
+@app.put("/api/profiles/user")
+async def api_profile_user(request: Request):
+    """Update user profile (name, avatar, color, crop/position)."""
+    body = await request.json()
+    settings = _load_settings()
+    user_profile = settings.setdefault("user_profile", {})
+    for key in ("name", "color"):
+        if key in body:
+            user_profile[key] = body[key]
+    # Handle image — save base64 as file, store URL path
+    if "image" in body:
+        img_data = body["image"]
+        if not img_data:
+            # Remove image — also delete old file
+            old_img = user_profile.pop("image", None)
+            if old_img and old_img.startswith("/uploads/"):
+                old_path = _UPLOADS_DIR / os.path.basename(old_img)
+                if old_path.exists():
+                    old_path.unlink(missing_ok=True)
+        elif img_data.startswith("data:image"):
+            # base64 data-URL → save as file
+            try:
+                header, b64 = img_data.split(",", 1)
+                ext = ".png"
+                if "jpeg" in header or "jpg" in header:
+                    ext = ".jpg"
+                elif "webp" in header:
+                    ext = ".webp"
+                raw = _b64.b64decode(b64)
+                fname = f"user_avatar_{uuid.uuid4().hex[:8]}{ext}"
+                dest = _UPLOADS_DIR / fname
+                # Remove previous file
+                old_img = user_profile.get("image", "")
+                if old_img.startswith("/uploads/user_avatar_"):
+                    old_path = _UPLOADS_DIR / os.path.basename(old_img)
+                    if old_path.exists():
+                        old_path.unlink(missing_ok=True)
+                with open(dest, "wb") as f:
+                    f.write(raw)
+                user_profile["image"] = f"/uploads/{fname}"
+            except Exception:
+                pass  # silently ignore malformed data
+        else:
+            # Already a URL path — keep as-is
+            user_profile["image"] = img_data
+    # Photo crop / position fields
+    for key in ("photo_zoom", "photo_x", "photo_y"):
+        if key in body:
+            user_profile[key] = body[key]
+    _save_settings(settings)
+    return {"ok": True, "image": user_profile.get("image", "")}
+
 @app.get("/api/profiles/{name}")
 async def api_profile_get(name: str):
     profile = _load_profile(name)
@@ -2017,32 +2129,43 @@ async def api_profile_avatar(name: str, request: Request):
     if "color" in body:
         entry["color"] = body["color"]
     if "image" in body:
-        if body["image"]:
-            entry["image"] = body["image"]
+        img_data = body["image"]
+        if not img_data:
+            old_img = entry.pop("image", None)
+            if old_img and old_img.startswith("/uploads/"):
+                old_path = _UPLOADS_DIR / os.path.basename(old_img)
+                if old_path.exists():
+                    old_path.unlink(missing_ok=True)
+        elif img_data.startswith("data:image"):
+            try:
+                header, b64 = img_data.split(",", 1)
+                ext = ".png"
+                if "jpeg" in header or "jpg" in header:
+                    ext = ".jpg"
+                elif "webp" in header:
+                    ext = ".webp"
+                raw = _b64.b64decode(b64)
+                fname = f"avatar_{name}_{uuid.uuid4().hex[:8]}{ext}"
+                dest = _UPLOADS_DIR / fname
+                old_img = entry.get("image", "")
+                if old_img.startswith("/uploads/avatar_"):
+                    old_path = _UPLOADS_DIR / os.path.basename(old_img)
+                    if old_path.exists():
+                        old_path.unlink(missing_ok=True)
+                with open(dest, "wb") as f:
+                    f.write(raw)
+                entry["image"] = f"/uploads/{fname}"
+            except Exception:
+                pass
         else:
-            entry.pop("image", None)
+            entry["image"] = img_data
     # Photo crop / position fields
     for key in ("photo_zoom", "photo_x", "photo_y"):
         if key in body:
             entry[key] = body[key]
     avatars[name] = entry
     _save_settings(settings)
-    return {"ok": True}
-
-@app.put("/api/profiles/user")
-async def api_profile_user(request: Request):
-    """Update user profile (name, avatar, color)."""
-    body = await request.json()
-    settings = _load_settings()
-    user_profile = settings.setdefault("user_profile", {})
-    for key in ("name", "color", "image"):
-        if key in body:
-            if key == "image" and not body[key]:
-                user_profile.pop("image", None)
-            else:
-                user_profile[key] = body[key]
-    _save_settings(settings)
-    return {"ok": True}
+    return {"ok": True, "image": entry.get("image", "")}
 
 @app.post("/api/profiles/create")
 async def api_profile_create_v2(request: Request):

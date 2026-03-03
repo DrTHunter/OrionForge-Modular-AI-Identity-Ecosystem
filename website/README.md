@@ -39,14 +39,9 @@ const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
 
 5. In Supabase **Authentication > URL Configuration**, add your website URL to the redirect allow list.
 
-### Deploy to GitHub Pages
+### Deployment
 
-```bash
-# From the repo root
-git subtree push --prefix website origin gh-pages
-```
-
-Or on Vercel/Netlify, point to the `website/` directory.
+Deploy to any static hosting provider (Vercel, Netlify, etc.) by pointing to the `website/` directory.
 
 ## Customization
 
