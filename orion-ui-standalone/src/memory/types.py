@@ -58,8 +58,25 @@ JOURNAL_ONLY_SIGNALS = frozenset({
     "status unchanged", "routine scan", "ephemeral",
 })
 
+# ── Hard limits (abuse prevention) ────────────────────────────────────
+# These are *immutable* ceilings.  The editable profile values
+# (max_total_memories, max_memories_per_session, etc.) may be LOWER
+# than these but never higher.
+
 # Maximum text length for a single memory record (chars).
+# ~300 words — plenty for a concise fact, insight, or register entry.
 MAX_MEMORY_TEXT_LENGTH = 1200
+
+# Absolute ceiling on total active memories in the vault.
+# IndexFlatIP stays fast up to ~50K; 25K gives generous headroom
+# for a single user (10 memories/day = 6+ years).
+HARD_MAX_TOTAL_MEMORIES = 25_000
+
+# Maximum tags that can be attached to a single memory.
+MAX_TAGS_PER_MEMORY = 10
+
+# Maximum memories that can be created in a single batch call.
+MAX_BATCH_SIZE = 50
 
 
 @dataclass

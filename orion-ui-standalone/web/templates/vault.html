@@ -53,12 +53,131 @@
     font-size:0.6875rem; color:#71717a; display:inline-flex; align-items:center; gap:0.2rem;
   }
   .mem-meta-item .meta-icon { opacity:0.6; }
+  /* Info button */
+  .info-btn {
+    display:inline-flex; align-items:center; justify-content:center;
+    width:1.5rem; height:1.5rem; border-radius:50%; border:1.5px solid rgba(129,140,248,0.5);
+    background:rgba(129,140,248,0.08); color:#a5b4fc; font-size:0.75rem; font-weight:700;
+    cursor:pointer; transition:all 0.15s; font-family:serif; line-height:1;
+  }
+  .info-btn:hover { background:rgba(129,140,248,0.2); color:#c7d2fe; border-color:rgba(129,140,248,0.7); }
+  /* Info modal */
+  .info-overlay {
+    position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:1000;
+    display:flex; align-items:center; justify-content:center;
+    opacity:0; pointer-events:none; transition:opacity 0.2s;
+  }
+  .info-overlay.active { opacity:1; pointer-events:auto; }
+  .info-modal {
+    background:#18181b; border:1px solid rgba(63,63,70,0.6); border-radius:0.75rem;
+    max-width:720px; width:92vw; max-height:80vh; overflow-y:auto;
+    padding:1.5rem 2rem; color:#d4d4d8; box-shadow:0 25px 50px rgba(0,0,0,0.5);
+  }
+  .info-modal h2 { color:#fff; font-size:1.125rem; font-weight:700; margin-bottom:1rem; }
+  .info-modal h3 { color:#a5b4fc; font-size:0.875rem; font-weight:600; margin:1.25rem 0 0.5rem; }
+  .info-modal table { width:100%; border-collapse:collapse; font-size:0.75rem; margin:0.5rem 0; }
+  .info-modal th { text-align:left; color:#71717a; font-weight:600; padding:0.375rem 0.5rem; border-bottom:1px solid rgba(63,63,70,0.4); }
+  .info-modal td { padding:0.375rem 0.5rem; border-bottom:1px solid rgba(63,63,70,0.2); }
+  .info-modal .accent { color:#818cf8; }
+  .info-modal .warn { color:#fcd34d; }
+  .info-modal .dim { color:#71717a; }
+  .info-modal .close-btn {
+    position:sticky; top:0; float:right; background:none; border:none;
+    color:#71717a; font-size:1.25rem; cursor:pointer; padding:0.25rem;
+  }
+  .info-modal .close-btn:hover { color:#fff; }
+  /* Filter dropdown */
+  .filter-select {
+    padding:0.25rem 0.5rem; font-size:0.75rem; border-radius:0.375rem;
+    border:1px solid rgba(63,63,70,0.5); background:rgba(24,24,27,0.8);
+    color:#d4d4d8; cursor:pointer; transition:all 0.15s;
+    max-width:11rem;
+  }
+  .filter-select:hover { border-color:rgba(129,140,248,0.4); }
+  .filter-select:focus { outline:none; border-color:rgba(129,140,248,0.5); box-shadow:0 0 0 2px rgba(129,140,248,0.15); }
+  .filter-panel {
+    position:absolute; top:100%; left:0; z-index:50;
+    background:#18181b; border:1px solid rgba(63,63,70,0.6); border-radius:0.5rem;
+    min-width:10rem; max-width:16rem; max-height:15rem; overflow-y:auto;
+    box-shadow:0 10px 25px rgba(0,0,0,0.5); display:none; padding:0.25rem 0;
+  }
+  .filter-panel.open { display:block; }
+  .filter-panel::-webkit-scrollbar { width:6px; }
+  .filter-panel::-webkit-scrollbar-track { background:transparent; }
+  .filter-panel::-webkit-scrollbar-thumb { background:rgba(63,63,70,0.5); border-radius:3px; }
+  .filter-panel::-webkit-scrollbar-thumb:hover { background:rgba(63,63,70,0.8); }
+  .filter-option {
+    display:block; width:100%; padding:0.375rem 0.75rem; font-size:0.75rem;
+    color:#d4d4d8; background:none; border:none; text-align:left; cursor:pointer;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .filter-option:hover { background:rgba(129,140,248,0.12); color:#fff; }
+  .filter-option.active { background:rgba(129,140,248,0.18); color:#a5b4fc; font-weight:600; }
+  .filter-wrap { position:relative; display:inline-block; }
 </style>
 
 <div>
   <div class="mb-6">
-    <h1 class="text-2xl font-bold text-white">Memory Vault</h1>
+    <div class="flex items-center gap-2">
+      <h1 class="text-2xl font-bold text-white">Memory Vault</h1>
+      <button class="info-btn" onclick="document.getElementById('vault-info-modal').classList.add('active')" title="Memory system info">i</button>
+    </div>
     <p class="text-sm text-forge-muted mt-1">Browse, search, and manage persistent agent memories (FAISS-indexed)</p>
+  </div>
+
+  <!-- Info Modal -->
+  <div class="info-overlay" id="vault-info-modal" onclick="if(event.target===this)this.classList.remove('active')">
+    <div class="info-modal">
+      <button class="close-btn" onclick="document.getElementById('vault-info-modal').classList.remove('active')">&times;</button>
+      <h2>Memory System — Technical Specs</h2>
+
+      <h3>Search Engine</h3>
+      <p style="font-size:0.8125rem;margin-bottom:0.5rem;">Uses <span class="accent">FAISS IndexFlatIP</span> — a brute-force exact-search cosine similarity index. Every vector is compared to every query, so accuracy is <span class="accent">100%</span> with zero approximation. No training or clustering is needed.</p>
+
+      <h3>Performance Benchmarks <span class="dim">(768-dim, all-mpnet-base-v2)</span></h3>
+      <table>
+        <tr><th>Operation</th><th>1K</th><th>5K</th><th>10K</th><th>25K</th></tr>
+        <tr><td>Semantic search (top-10)</td><td>&lt; 1 ms</td><td>1–3 ms</td><td>3–8 ms</td><td>5–15 ms</td></tr>
+        <tr><td>Add single vector</td><td colspan="4">&lt; 1 ms (constant — just appends to index)</td></tr>
+        <tr><td>Load cached index</td><td>&lt; 0.1 s</td><td>0.2–0.5 s</td><td>0.4–0.8 s</td><td>1–2 s</td></tr>
+        <tr><td>Full rebuild (embed all)</td><td>3–8 s</td><td>15–40 s</td><td>30–80 s</td><td class="warn">75–200 s</td></tr>
+        <tr><td>JSONL parse (vault.jsonl)</td><td>&lt; 10 ms</td><td>30–60 ms</td><td>60–120 ms</td><td>150–350 ms</td></tr>
+      </table>
+      <p class="dim" style="font-size:0.6875rem;margin-top:0.25rem;">Full rebuild only runs when the cached .faiss file is missing. Normal startup loads from cache.</p>
+
+      <h3>Memory &amp; Disk Footprint</h3>
+      <table>
+        <tr><th>Vault Size</th><th>Index RAM</th><th>Index Disk</th><th>vault.jsonl</th><th>Total Disk</th></tr>
+        <tr><td>1,000</td><td>~3 MB</td><td>~3 MB</td><td>~0.4 MB</td><td>~3.5 MB</td></tr>
+        <tr><td>5,000</td><td>~15 MB</td><td>~15 MB</td><td>~2 MB</td><td>~17 MB</td></tr>
+        <tr><td>10,000</td><td>~30 MB</td><td>~30 MB</td><td>~4 MB</td><td>~34 MB</td></tr>
+        <tr><td class="accent">25,000</td><td>~75 MB</td><td>~75 MB</td><td>~10 MB</td><td>~85 MB</td></tr>
+      </table>
+      <p class="dim" style="font-size:0.6875rem;margin-top:0.25rem;">The embedding model (all-mpnet-base-v2) adds ~420 MB RAM on first load, shared across all indexes.</p>
+
+      <h3>Hard Limits <span class="dim">(enforced — cannot be bypassed)</span></h3>
+      <table>
+        <tr><th>Limit</th><th>Value</th><th>Why</th></tr>
+        <tr><td>Single memory text</td><td class="accent">1,200 chars</td><td>~300 words — keeps embeddings focused</td></tr>
+        <tr><td>Total active memories</td><td class="accent">25,000</td><td>IndexFlatIP stays fast; ~85 MB disk</td></tr>
+        <tr><td>Tags per memory</td><td>10</td><td>Prevents tag-spam</td></tr>
+        <tr><td>Batch size (add_many)</td><td>50 / call</td><td>Prevents bulk-flooding</td></tr>
+        <tr><td>Max pinned memories</td><td>100</td><td>Pinned bypass decay — cap prevents gaming</td></tr>
+      </table>
+
+      <h3>Capacity Planning</h3>
+      <table>
+        <tr><th>Rate</th><th>To 10K</th><th>To 20K</th><th>To 25K</th></tr>
+        <tr><td>5 / day</td><td>2,000 days</td><td>4,000 days</td><td><span class="accent">13.7 years</span></td></tr>
+        <tr><td>10 / day</td><td>1,000 days</td><td>2,000 days <span class="dim">(5.5 yr)</span></td><td><span class="accent">6.8 years</span></td></tr>
+        <tr><td>20 / day</td><td>500 days</td><td>1,000 days</td><td><span class="accent">3.4 years</span></td></tr>
+        <tr><td>50 / day</td><td>200 days</td><td>400 days</td><td><span class="warn">1.4 years</span></td></tr>
+      </table>
+      <p style="font-size:0.8125rem;margin-top:0.75rem;">At <strong>10 memories/day</strong>, it takes ~<span class="accent">5.5 years</span> to reach 20,000 and ~<span class="accent">6.8 years</span> to hit the 25,000 hard cap.</p>
+
+      <h3 class="dim">Future: IndexIVFFlat</h3>
+      <p class="dim" style="font-size:0.75rem;">If the vault ever needs to scale beyond 50K, FAISS supports IndexIVFFlat — clustered partitioning with K-means. Trades ~2–5% recall for dramatically faster search at large scale. Swappable with minimal code changes.</p>
+    </div>
   </div>
 
   <!-- Stats -->
@@ -86,6 +205,18 @@
         </div>
         <p class="text-xs text-forge-muted mt-0.5">{{ stats.utilization_pct|default(0) }}%</p>
         {% endif %}
+      </div>
+      <!-- Editable Max Limit -->
+      <div>
+        <span class="text-xs text-forge-muted uppercase tracking-wider">Max Limit</span>
+        <div class="flex items-center gap-1.5 mt-1">
+          <input type="number" id="vault-max-limit" class="max-active-input"
+                 value="{{ stats.max_active if stats.max_active != '∞' else 0 }}"
+                 min="0" max="25000" step="100" placeholder="0 = ∞"
+                 title="0 = Unlimited, hard ceiling = 25,000">
+          <button onclick="saveMaxLimit()" class="action-btn success" style="padding:0.15rem 0.5rem;font-size:0.7rem;">Save</button>
+        </div>
+        <p class="text-xs text-forge-muted mt-0.5">0 = Unlimited (hard max 25,000)</p>
       </div>
       {% for scope, count in (stats.by_scope or {}).items()|sort %}
       <div>
@@ -124,13 +255,19 @@
       <select class="sort-select" id="vault-sort" onchange="applySort(this.value)">
         <option value="newest" {% if current_sort == 'newest' or not current_sort %}selected{% endif %}>Newest First</option>
         <option value="oldest" {% if current_sort == 'oldest' %}selected{% endif %}>Oldest First</option>
-        <option value="scope" {% if current_sort == 'scope' %}selected{% endif %}>Scope (A→Z)</option>
-        <option value="category" {% if current_sort == 'category' %}selected{% endif %}>Category (A→Z)</option>
-        <option value="tier" {% if current_sort == 'tier' %}selected{% endif %}>Tier</option>
+        <option value="scope" {% if current_sort == 'scope' %}selected{% endif %}>Agent (Scope)</option>
+        <option value="category" {% if current_sort == 'category' %}selected{% endif %}>Category</option>
+        <option value="tier" {% if current_sort == 'tier' %}selected{% endif %}>Section (Canon / Register)</option>
+        <option value="tag" {% if current_sort == 'tag' %}selected{% endif %}>Tag (A→Z)</option>
         <option value="alpha" {% if current_sort == 'alpha' %}selected{% endif %}>Text (A→Z)</option>
         <option value="source" {% if current_sort == 'source' %}selected{% endif %}>Source</option>
         <option value="updated" {% if current_sort == 'updated' %}selected{% endif %}>Recently Updated</option>
       </select>
+      <!-- Dynamic filter -->
+      <div class="filter-wrap" id="filter-wrap">
+        <button class="filter-select" id="filter-btn" onclick="toggleFilterPanel()" title="Filter by current sort field">Filter: All ▾</button>
+        <div class="filter-panel" id="filter-panel"></div>
+      </div>
     </div>
     <button onclick="toggleManage()" class="manage-toggle" id="manage-toggle" title="Manage memories">🗑</button>
     <span class="sel-count manage-ctrl" id="sel-count" style="display:none;"></span>
@@ -141,7 +278,11 @@
   <div class="space-y-3" id="memory-list">
     {% for m in memories %}
     {% set mem = m if m is mapping else m.__dict__ if m.__dict__ is defined else {} %}
-    <div class="memory-entry" data-id="{{ mem.id or m.id }}" id="mem-{{ mem.id or m.id }}">
+    {% set _tags_joined = (mem.tags or m.tags or [])|join(',') %}
+    <div class="memory-entry" data-id="{{ mem.id or m.id }}" id="mem-{{ mem.id or m.id }}"
+         data-scope="{{ mem.scope or m.scope or '' }}" data-category="{{ mem.category or m.category or '' }}"
+         data-tier="{{ mem.tier or m.tier or 'canon' }}" data-tags="{{ _tags_joined }}"
+         data-source="{{ mem.source or m.source or '' }}">
       <div class="flex items-start gap-3">
         <input type="checkbox" class="item-check mem-check manage-ctrl" data-id="{{ mem.id or m.id }}" onchange="updateSelCount()" style="display:none;">
         <div class="flex-1 min-w-0">
@@ -202,6 +343,108 @@ function applySort(sortVal) {
   window.location = url.toString();
 }
 
+/* ── Filter ────────────────────────────────────────────────────── */
+const _sortToAttr = {
+  scope: 'scope', category: 'category', tier: 'tier', tag: 'tags',
+  source: 'source', newest: null, oldest: null, alpha: null, updated: null
+};
+let _activeFilter = null;
+
+function _collectFilterValues() {
+  const sortField = document.getElementById('vault-sort').value;
+  const attr = _sortToAttr[sortField];
+  if (!attr) return [];
+  const vals = new Set();
+  document.querySelectorAll('.memory-entry').forEach(el => {
+    const raw = el.dataset[attr] || '';
+    if (attr === 'tags') {
+      raw.split(',').filter(Boolean).forEach(t => vals.add(t.trim()));
+    } else if (raw) {
+      vals.add(raw);
+    }
+  });
+  return [...vals].sort((a, b) => a.localeCompare(b));
+}
+
+function buildFilterPanel() {
+  const panel = document.getElementById('filter-panel');
+  const btn = document.getElementById('filter-btn');
+  const values = _collectFilterValues();
+  _activeFilter = null;
+  btn.textContent = 'Filter: All ▾';
+  panel.innerHTML = '';
+  if (!values.length) {
+    panel.innerHTML = '<span class="filter-option" style="color:#71717a;cursor:default;">No filter options</span>';
+    return;
+  }
+  // "All" option
+  const allOpt = document.createElement('button');
+  allOpt.className = 'filter-option active';
+  allOpt.textContent = 'All';
+  allOpt.onclick = () => applyFilter(null);
+  panel.appendChild(allOpt);
+  // Individual values
+  values.forEach(v => {
+    const opt = document.createElement('button');
+    opt.className = 'filter-option';
+    opt.textContent = v;
+    opt.title = v;
+    opt.onclick = () => applyFilter(v);
+    panel.appendChild(opt);
+  });
+  // Show all memories
+  document.querySelectorAll('.memory-entry').forEach(el => el.style.display = '');
+}
+
+function applyFilter(value) {
+  _activeFilter = value;
+  const sortField = document.getElementById('vault-sort').value;
+  const attr = _sortToAttr[sortField];
+  const btn = document.getElementById('filter-btn');
+  const panel = document.getElementById('filter-panel');
+  btn.textContent = value ? ('Filter: ' + (value.length > 12 ? value.slice(0, 11) + '…' : value) + ' ▾') : 'Filter: All ▾';
+  // Highlight active option
+  panel.querySelectorAll('.filter-option').forEach(o => {
+    o.classList.toggle('active', value ? o.textContent === value : o.textContent === 'All');
+  });
+  // Filter memory entries
+  let shown = 0;
+  document.querySelectorAll('.memory-entry').forEach(el => {
+    if (!value) { el.style.display = ''; shown++; return; }
+    const raw = el.dataset[attr] || '';
+    let match = false;
+    if (attr === 'tags') {
+      match = raw.split(',').map(t => t.trim()).includes(value);
+    } else {
+      match = raw === value;
+    }
+    el.style.display = match ? '' : 'none';
+    if (match) shown++;
+  });
+  // Update count
+  const countEl = document.querySelector('.flex.items-center.gap-2.mb-4 > .text-xs.text-forge-muted');
+  if (countEl && value) {
+    countEl.textContent = shown + ' memor' + (shown === 1 ? 'y' : 'ies') + ' (filtered)';
+  }
+  panel.classList.remove('open');
+}
+
+function toggleFilterPanel() {
+  const panel = document.getElementById('filter-panel');
+  panel.classList.toggle('open');
+}
+
+// Close filter panel on outside click
+document.addEventListener('click', (e) => {
+  const wrap = document.getElementById('filter-wrap');
+  if (wrap && !wrap.contains(e.target)) {
+    document.getElementById('filter-panel').classList.remove('open');
+  }
+});
+
+// Rebuild filter when sort changes via URL reload (on page load)
+document.addEventListener('DOMContentLoaded', () => buildFilterPanel());
+
 /* ── Manage mode ───────────────────────────────────────────────── */
 let _manageMode = false;
 function toggleManage() {
@@ -242,6 +485,36 @@ async function compactVault() {
   const d = await r.json();
   toast('Compacted: ' + (d.before_lines||'?') + ' → ' + (d.after_lines||'?') + ' lines');
   setTimeout(() => location.reload(), 1500);
+}
+
+/* ── Save Max Limit ────────────────────────────────────────────── */
+const HARD_MAX = 25000;
+async function saveMaxLimit() {
+  const input = document.getElementById('vault-max-limit');
+  let val = parseInt(input.value, 10);
+  if (isNaN(val) || val < 0) val = 0;
+  if (val > HARD_MAX) {
+    val = HARD_MAX;
+    toast('Clamped to hard maximum of ' + HARD_MAX.toLocaleString(), true);
+  }
+  input.value = val;
+  try {
+    const r = await fetch('/api/tools/memory/profile', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ retention_policy: { max_total_memories: val } })
+    });
+    const data = await r.json();
+    if (r.ok) {
+      const saved = data.retention_policy?.max_total_memories ?? val;
+      toast('Max limit saved: ' + (saved === 0 ? 'Unlimited' : saved.toLocaleString()));
+      setTimeout(() => location.reload(), 1200);
+    } else {
+      toast(data.detail || 'Failed to save', true);
+    }
+  } catch (e) {
+    toast('Error: ' + e.message, true);
+  }
 }
 </script>
 {% endblock %}

@@ -18,7 +18,10 @@ from datetime import datetime
 from typing import Any, Dict, Generator, List, Optional, Set, Union
 from zoneinfo import ZoneInfo
 
-from src.memory.types import Memory
+from src.memory.types import (
+    Memory, MAX_MEMORY_TEXT_LENGTH, HARD_MAX_TOTAL_MEMORIES,
+    MAX_TAGS_PER_MEMORY, MAX_BATCH_SIZE,
+)
 from src.memory.pii_guard import check_pii
 
 # US Central Time - used for all vault timestamps.
@@ -84,6 +87,10 @@ class VaultStore:
             self._batch_active = False
             self._batch_resolve_cache = None
 
+    def _active_count(self) -> int:
+        """Return the number of active (non-deleted) memories."""
+        return len(self.read_active())
+
     def batch_create_many(
         self,
         items: List[Dict[str, Any]],
@@ -98,12 +105,38 @@ class VaultStore:
         The caller does **not** need to wrap this in ``batch()`` — it
         manages the batch internally.
         """
+        # ── Hard limit: batch size ────────────────────────────────
+        if len(items) > MAX_BATCH_SIZE:
+            raise ValueError(
+                f"Batch too large: {len(items)} items (max {MAX_BATCH_SIZE})"
+            )
+
+        # ── Hard limit: total memory count ────────────────────────
+        current = self._active_count()
+        if current + len(items) > HARD_MAX_TOTAL_MEMORIES:
+            room = max(0, HARD_MAX_TOTAL_MEMORIES - current)
+            raise ValueError(
+                f"Vault full: {current} active memories + {len(items)} new "
+                f"exceeds hard limit of {HARD_MAX_TOTAL_MEMORIES:,}. "
+                f"Room for {room} more."
+            )
+
         # Validate all items up front before writing anything.
         prepared: List[Memory] = []
         for item in items:
             text = (item.get("text") or "").strip()
             if not text:
                 raise ValueError("Memory text must not be empty")
+            if len(text) > MAX_MEMORY_TEXT_LENGTH:
+                raise ValueError(
+                    f"Memory text too long: {len(text)} chars "
+                    f"(max {MAX_MEMORY_TEXT_LENGTH})"
+                )
+            tags = item.get("tags") or []
+            if len(tags) > MAX_TAGS_PER_MEMORY:
+                raise ValueError(
+                    f"Too many tags: {len(tags)} (max {MAX_TAGS_PER_MEMORY})"
+                )
             pii = check_pii(text)
             if pii:
                 raise ValueError(f"PII detected - memory blocked: {'; '.join(pii)}")
@@ -115,7 +148,7 @@ class VaultStore:
                 category=(item.get("category") or "other").lower(),
                 tier=(item.get("tier") or "canon").lower(),
                 topic_id=item.get("topic_id"),
-                tags=item.get("tags") or [],
+                tags=tags,
                 created_at=_now_ct(),
                 source=item.get("source") or "manual",
             )
@@ -148,11 +181,30 @@ class VaultStore:
     ) -> Memory:
         """Create and persist a new memory.  Returns the Memory object.
 
-        Validates PII.  Raises ValueError on PII detection.
+        Validates PII, text length, tag count, and total-memory ceiling.
+        Raises ValueError on any violation.
         """
         text = text.strip()
         if not text:
             raise ValueError("Memory text must not be empty")
+        if len(text) > MAX_MEMORY_TEXT_LENGTH:
+            raise ValueError(
+                f"Memory text too long: {len(text)} chars "
+                f"(max {MAX_MEMORY_TEXT_LENGTH})"
+            )
+        if tags and len(tags) > MAX_TAGS_PER_MEMORY:
+            raise ValueError(
+                f"Too many tags: {len(tags)} (max {MAX_TAGS_PER_MEMORY})"
+            )
+
+        # ── Hard limit: total memory count ────────────────────────
+        current = self._active_count()
+        if current >= HARD_MAX_TOTAL_MEMORIES:
+            raise ValueError(
+                f"Vault full: {current:,} active memories "
+                f"(hard limit {HARD_MAX_TOTAL_MEMORIES:,}). "
+                "Delete or compact before adding more."
+            )
 
         pii = check_pii(text)
         if pii:
@@ -194,9 +246,18 @@ class VaultStore:
             text = text.strip()
             if not text:
                 raise ValueError("Memory text must not be empty")
+            if len(text) > MAX_MEMORY_TEXT_LENGTH:
+                raise ValueError(
+                    f"Memory text too long: {len(text)} chars "
+                    f"(max {MAX_MEMORY_TEXT_LENGTH})"
+                )
             pii = check_pii(text)
             if pii:
                 raise ValueError(f"PII detected: {'; '.join(pii)}")
+        if tags is not None and len(tags) > MAX_TAGS_PER_MEMORY:
+            raise ValueError(
+                f"Too many tags: {len(tags)} (max {MAX_TAGS_PER_MEMORY})"
+            )
 
         new_version = Memory(
             id=current.id,

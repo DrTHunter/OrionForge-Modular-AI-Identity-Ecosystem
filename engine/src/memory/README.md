@@ -160,3 +160,73 @@ memory:
   max_items: 20
   similarity_threshold: 0.85
 ```
+
+---
+
+## Performance & Hard Limits
+
+### FAISS IndexFlatIP — Accuracy & Speed
+
+The vault uses `faiss.IndexFlatIP` (flat inner-product / cosine similarity). This is a **brute-force exact-search** index — every vector is compared against every query, which means:
+
+- **Accuracy: 100%** — no approximation, no missed results, no training needed
+- **Zero index-build overhead** — vectors are just appended to a flat matrix
+- **Trade-off:** Linear scan means search time grows with vault size. For vaults under ~50K memories this is negligible.
+
+### Benchmark Estimates (768-dim, all-mpnet-base-v2)
+
+| Operation | @ 1K memories | @ 5K memories | @ 10K memories | @ 25K memories |
+|-----------|---------------|---------------|----------------|----------------|
+| **Semantic search** (top-10) | < 1 ms | 1–3 ms | 3–8 ms | 5–15 ms |
+| **Add single vector** | < 1 ms | < 1 ms | < 1 ms | < 1 ms |
+| **Load cached index** (from `.faiss` file) | < 0.1 s | 0.2–0.5 s | 0.4–0.8 s | 1–2 s |
+| **Full rebuild** (embed + index all) | 3–8 s | 15–40 s | 30–80 s | 75–200 s |
+| **JSONL parse** (vault.jsonl read_all) | < 10 ms | 30–60 ms | 60–120 ms | 150–350 ms |
+
+> Full rebuild only happens when the cached `.faiss` index file is missing or corrupted. Normal startup loads from cache in 1–2 s even at 25K.
+
+### Memory & Disk Footprint
+
+Each memory produces one 768-dimensional float32 vector (3,072 bytes) plus a JSONL text line (~200–500 bytes average).
+
+| Vault Size | FAISS Index (RAM) | FAISS Index (Disk) | vault.jsonl (Disk) | Total Disk |
+|------------|-------------------|--------------------|--------------------|------------|
+| 1,000 | ~3 MB | ~3 MB | ~0.4 MB | ~3.5 MB |
+| 5,000 | ~15 MB | ~15 MB | ~2 MB | ~17 MB |
+| 10,000 | ~30 MB | ~30 MB | ~4 MB | ~34 MB |
+| 25,000 | ~75 MB | ~75 MB | ~10 MB | ~85 MB |
+
+The SentenceTransformer model (`all-mpnet-base-v2`) adds ~420 MB to RAM on first load and is shared across vault + notes indexes.
+
+### Hard Limits (Enforced — Cannot Be Bypassed)
+
+These are immutable ceilings defined in `types.py`. The editable profile values (soft limit) can be **lower** than these but **never higher**.
+
+| Limit | Value | Rationale |
+|-------|-------|-----------|
+| **Single memory text** | 1,200 characters (~300 words) | A memory is a concise fact/insight, not an essay. Keeps embeddings focused. |
+| **Total active memories** | 25,000 | IndexFlatIP performance stays fast; ~85 MB disk. Beyond this, would need IndexIVFFlat. |
+| **Tags per memory** | 10 | Prevents tag-spam abuse. |
+| **Batch size (add_many)** | 50 per call | Prevents bulk-flooding the vault in a single API call. |
+| **Max pinned memories** | 100 | Pinned memories bypass decay; cap prevents gaming the system. |
+
+### Soft Limit (Editable via UI)
+
+The **Max Limit** field on the Vault page controls `retention_policy.max_total_memories` in `config/memory_profile.json`. This is the operational ceiling — the pruning system activates when the vault exceeds this number. It can be set anywhere from 0 (unlimited) to 25,000 (the hard ceiling).
+
+Default: **25,000**
+
+### Capacity Planning
+
+| Memories/day | Days to 10K | Days to 20K | Days to 25K | Years to 25K |
+|--------------|-------------|-------------|-------------|--------------|
+| 5 | 2,000 | 4,000 | 5,000 | **13.7 years** |
+| 10 | 1,000 | 2,000 | 2,500 | **6.8 years** |
+| 20 | 500 | 1,000 | 1,250 | **3.4 years** |
+| 50 (aggressive) | 200 | 400 | 500 | **1.4 years** |
+
+At a typical rate of 10 memories/day, it takes **~5.5 years to reach 20,000** and **~6.8 years to reach the 25,000 hard cap**.
+
+### Future Upgrade Path: IndexIVFFlat
+
+If the vault ever needs to scale beyond 50K memories, FAISS supports `IndexIVFFlat` — a clustered partitioning index that uses K-means to group vectors into cells, then only searches the nearest `nprobe` cells. This trades a small amount of accuracy (~95–98% recall at nprobe=10) for dramatically faster search at large scale. The current IndexFlatIP architecture could be swapped in `faiss_memory.py` with minimal changes.
