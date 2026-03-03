@@ -691,15 +691,24 @@ async def page_profiles(request: Request):
     })
 
 @app.get("/vault", response_class=HTMLResponse)
-async def page_vault(request: Request, q: str = "", scope: str = "", category: str = ""):
+async def page_vault(request: Request, q: str = "", scope: str = "", category: str = "", sort: str = "newest"):
     fm = _get_faiss_memory()
     memories, scopes, categories = [], [], []
-    stats = {"active_count": 0, "max_active": 500, "utilization_pct": 0,
+    # Load max_total_memories from memory profile (0 = unlimited)
+    mp = _load_memory_profile()
+    max_total = mp.get("retention_policy", {}).get("max_total_memories", 5000)
+    stats = {"active_count": 0, "max_active": max_total, "utilization_pct": 0,
              "by_scope": {}, "raw_lines": 0, "compactable_lines": 0,
              "bloat_ratio": "1.0x", "deleted_count": 0}
     if fm:
         try:
-            stats = fm.stats()
+            raw_stats = fm.stats()
+            raw_stats["max_active"] = max_total
+            if max_total and max_total > 0:
+                raw_stats["utilization_pct"] = min(100, round(raw_stats.get("active_count", 0) / max_total * 100))
+            else:
+                raw_stats["utilization_pct"] = 0
+            stats = raw_stats
         except Exception:
             pass
         if q:
@@ -709,6 +718,36 @@ async def page_vault(request: Request, q: str = "", scope: str = "", category: s
             if category:
                 all_mems = [m for m in all_mems if getattr(m, "category", "") == category]
             memories = [m.__dict__ if hasattr(m, "__dict__") else m for m in all_mems]
+
+        # ── Sort memories ──────────────────────────────────────────
+        def _sort_key(m):
+            """Extract sort key from a Memory object or dict."""
+            if isinstance(m, dict):
+                get = m.get
+            else:
+                get = lambda k, d="": getattr(m, k, d)
+            if sort == "oldest":
+                return get("created_at", "")
+            elif sort == "scope":
+                return (get("scope", ""), get("created_at", ""))
+            elif sort == "category":
+                return (get("category", ""), get("created_at", ""))
+            elif sort == "tier":
+                return (get("tier", "canon"), get("created_at", ""))
+            elif sort == "alpha":
+                return (get("text", "") or "").lower()
+            elif sort == "source":
+                return (get("source", "") or "", get("created_at", ""))
+            elif sort == "updated":
+                return get("updated_at", "") or get("created_at", "") or ""
+            else:  # newest (default)
+                return get("created_at", "")
+
+        reverse = sort not in ("oldest", "alpha")  # ascending for oldest & alpha
+        if sort == "updated":
+            reverse = True
+        memories = sorted(memories, key=_sort_key, reverse=reverse)
+
         all_raw = fm.list_all()
         scopes = sorted({getattr(m, "scope", "") for m in all_raw} - {""})
         categories = sorted({getattr(m, "category", "") for m in all_raw} - {""})
@@ -718,6 +757,7 @@ async def page_vault(request: Request, q: str = "", scope: str = "", category: s
         "memories": memories, "stats": stats,
         "scopes": scopes, "categories": categories,
         "search_query": q, "current_scope": scope, "current_category": category,
+        "current_sort": sort,
     })
 
 @app.get("/knowledge", response_class=HTMLResponse)

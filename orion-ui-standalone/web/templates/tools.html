@@ -2702,9 +2702,13 @@
         <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:0.75rem;margin-top:1rem;">
           <div class="config-field">
             <div class="config-label">Max Total Memories</div>
-            <input type="number" class="config-input" id="mp-retention-max_total_memories"
-                   value="{{ memory_profile.get('retention_policy', {}).get('max_total_memories', 5000) }}"
-                   min="100" max="100000" step="100">
+            <select class="config-input" id="mp-retention-max_total_memories">
+              {% set _mtm = memory_profile.get('retention_policy', {}).get('max_total_memories', 5000) %}
+              <option value="0" {% if _mtm == 0 %}selected{% endif %}>♾️ Unlimited</option>
+              {% for v in [500, 1000, 2000, 5000, 10000, 25000, 50000, 100000] %}
+              <option value="{{ v }}" {% if _mtm == v %}selected{% endif %}>{{ "{:,}".format(v) }}</option>
+              {% endfor %}
+            </select>
           </div>
           <div class="config-field">
             <div class="config-label">Decay Half-Life (days)</div>
@@ -4323,7 +4327,7 @@
       },
 
       retention_policy: {
-        max_total_memories: g('mp-retention-max_total_memories'),
+        max_total_memories: parseInt(document.getElementById('mp-retention-max_total_memories').value) || 0,
         decay_strategy: g('mp-retention-decay_strategy'),
         decay_half_life_days: g('mp-retention-decay_half_life_days'),
         protect_high_importance: g('mp-retention-protect_high_importance'),
