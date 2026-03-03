@@ -29,6 +29,8 @@ Covers:
   - Memory strip-tags stress (100 mixed-tag strings)
   - Model router classification stress (500 classify_task ops, resolve_model_for_task,
     tier escalation, ModelRouterTool.execute 100 rapid calls)
+  - Router presets CRUD stress (30 rapid save/list/load/delete cycles,
+    filename sanitisation, overwrite, concurrent-ish access)
   - AGI loop state stress (500 tick logs, state transitions, 200 tool executions,
     50 pause/resume cycles, double-pause/double-resume edge cases)
 """
@@ -1326,7 +1328,133 @@ def test_model_router_classify_stress():
 
 
 # ═════════════════════════════════════════════
-# 24. AGI Loop state stress
+# 23b. Router Presets CRUD stress
+# ═════════════════════════════════════════════
+def test_router_presets_stress():
+    """Rapid-fire preset save/list/load/delete cycles via direct API helpers."""
+    print("\n=== STRESS: Router Presets CRUD (30 cycles) ===")
+    from pathlib import Path
+
+    tmp = tempfile.mkdtemp()
+    try:
+        import web.app as _app_mod
+
+        # Redirect presets dir to temp isolation
+        orig_presets_dir = _app_mod._ROUTER_PRESETS_DIR
+        tmp_presets = Path(tmp) / "router_presets"
+        _app_mod._ROUTER_PRESETS_DIR = tmp_presets
+
+        from web.app import (
+            _ensure_router_presets_dir,
+            _list_router_presets,
+        )
+
+        _ensure_router_presets_dir()
+        check("presets dir created", tmp_presets.exists())
+
+        # ── Rapid save — 30 presets ──
+        t0 = time.time()
+        for i in range(30):
+            payload = {
+                "name": f"Stress Preset {i}",
+                "description": f"Preset number {i}",
+                "created": f"2026-03-03T00:00:{i:02d}",
+                "config": {
+                    "tiers": [{"id": f"t{i % 4}", "label": f"tier_{i}", "enabled": True}],
+                    "task_tier_map": {"coding": f"tier_{i}", "general": "__auto__"},
+                },
+            }
+            import re as _re
+            safe = _re.sub(r'[^\w\-. ]', '', payload["name"]).strip().replace(' ', '_')[:80] or "preset"
+            dest = tmp_presets / f"{safe}.json"
+            dest.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        elapsed = time.time() - t0
+        check(f"30 saves in {elapsed:.3f}s", elapsed < 2.0)
+
+        # ── List all ──
+        presets = _list_router_presets()
+        check("30 presets listed", len(presets) == 30, f"got {len(presets)}")
+
+        # Each entry has required fields
+        for p in presets:
+            ok = all(k in p for k in ("name", "description", "filename", "created"))
+            if not ok:
+                check(f"preset entry fields", False, f"missing key in {p}")
+                break
+        else:
+            check("all 30 entries have required fields", True)
+
+        # ── Rapid load — read all 30 files ──
+        t0 = time.time()
+        for p in presets:
+            f = tmp_presets / f"{p['filename']}.json"
+            data = json.loads(f.read_text(encoding="utf-8"))
+            if "config" not in data:
+                check(f"load {p['filename']} has config", False)
+                break
+        else:
+            elapsed = time.time() - t0
+            check(f"30 loads in {elapsed:.3f}s", elapsed < 2.0)
+
+        # ── Name sanitisation stress ──
+        evil_names = [
+            "../../etc/passwd",
+            "<script>alert(1)</script>",
+            "A" * 200,  # over 80 char limit
+            "   spaces   ",
+            "UPPER and lower",
+            "slashes/and\\backslashes",
+            "dots...lots...of...them",
+            "",  # empty
+        ]
+        for name in evil_names:
+            safe = _re.sub(r'[^\w\-. ]', '', name).strip().replace(' ', '_')[:80] or "preset"
+            check(f"sanitise '{name[:20]}' → no slash", "/" not in safe and "\\" not in safe)
+            check(f"sanitise '{name[:20]}' → <=80 chars", len(safe) <= 80)
+            check(f"sanitise '{name[:20]}' → not empty", len(safe) > 0)
+
+        # ── Overwrite stress — write same name 10 times ──
+        for i in range(10):
+            payload = {
+                "name": "Overwrite_Me",
+                "description": f"Version {i}",
+                "created": f"2026-03-03T00:00:00",
+                "config": {"tiers": [], "task_tier_map": {"general": f"v{i}"}},
+            }
+            dest = tmp_presets / "Overwrite_Me.json"
+            dest.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        final = json.loads(dest.read_text(encoding="utf-8"))
+        check("overwrite final version", final["description"] == "Version 9")
+        check("overwrite final config", final["config"]["task_tier_map"]["general"] == "v9")
+
+        # ── Delete stress — remove all 30 + the overwritten one ──
+        t0 = time.time()
+        for f in list(tmp_presets.glob("*.json")):
+            f.unlink()
+        elapsed = time.time() - t0
+        remaining = _list_router_presets()
+        check(f"all deleted in {elapsed:.3f}s", len(remaining) == 0)
+
+        # ── Empty dir listing ──
+        check("empty list returns []", _list_router_presets() == [])
+
+        # ── Corrupt file handling — _list_router_presets skips bad files ──
+        (tmp_presets / "corrupt.json").write_text("{invalid json", encoding="utf-8")
+        (tmp_presets / "good.json").write_text(json.dumps({
+            "name": "Good One", "description": "ok", "created": "2026-01-01", "config": {},
+        }), encoding="utf-8")
+        presets_mixed = _list_router_presets()
+        check("corrupt file skipped, good file listed", len(presets_mixed) == 1)
+        check("good file name correct", presets_mixed[0]["name"] == "Good One")
+
+        _app_mod._ROUTER_PRESETS_DIR = orig_presets_dir
+
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ═════════════════════════════════════════════
+# 25. AGI Loop state stress
 # ═════════════════════════════════════════════
 def test_agi_loop_state_stress():
     print("\n=== STRESS: AGI Loop State (rapid ticks + transitions) ===")
@@ -1470,6 +1598,7 @@ if __name__ == "__main__":
     test_tool_registry_stress()
     test_strip_memory_tags_stress()
     test_model_router_classify_stress()
+    test_router_presets_stress()
     test_agi_loop_state_stress()
 
     print(f"\n{'='*40}")

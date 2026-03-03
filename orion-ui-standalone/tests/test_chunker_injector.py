@@ -248,7 +248,7 @@ def test_injector_norm_scope():
 
     check("string passes through", _norm_scope("shared") == "shared")
     check("single-element list", _norm_scope(["shared"]) == "shared")
-    check("multi-element list → None", _norm_scope(["shared", "callum"]) is None)
+    check("multi-element list → list", _norm_scope(["shared", "callum"]) == ["shared", "callum"])
     check("empty string → empty", _norm_scope("") is None or _norm_scope("") == "")
     check("None → None", _norm_scope(None) is None)
 

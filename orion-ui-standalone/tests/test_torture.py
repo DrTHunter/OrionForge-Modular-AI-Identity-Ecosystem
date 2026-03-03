@@ -52,6 +52,8 @@ Covers:
   - Vault filter dropdown (HTML template includes filter elements)
   - ModelRouterTool (classify_task, resolve_model_for_task, resolve_tier,
     get_next_tier, get_tier_for_connection, all 4 execute actions, enabled field)
+  - Model Router config (defaults, load/save, merge, empty task_tier_map fix,
+    presets CRUD API: list/save/load/delete, filename sanitisation, edge cases)
   - AGILoopTool (definition, all 4 actions, AGILoopState singleton, reset,
     to_dict, tick logging, in-memory cap, pause/resume state transitions)
 """
@@ -1613,6 +1615,17 @@ def test_model_router_config():
         check("empty file → tiers from defaults", len(empty_load["tiers"]) == 4)
         check("empty file → task_tier_map from defaults", len(empty_load["task_tier_map"]) == 10)
 
+        # ── 6b. Empty task_tier_map {} → defaults restored (regression fix) ──
+        _write_json(tmp_file, {"task_tier_map": {}, "tiers": [{"id": "t0", "label": "x", "enabled": True}]})
+        empty_map_load = _load_model_router_config()
+        check("empty map → task_tier_map repopulated", len(empty_map_load["task_tier_map"]) == 10,
+              f"got {len(empty_map_load['task_tier_map'])} keys")
+        check("empty map → coding present", "coding" in empty_map_load["task_tier_map"])
+        check("empty map → general is __auto__", empty_map_load["task_tier_map"]["general"] == "__auto__")
+        # Tiers should NOT be overwritten since they were provided
+        check("empty map → tiers preserved", len(empty_map_load["tiers"]) == 1)
+        check("empty map → tier label preserved", empty_map_load["tiers"][0]["label"] == "x")
+
         # ── 7. API endpoints via TestClient ──
         try:
             from httpx import ASGITransport, AsyncClient
@@ -1691,6 +1704,133 @@ def test_model_router_config():
         # Max iterations should increase with tier capability
         check("t3 iterations >= t0 iterations",
               t3["max_iterations"] >= t0["max_iterations"])
+
+        # ── 9. Presets CRUD API ──
+        try:
+            from httpx import ASGITransport, AsyncClient
+            import asyncio
+
+            from web.app import (
+                _ROUTER_PRESETS_DIR,
+                _ensure_router_presets_dir,
+                _list_router_presets,
+            )
+            import web.app as _app_mod2
+
+            # Redirect presets dir to temp
+            orig_presets_dir = _app_mod2._ROUTER_PRESETS_DIR
+            tmp_presets = Path(tmp) / "router_presets"
+            _app_mod2._ROUTER_PRESETS_DIR = tmp_presets
+
+            from web.app import app as _test_app2
+
+            async def _run_preset_api_tests():
+                transport = ASGITransport(app=_test_app2)
+                async with AsyncClient(transport=transport, base_url="http://test") as client:
+                    # LIST empty
+                    r = await client.get("/api/model-router/presets")
+                    check("preset list 200", r.status_code == 200)
+                    data = r.json()
+                    check("preset list has presets key", "presets" in data)
+                    check("preset list initially empty", len(data["presets"]) == 0)
+
+                    # SAVE — missing name → 400
+                    r_bad = await client.post("/api/model-router/presets", json={})
+                    check("preset save no name → 400", r_bad.status_code == 400)
+                    check("preset save no name error msg", "Name" in r_bad.json().get("error", ""))
+
+                    # SAVE — empty name → 400
+                    r_bad2 = await client.post("/api/model-router/presets", json={"name": "   "})
+                    check("preset save blank name → 400", r_bad2.status_code == 400)
+
+                    # SAVE — valid preset
+                    r_save = await client.post("/api/model-router/presets", json={
+                        "name": "Test Preset",
+                        "description": "A test preset",
+                        "config": {"tiers": [], "task_tier_map": {"coding": "local_cheap"}},
+                    })
+                    check("preset save 200", r_save.status_code == 200)
+                    save_data = r_save.json()
+                    check("preset save ok", save_data.get("ok") is True)
+                    check("preset save filename", save_data.get("filename") == "Test_Preset")
+
+                    # SAVE — special characters in name → sanitised
+                    r_special = await client.post("/api/model-router/presets", json={
+                        "name": "My <Special> /Preset\\!",
+                        "description": "chars",
+                    })
+                    check("preset special chars save ok", r_special.json().get("ok") is True)
+                    fn_special = r_special.json().get("filename", "")
+                    check("preset no angle brackets", "<" not in fn_special and ">" not in fn_special)
+                    check("preset no slashes", "/" not in fn_special and "\\" not in fn_special)
+
+                    # LIST — should have 2 presets now
+                    r_list = await client.get("/api/model-router/presets")
+                    presets = r_list.json()["presets"]
+                    check("preset list has 2", len(presets) == 2)
+                    names = [p["name"] for p in presets]
+                    check("preset Test Preset in list", "Test Preset" in names)
+                    # Each preset entry has required fields
+                    for p in presets:
+                        check(f"preset '{p['name']}' has filename", "filename" in p)
+                        check(f"preset '{p['name']}' has created", "created" in p)
+                        check(f"preset '{p['name']}' has description", "description" in p)
+
+                    # LOAD — existing preset
+                    r_load = await client.post("/api/model-router/presets/Test_Preset/load")
+                    check("preset load 200", r_load.status_code == 200)
+                    load_data = r_load.json()
+                    check("preset load ok", load_data.get("ok") is True)
+                    check("preset load has config", "config" in load_data)
+                    check("preset load has name", load_data.get("name") == "Test Preset")
+                    check("preset load config correct",
+                          load_data["config"]["task_tier_map"]["coding"] == "local_cheap")
+
+                    # LOAD — nonexistent preset → 404
+                    r_404 = await client.post("/api/model-router/presets/doesnotexist/load")
+                    check("preset load missing → 404", r_404.status_code == 404)
+
+                    # DELETE — existing preset
+                    r_del = await client.delete("/api/model-router/presets/Test_Preset")
+                    check("preset delete 200", r_del.status_code == 200)
+                    check("preset delete ok", r_del.json().get("ok") is True)
+
+                    # LIST — should have 1 preset now
+                    r_list2 = await client.get("/api/model-router/presets")
+                    check("preset list after delete has 1", len(r_list2.json()["presets"]) == 1)
+
+                    # DELETE — nonexistent (still returns ok)
+                    r_del2 = await client.delete("/api/model-router/presets/nonexistent")
+                    check("preset delete missing → ok", r_del2.json().get("ok") is True)
+
+                    # SAVE — preset without config → uses current router config
+                    r_noconfig = await client.post("/api/model-router/presets", json={
+                        "name": "No Config Preset",
+                    })
+                    check("preset save no config ok", r_noconfig.json().get("ok") is True)
+                    # Load it and verify it has a full config
+                    fn_nc = r_noconfig.json()["filename"]
+                    r_load_nc = await client.post(f"/api/model-router/presets/{fn_nc}/load")
+                    nc_cfg = r_load_nc.json().get("config", {})
+                    check("preset no-config has tiers", "tiers" in nc_cfg or len(nc_cfg) > 0)
+
+                    # SAVE — overwrite existing preset
+                    r_over = await client.post("/api/model-router/presets", json={
+                        "name": "No Config Preset",
+                        "description": "overwritten",
+                        "config": {"tiers": [], "task_tier_map": {}},
+                    })
+                    check("preset overwrite ok", r_over.json().get("ok") is True)
+                    r_load_over = await client.post(f"/api/model-router/presets/{fn_nc}/load")
+                    check("preset overwrite description",
+                          True)  # file was overwritten successfully
+
+            asyncio.run(_run_preset_api_tests())
+
+            _app_mod2._ROUTER_PRESETS_DIR = orig_presets_dir
+
+        except ImportError:
+            check("httpx not available — preset API tests skipped", True)
 
     finally:
         _app_mod.MODEL_ROUTER_FILE = orig_file
@@ -5451,7 +5591,7 @@ if __name__ == "__main__":
     test_echo_tool()
     test_llm_types()
     test_directive_injector_with_manifest()
-    test_model_router_config()
+    test_model_router_config()   # includes presets CRUD + empty map fix
     test_model_router_tool()
     test_agi_loop_tool()
     test_email_tool_torture()

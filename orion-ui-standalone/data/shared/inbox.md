@@ -98,3 +98,14 @@ Other task
 
 *id: 0badef87e010 — status: pending*
 
+
+---
+
+## 2026-03-03 19:26 UTC | operator | message
+
+**Subject:** Test from API
+
+This is a test message from the API.
+
+*id: c6dbc2cdbbee — status: unread*
+
