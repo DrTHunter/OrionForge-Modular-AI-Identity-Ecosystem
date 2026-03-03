@@ -1,97 +1,35 @@
-# tools/ — External Services & Docker Containers
+# src/tools/
 
-This folder contains setup files, configs, and documentation for each
-**external service** that the agent-runtime tools depend on.
+Tool implementations for the OrionForge agent runtime. Each tool is a class with two methods:
 
-> **Note:** The tool *logic* (Python classes, dispatch, definitions) lives in
-> `src/tools/`. This `tools/` folder is only for the external services,
-> Docker containers, and helper scripts those tools connect to.
+- `definition()` — returns JSON Schema for the LLM to understand the tool
+- `execute(arguments)` — runs the tool and returns a string result
 
----
+## Available Tools
 
-## Overview
+| Tool | File | Description |
+|------|------|-------------|
+| `echo` | `echo.py` | Simple echo for testing. Returns the input message. |
+| `continuation_update` | `continuation_update.py` | Per-agent status document. `append` adds text, `replace_section` updates a `## Section` by heading. Backed by `data/<agent>/continuation.md`. |
+| `memory` | `memory_tool.py` | Read/write durable memories. 13 actions: `add`, `bulk_add`, `search`, `recall`, `update`, `delete`, `bulk_delete`, `list_scopes`, `list_categories`, `stats`, `suggest_categories`, `set_category_mode`, `set_suggested_categories`. Backed by `data/memory/vault.jsonl` with FAISS semantic search. |
+| `directives` | `directives_tool.py` | Read-only access to user-authored directives. 5 actions: `search`, `list`, `get`, `manifest`, `changes`. Reads from `directives/*.md` and `directives/manifest.json`. |
+| `web_search` | `web_search.py` | Web search via SearXNG meta-search engine + page scraping. Returns search results with snippets and optionally fetches full page content. |
+| `email` | `email_tool.py` | Email sending via SMTP. Actions: `send`, `add_account`, `remove_account`, `list_accounts`. Supports multiple accounts with password masking. |
+| `inbox` | `inbox.py` | Email inbox tool. 4 actions: `check`, `read`, `search`, `summary`. Reads from `data/shared/inbox.jsonl`. |
+| `cost_tracker` | `cost_tracker.py` | Cost tracking tool. Actions: `cost_summary`, `cost_log`, `session` + pricing CRUD actions. Reads from the metering system. |
 
-| Folder | Service | Type | Port | Required By |
-|--------|---------|------|------|-------------|
-| [`searxng/`](searxng/) | SearXNG meta-search engine | Docker | 3000 | `web_search` tool |
-| [`openedai_speech/`](openedai_speech/) | openedai-speech (TTS) | Docker (GPU) | 5050 | Agent voice output |
-| [`whisper_stt/`](whisper_stt/) | faster-whisper-server (STT) | Docker | 8060 | Voice transcription |
-| [`email_service/`](email_service/) | SMTP email relay | Python (FastAPI) | 8000 | `email` tool (optional) |
+## Registry
 
----
+| File | Purpose |
+|------|---------|
+| `registry.py` | Tool registry — discovers and loads tool classes by name. Handles resolution, dispatch, listing, and error paths. Used by the chat loop to instantiate tools from profile `allowed_tools`. |
 
-## Quick Start — All Docker Services
+## Adding a New Tool
 
-Start all Docker containers at once:
+1. Create `src/tools/<name>.py` with a class exposing `definition()` and `execute(arguments)`
+2. Add `<name>` to `allowed_tools` in the relevant profile YAMLs
+3. The registry auto-discovers the tool class on next chat
 
-```bash
-cd tools/searxng   && docker-compose up -d && cd ../..
-cd tools/openedai_speech && docker-compose up -d && cd ../..
-cd tools/whisper_stt && docker-compose up -d && cd ../..
-```
+## Dynamic Schema
 
-Or pull all images first:
-
-```bash
-docker pull searxng/searxng:latest
-docker pull ghcr.io/matatonic/openedai-speech:latest
-docker pull fedirz/faster-whisper-server:latest-cpu
-```
-
----
-
-## Built-in Tools (No External Service Needed)
-
-These tools are pure Python and need no Docker container or external service:
-
-| Tool | Description |
-|------|-------------|
-| `echo` | Simple echo for testing |
-| `continuation_update` | Post continuation updates |
-| `memory` | Read/write agent memory vault |
-| `directives` | Manage runtime directives |
-
----
-
-## Architecture
-
-```
-agent-runtime/
-├── src/tools/           # Tool logic (Python classes)
-│   └── ...              # Built-in tools
-│
-├── tools/               # ← YOU ARE HERE — external service files
-│   ├── searxng/         # Docker: SearXNG search engine
-│   ├── openedai_speech/  # Docker: openedai-speech TTS (Piper CPU + XTTS GPU)
-│   ├── whisper_stt/     # Docker: faster-whisper STT
-│   └── email_service/   # Python: FastAPI email relay
-│
-├── config/
-│   ├── connections.json # Connection URLs for TTS, STT, LLMs
-│   └── settings.json    # Tool config, email accounts, etc.
-│
-└── web/
-    └── app.py           # Dashboard — proxies TTS/STT requests
-```
-
----
-
-## Managing Connections
-
-Docker service URLs are stored in `config/connections.json` and can be
-edited from **Dashboard → Connections**.
-
-| Connection ID | Default URL | Service |
-|---------------|-------------|---------|
-| `edge-tts-local` | `http://localhost:5050` | openedai-speech |
-| `whisper-stt-local` | `http://localhost:8060` | faster-whisper |
-
-SearXNG URL is configured per-tool in **Dashboard → Tools → web_search**.
-
----
-
-## Security
-
-- `email_service/email.env` is excluded from version control (`.gitignore`).
-- Never commit SMTP passwords, API keys, or secrets.
-- Use app-specific passwords for Gmail (requires 2FA).
+The `memory` tool definition dynamically includes current scopes.  Categories and category mode (open/strict) are pulled from the live memory profile, so the tool schema always reflects the current configuration.

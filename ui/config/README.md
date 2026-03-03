@@ -5,12 +5,32 @@ Configuration files for the runtime and web dashboard.
 ## Files
 
 | File | Purpose |
-|------|--------|
+|------|---------|
 | `config.example.yaml` | Example YAML config structure (default profile, data dir, global policy overrides) |
-| `state.example.json` | Example state file format |
-| `settings.json` | Web dashboard settings — timezone, display preferences, agent avatars, per-agent configs (model, voice, display name, knowledge attachments), vault limits, and tool config. Auto-created on first save. |
-| `connections.json` | External service connection config (LLM providers, TTS, STT endpoints). Managed via Dashboard → Connections. |
+| `state.example.json` | Example state file format (window size, message array) |
+| `connections.json` | LLM provider connections — API endpoints, keys, enabled models. Managed via Dashboard → Settings. |
+| `settings.json` | UI settings — timezone, chat background, agent avatars, per-agent display/voice/model config. Auto-created on first save. |
+| `about.json` | About page content (editable from the web UI) |
+| `agi_loop.json` | AGI loop configuration — interval (30 min default), ticks/loop, steps/tick, budget caps ($20/mo hard, $16 soft, $2/session, $0.10/tick), tiered routing |
+| `identity_profile.json` | FAISS identity indexing profile — chunk size (400 tokens), overlap (80), retrieval top_k, merge strategy for soul script indexing |
+| `memory_profile.json` | Memory vault settings — retention policy (max memories, decay strategy, max pinned), category policy (open/strict mode, suggested categories), safety policy (custom hard rules) |
+| `pricing.yaml` | LLM Pricing Registry — USD per 1M tokens across 4 dimensions (input, cached_input, output, reasoning). ~577 lines covering all major providers. |
 
-These are reference/runtime files. Per-agent configuration lives in:
-- `profiles/` — per-agent YAML configs
-- `data/` — runtime state, chats, memory vault, FAISS indexes (auto-generated)
+## Saved Profiles
+
+```
+saved_profiles/
+├── identity/
+│   └── __default__.json     # Default identity FAISS profile
+└── memory/
+    ├── __default__.json     # Default memory profile
+    ├── Test.json            # Named memory profile snapshot
+    └── test_234.json        # Named memory profile snapshot
+```
+
+Named profiles allow saving and loading different memory/identity configurations via the Tools page.
+
+## Related Directories
+
+- `profiles/` — per-agent YAML configs (provider, model, allowed tools, parameters)
+- `data/` — runtime state (chats, memory vault, FAISS indexes, uploads, knowledge notes)
