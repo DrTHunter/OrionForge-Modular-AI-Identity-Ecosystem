@@ -35,6 +35,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
 from web.image_gen import _generate_image
+from src.memory.types import VALID_SCOPES, VALID_CATEGORIES
 
 # ── Project paths ────────────────────────────────────────────────
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -824,15 +825,24 @@ _TOOL_CATALOGUE = [
     },
     {
         "name": "memory",
+        "display_name": "Memory Tool",
         "icon": "🧠",
         "icon_bg": "rgba(129,140,248,0.12)",
         "icon_color": "#818cf8",
-        "description": "Read from and write to the agent's persistent FAISS-backed memory vault. Supports search, add, and delete operations.",
-        "status": "planned",
+        "description": "Store, search, and manage durable memories in the FAISS-backed vault. Memories persist across sessions and are searchable by meaning via vector embeddings.",
+        "status": "ready",
         "parameters": [
-            {"name": "action", "type": "string", "required": True, "description": "Operation to perform", "enum": ["search", "add", "delete", "list"]},
-            {"name": "text", "type": "string", "required": False, "description": "Memory content or search query", "enum": []},
-            {"name": "category", "type": "string", "required": False, "description": "Memory category", "enum": ["bio", "preference", "project", "lore", "session", "meta", "health", "self", "other"]},
+            {"name": "action", "type": "string", "required": True, "description": "Operation to perform", "enum": ["add", "add_many", "remember", "search", "recall", "get", "update", "delete", "bulk_delete", "list", "stats", "compact", "rebuild_index"]},
+            {"name": "text", "type": "string", "required": False, "description": "Memory content (for add/remember/update)", "enum": []},
+            {"name": "query", "type": "string", "required": False, "description": "Search query text (for search action)", "enum": []},
+            {"name": "scope", "type": "string", "required": False, "description": "Memory scope — 'shared' for cross-agent memories, or an agent name for agent-specific memories", "enum": sorted(VALID_SCOPES)},
+            {"name": "category", "type": "string", "required": False, "description": "Memory category", "enum": sorted(VALID_CATEGORIES)[:5] + ["…"]},
+            {"name": "tags", "type": "array", "required": False, "description": "Optional tags for filtering", "enum": []},
+            {"name": "source", "type": "string", "required": False, "description": "Origin of the memory", "enum": ["chat", "manual", "tool", "operator", "promotion"]},
+            {"name": "memory_id", "type": "string", "required": False, "description": "Memory ID (for get/update/delete)", "enum": []},
+            {"name": "memory_ids", "type": "array", "required": False, "description": "List of memory IDs (for bulk_delete)", "enum": []},
+            {"name": "memories", "type": "array", "required": False, "description": "Array of memory objects (for add_many batch)", "enum": []},
+            {"name": "limit", "type": "integer", "required": False, "description": "Max results (default 10 for search, 20 for recall/list)", "enum": []},
         ],
     },
     {
@@ -1184,7 +1194,13 @@ _DEFAULT_PROFILE_STEM = "__default__"
 
 
 def _seed_default_profile(directory, loader_fn):
-    """Ensure a pinned __default__.json exists in *directory*."""
+    """Ensure a pinned __default__.json exists in *directory*.
+
+    If it already exists but is missing keys present in the
+    current live profile (e.g. ``category_policy`` added after
+    the initial seed), merge the new keys in so the default
+    stays in sync.
+    """
     default_path = directory / f"{_DEFAULT_PROFILE_STEM}.json"
     if not default_path.exists():
         data = loader_fn()
@@ -1192,6 +1208,22 @@ def _seed_default_profile(directory, loader_fn):
             data = {}
         data["_pinned"] = True
         default_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+    else:
+        # Upgrade: back-fill any top-level keys the live profile has
+        # that the saved default is missing.
+        live = loader_fn() or {}
+        try:
+            saved = json.loads(default_path.read_text(encoding="utf-8"))
+        except Exception:
+            saved = {}
+        changed = False
+        for key in live:
+            if key not in saved:
+                saved[key] = live[key]
+                changed = True
+        if changed:
+            saved["_pinned"] = True
+            default_path.write_text(json.dumps(saved, indent=2), encoding="utf-8")
 
 
 _seed_default_profile(_SAVED_IDENTITY_PROFILES_DIR, _load_identity_profile)

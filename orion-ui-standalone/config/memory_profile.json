@@ -4,6 +4,16 @@
   "version": "1.0.0",
   "description": "Balanced memory profile optimized for general-purpose agent conversations.",
   "author_id": "system",
+  "category_policy": {
+    "mode": "open",
+    "suggested_categories": [
+      "bio", "identity", "mission", "constraint", "governance",
+      "preference", "project", "goal", "health", "self_state",
+      "capability", "plan", "meta", "other",
+      "emotion", "relationship", "knowledge", "event", "reflection", "routine"
+    ],
+    "custom_categories": []
+  },
   "write_policy": {
     "auto_write_enabled": true,
     "importance_threshold": 0.65,

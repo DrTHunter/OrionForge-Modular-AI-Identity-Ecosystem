@@ -144,6 +144,33 @@
     padding: 0.0625rem 0.375rem; border-radius: 0.25rem;
     border: 1px solid rgba(99,102,241,0.2);
   }
+  .custom-chip { cursor: pointer; }
+  .custom-chip:hover { background: rgba(239,68,68,0.15); color: #fca5a5; border-color: rgba(239,68,68,0.3); }
+
+  /* ── Toggleable suggested category chips ──────────────────────── */
+  .suggested-chip {
+    cursor: pointer; user-select: none;
+    transition: border-color 0.15s, background 0.15s, color 0.15s;
+  }
+  .suggested-chip.on {
+    border-color: #6366f1; background: rgba(99,102,241,0.08); color: #a5b4fc;
+  }
+  .suggested-chip.off {
+    border-color: #2a2a3a; background: rgba(24,24,27,0.5); color: #52525b;
+  }
+  .suggested-chip:hover { border-color: rgba(99,102,241,0.35); }
+
+  /* ── Category mode selector cards ────────────────────────────── */
+  .catmode-card {
+    flex: 1; padding: 0.75rem 0.85rem; border-radius: 0.6rem; cursor: pointer;
+    background: rgba(24,24,27,0.5); border: 1px solid #2a2a3a;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .catmode-card:hover { border-color: rgba(99,102,241,0.35); }
+  .catmode-card.active { border-color: #6366f1; background: rgba(99,102,241,0.08); }
+  .catmode-title { font-size: 0.78rem; font-weight: 700; color: #e4e4e7; margin-bottom: 0.2rem; }
+  .catmode-desc  { font-size: 0.68rem; color: #71717a; line-height: 1.35; }
+  .catmode-card.active .catmode-title { color: #a5b4fc; }
 
   /* ── Action bar ───────────────────────────────────────────────── */
   .action-bar {
@@ -898,30 +925,84 @@
 
       {% elif tool.name == 'memory' %}
       <div class="about-text">
-        Read from and write to the agent&rsquo;s persistent FAISS-backed memory vault. Memories are embedded with <code>all-mpnet-base-v2</code> and stored in <code>vault.jsonl</code> for semantic retrieval.
+        Store, search, and manage durable memories in the FAISS-backed vault. Memories are embedded with <code>all-mpnet-base-v2</code> and persisted in <code>vault.jsonl</code>. All writes go to the vault first, then sync to the FAISS index automatically for semantic retrieval.
       </div>
-      <div class="about-sub">Commands</div>
+      <div class="about-sub">Actions &mdash; Write</div>
+      <div class="about-commands">
+        <div class="about-cmd">
+          <span class="about-cmd-name">add</span>
+          <span class="about-cmd-desc">Store a new memory. Requires <code>text</code>, <code>scope</code>, and <code>category</code>. Supports optional <code>tags</code>, <code>source</code>, <code>tier</code>, and <code>topic_id</code>.</span>
+        </div>
+        <div class="about-cmd">
+          <span class="about-cmd-name">add_many</span>
+          <span class="about-cmd-desc">Batch-store multiple memories in one call. Pass an array of memory objects in <code>memories</code>, each with <code>text</code>, <code>scope</code>, and <code>category</code>.</span>
+        </div>
+        <div class="about-cmd">
+          <span class="about-cmd-name">remember</span>
+          <span class="about-cmd-desc">Quick-store with sensible defaults (<code>scope=shared</code>, <code>category=other</code>). Only <code>text</code> is required.</span>
+        </div>
+        <div class="about-cmd">
+          <span class="about-cmd-name">update</span>
+          <span class="about-cmd-desc">Change <code>text</code>, <code>category</code>, or <code>tags</code> on an existing memory. Requires <code>memory_id</code>. Creates a new version.</span>
+        </div>
+      </div>
+      <div class="about-sub">Actions &mdash; Read</div>
       <div class="about-commands">
         <div class="about-cmd">
           <span class="about-cmd-name">search</span>
-          <span class="about-cmd-desc">Semantic search across all stored memories. Provide <code>text</code> as the query. Returns the top matching entries with similarity scores.</span>
+          <span class="about-cmd-desc">Semantic search &mdash; find memories by meaning via FAISS. Requires <code>query</code>. Optional <code>scope</code>, <code>category</code>, and <code>limit</code> (default 10).</span>
         </div>
         <div class="about-cmd">
-          <span class="about-cmd-name">add</span>
-          <span class="about-cmd-desc">Store a new memory. Requires <code>text</code> and an optional <code>category</code> (bio, preference, project, lore, session, meta, health, self, other).</span>
+          <span class="about-cmd-name">recall</span>
+          <span class="about-cmd-desc">List memories newest-first without embedding. Filter by <code>scope</code>, <code>category</code>, or <code>tags</code>. Default <code>limit</code> is 20.</span>
         </div>
         <div class="about-cmd">
-          <span class="about-cmd-name">delete</span>
-          <span class="about-cmd-desc">Remove a memory entry by its ID.</span>
+          <span class="about-cmd-name">get</span>
+          <span class="about-cmd-desc">Retrieve a single memory by <code>memory_id</code>.</span>
         </div>
         <div class="about-cmd">
           <span class="about-cmd-name">list</span>
-          <span class="about-cmd-desc">List all stored memories, optionally filtered by <code>category</code>.</span>
+          <span class="about-cmd-desc">List all active memories, optionally filtered by <code>scope</code>. Default <code>limit</code> is 50.</span>
         </div>
+      </div>
+      <div class="about-sub">Actions &mdash; Delete &amp; Maintain</div>
+      <div class="about-commands">
+        <div class="about-cmd">
+          <span class="about-cmd-name">delete</span>
+          <span class="about-cmd-desc">Soft-delete a memory by <code>memory_id</code>.</span>
+        </div>
+        <div class="about-cmd">
+          <span class="about-cmd-name">bulk_delete</span>
+          <span class="about-cmd-desc">Soft-delete multiple memories. Pass <code>memory_ids</code> array.</span>
+        </div>
+        <div class="about-cmd">
+          <span class="about-cmd-name">stats</span>
+          <span class="about-cmd-desc">Returns vault + FAISS health dashboard &mdash; entry count, index size, sync status.</span>
+        </div>
+        <div class="about-cmd">
+          <span class="about-cmd-name">compact</span>
+          <span class="about-cmd-desc">Remove old versions and tombstones, then rebuild the FAISS index.</span>
+        </div>
+        <div class="about-cmd">
+          <span class="about-cmd-name">rebuild_index</span>
+          <span class="about-cmd-desc">Force-rebuild the FAISS index from vault data.</span>
+        </div>
+      </div>
+      <div class="about-sub">Categories</div>
+      <div class="about-text">
+        <strong>Canon-tier:</strong> bio, identity, mission, constraint, governance<br>
+        <strong>Register-tier:</strong> preference, project, goal, health, self_state, capability, plan<br>
+        <strong>Experiential:</strong> emotion, relationship, knowledge, event, reflection, routine<br>
+        <strong>General:</strong> meta, other
+      </div>
+      <div class="about-sub">Scopes</div>
+      <div class="about-text">
+        <strong>shared</strong> &mdash; memories visible to all agents<br>
+        <strong>astraea</strong>, <strong>callum</strong>, <strong>codex_animus</strong>, <strong>user</strong> &mdash; agent-specific memories, private to that agent
       </div>
       <div class="about-sub">How the AI uses this tool</div>
       <div class="about-text">
-        The agent searches memory at the start of conversations to recall context about the user. During chat, it adds important facts, preferences, or project details to the vault so they persist across sessions.
+        The agent searches memory at the start of conversations to recall context about the user. During chat, it adds important facts, preferences, or project details to the vault so they persist across sessions. It uses <code>remember</code> for quick saves and <code>add</code> with explicit scope/category for structured storage. The <code>compact</code> and <code>stats</code> actions let the agent self-maintain vault health.
       </div>
 
       {% elif tool.name == 'echo' %}
@@ -2406,6 +2487,69 @@
           </select>
           <button class="btn btn-secondary" style="font-size:0.78rem;padding:0.4rem 0.75rem;" onclick="openSaveAsMemoryPopup()">&#128190; Save As…</button>
           <button class="btn btn-secondary" style="font-size:0.78rem;padding:0.4rem 0.75rem;color:#f87171;" onclick="deleteSavedMemoryProfile()">&#128465; Delete</button>
+        </div>
+      </div>
+
+      <!-- ── 0. CATEGORY POLICY ── -->
+      {% set catpol = memory_profile.get('category_policy', {}) %}
+      <div class="section-card">
+        <div class="section-title"><span class="sec-icon">&#128193;</span> Category Policy</div>
+        <div class="about-text" style="margin-bottom:1rem;">
+          Controls how memory categories are constrained. <strong>Suggested</strong> restricts the agent to the
+          built-in list. <strong>Custom</strong> adds your own categories alongside suggestions.
+          <strong>Open</strong> removes all restrictions &mdash; the agent can create any category it needs.
+        </div>
+
+        <!-- Mode selector -->
+        <div style="display:flex;gap:0.5rem;margin-bottom:1rem;" id="mp-catmode-group">
+          {% for opt, label, desc in [
+            ('suggested', 'Suggested Only', 'Agent picks from the predefined list'),
+            ('custom', 'Suggested + Custom', 'Add your own categories alongside defaults'),
+            ('open', 'Open (Free Text)', 'No restrictions — agent creates categories freely'),
+          ] %}
+          <label class="catmode-card {% if catpol.get('mode', 'open') == opt %}active{% endif %}" data-mode="{{ opt }}">
+            <input type="radio" name="mp-category-mode" value="{{ opt }}"
+                   {% if catpol.get('mode', 'open') == opt %}checked{% endif %}
+                   onchange="updateCatMode()" style="display:none;">
+            <div class="catmode-title">{{ label }}</div>
+            <div class="catmode-desc">{{ desc }}</div>
+          </label>
+          {% endfor %}
+        </div>
+
+        <!-- Suggested list (toggleable chips) -->
+        <div id="mp-cat-suggested-row" style="margin-bottom:0.75rem;">
+          <div class="config-label">Suggested Categories <span style="font-weight:400;color:#71717a;font-size:0.68rem;">(click to toggle on/off)</span></div>
+          <div class="enum-values" style="margin-top:0.35rem;" id="mp-cat-suggested-chips">
+            {% for cat in catpol.get('suggested_categories', ['bio','identity','mission','constraint','governance','preference','project','goal','health','self_state','capability','plan','emotion','relationship','knowledge','event','reflection','routine','meta','other'])|sort %}
+            <span class="enum-chip suggested-chip on" data-cat="{{ cat }}" onclick="toggleSuggestedCategory(this)">{{ cat }}</span>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Custom categories (editable, shown for custom mode) -->
+        <div id="mp-cat-custom-row" style="{% if catpol.get('mode', 'open') != 'custom' %}display:none;{% endif %}margin-bottom:0.5rem;">
+          <div class="config-label">Custom Categories</div>
+          <div style="display:flex;gap:0.5rem;margin-top:0.35rem;">
+            <input type="text" class="config-input-wide" id="mp-cat-custom-input"
+                   placeholder="Type a category name and press Add"
+                   onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomCategory();}">
+            <button class="btn btn-secondary" style="font-size:0.78rem;padding:0.35rem 0.75rem;white-space:nowrap;"
+                    onclick="addCustomCategory()">+ Add</button>
+          </div>
+          <div class="enum-values" style="margin-top:0.5rem;" id="mp-cat-custom-chips">
+            {% for cat in catpol.get('custom_categories', []) %}
+            <span class="enum-chip custom-chip" onclick="removeCustomCategory(this)">{{ cat }} &times;</span>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Open mode info -->
+        <div id="mp-cat-open-info" style="{% if catpol.get('mode', 'open') != 'open' %}display:none;{% endif %}">
+          <div class="ct-status-bar" style="margin-bottom:0;">
+            <span class="ct-status-dot ok"></span>
+            The agent has full freedom to create any category name. Suggested categories are shown as hints in the tool description but are not enforced.
+          </div>
         </div>
       </div>
 
@@ -4040,6 +4184,59 @@
     }
   }
 
+  /* ═══ Category Policy UI ═════════════════════════════════════ */
+
+  function updateCatMode() {
+    const checked = document.querySelector('input[name="mp-category-mode"]:checked');
+    const mode = checked ? checked.value : 'open';
+    // toggle active class on cards
+    document.querySelectorAll('.catmode-card').forEach(c => c.classList.toggle('active', c.dataset.mode === mode));
+    // show/hide sections
+    document.getElementById('mp-cat-custom-row').style.display  = (mode === 'custom') ? '' : 'none';
+    document.getElementById('mp-cat-open-info').style.display    = (mode === 'open')   ? '' : 'none';
+    document.getElementById('mp-cat-suggested-row').style.display = (mode === 'open')   ? 'none' : '';
+  }
+
+  function addCustomCategory() {
+    const inp = document.getElementById('mp-cat-custom-input');
+    const val = (inp.value || '').trim().toLowerCase().replace(/\s+/g, '_');
+    if (!val) return;
+    // prevent duplicates
+    const existing = _getCustomCategoryList();
+    if (existing.includes(val)) { inp.value = ''; return; }
+    const chip = document.createElement('span');
+    chip.className = 'enum-chip custom-chip';
+    chip.textContent = val + ' \u00d7';
+    chip.onclick = function() { removeCustomCategory(this); };
+    document.getElementById('mp-cat-custom-chips').appendChild(chip);
+    inp.value = '';
+  }
+
+  function removeCustomCategory(el) { el.remove(); }
+
+  function _getCustomCategoryList() {
+    return Array.from(document.querySelectorAll('#mp-cat-custom-chips .custom-chip'))
+      .map(c => c.textContent.replace(/\s*\u00d7\s*$/, '').trim())
+      .filter(Boolean);
+  }
+
+  function toggleSuggestedCategory(el) {
+    el.classList.toggle('on');
+    el.classList.toggle('off');
+  }
+
+  function _getSuggestedCategoryList() {
+    return Array.from(document.querySelectorAll('#mp-cat-suggested-chips .suggested-chip.on'))
+      .map(c => (c.dataset.cat || c.textContent).trim())
+      .filter(Boolean);
+  }
+
+  function _getAllSuggestedCategoryNames() {
+    return Array.from(document.querySelectorAll('#mp-cat-suggested-chips .suggested-chip'))
+      .map(c => (c.dataset.cat || c.textContent).trim())
+      .filter(Boolean);
+  }
+
   /* ═══ Memory Profile — Save ══════════════════════════════════ */
 
   function _collectMemoryProfile() {
@@ -4056,6 +4253,12 @@
       name: g('mp-name'),
       version: g('mp-version'),
       description: g('mp-description'),
+
+      category_policy: {
+        mode: (document.querySelector('input[name="mp-category-mode"]:checked') || {}).value || 'open',
+        suggested_categories: _getSuggestedCategoryList(),
+        custom_categories: _getCustomCategoryList(),
+      },
 
       write_policy: {
         auto_write_enabled: g('mp-write-auto_write_enabled'),
@@ -4190,6 +4393,7 @@
           version: '1.0.0',
           description: 'Balanced memory profile optimized for general-purpose agent conversations.',
           author_id: 'system',
+          category_policy: { mode: 'open', suggested_categories: ['bio','identity','mission','constraint','governance','preference','project','goal','health','self_state','capability','plan','emotion','relationship','knowledge','event','reflection','routine','meta','other'], custom_categories: [] },
           write_policy: { auto_write_enabled: true, importance_threshold: 0.65, novelty_threshold: 0.6, emotion_threshold: 0.5, max_memories_per_session: 25, max_memories_per_day: 200, write_frequency_mode: 'balanced', write_granularity: 'chunk', allow_user_tagged_write_boost: true, user_star_boost_amount: 0.2 },
           retention_policy: { max_total_memories: 5000, decay_strategy: 'soft_decay', decay_half_life_days: 90, protect_high_importance: true, high_importance_floor: 0.8, episodic_vs_semantic_bias: 'balanced', prune_when_over_capacity: true, prune_strategy: 'low_importance_first', prune_batch_size: 200, user_pin_enabled: true, max_pinned_memories: 100 },
           summarization_policy: { session_summarization_mode: 'balanced', summarize_after_turns: 20, summarize_after_tokens: 4000, summary_style: 'journal', include_meta_tags: true, max_summary_length_tokens: 512, merge_old_summaries: true, merge_frequency_days: 7, importance_boost_for_summarized: 0.1, summarize_ephemeral: false },
@@ -4741,11 +4945,21 @@
     } catch (e) { showToast('Save failed: ' + e.message, true); }
   }
 
+  const _DEFAULT_CATEGORY_POLICY = {
+    mode: 'open',
+    suggested_categories: ['bio','identity','mission','constraint','governance','preference','project','goal','health','self_state','capability','plan','emotion','relationship','knowledge','event','reflection','routine','meta','other'],
+    custom_categories: [],
+  };
+
   async function loadSavedMemoryProfileByName(filename) {
     try {
       const resp = await fetch('/api/tools/memory/profiles/' + encodeURIComponent(filename));
       if (!resp.ok) { showToast('Load failed', true); return; }
       const data = await resp.json();
+      // Ensure category_policy exists (backfill for profiles saved before this feature)
+      if (!data.category_policy) {
+        data.category_policy = JSON.parse(JSON.stringify(_DEFAULT_CATEGORY_POLICY));
+      }
       const applyResp = await fetch('/api/tools/memory/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },

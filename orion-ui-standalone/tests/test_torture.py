@@ -33,6 +33,10 @@ Covers:
   - InboxTool (all 4 actions: send, add_task, next_task, ack; validation,
     edge cases, JSONL+MD persistence, dry_run, priority, needs_approval,
     registry dispatch)
+  - Dynamic scopes (_discover_scopes from YAML files, VALID_SCOPES always has 'shared')
+  - Category policy (_load_category_policy, _build_category_field for all 3 modes)
+  - Saved profile upgrade (_seed_default_profile back-fills missing keys)
+  - _TOOL_CATALOGUE dynamic fields (scope enum from VALID_SCOPES, category truncated)
 """
 
 import json
@@ -3109,6 +3113,310 @@ def test_inbox_data_path():
 
 
 # ═════════════════════════════════════════════
+# Dynamic scopes & category policy
+# ═════════════════════════════════════════════
+def test_dynamic_scopes():
+    """Verify _discover_scopes picks up profile YAMLs and always includes 'shared'."""
+    print("\n=== TORTURE: Dynamic Scopes ===")
+    from src.memory.types import VALID_SCOPES, _discover_scopes
+
+    # Basic contract
+    check("VALID_SCOPES is frozenset", isinstance(VALID_SCOPES, frozenset))
+    check("'shared' always in VALID_SCOPES", "shared" in VALID_SCOPES)
+    check("at least 2 scopes", len(VALID_SCOPES) >= 2)
+
+    # Rediscover and compare
+    fresh = _discover_scopes()
+    check("_discover_scopes returns frozenset", isinstance(fresh, frozenset))
+    check("fresh scopes match VALID_SCOPES", fresh == VALID_SCOPES)
+
+    # All profile YAMLs should be present
+    from pathlib import Path
+    profiles_dir = Path(__file__).resolve().parent.parent / "profiles"
+    if profiles_dir.exists():
+        for p in profiles_dir.glob("*.yaml"):
+            check(f"scope '{p.stem}' discovered", p.stem in VALID_SCOPES)
+
+    # Verify sorted() works (used by memory_tool definition)
+    sorted_scopes = sorted(VALID_SCOPES)
+    check("sorted(VALID_SCOPES) is list", isinstance(sorted_scopes, list))
+    check("sorted scopes are alphabetical", sorted_scopes == sorted(sorted_scopes))
+
+    # Edge: discover from empty dir
+    tmp = tempfile.mkdtemp()
+    def _discover_empty():
+        scopes = {"shared"}
+        empty_dir = Path(tmp) / "no_profiles_here"
+        if empty_dir.exists():
+            for p in empty_dir.glob("*.yaml"):
+                scopes.add(p.stem)
+        return frozenset(scopes)
+    check("empty dir -> only shared", _discover_empty() == frozenset({"shared"}))
+    shutil.rmtree(tmp, ignore_errors=True)
+
+
+def test_category_policy():
+    """Test _load_category_policy and _build_category_field for all 3 modes."""
+    print("\n=== TORTURE: Category Policy ===")
+    from src.tools.memory_tool import _load_category_policy, _build_category_field, _CONFIG_DIR
+    from src.memory.types import VALID_CATEGORIES
+
+    # ── Load from real config ──
+    policy = _load_category_policy()
+    check("policy is dict", isinstance(policy, dict))
+    check("policy has mode", "mode" in policy)
+    check("policy mode in valid set", policy["mode"] in ("suggested", "custom", "open"))
+    check("policy has suggested_categories", "suggested_categories" in policy)
+    check("policy has custom_categories", "custom_categories" in policy)
+    check("suggested is list", isinstance(policy["suggested_categories"], list))
+    check("custom is list", isinstance(policy["custom_categories"], list))
+
+    # ── Test _build_category_field with mocked policies ──
+    mp_file = _CONFIG_DIR / "memory_profile.json"
+    original = mp_file.read_text(encoding="utf-8")
+
+    try:
+        import json as _j
+
+        # --- MODE: suggested ---
+        data = _j.loads(original)
+        data["category_policy"] = {
+            "mode": "suggested",
+            "suggested_categories": ["bio", "identity", "mission"],
+            "custom_categories": [],
+        }
+        mp_file.write_text(_j.dumps(data), encoding="utf-8")
+
+        field = _build_category_field()
+        check("suggested mode has enum", "enum" in field)
+        check("suggested mode 3 items", len(field["enum"]) == 3)
+        check("suggested mode sorted", field["enum"] == sorted(field["enum"]))
+        check("suggested mode desc", "pick from" in field["description"].lower())
+
+        # --- MODE: custom ---
+        data["category_policy"] = {
+            "mode": "custom",
+            "suggested_categories": ["bio", "identity"],
+            "custom_categories": ["my_custom", "another_custom"],
+        }
+        mp_file.write_text(_j.dumps(data), encoding="utf-8")
+
+        field = _build_category_field()
+        check("custom mode has enum", "enum" in field)
+        check("custom mode merged count 4", len(field["enum"]) == 4)
+        check("custom mode includes custom", "my_custom" in field["enum"])
+        check("custom mode includes suggested", "bio" in field["enum"])
+        check("custom mode deduplicates", len(field["enum"]) == len(set(field["enum"])))
+
+        # custom mode with overlapping categories
+        data["category_policy"]["custom_categories"] = ["bio", "new_one"]
+        mp_file.write_text(_j.dumps(data), encoding="utf-8")
+        field = _build_category_field()
+        check("custom overlap dedup", field["enum"].count("bio") == 1)
+        check("custom overlap new_one", "new_one" in field["enum"])
+
+        # --- MODE: open ---
+        data["category_policy"] = {
+            "mode": "open",
+            "suggested_categories": ["bio", "identity", "mission"],
+            "custom_categories": [],
+        }
+        mp_file.write_text(_j.dumps(data), encoding="utf-8")
+
+        field = _build_category_field()
+        check("open mode no enum", "enum" not in field)
+        check("open mode 'any' in desc", "any" in field["description"].lower())
+        check("open mode common cats listed", "bio" in field["description"])
+
+        # --- Missing category_policy entirely ---
+        data.pop("category_policy", None)
+        mp_file.write_text(_j.dumps(data), encoding="utf-8")
+
+        field = _build_category_field()
+        check("missing policy defaults to open", "enum" not in field)
+        check("missing policy has description", len(field["description"]) > 0)
+
+        # --- Corrupt JSON ---
+        mp_file.write_text("NOT VALID JSON{{{", encoding="utf-8")
+        policy_err = _load_category_policy()
+        check("corrupt JSON returns empty dict", policy_err == {})
+        field = _build_category_field()
+        check("corrupt JSON still returns valid field", "type" in field)
+
+    finally:
+        mp_file.write_text(original, encoding="utf-8")
+
+
+def test_saved_profile_upgrade():
+    """Test _seed_default_profile upgrades stale defaults with missing keys."""
+    print("\n=== TORTURE: Saved Profile Upgrade ===")
+
+    tmp = tempfile.mkdtemp()
+    try:
+        from pathlib import Path
+        test_dir = Path(tmp) / "profiles"
+        test_dir.mkdir(parents=True, exist_ok=True)
+
+        from web.app import _seed_default_profile, _DEFAULT_PROFILE_STEM
+
+        def _mock_loader():
+            return {
+                "name": "Test Profile",
+                "version": "1.0",
+                "write_policy": {"auto_write": True},
+                "category_policy": {"mode": "open", "suggested_categories": ["bio"]},
+            }
+
+        # ── Brand new directory ──
+        _seed_default_profile(test_dir, _mock_loader)
+        default_path = test_dir / f"{_DEFAULT_PROFILE_STEM}.json"
+        check("default created", default_path.exists())
+
+        saved = json.loads(default_path.read_text(encoding="utf-8"))
+        check("default has _pinned", saved.get("_pinned") is True)
+        check("default has name", saved.get("name") == "Test Profile")
+        check("default has category_policy", "category_policy" in saved)
+        check("default has write_policy", "write_policy" in saved)
+
+        # ── Stale default missing category_policy ──
+        stale = {"name": "Old", "version": "0.9", "write_policy": {"auto_write": False}, "_pinned": True}
+        default_path.write_text(json.dumps(stale), encoding="utf-8")
+
+        _seed_default_profile(test_dir, _mock_loader)
+
+        upgraded = json.loads(default_path.read_text(encoding="utf-8"))
+        check("upgrade adds category_policy", "category_policy" in upgraded)
+        check("upgrade preserves existing name", upgraded["name"] == "Old")
+        check("upgrade preserves write_policy", upgraded["write_policy"]["auto_write"] is False)
+        check("upgrade keeps _pinned", upgraded.get("_pinned") is True)
+
+        # ── Already up-to-date ──
+        before_text = default_path.read_text(encoding="utf-8")
+        _seed_default_profile(test_dir, _mock_loader)
+        after_text = default_path.read_text(encoding="utf-8")
+        check("up-to-date default unchanged", before_text == after_text)
+
+        # ── Corrupt default JSON ──
+        default_path.write_text("NOT JSON!!!", encoding="utf-8")
+        try:
+            _seed_default_profile(test_dir, _mock_loader)
+            check("corrupt default doesn't crash", True)
+        except Exception:
+            check("corrupt default doesn't crash", False)
+
+        # ── Loader returns empty ──
+        empty_dir = Path(tmp) / "empty_profiles"
+        empty_dir.mkdir(parents=True, exist_ok=True)
+        def _empty_loader():
+            return {}
+        _seed_default_profile(empty_dir, _empty_loader)
+        ep = empty_dir / f"{_DEFAULT_PROFILE_STEM}.json"
+        check("empty loader creates file", ep.exists())
+        ed = json.loads(ep.read_text(encoding="utf-8"))
+        check("empty loader has _pinned", ed.get("_pinned") is True)
+
+        # ── Loader returns None ──
+        none_dir = Path(tmp) / "none_profiles"
+        none_dir.mkdir(parents=True, exist_ok=True)
+        def _none_loader():
+            return None
+        _seed_default_profile(none_dir, _none_loader)
+        np_path = none_dir / f"{_DEFAULT_PROFILE_STEM}.json"
+        check("None loader creates file", np_path.exists())
+
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def test_tool_catalogue_dynamic():
+    """Test that _TOOL_CATALOGUE uses dynamic VALID_SCOPES and truncated categories."""
+    print("\n=== TORTURE: _TOOL_CATALOGUE Dynamic Fields ===")
+    from web.app import _TOOL_CATALOGUE
+    from src.memory.types import VALID_SCOPES, VALID_CATEGORIES
+
+    # Find the memory tool entry
+    mem_entry = None
+    for t in _TOOL_CATALOGUE:
+        if t["name"] == "memory":
+            mem_entry = t
+            break
+    check("memory tool in catalogue", mem_entry is not None)
+
+    # Find scope and category params
+    scope_param = None
+    category_param = None
+    for p in mem_entry["parameters"]:
+        if p["name"] == "scope":
+            scope_param = p
+        if p["name"] == "category":
+            category_param = p
+
+    check("scope param exists", scope_param is not None)
+    check("category param exists", category_param is not None)
+
+    # Scope enum should match VALID_SCOPES
+    scope_enum = scope_param["enum"]
+    check("scope enum is list", isinstance(scope_enum, list))
+    check("scope enum matches VALID_SCOPES", set(scope_enum) == set(VALID_SCOPES))
+    check("scope enum is sorted", scope_enum == sorted(scope_enum))
+    check("'shared' in scope enum", "shared" in scope_enum)
+
+    # All profile names in scope
+    from pathlib import Path
+    profiles_dir = Path(__file__).resolve().parent.parent / "profiles"
+    if profiles_dir.exists():
+        for p in profiles_dir.glob("*.yaml"):
+            check(f"scope enum has '{p.stem}'", p.stem in scope_enum)
+
+    # Category enum should be truncated to 5 + ellipsis
+    cat_enum = category_param["enum"]
+    check("category enum is list", isinstance(cat_enum, list))
+    check("category enum has 6 items (5+ellipsis)", len(cat_enum) == 6)
+    check("category last item is ellipsis", cat_enum[-1] == "\u2026")
+    first_five = cat_enum[:5]
+    check("first 5 are sorted", first_five == sorted(first_five))
+    for c in first_five:
+        check(f"'{c}' in VALID_CATEGORIES", c in VALID_CATEGORIES)
+
+
+def test_memory_tool_definition_dynamic():
+    """Test that MemoryTool.definition() has dynamic scope and category fields."""
+    print("\n=== TORTURE: MemoryTool.definition() Dynamic ===")
+    from src.tools.memory_tool import MemoryTool, _load_category_policy
+    from src.memory.types import VALID_SCOPES
+
+    defn = MemoryTool.definition()
+    props = defn["parameters"]["properties"]
+
+    # Scope
+    scope_def = props["scope"]
+    check("definition scope has enum", "enum" in scope_def)
+    check("definition scope matches VALID_SCOPES", set(scope_def["enum"]) == set(VALID_SCOPES))
+    check("definition scope sorted", scope_def["enum"] == sorted(scope_def["enum"]))
+
+    # Category depends on current policy mode
+    cat_def = props["category"]
+    check("definition category has type", cat_def["type"] == "string")
+    check("definition category has description", len(cat_def["description"]) > 0)
+
+    mode = _load_category_policy().get("mode", "open")
+    if mode == "open":
+        check("open mode no enum in definition", "enum" not in cat_def)
+    else:
+        check(f"{mode} mode enum in definition", "enum" in cat_def)
+        check(f"{mode} mode enum sorted", cat_def["enum"] == sorted(cat_def["enum"]))
+
+    # Action list
+    actions = props["action"]["enum"]
+    check("13 actions in definition", len(actions) == 13)
+
+    # Source enum
+    source_def = props["source"]
+    check("source has enum", "enum" in source_def)
+    check("source enum sorted", source_def["enum"] == sorted(source_def["enum"]))
+
+
+# ═════════════════════════════════════════════
 if __name__ == "__main__":
     test_boundary_policy()
     test_pii_guard_extended()
@@ -3150,6 +3458,11 @@ if __name__ == "__main__":
     test_inbox_tool_torture()
     test_inbox_registry_dispatch()
     test_inbox_data_path()
+    test_dynamic_scopes()
+    test_category_policy()
+    test_saved_profile_upgrade()
+    test_tool_catalogue_dynamic()
+    test_memory_tool_definition_dynamic()
 
     print(f"\n{'='*40}")
     print(f"Results: {PASS} passed, {FAIL} failed")

@@ -41,6 +41,9 @@ VALID_CATEGORIES = frozenset({
     # -- register-tier categories --
     "preference", "project", "goal", "health", "self_state",
     "capability", "plan",
+    # -- experiential --
+    "emotion", "relationship", "knowledge", "event",
+    "reflection", "routine",
     # -- general --
     "meta", "other",
 })
