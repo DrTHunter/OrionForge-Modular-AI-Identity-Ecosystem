@@ -8,14 +8,62 @@ Architecture:
 
 All writes go to vault first, then sync to FAISS index automatically.
 Each memory can be individually viewed and deleted.
+
+Category policy (from memory_profile.json → category_policy):
+  - "suggested" — enum is set to the suggested_categories list
+  - "custom"    — enum is suggested + custom categories from config
+  - "open"      — no enum at all; agent can use any category string
 """
 
 import json
-from typing import Any, Dict, List
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 from src.memory.faiss_memory import FAISSMemory
 from src.memory.types import VALID_CATEGORIES, VALID_SCOPES, VALID_SOURCES
 from src.data_paths import vault_path as _get_vault_path, faiss_dir as _get_faiss_dir
+
+_CONFIG_DIR = Path(__file__).resolve().parent.parent.parent / "config"
+
+
+def _load_category_policy() -> dict:
+    """Read category_policy from memory_profile.json."""
+    mp_file = _CONFIG_DIR / "memory_profile.json"
+    try:
+        import json as _j
+        data = _j.loads(mp_file.read_text(encoding="utf-8"))
+        return data.get("category_policy", {})
+    except Exception:
+        return {}
+
+
+def _build_category_field() -> dict:
+    """Build the category parameter dict based on the active policy."""
+    policy = _load_category_policy()
+    mode = policy.get("mode", "open")
+    suggested = policy.get("suggested_categories", sorted(VALID_CATEGORIES))
+    custom = policy.get("custom_categories", [])
+
+    base: dict = {
+        "type": "string",
+        "description": "Memory category.",
+    }
+
+    if mode == "suggested":
+        base["enum"] = sorted(set(suggested))
+        base["description"] = "Memory category (pick from suggested list)."
+    elif mode == "custom":
+        merged = sorted(set(suggested) | set(custom))
+        base["enum"] = merged
+        base["description"] = "Memory category (suggested + custom categories)."
+    else:  # "open"
+        # No enum — agent is free to use any category string.
+        base["description"] = (
+            "Memory category — use any descriptive string. "
+            "Common categories: " + ", ".join(sorted(set(suggested))) + "."
+        )
+
+    return base
 
 
 class MemoryTool:
@@ -77,11 +125,7 @@ class MemoryTool:
                         "enum": sorted(VALID_SCOPES),
                         "description": "Memory scope (shared, or agent-specific).",
                     },
-                    "category": {
-                        "type": "string",
-                        "enum": sorted(VALID_CATEGORIES),
-                        "description": "Memory category.",
-                    },
+                    "category": _build_category_field(),
                     "tags": {
                         "type": "array",
                         "items": {"type": "string"},
