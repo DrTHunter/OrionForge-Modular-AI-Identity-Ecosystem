@@ -1,4 +1,4 @@
-﻿"""Memory tool - lets agents store, search, and manage memories
+"""Memory tool - lets agents store, search, and manage memories
 via the FAISS-backed memory system.
 
 Architecture:
@@ -94,19 +94,26 @@ class MemoryTool:
                 "Memories persist across sessions in vault.jsonl and are "
                 "searchable by meaning via FAISS vector embeddings.\n\n"
                 "ACTIONS:\n"
-                "- add: store a new memory (text + scope + category required)\n"
-                "- add_many: batch-store multiple memories in one call\n"
-                "- remember: quick-store with sensible defaults\n"
-                "- search: find memories by meaning (semantic search)\n"
-                "- recall: list memories (newest first, no embedding needed)\n"
-                "- get: retrieve a single memory by id\n"
-                "- update: change text/category/tags on an existing memory\n"
-                "- delete: soft-delete a memory by id\n"
-                "- bulk_delete: soft-delete multiple memories\n"
-                "- list: list all active memories\n"
-                "- stats: vault + FAISS health dashboard\n"
-                "- compact: remove old versions/tombstones and rebuild index\n"
-                "- rebuild_index: rebuild FAISS index from vault"
+                "- add: store a new memory (text + scope + category required). "
+                "Returns the new memory id, scope, and category.\n"
+                "- add_many: batch-store multiple memories in one call (max "
+                f"{MAX_BATCH_SIZE} per batch). Returns list of created ids.\n"
+                "- remember: quick-store with sensible defaults (scope=shared, "
+                "category=other, source=tool). Only text is required.\n"
+                "- search: semantic vector search — finds memories by meaning. "
+                "Requires 'query'. Optionally filter by scope and category.\n"
+                "- recall: list memories newest-first (no embedding needed). "
+                "Filter by scope, category, or tags.\n"
+                "- get: retrieve a single memory by id.\n"
+                "- update: change text, category, or tags on an existing memory "
+                "(does NOT accept scope or source changes).\n"
+                "- delete: soft-delete a memory by id.\n"
+                "- bulk_delete: soft-delete multiple memories by id list.\n"
+                "- list: list all active memories (default limit 50).\n"
+                "- stats: vault + FAISS health dashboard (total count, index size, etc).\n"
+                "- compact: remove old versions/tombstones and rebuild index.\n"
+                "- rebuild_index: rebuild FAISS index from vault (use if search "
+                "seems stale)."
             ),
             "parameters": {
                 "type": "object",
@@ -122,36 +129,62 @@ class MemoryTool:
                     },
                     "text": {
                         "type": "string",
-                        "description": "Memory content (for add/remember/update).",
+                        "description": (
+                            "Memory content text. Required for add, remember. "
+                            "Optional for update (replaces existing text). "
+                            f"Max {MAX_MEMORY_TEXT_LENGTH} characters."
+                        ),
                     },
                     "scope": {
                         "type": "string",
                         "enum": sorted(VALID_SCOPES),
-                        "description": "Memory scope (shared, or agent-specific).",
+                        "description": (
+                            "Memory scope — determines who can access it. "
+                            "Required for add. Used as filter for search/recall/list. "
+                            "'shared' is visible to all agents."
+                        ),
                     },
                     "category": _build_category_field(),
                     "tags": {
                         "type": "array",
                         "items": {"type": "string"},
-                        "description": "Optional tags for filtering.",
+                        "description": (
+                            f"Optional tags (max {MAX_TAGS_PER_MEMORY} per memory). "
+                            "Used for add/remember/update. Also used as filter for recall."
+                        ),
                     },
                     "source": {
                         "type": "string",
                         "enum": sorted(VALID_SOURCES),
-                        "description": "Origin of the memory.",
+                        "description": "Origin of the memory (for add/remember). Default 'tool'.",
+                    },
+                    "tier": {
+                        "type": "string",
+                        "description": (
+                            "Memory importance tier (for add/add_many). "
+                            "Default 'register'. Use to classify memory priority."
+                        ),
+                    },
+                    "topic_id": {
+                        "type": "string",
+                        "description": (
+                            "Optional topic ID to group related memories together "
+                            "(for add/add_many). Useful for threading memories about "
+                            "the same subject."
+                        ),
                     },
                     "query": {
                         "type": "string",
-                        "description": "Search query text (for search action).",
+                        "description": "Semantic search query text. Required for 'search' action.",
                     },
                     "memory_id": {
                         "type": "string",
-                        "description": "Memory ID (for get/update/delete).",
+                        "description": "Memory ID. Required for get, update, and delete.",
                     },
                     "memory_ids": {
                         "type": "array",
                         "items": {"type": "string"},
-                        "description": "List of memory IDs (for bulk_delete).",
+                        "description": "List of memory IDs. Required for bulk_delete.",
                     },
                     "memories": {
                         "type": "array",
@@ -168,11 +201,18 @@ class MemoryTool:
                             },
                             "required": ["text", "scope", "category"],
                         },
-                        "description": "Array of memory objects (for add_many batch).",
+                        "description": (
+                            f"Array of memory objects for add_many batch (max {MAX_BATCH_SIZE}). "
+                            "Each item requires text, scope, category. Optional: "
+                            "tags, source, tier, topic_id."
+                        ),
                     },
                     "limit": {
                         "type": "integer",
-                        "description": "Max results (default 10 for search, 20 for recall/list).",
+                        "description": (
+                            "Max results to return. Defaults: 10 for search, "
+                            "20 for recall, 50 for list."
+                        ),
                     },
                 },
                 "required": ["action"],

@@ -24,10 +24,25 @@ engine/src/
 ├── observability/         # Token metering, cost tracking, pricing engine
 ├── policy/                # Boundary enforcement — risk classification, denial payloads
 ├── storage/               # Note collection & user notes loading
-└── tools/                 # Tool implementations — echo, continuation, memory, directives
+└── tools/                 # 8 tool implementations + registry
 ```
+
+## Key Capabilities
+
+| Subsystem | What It Does |
+|-----------|-------------|
+| **Memory** | FAISS-backed semantic vault with 3-tier taxonomy (Canon/Register/Log), append-only JSONL, 8-stage write-gate, topic upsert, PII guard |
+| **LLM Client** | Provider abstraction for OpenAI, Anthropic (native SDK), Ollama, and DeepSeek (OpenAI-compat) |
+| **Directives** | H2-delimited directive parsing, SHA-256 manifest hashing, scoring (token overlap + SequenceMatcher), change control |
+| **Governance** | Session-scoped directive registry, append-only JSONL audit log, drift detection |
+| **Observability** | Per-request token metering, cost computation from `pricing.yaml`, aggregation with `+` operator |
+| **Policy** | Risk classification (low/med/high), deterministic denial payloads, append-only event logging |
+| **Storage** | Note collection (always-on vs directive modes), HTML stripping, dual note systems |
+| **Tools** | Memory (13 actions), directives (5 actions), web search, email, inbox, cost tracker, echo, continuation |
 
 ## Stability Contract
 
 Code in `engine/` should not be modified for experimental features.  
 New capabilities are developed in `orion-ui-standalone/src/`, tested thoroughly, then promoted here once stable.
+
+Files are synced from `orion-ui-standalone/src/` → `engine/src/` after passing the full test suite (205 functions, ~1,905 assertions).

@@ -203,8 +203,18 @@ class WebSearchTool:
                 "sufficient knowledge to answer. Fill in 'knowledge_check' with "
                 "what you already know and 'reason' with why a web search is needed. "
                 "If you can confidently answer from training data, do NOT use this tool.\n\n"
-                "Use action 'search' with a query and mode (fast/normal/deep).\n"
-                "Use action 'scrape' with a url to fetch a single page."
+                "ACTIONS:\n"
+                "- search: query SearXNG, scrape top results, return extracted "
+                "content. Requires 'query' and 'reason'. Set 'mode' to control depth.\n"
+                "- scrape: fetch and extract main content from a single URL. "
+                "Requires 'url'. Returns title and cleaned text.\n\n"
+                "MODES (for search):\n"
+                "- fast: 2 pages scraped, ~1200 words — quick factual lookups\n"
+                "- normal: 5 pages scraped, ~1500 words — typical questions (default)\n"
+                "- deep: 8 pages scraped, ~3000 words — research-level queries\n\n"
+                "The tool uses trafilatura/BS4 to extract main page content, "
+                "stripping navigation, ads, and boilerplate. Social media and "
+                "low-quality sites are automatically filtered out."
             ),
             "parameters": {
                 "type": "object",
@@ -221,32 +231,42 @@ class WebSearchTool:
                         "type": "string",
                         "description": (
                             "State what you already know about this topic. "
-                            "If you can answer confidently, say so and skip searching."
+                            "If you can answer confidently, say so and skip searching. "
+                            "Do NOT include phrases like 'i already know' or "
+                            "'from my training' — that will block the search."
                         ),
                     },
                     "reason": {
                         "type": "string",
                         "description": (
-                            "Why the internet is needed: real-time data, beyond "
-                            "training cutoff, verify uncertain info, user asked, "
-                            "need specific URL."
+                            "REQUIRED for 'search'. Why the internet is needed. "
+                            "Valid reasons: real-time data, beyond training cutoff, "
+                            "verify uncertain info, user explicitly asked to search, "
+                            "need specific URL content. Omitting this blocks the search."
                         ),
                     },
                     "query": {
                         "type": "string",
-                        "description": "Search query (required for 'search').",
+                        "description": (
+                            "Search query string. REQUIRED for 'search' action. "
+                            "Write a clear, specific search query."
+                        ),
                     },
                     "mode": {
                         "type": "string",
                         "enum": ["fast", "normal", "deep"],
                         "description": (
-                            "'fast' (2 pages), 'normal' (5 pages), "
-                            "'deep' (8 pages). Default: normal."
+                            "Search depth. 'fast' (2 pages, ~1200 words) for quick facts, "
+                            "'normal' (5 pages, ~1500 words) for typical queries, "
+                            "'deep' (8 pages, ~3000 words) for research. Default: normal."
                         ),
                     },
                     "url": {
                         "type": "string",
-                        "description": "URL to scrape (required for 'scrape').",
+                        "description": (
+                            "Full URL to scrape. REQUIRED for 'scrape' action. "
+                            "Returns the page title and extracted main content."
+                        ),
                     },
                 },
                 "required": ["action"],

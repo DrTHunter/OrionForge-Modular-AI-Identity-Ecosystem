@@ -30,28 +30,45 @@ class ContinuationUpdateTool:
             "name": "continuation_update",
             "description": (
                 "Maintain a single evolving 'pickup later' markdown file per profile. "
-                "Use mode 'append' to add a timestamped block, or 'replace_section' "
-                "to upsert a named section."
+                "File: data/{profile}_continuation.md (one per profile, never more).\n\n"
+                "MODES:\n"
+                "- append: add a timestamped block to the end of the file. Good for "
+                "logging progress, notes, or session summaries.\n"
+                "- replace_section: upsert a named section (## heading). If the section "
+                "exists, its content is replaced in-place. If not, it's appended. "
+                "Requires 'section' parameter with the heading name.\n\n"
+                "Use this to leave notes for yourself across sessions, track ongoing "
+                "work, or maintain a running context file."
             ),
             "parameters": {
                 "type": "object",
                 "properties": {
                     "profile": {
                         "type": "string",
-                        "description": "Profile name (e.g. 'orion'). Required.",
+                        "description": (
+                            "Profile name (e.g. 'callum', 'astraea'). Required. "
+                            "Must be alphanumeric with hyphens/underscores only."
+                        ),
                     },
                     "mode": {
                         "type": "string",
                         "enum": ["append", "replace_section"],
-                        "description": "'append' adds a timestamped block; 'replace_section' upserts a named section.",
+                        "description": (
+                            "'append' adds a timestamped block at the end; "
+                            "'replace_section' upserts a named section by heading. "
+                            "Default: 'append'."
+                        ),
                     },
                     "content": {
                         "type": "string",
-                        "description": "Markdown content to write.",
+                        "description": "Markdown content to write. Required.",
                     },
                     "section": {
                         "type": "string",
-                        "description": "Section heading (used only with 'replace_section').",
+                        "description": (
+                            "Section heading name (without ##). Required when "
+                            "mode='replace_section'. Example: 'Current Tasks'."
+                        ),
                     },
                 },
                 "required": ["profile", "content"],

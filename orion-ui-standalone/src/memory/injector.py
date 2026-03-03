@@ -1,4 +1,4 @@
-﻿"""Memory injector - builds context blocks for system-prompt injection.
+"""Memory injector - builds context blocks for system-prompt injection.
 
 Uses FAISSMemory to produce a compact Markdown block of relevant
 memories.  Two modes:
@@ -85,10 +85,17 @@ def build_memory_block(
 # Helpers
 # ------------------------------------------------------------------
 
-def _norm_scope(scopes) -> Optional[str]:
-    """Normalise scope input to a single string or None."""
+def _norm_scope(scopes):
+    """Normalise scope input to a single string, list, or None.
+
+    When *scopes* is a multi-element list the caller should iterate
+    over each scope individually; returning the list preserves that
+    intent instead of silently dropping filters.
+    """
     if isinstance(scopes, list):
-        return scopes[0] if len(scopes) == 1 else None
+        if len(scopes) == 1:
+            return scopes[0]
+        return scopes if scopes else None
     return scopes or None
 
 

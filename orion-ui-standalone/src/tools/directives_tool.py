@@ -30,9 +30,22 @@ class DirectivesTool:
             "description": (
                 "Search and read user-authored directives. Directives contain "
                 "structured instructions, protocols, and context organized by "
-                "headings. Use 'search' to find relevant sections by keyword, "
-                "'list' to see all available headings, or 'get' to read a "
-                "specific section by heading name. Read-only."
+                "headings within markdown files. Read-only — agents cannot modify "
+                "directive files.\n\n"
+                "ACTIONS:\n"
+                "- search: find relevant sections by semantic keyword query. "
+                "Requires 'query'. Returns matching sections with heading, body, scope. "
+                "Default limit 5.\n"
+                "- list: show all available section headings. Optionally filter by scope.\n"
+                "- get: read a specific section by its exact heading name. "
+                "Requires 'heading'. Returns the full section body.\n"
+                "- manifest: return the full directives manifest with IDs, versions, "
+                "hashes, status, and token estimates. Useful for auditing what "
+                "directives exist.\n"
+                "- changes: diff live directive files against the persisted manifest. "
+                "Shows added, removed, and changed entries since last manifest generation.\n\n"
+                "Scopes are auto-discovered from profile YAML files. 'shared' scope "
+                "is always included when filtering by a specific scope."
             ),
             "parameters": {
                 "type": "object",
@@ -43,7 +56,7 @@ class DirectivesTool:
                         "description": (
                             "'search' finds relevant sections by query, "
                             "'list' shows all headings, "
-                            "'get' returns a specific section by heading, "
+                            "'get' returns a specific section by exact heading, "
                             "'manifest' returns the full directives manifest "
                             "(IDs, versions, hashes, status, token estimates), "
                             "'changes' diffs live directives against the persisted "
@@ -52,19 +65,26 @@ class DirectivesTool:
                     },
                     "query": {
                         "type": "string",
-                        "description": "Search query (required for 'search').",
+                        "description": "Search query string. Required for 'search' action.",
                     },
                     "heading": {
                         "type": "string",
-                        "description": "Exact section heading (for 'get').",
+                        "description": (
+                            "Exact section heading to retrieve. Required for 'get'. "
+                            "Use 'list' first to discover available headings."
+                        ),
                     },
                     "scope": {
                         "type": "string",
-                        "description": "Limit to a specific scope. Omit to search all.",
+                        "description": (
+                            "Limit results to a specific scope (e.g. agent name). "
+                            "'shared' scope is always included automatically. "
+                            "Omit to search all scopes."
+                        ),
                     },
                     "limit": {
                         "type": "integer",
-                        "description": "Max results for 'search'. Default 5.",
+                        "description": "Max results for 'search' action. Default 5.",
                     },
                 },
                 "required": ["action"],

@@ -26,7 +26,6 @@ import base64 as _b64
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
-import uuid
 
 import httpx
 import yaml
@@ -476,8 +475,10 @@ def _build_chat_messages(agent: str, messages: list[dict]) -> tuple[list[dict], 
       2. Soul Script retrieval — FAISS search over directive-mode knowledge
       3. Always-on knowledge   — verbatim attached knowledge notes
       4. Memory Vault context  — FAISS search over persistent agent memories
-      5. Conversation history  — recent user/assistant turns
-      6. Tool registry         — function-calling definitions for allowed tools
+      5. Memory Save Protocol  — hardcoded [MEMORY_SAVE: ...] tag instructions
+      6. Image Generation      — [IMAGE_GEN: ...] tag instructions (if provider set)
+      7. Conversation history  — recent user/assistant turns (budget-trimmed)
+      8. Tool definitions      — OpenAI function-calling schemas (separate API param)
     """
     layers = {
         "base_prompt": {"chars": 0, "preview": ""},
@@ -952,6 +953,7 @@ _TOOL_CATALOGUE = [
     },
     {
         "name": "echo",
+        "display_name": "Echo",
         "icon": "📢",
         "icon_bg": "rgba(16,185,129,0.12)",
         "icon_color": "#10b981",
@@ -963,6 +965,7 @@ _TOOL_CATALOGUE = [
     },
     {
         "name": "directives",
+        "display_name": "Directives",
         "icon": "📜",
         "icon_bg": "rgba(251,191,36,0.12)",
         "icon_color": "#fbbf24",
@@ -977,6 +980,7 @@ _TOOL_CATALOGUE = [
     },
     {
         "name": "continuation_update",
+        "display_name": "Continuation Update",
         "icon": "🔄",
         "icon_bg": "rgba(52,211,153,0.12)",
         "icon_color": "#34d399",
@@ -992,6 +996,7 @@ _TOOL_CATALOGUE = [
     },
     {
         "name": "runtime_info",
+        "display_name": "Runtime Info",
         "icon": "📊",
         "icon_bg": "rgba(56,189,248,0.12)",
         "icon_color": "#38bdf8",
@@ -1038,6 +1043,7 @@ _TOOL_CATALOGUE = [
     },
     {
         "name": "cost_tracker",
+        "display_name": "Cost Tracker",
         "icon": "💰",
         "icon_bg": "rgba(16,185,129,0.12)",
         "icon_color": "#10b981",

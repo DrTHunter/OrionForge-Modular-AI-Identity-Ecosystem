@@ -231,14 +231,18 @@ class SemanticChunker:
         """
         # Vault memories are typically small (< 1200 chars)
         # Keep as single chunks
+        meta = memory.get('metadata', {})
+        tier = meta.get('tier') or memory.get('tier', 'N/A')
+        category = meta.get('category') or memory.get('category', 'N/A')
+        scope = meta.get('scope') or memory.get('scope', 'N/A')
         return [{
             'text': memory['text'],
             'metadata': {
-                **memory.get('metadata', {}),
-                'document_id': memory['id'],
-                'document_title': f"[{memory['metadata'].get('tier', 'N/A')}] {memory['metadata'].get('category', 'N/A')}",
+                **meta,
+                'document_id': memory.get('id', ''),
+                'document_title': f"[{tier}] {category}",
                 'section_title': memory['text'][:50] + '...' if len(memory['text']) > 50 else memory['text'],
-                'section_path': f"Vault > {memory['metadata'].get('scope', 'N/A')} > {memory['metadata'].get('category', 'N/A')}",
+                'section_path': f"Vault > {scope} > {category}",
                 'char_count': len(memory['text']),
             }
         }]

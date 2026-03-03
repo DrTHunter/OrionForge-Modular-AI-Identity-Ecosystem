@@ -68,7 +68,20 @@ class CostTrackerTool:
             "description": (
                 "Manage LLM token pricing and track costs. "
                 "Can query pricing per model, update rates, list available models, "
-                "and retrieve cost summaries or detailed logs."
+                "and retrieve cost summaries or detailed logs.\n\n"
+                "ACTIONS:\n"
+                "- get_pricing: look up token pricing. With provider+model returns "
+                "exact rates; with just provider returns all models; with neither "
+                "returns a summary of all providers and their model names.\n"
+                "- set_pricing: update pricing for a specific provider+model "
+                "(both required). Only supply the rate fields you want to change.\n"
+                "- list_models: list all models from enabled LLM API connections "
+                "(reads from connections.json, no arguments needed).\n"
+                "- cost_summary: aggregated spend for today, this week, this month, "
+                "and all-time. Optionally filter by agent.\n"
+                "- cost_log: return recent cost log entries. Filter by since, agent, "
+                "limit (default 50).\n"
+                "- session_cost: cost for a specific chat session. Requires chat_id."
             ),
             "parameters": {
                 "type": "object",
@@ -87,43 +100,50 @@ class CostTrackerTool:
                     },
                     "provider": {
                         "type": "string",
-                        "description": "LLM provider name (openai, anthropic, google, deepseek, xai, mistral, ollama).",
+                        "description": (
+                            "LLM provider name. Used by get_pricing and set_pricing. "
+                            "Examples: openai, anthropic, google, deepseek, xai, mistral, ollama."
+                        ),
                     },
                     "model": {
                         "type": "string",
-                        "description": "Model name (e.g. gpt-5.2, gpt-4.1, o3, claude-opus-4-6, gemini-2.5-pro, deepseek-chat, grok-4, mistral-large).",
+                        "description": (
+                            "Model name. Used by get_pricing and set_pricing. "
+                            "Examples: gpt-4o, gpt-4o-mini, o3, claude-sonnet-4-20250514, "
+                            "gemini-2.5-pro, deepseek-chat, grok-3."
+                        ),
                     },
                     "input_per_1m": {
                         "type": "number",
-                        "description": "Input cost in USD per 1M tokens.",
+                        "description": "Input cost in USD per 1M tokens (for set_pricing).",
                     },
                     "cached_input_per_1m": {
                         "type": "number",
-                        "description": "Cached input cost in USD per 1M tokens.",
+                        "description": "Cached input cost in USD per 1M tokens (for set_pricing).",
                     },
                     "output_per_1m": {
                         "type": "number",
-                        "description": "Output cost in USD per 1M tokens.",
+                        "description": "Output cost in USD per 1M tokens (for set_pricing).",
                     },
                     "training_per_1m": {
                         "type": "number",
-                        "description": "Training cost in USD per 1M tokens.",
+                        "description": "Training cost in USD per 1M tokens (for set_pricing).",
                     },
                     "agent": {
                         "type": "string",
-                        "description": "Filter cost data by agent name.",
+                        "description": "Filter cost data by agent name (for cost_summary and cost_log).",
                     },
                     "since": {
                         "type": "string",
-                        "description": "ISO timestamp — return events after this time.",
+                        "description": "ISO 8601 timestamp — return cost_log events after this time.",
                     },
                     "chat_id": {
                         "type": "string",
-                        "description": "Chat session ID for session_cost action.",
+                        "description": "Chat session ID. Required for session_cost action.",
                     },
                     "limit": {
                         "type": "integer",
-                        "description": "Max number of log entries to return (default 50).",
+                        "description": "Max number of cost_log entries to return (default 50).",
                     },
                 },
                 "required": ["action"],
