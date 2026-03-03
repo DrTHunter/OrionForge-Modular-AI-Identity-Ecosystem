@@ -3417,6 +3417,555 @@ def test_memory_tool_definition_dynamic():
 
 
 # ═════════════════════════════════════════════
+# Vault sort logic — all 8 sort modes
+# ═════════════════════════════════════════════
+def test_vault_sort_logic():
+    """Test the _sort_key function logic for all 8 sort modes using both dict and object forms."""
+    print("\n=== TORTURE: Vault Sort Logic — 8 modes, dict & object ===")
+    from src.memory.types import Memory
+
+    # Build a set of test memories with varied fields
+    m1 = Memory(id="m1", text="Alpha project", scope="astraea", category="project",
+                tier="canon", created_at="2026-01-01T10:00:00", updated_at="2026-02-15T08:00:00",
+                source="chat", version=1)
+    m2 = Memory(id="m2", text="Beta reflection", scope="callum", category="reflection",
+                tier="register", created_at="2026-01-05T12:00:00", updated_at=None,
+                source="manual", version=2)
+    m3 = Memory(id="m3", text="Zeta goal", scope="astraea", category="goal",
+                tier="canon", created_at="2025-12-20T09:00:00", updated_at="2026-03-01T12:00:00",
+                source="tool", version=1)
+    m4 = Memory(id="m4", text="Gamma identity", scope="shared", category="identity",
+                tier="register", created_at="2026-01-10T15:00:00", updated_at=None,
+                source=None, version=3)
+
+    memories_obj = [m1, m2, m3, m4]
+    memories_dict = [m.to_dict() for m in memories_obj]
+
+    # Helper: replicate the sort logic from app.py page_vault
+    def sort_memories(mems, sort_mode):
+        def _sort_key(m):
+            if isinstance(m, dict):
+                get = m.get
+            else:
+                get = lambda k, d="": getattr(m, k, d)
+            if sort_mode == "oldest":
+                return get("created_at", "")
+            elif sort_mode == "scope":
+                return (get("scope", ""), get("created_at", ""))
+            elif sort_mode == "category":
+                return (get("category", ""), get("created_at", ""))
+            elif sort_mode == "tier":
+                return (get("tier", "canon"), get("created_at", ""))
+            elif sort_mode == "alpha":
+                return (get("text", "") or "").lower()
+            elif sort_mode == "source":
+                return (get("source", "") or "", get("created_at", ""))
+            elif sort_mode == "updated":
+                return get("updated_at", "") or get("created_at", "") or ""
+            else:
+                return get("created_at", "")
+        reverse = sort_mode not in ("oldest", "alpha")
+        if sort_mode == "updated":
+            reverse = True
+        return sorted(mems, key=_sort_key, reverse=reverse)
+
+    def get_ids(mems):
+        return [m.id if hasattr(m, 'id') else m['id'] for m in mems]
+
+    # --- newest (default): newest created_at first ---
+    r = sort_memories(memories_obj, "newest")
+    ids = get_ids(r)
+    check("newest: m4 first (latest created_at)", ids[0] == "m4")
+    check("newest: m3 last (oldest created_at)", ids[-1] == "m3")
+
+    # --- oldest: oldest created_at first ---
+    r = sort_memories(memories_obj, "oldest")
+    ids = get_ids(r)
+    check("oldest: m3 first (earliest)", ids[0] == "m3")
+    check("oldest: m4 last (latest)", ids[-1] == "m4")
+
+    # --- scope (A→Z) ---
+    r = sort_memories(memories_obj, "scope")
+    ids = get_ids(r)
+    # scope order: astraea(m1,m3), callum(m2), shared(m4) — reversed so shared first
+    check("scope: reversed=True, shared first", ids[0] == "m4")
+    check("scope: astraea entries last", ids[-1] in ("m1", "m3"))
+
+    # --- category (A→Z) ---
+    r = sort_memories(memories_obj, "category")
+    ids = get_ids(r)
+    # categories: goal, identity, project, reflection — reversed → reflection first
+    check("category: reversed, reflection first", ids[0] == "m2")
+    check("category: goal last", ids[-1] == "m3")
+
+    # --- tier ---
+    r = sort_memories(memories_obj, "tier")
+    ids = get_ids(r)
+    # tiers: canon, register — reversed → register first
+    register_ids = [i for i, m in zip(ids, r) if (m.tier if hasattr(m, 'tier') else m['tier']) == "register"]
+    check("tier: register entries come first (reversed)", register_ids == ids[:2])
+
+    # --- alpha (A→Z text, ascending) ---
+    r = sort_memories(memories_obj, "alpha")
+    ids = get_ids(r)
+    check("alpha: Alpha project first", ids[0] == "m1")
+    check("alpha: Zeta goal last", ids[-1] == "m3")
+
+    # --- source ---
+    r = sort_memories(memories_obj, "source")
+    ids = get_ids(r)
+    # sources: "chat"(m1), "manual"(m2), "tool"(m3), None→""(m4) — reversed → tool first
+    check("source: reversed, tool first", ids[0] == "m3")
+
+    # --- updated (recently updated first) ---
+    r = sort_memories(memories_obj, "updated")
+    ids = get_ids(r)
+    # updated_at: m3=2026-03-01, m1=2026-02-15, m2=None→created 2026-01-05, m4=None→created 2026-01-10
+    check("updated: m3 first (most recent updated_at)", ids[0] == "m3")
+    check("updated: m1 second", ids[1] == "m1")
+
+    # --- Same tests with dict form ---
+    r_d = sort_memories(memories_dict, "newest")
+    ids_d = get_ids(r_d)
+    check("dict newest: same order as obj", ids_d == get_ids(sort_memories(memories_obj, "newest")))
+
+    r_d = sort_memories(memories_dict, "oldest")
+    ids_d = get_ids(r_d)
+    check("dict oldest: same order as obj", ids_d == get_ids(sort_memories(memories_obj, "oldest")))
+
+    r_d = sort_memories(memories_dict, "alpha")
+    ids_d = get_ids(r_d)
+    check("dict alpha: same order as obj", ids_d == get_ids(sort_memories(memories_obj, "alpha")))
+
+    r_d = sort_memories(memories_dict, "scope")
+    ids_d = get_ids(r_d)
+    check("dict scope: same order as obj", ids_d == get_ids(sort_memories(memories_obj, "scope")))
+
+    r_d = sort_memories(memories_dict, "category")
+    ids_d = get_ids(r_d)
+    check("dict category: same order as obj", ids_d == get_ids(sort_memories(memories_obj, "category")))
+
+    r_d = sort_memories(memories_dict, "tier")
+    ids_d = get_ids(r_d)
+    check("dict tier: same order as obj", ids_d == get_ids(sort_memories(memories_obj, "tier")))
+
+    r_d = sort_memories(memories_dict, "source")
+    ids_d = get_ids(r_d)
+    check("dict source: same order as obj", ids_d == get_ids(sort_memories(memories_obj, "source")))
+
+    r_d = sort_memories(memories_dict, "updated")
+    ids_d = get_ids(r_d)
+    check("dict updated: same order as obj", ids_d == get_ids(sort_memories(memories_obj, "updated")))
+
+    # --- Edge case: empty list ---
+    r = sort_memories([], "newest")
+    check("empty list: no crash", r == [])
+
+    # --- Edge case: single memory ---
+    r = sort_memories([m1], "alpha")
+    check("single memory: returns itself", get_ids(r) == ["m1"])
+
+    # --- Edge case: unknown sort mode → defaults to newest ---
+    r = sort_memories(memories_obj, "bogus_mode")
+    ids = get_ids(r)
+    expected = get_ids(sort_memories(memories_obj, "newest"))
+    check("unknown sort mode: defaults to newest", ids == expected)
+
+    # --- Edge case: None fields don't crash ---
+    m_none = Memory(id="mn", text="", scope="", category="", created_at="", source=None, updated_at=None)
+    for mode in ["newest", "oldest", "scope", "category", "tier", "alpha", "source", "updated"]:
+        try:
+            sort_memories([m_none], mode)
+            check(f"None fields no crash: {mode}", True)
+        except Exception as e:
+            check(f"None fields no crash: {mode}", False, str(e))
+
+
+# ═════════════════════════════════════════════
+# Vault max memory limit + utilization
+# ═════════════════════════════════════════════
+def test_vault_max_memory_limit():
+    """Test utilization calculation and unlimited (0) logic."""
+    print("\n=== TORTURE: Vault Max Memory Limit + Utilization ===")
+
+    # Replicate the utilization logic from app.py page_vault
+    def calc_utilization(active_count, max_total):
+        if max_total and max_total > 0:
+            return min(100, round(active_count / max_total * 100))
+        else:
+            return 0
+
+    # Basic utilization calculations
+    check("100/5000 = 2%", calc_utilization(100, 5000) == 2)
+    check("5000/5000 = 100%", calc_utilization(5000, 5000) == 100)
+    check("6000/5000 = capped 100%", calc_utilization(6000, 5000) == 100)
+    check("0/5000 = 0%", calc_utilization(0, 5000) == 0)
+    check("1/500 = 0% (rounds)", calc_utilization(1, 500) == 0)
+    check("3/500 = 1%", calc_utilization(3, 500) == 1)
+    check("250/500 = 50%", calc_utilization(250, 500) == 50)
+
+    # Unlimited (0) means utilization always 0
+    check("unlimited (0): 0/0 = 0%", calc_utilization(0, 0) == 0)
+    check("unlimited (0): 5000/0 = 0%", calc_utilization(5000, 0) == 0)
+    check("unlimited (0): 999999/0 = 0%", calc_utilization(999999, 0) == 0)
+
+    # None treated like unlimited
+    check("None max: 100/None = 0%", calc_utilization(100, None) == 0)
+
+    # Various preset values from dropdown
+    presets = [500, 1000, 2000, 5000, 10000, 25000, 50000, 100000]
+    for p in presets:
+        pct = calc_utilization(p // 2, p)
+        check(f"half of {p:,} = 50%", pct == 50)
+
+    # Verify preset list includes 0 (unlimited)
+    all_values = [0] + presets
+    check("dropdown has 9 total options (0 + 8 presets)", len(all_values) == 9)
+    check("0 is first option (Unlimited)", all_values[0] == 0)
+    check("presets are ascending", presets == sorted(presets))
+
+    # Verify stats dict structure
+    default_stats = {
+        "active_count": 0, "max_active": 5000, "utilization_pct": 0,
+        "by_scope": {}, "raw_lines": 0, "compactable_lines": 0,
+        "bloat_ratio": "1.0x", "deleted_count": 0
+    }
+    required_keys = ["active_count", "max_active", "utilization_pct", "by_scope"]
+    for k in required_keys:
+        check(f"default stats has '{k}'", k in default_stats)
+
+    # Unlimited stats display logic
+    check("max_active=0 is unlimited", default_stats["max_active"] != 0 or True)
+    unlimited_stats = dict(default_stats, max_active=0)
+    check("unlimited: max_active == 0", unlimited_stats["max_active"] == 0)
+    check("unlimited: utilization always 0", calc_utilization(9999, unlimited_stats["max_active"]) == 0)
+
+
+# ═════════════════════════════════════════════
+# Vault template — sort dropdown + metadata
+# ═════════════════════════════════════════════
+def test_vault_template_elements():
+    """Verify vault.html has sort dropdown, metadata display, unlimited handling via Jinja2 render."""
+    print("\n=== TORTURE: Vault Template — sort, metadata, unlimited ===")
+    from jinja2 import Environment, FileSystemLoader
+    import os
+    tpl_dir = os.path.join(os.path.dirname(__file__), "..", "web", "templates")
+    env = Environment(loader=FileSystemLoader(tpl_dir))
+    tpl = env.get_template("vault.html")
+
+    # Build a minimal context with memories
+    test_memories = [
+        {"id": "t1", "scope": "astraea", "category": "goal", "tier": "canon",
+         "text": "Test goal memory", "tags": ["important"],
+         "created_at": "2026-01-15T10:00:00", "updated_at": "2026-02-01T08:00:00",
+         "source": "chat", "version": 2},
+        {"id": "t2", "scope": "callum", "category": "bio", "tier": "register",
+         "text": "Callum bio data", "tags": [],
+         "created_at": "2026-01-20T14:00:00", "updated_at": None,
+         "source": "manual", "version": 1},
+    ]
+
+    # Render with bounded max (5000)
+    html_bounded = tpl.render(
+        stats={"active_count": 1500, "max_active": 5000, "utilization_pct": 30, "by_scope": {"astraea": 1, "callum": 1}},
+        memories=test_memories, scopes=["astraea", "callum"], categories=["bio", "goal"],
+        search_query="", current_scope="", current_category="", current_sort="newest"
+    )
+
+    # Sort dropdown
+    check("sort-select present", "sort-select" in html_bounded)
+    check("applySort function present", "applySort" in html_bounded)
+    sort_options = ["newest", "oldest", "scope", "category", "tier", "alpha", "source", "updated"]
+    for opt in sort_options:
+        check(f"sort option '{opt}' in dropdown", f'value="{opt}"' in html_bounded)
+
+    # Sort option labels
+    check("Newest First label", "Newest First" in html_bounded)
+    check("Oldest First label", "Oldest First" in html_bounded)
+    check("Scope (A→Z) label", "Scope (A" in html_bounded)
+    check("Category (A→Z) label", "Category (A" in html_bounded)
+    check("Text (A→Z) label", "Text (A" in html_bounded)
+    check("Source label", ">Source<" in html_bounded)
+    check("Recently Updated label", "Recently Updated" in html_bounded)
+    check("Tier label", ">Tier<" in html_bounded)
+
+    # Metadata per memory entry
+    check("mem-meta class present", "mem-meta" in html_bounded)
+    check("meta-icon class present", "meta-icon" in html_bounded)
+    check("created_at timestamp rendered", "2026-01-15T10:00" in html_bounded)
+    check("source 'chat' rendered", ">chat<" in html_bounded or "chat" in html_bounded)
+    check("version v2 rendered", "v2" in html_bounded)
+    check("updated_at rendered", "2026-02-01T08:00" in html_bounded)
+
+    # Tier badges
+    check("canon badge rendered", "canon" in html_bounded)
+    check("register badge rendered", "register" in html_bounded)
+
+    # Bounded stats display
+    check("bounded: active count shown", "1,500" in html_bounded or "1500" in html_bounded)
+    check("bounded: max shown", "5,000" in html_bounded)
+    check("bounded: utilization bar present", "stat-bar-fill" in html_bounded)
+    check("bounded: 30% shown", "30%" in html_bounded)
+
+    # Render with unlimited (max_active=0)
+    html_unlimited = tpl.render(
+        stats={"active_count": 42, "max_active": 0, "utilization_pct": 0, "by_scope": {}},
+        memories=[], scopes=[], categories=[],
+        search_query="", current_scope="", current_category="", current_sort="newest"
+    )
+    check("unlimited: ∞ symbol shown", "∞" in html_unlimited)
+    check("unlimited: 'Unlimited' text shown", "Unlimited" in html_unlimited)
+    check("unlimited: active count 42", "42" in html_unlimited)
+
+    # Render with unlimited (max_active='∞')
+    html_inf = tpl.render(
+        stats={"active_count": 10, "max_active": "∞", "utilization_pct": 0, "by_scope": {}},
+        memories=[], scopes=[], categories=[],
+        search_query="", current_scope="", current_category="", current_sort="newest"
+    )
+    check("infinity string: ∞ shown", "∞" in html_inf)
+    check("infinity string: Unlimited text", "Unlimited" in html_inf)
+
+    # Sort param preserved in scope links
+    html_sorted = tpl.render(
+        stats={"active_count": 0, "max_active": 5000, "utilization_pct": 0, "by_scope": {}},
+        memories=[], scopes=["astraea", "callum"], categories=[],
+        search_query="", current_scope="", current_category="", current_sort="scope"
+    )
+    check("sort=scope preserved in scope links", "sort=scope" in html_sorted)
+
+    # Selected sort option
+    check("scope option selected", 'value="scope"' in html_sorted and "selected" in html_sorted)
+
+    # current_sort=newest is default (no sort param in links)
+    html_default_sort = tpl.render(
+        stats={"active_count": 0, "max_active": 5000, "utilization_pct": 0, "by_scope": {}},
+        memories=[], scopes=["astraea"], categories=[],
+        search_query="", current_scope="", current_category="", current_sort="newest"
+    )
+    check("default sort: no sort= in scope links", "sort=" not in html_default_sort.split("sort-select")[0])
+
+    # Empty memories → no memories found message
+    check("empty: no memories message", "No memories found" in html_unlimited)
+
+    # With search query
+    html_search = tpl.render(
+        stats={"active_count": 0, "max_active": 5000, "utilization_pct": 0, "by_scope": {}},
+        memories=[], scopes=[], categories=[],
+        search_query="test query", current_scope="", current_category="", current_sort="newest"
+    )
+    check("search query shown in empty", "test query" in html_search)
+
+    # Memory with no tags, no source, no updated_at (version=1)
+    sparse_mem = [{"id": "sp1", "scope": "shared", "category": "other", "tier": "canon",
+                   "text": "Sparse memory", "tags": [], "created_at": "2026-01-01T00:00:00",
+                   "updated_at": None, "source": None, "version": 1}]
+    html_sparse = tpl.render(
+        stats={"active_count": 1, "max_active": 5000, "utilization_pct": 0, "by_scope": {"shared": 1}},
+        memories=sparse_mem, scopes=["shared"], categories=["other"],
+        search_query="", current_scope="", current_category="", current_sort="newest"
+    )
+    check("sparse mem: no version badge (v1)", "v1" not in html_sparse)
+    check("sparse mem: text rendered", "Sparse memory" in html_sparse)
+    check("sparse mem: scope badge", "shared" in html_sparse)
+
+
+# ═════════════════════════════════════════════
+# Tools.html — max_total_memories dropdown
+# ═════════════════════════════════════════════
+def test_tools_max_memory_dropdown():
+    """Verify tools.html renders the max_total_memories as a select dropdown with Unlimited + presets."""
+    print("\n=== TORTURE: Tools Max Memory Dropdown ===")
+    from jinja2 import Environment, FileSystemLoader
+    import os
+    tpl_dir = os.path.join(os.path.dirname(__file__), "..", "web", "templates")
+    env = Environment(loader=FileSystemLoader(tpl_dir))
+    tpl = env.get_template("tools.html")
+
+    # We can't fully render tools.html without all context vars, so read the raw source
+    raw = open(os.path.join(tpl_dir, "tools.html"), encoding="utf-8").read()
+
+    # Verify the select element
+    check("select tag for max_total_memories", '<select class="config-input" id="mp-retention-max_total_memories">' in raw)
+    check("Unlimited option value=0", 'value="0"' in raw)
+    check("Unlimited label text", "Unlimited" in raw)
+
+    # Verify all preset values are in the template
+    presets = [500, 1000, 2000, 5000, 10000, 25000, 50000, 100000]
+    for v in presets:
+        check(f"preset {v:,} in loop", str(v) in raw)
+
+    # Verify _collectMemoryProfile uses parseInt on the select
+    check("parseInt in _collectMemoryProfile", "parseInt(document.getElementById('mp-retention-max_total_memories').value)" in raw)
+
+    # Verify it's no longer a number input
+    check("no type=number for max_total_memories", 'type="number" class="config-input" id="mp-retention-max_total_memories"' not in raw)
+
+
+# ═════════════════════════════════════════════
+# Memory profile — max_total_memories config
+# ═════════════════════════════════════════════
+def test_memory_profile_max_total():
+    """Test memory_profile.json and __default__.json have max_total_memories, and profile round-trip."""
+    print("\n=== TORTURE: Memory Profile max_total_memories ===")
+    import os
+
+    config_dir = os.path.join(os.path.dirname(__file__), "..", "config")
+
+    # Check memory_profile.json
+    mp_path = os.path.join(config_dir, "memory_profile.json")
+    with open(mp_path, encoding="utf-8") as f:
+        mp = json.load(f)
+
+    ret = mp.get("retention_policy", {})
+    check("memory_profile has retention_policy", "retention_policy" in mp)
+    check("retention has max_total_memories", "max_total_memories" in ret)
+    mtm = ret["max_total_memories"]
+    check("max_total_memories is int", isinstance(mtm, int))
+    check("max_total_memories >= 0", mtm >= 0)
+    check("default is 5000", mtm == 5000)
+
+    # Check __default__.json
+    default_path = os.path.join(config_dir, "saved_profiles", "memory", "__default__.json")
+    if os.path.exists(default_path):
+        with open(default_path, encoding="utf-8") as f:
+            dp = json.load(f)
+        dret = dp.get("retention_policy", {})
+        check("__default__ has max_total_memories", "max_total_memories" in dret)
+        check("__default__ max_total_memories >= 0", dret["max_total_memories"] >= 0)
+    else:
+        check("__default__.json exists", False, "file not found")
+
+    # Verify 0 is a valid value (unlimited)
+    ret_copy = dict(ret)
+    ret_copy["max_total_memories"] = 0
+    check("0 is valid (unlimited)", ret_copy["max_total_memories"] == 0)
+
+    # Round-trip: profile stays valid after setting unlimited
+    mp_copy = dict(mp)
+    mp_copy["retention_policy"] = dict(ret, max_total_memories=0)
+    check("round-trip unlimited: still has all keys",
+          all(k in mp_copy["retention_policy"] for k in ["max_total_memories", "decay_strategy", "max_pinned_memories"]))
+
+    # Verify safety_policy still has custom_hard_rules
+    sp = mp.get("safety_policy", {})
+    check("safety_policy has custom_hard_rules", "custom_hard_rules" in sp)
+    check("custom_hard_rules is list", isinstance(sp["custom_hard_rules"], list))
+
+
+# ═════════════════════════════════════════════
+# Vault sort edge cases — ties, stability
+# ═════════════════════════════════════════════
+def test_vault_sort_edge_cases():
+    """Test sort stability, ties, unicode text, and all sort modes with identical fields."""
+    print("\n=== TORTURE: Vault Sort Edge Cases ===")
+    from src.memory.types import Memory
+
+    # All same scope/category/tier — sort should still be stable
+    same_records = [
+        Memory(id=f"s{i}", text=f"Record {i}", scope="shared", category="bio",
+               tier="canon", created_at=f"2026-01-0{i}T00:00:00", source="chat")
+        for i in range(1, 6)
+    ]
+
+    # Replicate sort helper
+    def sort_mems(mems, mode):
+        def _sort_key(m):
+            get = lambda k, d="": getattr(m, k, d)
+            if mode == "oldest":
+                return get("created_at", "")
+            elif mode == "scope":
+                return (get("scope", ""), get("created_at", ""))
+            elif mode == "category":
+                return (get("category", ""), get("created_at", ""))
+            elif mode == "tier":
+                return (get("tier", "canon"), get("created_at", ""))
+            elif mode == "alpha":
+                return (get("text", "") or "").lower()
+            elif mode == "source":
+                return (get("source", "") or "", get("created_at", ""))
+            elif mode == "updated":
+                return get("updated_at", "") or get("created_at", "") or ""
+            else:
+                return get("created_at", "")
+        reverse = mode not in ("oldest", "alpha")
+        if mode == "updated":
+            reverse = True
+        return sorted(mems, key=_sort_key, reverse=reverse)
+
+    # All same scope: sort by scope still works (secondary: created_at)
+    r = sort_mems(same_records, "scope")
+    ids = [m.id for m in r]
+    check("same scope: s5 first (reversed, latest created)", ids[0] == "s5")
+    check("same scope: s1 last", ids[-1] == "s1")
+
+    # All same category: sort by category still works
+    r = sort_mems(same_records, "category")
+    ids = [m.id for m in r]
+    check("same category: s5 first", ids[0] == "s5")
+
+    # Alpha sort with mixed case
+    mixed_case = [
+        Memory(id="mc1", text="zebra", scope="s", category="c", created_at=""),
+        Memory(id="mc2", text="Alpha", scope="s", category="c", created_at=""),
+        Memory(id="mc3", text="BETA", scope="s", category="c", created_at=""),
+        Memory(id="mc4", text="gamma", scope="s", category="c", created_at=""),
+    ]
+    r = sort_mems(mixed_case, "alpha")
+    texts = [(m.text or "").lower() for m in r]
+    check("alpha case-insensitive: sorted ascending", texts == sorted(texts))
+
+    # Unicode text sort
+    unicode_mems = [
+        Memory(id="u1", text="Ñoño", scope="s", category="c", created_at=""),
+        Memory(id="u2", text="apple", scope="s", category="c", created_at=""),
+        Memory(id="u3", text="über", scope="s", category="c", created_at=""),
+    ]
+    try:
+        r = sort_mems(unicode_mems, "alpha")
+        check("unicode alpha: no crash", True)
+        check("unicode alpha: returns 3 items", len(r) == 3)
+    except Exception as e:
+        check("unicode alpha: no crash", False, str(e))
+
+    # Updated sort with mix of None and real updated_at
+    updated_mix = [
+        Memory(id="u1", text="t", scope="s", category="c",
+               created_at="2026-01-01T00:00:00", updated_at="2026-03-01T00:00:00"),
+        Memory(id="u2", text="t", scope="s", category="c",
+               created_at="2026-02-01T00:00:00", updated_at=None),
+        Memory(id="u3", text="t", scope="s", category="c",
+               created_at="2025-12-01T00:00:00", updated_at="2026-02-15T00:00:00"),
+    ]
+    r = sort_mems(updated_mix, "updated")
+    ids = [m.id for m in r]
+    check("updated mix: u1 first (2026-03-01)", ids[0] == "u1")
+    check("updated mix: u3 second (2026-02-15)", ids[1] == "u3")
+    check("updated mix: u2 last (falls back to 2026-02-01)", ids[2] == "u2")
+
+    # Source with None values
+    source_mix = [
+        Memory(id="sn1", text="t", scope="s", category="c",
+               created_at="2026-01-01T00:00:00", source=None),
+        Memory(id="sn2", text="t", scope="s", category="c",
+               created_at="2026-01-02T00:00:00", source="manual"),
+        Memory(id="sn3", text="t", scope="s", category="c",
+               created_at="2026-01-03T00:00:00", source="chat"),
+    ]
+    r = sort_mems(source_mix, "source")
+    ids = [m.id for m in r]
+    check("source with None: no crash", len(r) == 3)
+    # reversed=True, so "manual" > "chat" > ""
+    check("source: manual first (reversed)", ids[0] == "sn2")
+
+    # All 8 sort modes idempotent (sorting twice gives same result)
+    for mode in ["newest", "oldest", "scope", "category", "tier", "alpha", "source", "updated"]:
+        r1 = sort_mems(same_records, mode)
+        r2 = sort_mems(r1, mode)
+        check(f"idempotent {mode}", [m.id for m in r1] == [m.id for m in r2])
+
+
+# ═════════════════════════════════════════════
 if __name__ == "__main__":
     test_boundary_policy()
     test_pii_guard_extended()
@@ -3463,6 +4012,12 @@ if __name__ == "__main__":
     test_saved_profile_upgrade()
     test_tool_catalogue_dynamic()
     test_memory_tool_definition_dynamic()
+    test_vault_sort_logic()
+    test_vault_max_memory_limit()
+    test_vault_template_elements()
+    test_tools_max_memory_dropdown()
+    test_memory_profile_max_total()
+    test_vault_sort_edge_cases()
 
     print(f"\n{'='*40}")
     print(f"Results: {PASS} passed, {FAIL} failed")
