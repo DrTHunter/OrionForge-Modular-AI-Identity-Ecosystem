@@ -615,6 +615,89 @@
   .rt-table-model { color: #a1a1aa; font-size: 0.8rem; }
   .rt-table-dim { color: #52525b; font-size: 0.8rem; }
 
+  /* ── Router Presets (Save-States) ── */
+  .rt-presets-bar {
+    display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1.25rem;
+    background: rgba(99,102,241,0.06); border: 1px solid rgba(99,102,241,0.18);
+    border-radius: 0.75rem; margin-bottom: 1.25rem;
+  }
+  .rt-presets-bar-icon { font-size: 1.2rem; }
+  .rt-presets-bar-text { flex: 1; }
+  .rt-presets-bar-title { font-size: 0.875rem; font-weight: 700; color: #e4e4e7; }
+  .rt-presets-bar-sub { font-size: 0.75rem; color: #71717a; margin-top: 0.125rem; }
+  .rt-presets-btn {
+    padding: 0.4rem 0.9rem; font-size: 0.8rem; font-weight: 600; border-radius: 0.4rem;
+    border: 1px solid rgba(99,102,241,0.35); background: rgba(99,102,241,0.12);
+    color: #a5b4fc; cursor: pointer; transition: all 0.15s; white-space: nowrap;
+  }
+  .rt-presets-btn:hover { background: rgba(99,102,241,0.22); border-color: rgba(99,102,241,0.5); color: #c7d2fe; }
+
+  .rt-preset-modal-overlay {
+    display: none; position: fixed; inset: 0; z-index: 10000;
+    background: rgba(0,0,0,0.55); backdrop-filter: blur(4px);
+  }
+  .rt-preset-modal-overlay.active { display: flex; align-items: center; justify-content: center; }
+  .rt-preset-modal {
+    background: #1a1a2e; border: 1px solid #3b3b5c; border-radius: 0.85rem;
+    padding: 0; max-width: 520px; width: 94vw; max-height: 85vh; overflow-y: auto;
+    box-shadow: 0 12px 48px rgba(0,0,0,0.6); color: #e2e8f0;
+    animation: popIn 0.18s ease-out;
+  }
+  .rt-preset-modal-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.25rem 1.5rem; border-bottom: 1px solid #2a2a3a;
+  }
+  .rt-preset-modal-head h3 { margin: 0; font-size: 1rem; font-weight: 700; color: #fff; }
+  .rt-preset-modal-body { padding: 1.25rem 1.5rem; }
+  .rt-preset-form-group { margin-bottom: 1rem; }
+  .rt-preset-form-label { display: block; font-size: 0.75rem; font-weight: 600; color: #a1a1aa; margin-bottom: 0.35rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .rt-preset-form-input {
+    width: 100%; background: rgba(24,24,27,0.7); border: 1px solid #2a2a3a;
+    border-radius: 0.4rem; padding: 0.5rem 0.75rem; font-size: 0.875rem;
+    color: #e4e4e7; outline: none; transition: border-color 0.15s;
+  }
+  .rt-preset-form-input:focus { border-color: rgba(99,102,241,0.5); }
+  .rt-preset-form-textarea {
+    width: 100%; background: rgba(24,24,27,0.7); border: 1px solid #2a2a3a;
+    border-radius: 0.4rem; padding: 0.5rem 0.75rem; font-size: 0.8125rem;
+    color: #e4e4e7; outline: none; resize: vertical; min-height: 3.5rem; transition: border-color 0.15s;
+    font-family: inherit;
+  }
+  .rt-preset-form-textarea:focus { border-color: rgba(99,102,241,0.5); }
+  .rt-preset-save-btn {
+    display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1.2rem;
+    font-size: 0.8125rem; font-weight: 700; border-radius: 0.4rem; border: none;
+    background: linear-gradient(135deg, #6366f1, #818cf8); color: #fff;
+    cursor: pointer; transition: opacity 0.15s;
+  }
+  .rt-preset-save-btn:hover { opacity: 0.88; }
+  .rt-preset-divider { border: none; border-top: 1px solid #2a2a3a; margin: 1.25rem 0; }
+  .rt-preset-list-title { font-size: 0.8125rem; font-weight: 700; color: #a1a1aa; margin-bottom: 0.75rem; }
+  .rt-preset-card {
+    display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.75rem 1rem;
+    background: rgba(24,24,27,0.5); border: 1px solid #2a2a3a; border-radius: 0.5rem;
+    margin-bottom: 0.5rem; transition: border-color 0.15s;
+  }
+  .rt-preset-card:hover { border-color: rgba(99,102,241,0.3); }
+  .rt-preset-card-info { flex: 1; min-width: 0; }
+  .rt-preset-card-name { font-size: 0.875rem; font-weight: 700; color: #e4e4e7; }
+  .rt-preset-card-desc { font-size: 0.75rem; color: #71717a; margin-top: 0.15rem; }
+  .rt-preset-card-date { font-size: 0.625rem; color: #52525b; margin-top: 0.25rem; }
+  .rt-preset-card-actions { display: flex; gap: 0.4rem; flex-shrink: 0; align-items: center; }
+  .rt-preset-load-btn {
+    padding: 0.3rem 0.7rem; font-size: 0.75rem; font-weight: 600; border-radius: 0.3rem;
+    border: 1px solid rgba(16,185,129,0.3); background: rgba(16,185,129,0.1);
+    color: #6ee7b7; cursor: pointer; transition: all 0.15s;
+  }
+  .rt-preset-load-btn:hover { background: rgba(16,185,129,0.2); border-color: rgba(16,185,129,0.5); }
+  .rt-preset-del-btn {
+    padding: 0.3rem 0.55rem; font-size: 0.75rem; font-weight: 600; border-radius: 0.3rem;
+    border: 1px solid rgba(239,68,68,0.25); background: rgba(239,68,68,0.08);
+    color: #fca5a5; cursor: pointer; transition: all 0.15s;
+  }
+  .rt-preset-del-btn:hover { background: rgba(239,68,68,0.18); border-color: rgba(239,68,68,0.4); }
+  .rt-preset-empty { color: #52525b; font-size: 0.8125rem; text-align: center; padding: 1.5rem 0; }
+
   /* ── Tier Edit Modal ── */
   .rt-modal-overlay {
     display: none; position: fixed; inset: 0; z-index: 9999;
@@ -3663,6 +3746,16 @@
       <!-- filled by JS -->
     </div>
 
+    <!-- ─── Router Presets (Save-States) ─── -->
+    <div class="rt-presets-bar">
+      <span class="rt-presets-bar-icon">💾</span>
+      <div class="rt-presets-bar-text">
+        <div class="rt-presets-bar-title">Router Presets</div>
+        <div class="rt-presets-bar-sub">Save, name, and restore entire router configurations as reusable presets.</div>
+      </div>
+      <button class="rt-presets-btn" onclick="_rtOpenPresetsModal()">Manage Presets&hellip;</button>
+    </div>
+
     <!-- ─── Tiered Model Router Table ─── -->
     <div class="rt-section">
       <div class="rt-section-head">
@@ -3710,6 +3803,7 @@
     <!-- ─── Action Bar ─── -->
     <div class="action-bar" style="margin-top:1.5rem;">
       <button class="btn btn-secondary" onclick="resetRouterConfig()">Reset All</button>
+      <button class="btn btn-primary" onclick="_rtOpenPresetsModal()">💾 Save / Load Preset&hellip;</button>
       <button class="btn btn-primary" onclick="saveRouterConfig()">Save Router Config</button>
     </div>
   </div>
@@ -3718,6 +3812,38 @@
   <div class="rt-modal-overlay" id="rt-modal-overlay" onclick="if(event.target===this) _rtCloseModal()">
     <div class="rt-modal" id="rt-modal">
       <!-- filled by JS -->
+    </div>
+  </div>
+
+  <!-- ─── Router Presets Modal ─── -->
+  <div class="rt-preset-modal-overlay" id="rt-preset-modal-overlay" onclick="if(event.target===this) _rtClosePresetsModal()">
+    <div class="rt-preset-modal">
+      <div class="rt-preset-modal-head">
+        <h3>💾 Router Presets</h3>
+        <button class="rt-modal-close" onclick="_rtClosePresetsModal()">&times;</button>
+      </div>
+      <div class="rt-preset-modal-body">
+        <!-- Save New Preset -->
+        <div class="rt-preset-form-group">
+          <label class="rt-preset-form-label">Preset Name</label>
+          <input type="text" class="rt-preset-form-input" id="rt-preset-name" placeholder="e.g. Production Setup">
+        </div>
+        <div class="rt-preset-form-group">
+          <label class="rt-preset-form-label">Description (optional)</label>
+          <textarea class="rt-preset-form-textarea" id="rt-preset-desc" placeholder="What this preset contains…"></textarea>
+        </div>
+        <div style="display:flex;justify-content:flex-end;">
+          <button class="rt-preset-save-btn" onclick="_rtSavePreset()">💾 Save Current Config as Preset</button>
+        </div>
+
+        <hr class="rt-preset-divider">
+
+        <!-- Existing Presets -->
+        <div class="rt-preset-list-title">Saved Presets</div>
+        <div id="rt-preset-list">
+          <div class="rt-preset-empty">Loading…</div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -5064,21 +5190,27 @@
 
     grid.innerHTML = tasks.map(task => {
       const val = map[task];
-      // Build options: tiers by label, then __auto__, then divider, then specific models
+      // Build options: Auto, then tiers by label, then specific models grouped by connection
       let opts = '<option value="__auto__"' + (val === '__auto__' ? ' selected' : '') + '>-- Auto --</option>';
       tiers.forEach(t => {
         const lbl = t.label.replace(/_/g, ' ');
         const capLabel = lbl.charAt(0).toUpperCase() + lbl.slice(1);
-        opts += `<option value="${_rtEsc(t.label)}" ${val === t.label ? 'selected' : ''}>${capLabel}</option>`;
+        opts += `<option value="${_rtEsc(t.label)}" ${val === t.label ? 'selected' : ''}>${t.id.toUpperCase()} — ${capLabel}</option>`;
       });
-      // Add specific models from all connections
-      const allModels = _rtAllModels();
-      if (allModels.length) {
-        opts += '<option disabled>──────────────</option>';
-        allModels.forEach(m => {
-          opts += `<option value="model:${_rtEsc(m.value)}" ${val === 'model:' + m.value ? 'selected' : ''}>${_rtEsc(m.value)}</option>`;
+      // Add specific models grouped by connection using model:<connId>:<model> format
+      _rtConnections.forEach(c => {
+        if (!c.enabled) return;
+        const models = (c.models || []).slice();
+        // Include dynamically fetched models
+        ((_rtConnModels[c.id] || []).forEach(m => { if (!models.includes(m)) models.push(m); }));
+        if (!models.length) return;
+        opts += `<optgroup label="${_rtEsc(c.name)} (${_rtEsc(c.provider || c.type || '')})">`;
+        models.forEach(m => {
+          const mVal = `model:${c.id}:${m}`;
+          opts += `<option value="${_rtEsc(mVal)}" ${val === mVal ? 'selected' : ''}>${_rtEsc(m)}</option>`;
         });
-      }
+        opts += '</optgroup>';
+      });
       // If the current value isn't in the options, show it anyway
       if (val && !val.startsWith('model:') && val !== '__auto__' && !tiers.find(t => t.label === val)) {
         opts += `<option value="${_rtEsc(val)}" selected>${_rtEsc(val)}</option>`;
@@ -5126,6 +5258,99 @@
       }
     } catch (e) {
       showToast('Reset failed: ' + e.message, true);
+    }
+  }
+
+  /* ═══ Router Presets (Save-States) ═══════════════════════════ */
+
+  function _rtOpenPresetsModal() {
+    document.getElementById('rt-preset-modal-overlay').classList.add('active');
+    document.getElementById('rt-preset-name').value = '';
+    document.getElementById('rt-preset-desc').value = '';
+    _rtLoadPresetsList();
+  }
+  function _rtClosePresetsModal() {
+    document.getElementById('rt-preset-modal-overlay').classList.remove('active');
+  }
+
+  async function _rtLoadPresetsList() {
+    const container = document.getElementById('rt-preset-list');
+    container.innerHTML = '<div class="rt-preset-empty">Loading…</div>';
+    try {
+      const resp = await fetch('/api/model-router/presets');
+      const data = await resp.json();
+      const presets = data.presets || [];
+      if (!presets.length) {
+        container.innerHTML = '<div class="rt-preset-empty">No saved presets yet. Save your first one above!</div>';
+        return;
+      }
+      container.innerHTML = presets.map(p => `
+        <div class="rt-preset-card">
+          <div class="rt-preset-card-info">
+            <div class="rt-preset-card-name">${_rtEsc(p.name)}</div>
+            ${p.description ? `<div class="rt-preset-card-desc">${_rtEsc(p.description)}</div>` : ''}
+            ${p.created ? `<div class="rt-preset-card-date">${_rtEsc(p.created)}</div>` : ''}
+          </div>
+          <div class="rt-preset-card-actions">
+            <button class="rt-preset-load-btn" onclick="_rtLoadPreset('${_rtEsc(p.filename)}')">Load</button>
+            <button class="rt-preset-del-btn" onclick="_rtDeletePreset('${_rtEsc(p.filename)}', '${_rtEsc(p.name)}')">✕</button>
+          </div>
+        </div>
+      `).join('');
+    } catch (e) {
+      container.innerHTML = '<div class="rt-preset-empty">Failed to load presets.</div>';
+    }
+  }
+
+  async function _rtSavePreset() {
+    const name = document.getElementById('rt-preset-name').value.trim();
+    if (!name) { showToast('Enter a preset name', true); return; }
+    const description = document.getElementById('rt-preset-desc').value.trim();
+    try {
+      const resp = await fetch('/api/model-router/presets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, description, config: _routerConfig }),
+      });
+      if (resp.ok) {
+        showToast(`Preset "${name}" saved`);
+        document.getElementById('rt-preset-name').value = '';
+        document.getElementById('rt-preset-desc').value = '';
+        _rtLoadPresetsList();
+      } else {
+        showToast('Save failed', true);
+      }
+    } catch (e) {
+      showToast('Save failed: ' + e.message, true);
+    }
+  }
+
+  async function _rtLoadPreset(filename) {
+    if (!confirm('Load this preset? Your current router config will be replaced.')) return;
+    try {
+      const resp = await fetch(`/api/model-router/presets/${filename}/load`, { method: 'POST' });
+      const data = await resp.json();
+      if (data.ok) {
+        _routerConfig = data.config;
+        renderRouterPanel();
+        showToast(`Preset "${data.name || filename}" loaded`);
+        _rtClosePresetsModal();
+      } else {
+        showToast(data.error || 'Load failed', true);
+      }
+    } catch (e) {
+      showToast('Load failed: ' + e.message, true);
+    }
+  }
+
+  async function _rtDeletePreset(filename, name) {
+    if (!confirm(`Delete preset "${name}"?`)) return;
+    try {
+      await fetch(`/api/model-router/presets/${filename}`, { method: 'DELETE' });
+      showToast(`Preset "${name}" deleted`);
+      _rtLoadPresetsList();
+    } catch (e) {
+      showToast('Delete failed: ' + e.message, true);
     }
   }
 

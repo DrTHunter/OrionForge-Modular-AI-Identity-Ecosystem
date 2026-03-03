@@ -1,0 +1,27 @@
+{
+  "name": "test 1",
+  "description": "s",
+  "created": "2026-03-03T13:59:46",
+  "config": {
+    "enabled": true,
+    "task_tier_map": {
+      "agi_tick": "__auto__",
+      "coding": "__auto__",
+      "final_polish": "__auto__",
+      "general": "__auto__",
+      "high_stakes": "__auto__",
+      "memory_ops": "__auto__",
+      "planning": "__auto__",
+      "reflection": "__auto__",
+      "summarization": "__auto__",
+      "tool_use": "__auto__"
+    },
+    "tiers": [
+      {
+        "enabled": true,
+        "id": "t0",
+        "label": "local_cheap"
+      }
+    ]
+  }
+}

@@ -202,6 +202,88 @@
   }
   .tier-btn-add:hover { background: rgba(99,102,241,0.2); }
 
+  /* ── Router Presets (Save-States) ── */
+  .agi-presets-bar {
+    display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1.25rem;
+    background: rgba(99,102,241,0.06); border: 1px solid rgba(99,102,241,0.18);
+    border-radius: 0.75rem; margin-bottom: 1.25rem;
+  }
+  .agi-presets-bar-icon { font-size: 1.2rem; }
+  .agi-presets-bar-text { flex: 1; }
+  .agi-presets-bar-title { font-size: 0.875rem; font-weight: 700; color: #e4e4e7; }
+  .agi-presets-bar-sub { font-size: 0.75rem; color: #71717a; margin-top: 0.125rem; }
+  .agi-presets-btn {
+    padding: 0.4rem 0.9rem; font-size: 0.8rem; font-weight: 600; border-radius: 0.4rem;
+    border: 1px solid rgba(99,102,241,0.35); background: rgba(99,102,241,0.12);
+    color: #a5b4fc; cursor: pointer; transition: all 0.15s; white-space: nowrap;
+  }
+  .agi-presets-btn:hover { background: rgba(99,102,241,0.22); border-color: rgba(99,102,241,0.5); color: #c7d2fe; }
+  .agi-preset-modal-overlay {
+    display: none; position: fixed; inset: 0; z-index: 10000;
+    background: rgba(0,0,0,0.55); backdrop-filter: blur(4px);
+  }
+  .agi-preset-modal-overlay.active { display: flex; align-items: center; justify-content: center; }
+  .agi-preset-modal {
+    background: #13131a; border: 1px solid #2a2a3a; border-radius: 0.85rem;
+    padding: 0; max-width: 520px; width: 94vw; max-height: 85vh; overflow-y: auto;
+    box-shadow: 0 12px 48px rgba(0,0,0,0.6); color: #e2e8f0;
+    animation: tierSlideIn 0.18s ease-out;
+  }
+  .agi-preset-modal-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.25rem 1.5rem; border-bottom: 1px solid #2a2a3a;
+  }
+  .agi-preset-modal-head h3 { margin: 0; font-size: 1rem; font-weight: 700; color: #fff; }
+  .agi-preset-modal-body { padding: 1.25rem 1.5rem; }
+  .agi-preset-form-group { margin-bottom: 1rem; }
+  .agi-preset-form-label { display: block; font-size: 0.75rem; font-weight: 600; color: #a1a1aa; margin-bottom: 0.35rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .agi-preset-form-input {
+    width: 100%; background: rgba(24,24,27,0.7); border: 1px solid #2a2a3a;
+    border-radius: 0.4rem; padding: 0.5rem 0.75rem; font-size: 0.875rem;
+    color: #e4e4e7; outline: none; transition: border-color 0.15s;
+  }
+  .agi-preset-form-input:focus { border-color: rgba(99,102,241,0.5); }
+  .agi-preset-form-textarea {
+    width: 100%; background: rgba(24,24,27,0.7); border: 1px solid #2a2a3a;
+    border-radius: 0.4rem; padding: 0.5rem 0.75rem; font-size: 0.8125rem;
+    color: #e4e4e7; outline: none; resize: vertical; min-height: 3.5rem; transition: border-color 0.15s;
+    font-family: inherit;
+  }
+  .agi-preset-form-textarea:focus { border-color: rgba(99,102,241,0.5); }
+  .agi-preset-save-btn {
+    display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1.2rem;
+    font-size: 0.8125rem; font-weight: 700; border-radius: 0.4rem; border: none;
+    background: linear-gradient(135deg, #6366f1, #818cf8); color: #fff;
+    cursor: pointer; transition: opacity 0.15s;
+  }
+  .agi-preset-save-btn:hover { opacity: 0.88; }
+  .agi-preset-divider { border: none; border-top: 1px solid #2a2a3a; margin: 1.25rem 0; }
+  .agi-preset-list-title { font-size: 0.8125rem; font-weight: 700; color: #a1a1aa; margin-bottom: 0.75rem; }
+  .agi-preset-card {
+    display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.75rem 1rem;
+    background: rgba(24,24,27,0.5); border: 1px solid #2a2a3a; border-radius: 0.5rem;
+    margin-bottom: 0.5rem; transition: border-color 0.15s;
+  }
+  .agi-preset-card:hover { border-color: rgba(99,102,241,0.3); }
+  .agi-preset-card-info { flex: 1; min-width: 0; }
+  .agi-preset-card-name { font-size: 0.875rem; font-weight: 700; color: #e4e4e7; }
+  .agi-preset-card-desc { font-size: 0.75rem; color: #71717a; margin-top: 0.15rem; }
+  .agi-preset-card-date { font-size: 0.625rem; color: #52525b; margin-top: 0.25rem; }
+  .agi-preset-card-actions { display: flex; gap: 0.4rem; flex-shrink: 0; align-items: center; }
+  .agi-preset-load-btn {
+    padding: 0.3rem 0.7rem; font-size: 0.75rem; font-weight: 600; border-radius: 0.3rem;
+    border: 1px solid rgba(16,185,129,0.3); background: rgba(16,185,129,0.1);
+    color: #6ee7b7; cursor: pointer; transition: all 0.15s;
+  }
+  .agi-preset-load-btn:hover { background: rgba(16,185,129,0.2); border-color: rgba(16,185,129,0.5); }
+  .agi-preset-del-btn {
+    padding: 0.3rem 0.55rem; font-size: 0.75rem; font-weight: 600; border-radius: 0.3rem;
+    border: 1px solid rgba(239,68,68,0.25); background: rgba(239,68,68,0.08);
+    color: #fca5a5; cursor: pointer; transition: all 0.15s;
+  }
+  .agi-preset-del-btn:hover { background: rgba(239,68,68,0.18); border-color: rgba(239,68,68,0.4); }
+  .agi-preset-empty { color: #52525b; font-size: 0.8125rem; text-align: center; padding: 1.5rem 0; }
+
   /* Clickable tier row */
   .tier-table tbody tr { cursor: pointer; transition: all 0.15s; }
   .tier-table tbody tr:hover { background: rgba(99,102,241,0.08); }
@@ -211,6 +293,45 @@
   .tier-enabled-dot.off { background: #52525b; }
   .tier-edit-hint { font-size: 0.6875rem; color: #3f3f46; margin-left: 0.5rem; opacity: 0; transition: opacity 0.15s; }
   .tier-table tbody tr:hover .tier-edit-hint { opacity: 1; }
+
+  /* ── Inbox tab styles ── */
+  .inbox-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 1.25rem; height: 1.25rem; padding: 0 0.375rem; border-radius: 9999px; font-size: 0.6875rem; font-weight: 700; background: #ef4444; color: #fff; margin-left: 0.375rem; line-height: 1; }
+  .inbox-badge.empty { background: rgba(113,113,122,0.3); color: #71717a; }
+  .inbox-entry { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.875rem 1rem; border-bottom: 1px solid rgba(42,42,58,0.3); transition: background 0.15s; cursor: pointer; }
+  .inbox-entry:hover { background: rgba(99,102,241,0.04); }
+  .inbox-entry:last-child { border-bottom: none; }
+  .inbox-entry.unread { border-left: 3px solid #6366f1; }
+  .inbox-entry.pending { border-left: 3px solid #f59e0b; }
+  .inbox-type-icon { font-size: 1.125rem; flex-shrink: 0; margin-top: 0.125rem; }
+  .inbox-entry-body { flex: 1; min-width: 0; }
+  .inbox-subject { font-size: 0.875rem; font-weight: 600; color: #e4e4e7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .inbox-preview { font-size: 0.75rem; color: #71717a; margin-top: 0.125rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .inbox-meta { font-size: 0.6875rem; color: #52525b; margin-top: 0.25rem; display: flex; gap: 0.75rem; align-items: center; }
+  .inbox-priority { padding: 0.0625rem 0.375rem; border-radius: 0.25rem; font-size: 0.625rem; font-weight: 700; text-transform: uppercase; }
+  .inbox-priority.urgent { background: rgba(239,68,68,0.15); color: #fca5a5; }
+  .inbox-priority.high { background: rgba(245,158,11,0.15); color: #fcd34d; }
+  .inbox-priority.normal { background: rgba(113,113,122,0.1); color: #a1a1aa; }
+  .inbox-priority.low { background: rgba(113,113,122,0.06); color: #71717a; }
+  .inbox-filter-bar { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1rem; border-bottom: 1px solid rgba(42,42,58,0.4); flex-wrap: wrap; }
+  .inbox-filter-btn { padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; background: rgba(42,42,58,0.3); color: #71717a; border: 1px solid transparent; cursor: pointer; transition: all 0.15s; }
+  .inbox-filter-btn:hover { color: #a1a1aa; }
+  .inbox-filter-btn.active { background: rgba(99,102,241,0.15); color: #a5b4fc; border-color: rgba(99,102,241,0.3); }
+  .inbox-detail { display: none; padding: 1.25rem; }
+  .inbox-detail.active { display: block; }
+  .inbox-detail-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+  .inbox-detail-body { font-size: 0.875rem; color: #d4d4d8; line-height: 1.65; white-space: pre-wrap; }
+  .inbox-compose-form { display: flex; flex-direction: column; gap: 0.75rem; }
+  .inbox-compose-form input, .inbox-compose-form textarea, .inbox-compose-form select { background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 0.5rem; color: #d4d4d8; padding: 0.625rem 0.75rem; font-size: 0.875rem; outline: none; transition: border-color 0.15s; font-family: inherit; }
+  .inbox-compose-form input:focus, .inbox-compose-form textarea:focus, .inbox-compose-form select:focus { border-color: #6366f1; }
+  .inbox-compose-form textarea { min-height: 100px; resize: vertical; }
+  .inbox-empty { text-align: center; padding: 3rem 1rem; color: #52525b; }
+  .inbox-empty-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+  .inbox-list-wrap { max-height: 480px; overflow-y: auto; }
+  .inbox-bubble { cursor: pointer; transition: all 0.2s; position: relative; }
+  .inbox-bubble:hover { border-color: rgba(99,102,241,0.4) !important; transform: translateY(-1px); }
+  .inbox-bubble .bubble-count { font-size: 1.75rem; font-weight: 800; }
+  .inbox-bubble .bubble-dot { position: absolute; top: 0.625rem; right: 0.625rem; width: 8px; height: 8px; border-radius: 50%; background: #ef4444; display: none; }
+  .inbox-bubble .bubble-dot.has-items { display: block; animation: pulse-dot 1.5s infinite; }
 </style>
 
 <div>
@@ -228,15 +349,16 @@
     </span>
   </div>
 
-  <!-- Preview banner -->
-  <div class="p-3 rounded-lg border border-yellow-700/40 bg-yellow-900/10 mb-5 flex items-center gap-2 text-sm text-yellow-300">
+  <!-- Connection warning banner (shown only when no LLM connections configured) -->
+  <div class="p-3 rounded-lg border border-yellow-700/40 bg-yellow-900/10 mb-5 flex items-center gap-2 text-sm text-yellow-300" id="preview-banner" style="display:none;">
     <span>&#9888;</span>
-    <span><strong>Preview Mode</strong> &mdash; Settings below are saved locally. The backend at <code class="text-yellow-200">agent-runtime</code> is not connected.</span>
+    <span><strong>No LLM Connections</strong> &mdash; Add a connection in <a href="/connections" class="text-yellow-200 underline">Settings &rarr; Connections</a> before starting the loop.</span>
   </div>
 
   <!-- â”€â”€ Tabs â”€â”€ -->
   <div class="tab-bar">
     <button class="tab-btn active" onclick="switchTab('dashboard')">Dashboard</button>
+    <button class="tab-btn" onclick="switchTab('inbox')">Inbox <span class="inbox-badge empty" id="inbox-tab-badge">0</span></button>
     <button class="tab-btn" onclick="switchTab('config')">Configuration</button>
     <button class="tab-btn" onclick="switchTab('pipeline')">Pipeline</button>
     <button class="tab-btn" onclick="switchTab('routing')">Model Router</button>
@@ -249,7 +371,7 @@
   <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
   <div class="view-panel active" id="panel-dashboard">
     <!-- Stats -->
-    <div class="grid grid-cols-4 gap-3 mb-5 max-md:grid-cols-2">
+    <div class="grid grid-cols-5 gap-3 mb-5 max-md:grid-cols-2">
       <div class="card text-center">
         <div class="text-3xl font-extrabold text-white" id="stat-loops">0</div>
         <div class="text-xs text-forge-muted uppercase tracking-wider mt-0.5">Loops Completed</div>
@@ -266,6 +388,11 @@
         <div class="text-3xl font-extrabold text-white" id="stat-cost">$0.00</div>
         <div class="text-xs text-forge-muted uppercase tracking-wider mt-0.5">Total Cost</div>
       </div>
+      <div class="card text-center inbox-bubble" onclick="switchTabById('inbox')">
+        <span class="bubble-dot" id="inbox-bubble-dot"></span>
+        <div class="bubble-count text-white" id="stat-inbox">0</div>
+        <div class="text-xs text-forge-muted uppercase tracking-wider mt-0.5">Inbox</div>
+      </div>
     </div>
 
     <!-- Controls -->
@@ -281,10 +408,10 @@
         </span>
       </div>
       <div class="flex gap-2 flex-wrap mb-4">
-        <button class="ctrl-btn btn-start" onclick="demoAction('start')">&#9654; Start</button>
-        <button class="ctrl-btn btn-pause" onclick="demoAction('pause')">&#9646;&#9646; Pause</button>
-        <button class="ctrl-btn btn-resume" onclick="demoAction('resume')">&#8634; Resume</button>
-        <button class="ctrl-btn btn-stop" onclick="demoAction('stop')">&#9632; Stop</button>
+        <button class="ctrl-btn btn-start" onclick="apiAction('start')">&#9654; Start</button>
+        <button class="ctrl-btn btn-pause" onclick="apiAction('pause')">&#9646;&#9646; Pause</button>
+        <button class="ctrl-btn btn-resume" onclick="apiAction('resume')">&#8634; Resume</button>
+        <button class="ctrl-btn btn-stop" onclick="apiAction('stop')">&#9632; Stop</button>
       </div>
       <div class="flex items-center gap-6 flex-wrap">
         <div>
@@ -324,6 +451,104 @@
         <span class="tool-chip">task_inbox.next</span>
         <span class="tool-chip">task_inbox.ack</span>
         <span class="tool-chip">runtime_info</span>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!--  TAB: Inbox                                                      -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="view-panel" id="panel-inbox">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      <!-- Left: message list -->
+      <div class="lg:col-span-2">
+        <div class="card" style="padding:0; overflow:hidden;">
+          <div class="inbox-filter-bar">
+            <button class="inbox-filter-btn active" onclick="inboxFilter('all')">All</button>
+            <button class="inbox-filter-btn" onclick="inboxFilter('unread')">Unread</button>
+            <button class="inbox-filter-btn" onclick="inboxFilter('task')">Tasks</button>
+            <button class="inbox-filter-btn" onclick="inboxFilter('message')">Messages</button>
+            <button class="inbox-filter-btn" onclick="inboxFilter('warning')">Warnings</button>
+            <div style="flex:1;"></div>
+            <button class="inbox-filter-btn" onclick="inboxRefresh()" title="Refresh">&#8635; Refresh</button>
+          </div>
+          <div class="inbox-list-wrap" id="inbox-list">
+            <div class="inbox-empty">
+              <div class="inbox-empty-icon">&#128172;</div>
+              <div class="text-sm">No messages yet</div>
+              <div class="text-xs text-forge-muted mt-1">Agent messages, warnings, tasks and ideas will appear here</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: detail + compose -->
+      <div>
+        <!-- Detail view -->
+        <div class="card mb-5" id="inbox-detail-card" style="display:none;">
+          <div class="flex items-center justify-between mb-3">
+            <span class="card-header mb-0">Message Detail</span>
+            <button onclick="inboxCloseDetail()" style="background:none;border:none;color:#52525b;cursor:pointer;font-size:1.125rem;">&times;</button>
+          </div>
+          <div id="inbox-detail-type" class="text-xs text-forge-muted uppercase tracking-wider mb-2"></div>
+          <div id="inbox-detail-subject" class="text-base font-bold text-white mb-2"></div>
+          <div id="inbox-detail-body" class="inbox-detail-body mb-3"></div>
+          <div id="inbox-detail-meta" class="text-xs text-forge-muted"></div>
+          <div class="flex gap-2 mt-3" id="inbox-detail-actions"></div>
+        </div>
+
+        <!-- Compose / Add Task -->
+        <div class="card">
+          <span class="card-header">Send to Inbox</span>
+          <p class="text-xs text-forge-muted mt-1 mb-3">Manually add a message or task to the shared inbox</p>
+          <div class="inbox-compose-form">
+            <select id="inbox-compose-action">
+              <option value="send">Message</option>
+              <option value="add_task">Task</option>
+            </select>
+            <input type="text" id="inbox-compose-subject" placeholder="Subject / Task description" maxlength="120">
+            <textarea id="inbox-compose-body" placeholder="Body (optional for tasks)" maxlength="2000"></textarea>
+            <div class="flex gap-2">
+              <select id="inbox-compose-priority" style="flex:1;">
+                <option value="normal">Normal</option>
+                <option value="low">Low</option>
+                <option value="high">High</option>
+                <option value="urgent">Urgent</option>
+              </select>
+              <select id="inbox-compose-type" style="flex:1;">
+                <option value="message">Message</option>
+                <option value="warning">Warning</option>
+                <option value="idea">Idea</option>
+                <option value="tool_request">Tool Request</option>
+              </select>
+            </div>
+            <button class="filter-btn active" style="cursor:pointer;align-self:flex-end;" onclick="inboxComposeSend()">&#9654; Send</button>
+          </div>
+        </div>
+
+        <!-- Quick stats -->
+        <div class="card mt-5">
+          <span class="card-header">Inbox Stats</span>
+          <div class="grid grid-cols-2 gap-3 mt-3">
+            <div class="text-center">
+              <div class="text-xl font-bold text-white" id="inbox-stat-unread">0</div>
+              <div class="text-xs text-forge-muted">Unread</div>
+            </div>
+            <div class="text-center">
+              <div class="text-xl font-bold text-white" id="inbox-stat-pending">0</div>
+              <div class="text-xs text-forge-muted">Pending Tasks</div>
+            </div>
+            <div class="text-center">
+              <div class="text-xl font-bold text-white" id="inbox-stat-total">0</div>
+              <div class="text-xs text-forge-muted">Total</div>
+            </div>
+            <div class="text-center">
+              <div class="text-xl font-bold text-white" id="inbox-stat-warnings">0</div>
+              <div class="text-xs text-forge-muted">Warnings</div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -596,6 +821,17 @@
   <!--  TAB: Model Router                                               -->
   <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
   <div class="view-panel" id="panel-routing">
+
+    <!-- ─── Router Presets (Save-States) ─── -->
+    <div class="agi-presets-bar">
+      <span class="agi-presets-bar-icon">💾</span>
+      <div class="agi-presets-bar-text">
+        <div class="agi-presets-bar-title">Router Presets</div>
+        <div class="agi-presets-bar-sub">Save, name, and restore entire router configurations as reusable presets.</div>
+      </div>
+      <button class="agi-presets-btn" onclick="_agiOpenPresetsModal()">Manage Presets&hellip;</button>
+    </div>
+
     <div class="card mb-5">
       <div class="flex items-center justify-between mb-4">
         <div>
@@ -703,6 +939,48 @@
       </div>
     </div>
 
+    <!-- Tier Editor Modal end -->
+
+    <!-- ─── Router Presets Modal ─── -->
+    <div class="agi-preset-modal-overlay" id="agi-preset-modal-overlay" onclick="if(event.target===this) _agiClosePresetsModal()">
+      <div class="agi-preset-modal">
+        <div class="agi-preset-modal-head">
+          <h3>💾 Router Presets</h3>
+          <button class="tier-modal-close" onclick="_agiClosePresetsModal()">&times;</button>
+        </div>
+        <div class="agi-preset-modal-body">
+          <div class="agi-preset-form-group">
+            <label class="agi-preset-form-label">Preset Name</label>
+            <input type="text" class="agi-preset-form-input" id="agi-preset-name" placeholder="e.g. Production Setup">
+          </div>
+          <div class="agi-preset-form-group">
+            <label class="agi-preset-form-label">Description (optional)</label>
+            <textarea class="agi-preset-form-textarea" id="agi-preset-desc" placeholder="What this preset contains…"></textarea>
+          </div>
+          <div style="display:flex;justify-content:flex-end;">
+            <button class="agi-preset-save-btn" onclick="_agiSavePreset()">💾 Save Current Config as Preset</button>
+          </div>
+          <hr class="agi-preset-divider">
+          <div class="agi-preset-list-title">Saved Presets</div>
+          <div id="agi-preset-list">
+            <div class="agi-preset-empty">Loading…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Task → Tier Mapping -->
+    <div class="card mb-5">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <span class="card-header mb-0">Task &rarr; Tier Mapping</span>
+          <p class="text-xs text-forge-muted mt-1">Assign each task type to its preferred model tier. Choose <strong>Auto</strong> to let the router select the cheapest capable tier automatically.</p>
+        </div>
+        <button onclick="saveTaskTierMap()" class="filter-btn active" style="cursor:pointer;" id="btn-save-task-map">Save Mapping</button>
+      </div>
+      <div class="grid grid-cols-2 gap-x-6 gap-y-3 max-md:grid-cols-1" id="task-tier-map-grid"></div>
+    </div>
+
     <!-- Escalation -->
     <div class="card mb-5">
       <span class="card-header">Escalation Logic</span>
@@ -739,15 +1017,15 @@
       <p class="text-xs text-forge-muted mt-1 mb-4">Rolling context window with budget-aware sizing. Compacts old messages into the memory vault.</p>
       <div class="grid grid-cols-3 gap-3 max-md:grid-cols-1">
         <div class="p-4 rounded-lg border border-forge-border bg-forge-bg text-center">
-          <div class="text-2xl font-extrabold text-emerald-300">â‰¤4K</div>
+          <div class="text-2xl font-extrabold text-emerald-300">&le;4K</div>
           <div class="text-xs text-forge-muted uppercase tracking-wider mt-1">Small (local_cheap)</div>
         </div>
         <div class="p-4 rounded-lg border border-forge-border bg-forge-bg text-center">
-          <div class="text-2xl font-extrabold text-indigo-300">â‰¤16K</div>
+          <div class="text-2xl font-extrabold text-indigo-300">&le;16K</div>
           <div class="text-xs text-forge-muted uppercase tracking-wider mt-1">Moderate (cheap_cloud)</div>
         </div>
         <div class="p-4 rounded-lg border border-forge-border bg-forge-bg text-center">
-          <div class="text-2xl font-extrabold text-yellow-300">â‰¤64K</div>
+          <div class="text-2xl font-extrabold text-yellow-300">&le;64K</div>
           <div class="text-xs text-forge-muted uppercase tracking-wider mt-1">Large (expensive_cloud)</div>
         </div>
       </div>
@@ -931,61 +1209,7 @@
       <p class="text-xs text-forge-muted mt-1 mb-3">Recent loop cycle outcomes. Full journal: <code class="text-zinc-400">data/{profile}/burst_journal.jsonl</code></p>
 
       <div class="loop-timeline" id="loop-log-list">
-        <div class="loop-entry">
-          <div class="loop-entry-idx">#5</div>
-          <div class="loop-entry-body">
-            <div class="loop-entry-summary">Agent reflected on current objectives. Recalled 3 relevant memories from vault. Updated working set with new goal.</div>
-            <div class="loop-entry-meta">
-              <span>15 ticks</span><span>0 errors</span>
-              <span class="text-emerald-400">$0.0042</span>
-              <span>2026-02-27T14:30:00Z</span>
-            </div>
-          </div>
-        </div>
-        <div class="loop-entry">
-          <div class="loop-entry-idx">#4</div>
-          <div class="loop-entry-body">
-            <div class="loop-entry-summary">Processed task_inbox items from elysia. Added 2 memories (scope: shared). Sent inbox message about milestone completion.</div>
-            <div class="loop-entry-meta">
-              <span>15 ticks</span><span>0 errors</span>
-              <span class="text-emerald-400">$0.0038</span>
-              <span>2026-02-27T14:00:00Z</span>
-            </div>
-          </div>
-        </div>
-        <div class="loop-entry">
-          <div class="loop-entry-idx">#3</div>
-          <div class="loop-entry-body">
-            <div class="loop-entry-summary">Reviewed directive changes. Found 1 new directive added since last manifest. Updated memory with directive awareness note.</div>
-            <div class="loop-entry-meta">
-              <span>15 ticks</span><span>1 error</span>
-              <span class="text-emerald-400">$0.0051</span>
-              <span>2026-02-27T13:30:00Z</span>
-            </div>
-          </div>
-        </div>
-        <div class="loop-entry">
-          <div class="loop-entry-idx">#2</div>
-          <div class="loop-entry-body">
-            <div class="loop-entry-summary">Memory vault cleanup: bulk-deleted 4 outdated memories, updated 2 scope tags. Context compaction triggered at tick 8.</div>
-            <div class="loop-entry-meta">
-              <span>15 ticks</span><span>0 errors</span>
-              <span class="text-emerald-400">$0.0029</span>
-              <span>2026-02-27T13:00:00Z</span>
-            </div>
-          </div>
-        </div>
-        <div class="loop-entry">
-          <div class="loop-entry-idx">#1</div>
-          <div class="loop-entry-body">
-            <div class="loop-entry-summary">Initial loop. Agent orientation &mdash; read runtime_info, reviewed directives manifest, recalled memory vault state.</div>
-            <div class="loop-entry-meta">
-              <span>15 ticks</span><span>0 errors</span>
-              <span class="text-emerald-400">$0.0035</span>
-              <span>2026-02-27T12:30:00Z</span>
-            </div>
-          </div>
-        </div>
+        <div class="text-sm text-forge-muted p-4 text-center">No ticks recorded yet. Start the loop to begin autonomous execution.</div>
       </div>
     </div>
 
@@ -1125,24 +1349,22 @@ function switchTab(id) {
 
 
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-/*  Demo controls (no backend connected)                             */
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ═══════════════════════════════════════════════════════════════════ */
+/*  AGI Loop Controls — live API-connected runtime                   */
+/* ═══════════════════════════════════════════════════════════════════ */
 
 const STATUS_MAP = {
-  start:  { text: 'Running',  css: 'status-running',  dot: 'running'  },
-  pause:  { text: 'Paused',   css: 'status-paused',   dot: 'paused'   },
-  resume: { text: 'Running',  css: 'status-running',  dot: 'running'  },
-  stop:   { text: 'Stopped',  css: 'status-stopped',  dot: 'stopped'  },
+  running: { text: 'Running',  css: 'status-running',  dot: 'running'  },
+  paused:  { text: 'Paused',   css: 'status-paused',   dot: 'paused'   },
+  idle:    { text: 'Idle',     css: 'status-idle',      dot: 'idle'     },
+  stopped: { text: 'Stopped',  css: 'status-stopped',  dot: 'stopped'  },
 };
 
-let demoInterval = null;
-let demoCountdown = 0;
-let demoLoops = 0;
-let demoTicks = 0;
+let _pollTimer = null;
+let _lastStopReason = null;
 
-function _setStatus(action) {
-  const s = STATUS_MAP[action];
-  if (!s) return;
+function _setStatus(key) {
+  const s = STATUS_MAP[key] || STATUS_MAP.idle;
   ['global', 'ctrl'].forEach(prefix => {
     const badge = document.getElementById(prefix + '-status');
     const dot   = document.getElementById(prefix + '-dot');
@@ -1153,52 +1375,155 @@ function _setStatus(action) {
   });
 }
 
-function demoAction(action) {
-  _setStatus(action);
-  if (action === 'start' || action === 'resume') {
-    const cfg = _gatherConfig();
-    demoCountdown = (cfg.interval_hours * 3600) + (cfg.interval_minutes * 60);
-    _startCountdown();
-    _simulateLoop();
-  } else if (action === 'pause') {
-    _stopCountdown();
-  } else if (action === 'stop') {
-    _stopCountdown();
-    document.getElementById('countdown-display').textContent = '--:--:--';
+/* ── API actions ── */
+async function apiAction(action) {
+  if (action === 'start') {
+    if (!_connections || _connections.length === 0) {
+      showToast('No LLM connections configured \u2014 add one in Settings \u2192 Connections first', 'error');
+      return;
+    }
+    try {
+      await fetch('/api/agi-loop/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(_gatherConfig()),
+      });
+    } catch (_) {}
+  }
+
+  try {
+    const resp = await fetch('/api/agi-loop/' + action, { method: 'POST' });
+    const data = await resp.json();
+    if (data.ok) {
+      showToast(data.message || (action + ' OK'), 'ok');
+      _lastStopReason = null;
+      if (action === 'start' || action === 'resume') _startPolling();
+      if (action === 'stop') {
+        _stopPolling();
+        _setStatus('stopped');
+        document.getElementById('countdown-display').textContent = '--:--:--';
+      }
+      if (action === 'pause') _setStatus('paused');
+    } else {
+      showToast(data.reason || 'Action failed', 'warn');
+    }
+  } catch (e) {
+    showToast('API error: ' + e.message, 'error');
   }
 }
 
-function _startCountdown() {
-  _stopCountdown();
-  demoInterval = setInterval(() => {
-    if (demoCountdown <= 0) {
-      _simulateLoop();
-      const cfg = _gatherConfig();
-      demoCountdown = (cfg.interval_hours * 3600) + (cfg.interval_minutes * 60);
+/* ── Status polling (every 2 s while loop is active) ── */
+function _startPolling() {
+  _stopPolling();
+  _pollStatus();
+  _pollTimer = setInterval(_pollStatus, 2000);
+}
+
+function _stopPolling() {
+  if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; }
+}
+
+async function _pollStatus() {
+  try {
+    const resp = await fetch('/api/agi-loop/status');
+    const st   = await resp.json();
+    _applyStatus(st);
+  } catch (_) {}
+}
+
+function _applyStatus(st) {
+  document.getElementById('stat-loops').textContent  = st.current_loop  || 0;
+  document.getElementById('stat-ticks').textContent  = st.total_ticks   || 0;
+  document.getElementById('stat-errors').textContent = st.error_streak  || 0;
+  document.getElementById('stat-cost').textContent   = '$' + (st.session_cost || 0).toFixed(4);
+
+  if (st.running && st.paused) _setStatus('paused');
+  else if (st.running)         _setStatus('running');
+  else if (st.stop_reason)     _setStatus('stopped');
+  else                         _setStatus('idle');
+
+  if (st.running && !st.paused) {
+    document.getElementById('countdown-display').textContent =
+      'Tick ' + (st.current_tick || 0) + ' \u2014 Loop ' + (st.current_loop || 0);
+  } else if (!st.running) {
+    document.getElementById('countdown-display').textContent = '--:--:--';
+  }
+
+  const banner = document.getElementById('preview-banner');
+  if (banner) banner.style.display = (!_connections || _connections.length === 0) ? '' : 'none';
+
+  if (st.recent_ticks && st.recent_ticks.length) _renderTickLog(st.recent_ticks);
+
+  if (!st.running && _pollTimer) {
+    _stopPolling();
+    if (st.stop_reason && st.stop_reason !== _lastStopReason) {
+      _lastStopReason = st.stop_reason;
+      showToast('Loop stopped: ' + st.stop_reason.replaceAll('_', ' '), 'warn');
     }
-    const h   = String(Math.floor(demoCountdown / 3600)).padStart(2, '0');
-    const m   = String(Math.floor((demoCountdown % 3600) / 60)).padStart(2, '0');
-    const sec = String(demoCountdown % 60).padStart(2, '0');
-    document.getElementById('countdown-display').textContent = h + ':' + m + ':' + sec;
-    demoCountdown--;
-  }, 1000);
+    _loadHistory();
+  }
 }
 
-function _stopCountdown() {
-  if (demoInterval) { clearInterval(demoInterval); demoInterval = null; }
+/* ── Loop-Log rendering ── */
+async function _loadHistory() {
+  try {
+    const resp = await fetch('/api/agi-loop/history?limit=50');
+    const data = await resp.json();
+    if (data.ticks) _renderTickLog(data.ticks);
+  } catch (_) {}
 }
 
-function _simulateLoop() {
-  const ticks = parseInt(document.getElementById('cfg-ticks').value) || 15;
-  demoLoops++;
-  demoTicks += ticks;
-  document.getElementById('stat-loops').textContent = demoLoops;
-  document.getElementById('stat-ticks').textContent = demoTicks;
-  document.getElementById('stat-cost').textContent = '$' + (demoLoops * 0.0038).toFixed(4);
+function _renderTickLog(ticks) {
+  const container = document.getElementById('loop-log-list');
+  if (!container) return;
+  if (!ticks.length) {
+    container.innerHTML = '<div class="text-sm text-forge-muted p-4 text-center">No ticks recorded yet. Start the loop to begin autonomous execution.</div>';
+    return;
+  }
+  container.innerHTML = '';
+  const reversed = [...ticks].reverse();
+  reversed.forEach(t => {
+    const errorCls = t.error ? 'text-red-400' : 'text-emerald-400';
+    const costStr  = '$' + (t.cost || 0).toFixed(4);
+    const timeStr  = t.time ? new Date(t.time).toLocaleString() : '\u2014';
+    const tools    = (t.tool_calls || []).length;
+    const toolStr  = tools ? tools + ' tool call' + (tools > 1 ? 's' : '') : 'no tools';
+    const summary  = t.error
+      ? '\u26a0 Error: ' + String(t.error).substring(0, 200)
+      : (t.response || 'No response').substring(0, 300);
+    const el = document.createElement('div');
+    el.className = 'loop-entry';
+    el.innerHTML = `
+      <div class="loop-entry-idx">#${t.loop || '?'}.${t.tick || '?'}</div>
+      <div class="loop-entry-body">
+        <div class="loop-entry-summary">${_esc(summary)}</div>
+        <div class="loop-entry-meta">
+          <span>${_esc(t.model || '\u2014')}</span>
+          <span>${_esc(t.task_type || '\u2014')}</span>
+          <span>${toolStr}</span>
+          <span class="${errorCls}">${costStr}</span>
+          <span>${timeStr}</span>
+        </div>
+      </div>`;
+    container.appendChild(el);
+  });
+}
+
+/* ── Bootstrap: detect already-running loop on page load/refresh ── */
+function _initAGILoop() {
+  const banner = document.getElementById('preview-banner');
+  if (banner) banner.style.display = (!_connections || _connections.length === 0) ? '' : 'none';
+
+  _pollStatus().then(() => {
+    const txt = document.getElementById('global-status-text');
+    if (txt && (txt.textContent === 'Running' || txt.textContent === 'Paused')) {
+      _startPolling();
+    }
+  });
+  _loadHistory();
 }
 
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 /*  Toast helper                                                     */
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
@@ -1225,7 +1550,9 @@ function showToast(msg, type) {
 /* ═══════════════════════════════════════════════════════════════════ */
 
 const _connections = {{ connections | tojson }};
+const _routerConfig = {{ router_config | tojson }};
 let _tiers = (_cfg.tiers && _cfg.tiers.length) ? JSON.parse(JSON.stringify(_cfg.tiers)) : [];
+let _taskTierMap = (_routerConfig.task_tier_map) ? JSON.parse(JSON.stringify(_routerConfig.task_tier_map)) : {};
 
 const TIER_COLORS = {
   t0: { bg: 'rgba(16,185,129,0.12)', fg: '#6ee7b7' },
@@ -1501,6 +1828,14 @@ async function saveTiers() {
     const data = await resp.json();
     if (data.ok) {
       _cfg.tiers = JSON.parse(JSON.stringify(_tiers));
+      /* Also sync tiers into model router config */
+      _routerConfig.tiers = JSON.parse(JSON.stringify(_tiers));
+      await fetch('/api/model-router/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(_routerConfig),
+      });
+      renderTaskTierMap();          /* re-render in case tier labels changed */
       showToast('Tiers saved', 'ok');
     } else {
       showToast('Save failed', 'error');
@@ -1510,7 +1845,490 @@ async function saveTiers() {
   }
 }
 
+/* ═══════════════════════════════════════════════════════════════════ */
+/*  Task → Tier Mapping – configurable dropdowns                     */
+/* ═══════════════════════════════════════════════════════════════════ */
+
+const _TASK_LABELS = {
+  agi_tick:       'AGI Tick',
+  coding:         'Coding',
+  final_polish:   'Final Polish',
+  general:        'General',
+  high_stakes:    'High Stakes',
+  memory_ops:     'Memory Ops',
+  planning:       'Planning',
+  reflection:     'Reflection',
+  summarization:  'Summarization',
+  tool_use:       'Tool Use',
+};
+
+const _TASK_COLORS = {
+  agi_tick:       '#22d3ee',
+  coding:         '#67e8f9',
+  final_polish:   '#fcd34d',
+  general:        '#a5b4fc',
+  high_stakes:    '#fca5a5',
+  memory_ops:     '#c084fc',
+  planning:       '#a5b4fc',
+  reflection:     '#f9a8d4',
+  summarization:  '#6ee7b7',
+  tool_use:       '#67e8f9',
+};
+
+function renderTaskTierMap() {
+  const grid = document.getElementById('task-tier-map-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  /* Build tier option list from current _tiers */
+  const enabledTiers = _tiers.filter(t => t.enabled !== false && t.label);
+
+  /* Build model list grouped by connection */
+  const connModels = [];   // [{connId, connName, models:[string]}]
+  (_connections || []).forEach(c => {
+    if (!c.enabled) return;
+    const models = (c.models || []).map(m => typeof m === 'string' ? m : (m.id || m.name || '')).filter(Boolean);
+    if (models.length) {
+      connModels.push({ connId: c.id, connName: c.name || c.id, provider: c.provider || c.type || '', models });
+    }
+  });
+
+  const tasks = Object.keys(_TASK_LABELS).sort();
+  tasks.forEach(task => {
+    const label = _TASK_LABELS[task] || task;
+    const color = _TASK_COLORS[task] || '#a5b4fc';
+    const current = (_taskTierMap[task] || '__auto__');
+
+    const row = document.createElement('div');
+    row.className = 'flex items-center justify-between py-2 px-3 rounded-lg';
+    row.style.background = 'rgba(255,255,255,0.03)';
+    row.style.borderBottom = '1px solid rgba(255,255,255,0.04)';
+
+    /* Auto option */
+    let options = `<option value="__auto__"${current === '__auto__' ? ' selected' : ''}>Auto (cheapest capable)</option>`;
+
+    /* Tier options */
+    if (enabledTiers.length) {
+      options += `<optgroup label="── Tiers ──">`;
+      enabledTiers.forEach(t => {
+        const sel = (current === t.label) ? ' selected' : '';
+        const badge = t.id ? t.id.toUpperCase() : '';
+        options += `<option value="${_esc(t.label)}"${sel}>${badge ? badge + ' — ' : ''}${_esc(t.label)}</option>`;
+      });
+      options += `</optgroup>`;
+    }
+
+    /* Individual models grouped by connection */
+    connModels.forEach(cm => {
+      options += `<optgroup label="${_esc(cm.connName)} (${_esc(cm.provider)})">`;
+      cm.models.forEach(m => {
+        const val = `model:${cm.connId}:${m}`;
+        const sel = (current === val) ? ' selected' : '';
+        options += `<option value="${_esc(val)}"${sel}>${_esc(m)}</option>`;
+      });
+      options += `</optgroup>`;
+    });
+
+    row.innerHTML = `
+      <span class="text-sm font-semibold" style="color:${color};min-width:120px;">${_esc(label)}</span>
+      <select class="tier-form-select task-tier-select" data-task="${_esc(task)}" style="flex:1;max-width:320px;font-size:0.8125rem;">
+        ${options}
+      </select>
+    `;
+    grid.appendChild(row);
+  });
+}
+
+function _gatherTaskTierMap() {
+  const map = {};
+  document.querySelectorAll('.task-tier-select').forEach(sel => {
+    const task = sel.dataset.task;
+    if (task) map[task] = sel.value;
+  });
+  return map;
+}
+
+async function saveTaskTierMap() {
+  const map = _gatherTaskTierMap();
+  _taskTierMap = map;
+  _routerConfig.task_tier_map = map;
+  _routerConfig.tiers = JSON.parse(JSON.stringify(_tiers));
+  try {
+    const resp = await fetch('/api/model-router/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(_routerConfig),
+    });
+    const data = await resp.json();
+    if (data.ok) {
+      showToast('Task mapping saved', 'ok');
+    } else {
+      showToast('Save failed', 'error');
+    }
+  } catch (e) {
+    showToast('Save error: ' + e.message, 'error');
+  }
+}
+
+/* ═══ Router Presets (Save-States) ═══════════════════════════════ */
+
+function _agiOpenPresetsModal() {
+  document.getElementById('agi-preset-modal-overlay').classList.add('active');
+  document.getElementById('agi-preset-name').value = '';
+  document.getElementById('agi-preset-desc').value = '';
+  _agiLoadPresetsList();
+}
+function _agiClosePresetsModal() {
+  document.getElementById('agi-preset-modal-overlay').classList.remove('active');
+}
+
+async function _agiLoadPresetsList() {
+  const container = document.getElementById('agi-preset-list');
+  container.innerHTML = '<div class="agi-preset-empty">Loading…</div>';
+  try {
+    const resp = await fetch('/api/model-router/presets');
+    const data = await resp.json();
+    const presets = data.presets || [];
+    if (!presets.length) {
+      container.innerHTML = '<div class="agi-preset-empty">No saved presets yet. Save your first one above!</div>';
+      return;
+    }
+    container.innerHTML = presets.map(p => `
+      <div class="agi-preset-card">
+        <div class="agi-preset-card-info">
+          <div class="agi-preset-card-name">${_esc(p.name)}</div>
+          ${p.description ? `<div class="agi-preset-card-desc">${_esc(p.description)}</div>` : ''}
+          ${p.created ? `<div class="agi-preset-card-date">${_esc(p.created)}</div>` : ''}
+        </div>
+        <div class="agi-preset-card-actions">
+          <button class="agi-preset-load-btn" onclick="_agiLoadPreset('${_esc(p.filename)}')">Load</button>
+          <button class="agi-preset-del-btn" onclick="_agiDeletePreset('${_esc(p.filename)}', '${_esc(p.name)}')">✕</button>
+        </div>
+      </div>
+    `).join('');
+  } catch (e) {
+    container.innerHTML = '<div class="agi-preset-empty">Failed to load presets.</div>';
+  }
+}
+
+function _agiGatherCurrentConfig() {
+  const cfg = JSON.parse(JSON.stringify(_routerConfig));
+  cfg.tiers = JSON.parse(JSON.stringify(_tiers));
+  cfg.task_tier_map = _gatherTaskTierMap();
+  return cfg;
+}
+
+async function _agiSavePreset() {
+  const name = document.getElementById('agi-preset-name').value.trim();
+  if (!name) { showToast('Enter a preset name', 'error'); return; }
+  const description = document.getElementById('agi-preset-desc').value.trim();
+  try {
+    const resp = await fetch('/api/model-router/presets', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, description, config: _agiGatherCurrentConfig() }),
+    });
+    if (resp.ok) {
+      showToast(`Preset "${name}" saved`, 'ok');
+      document.getElementById('agi-preset-name').value = '';
+      document.getElementById('agi-preset-desc').value = '';
+      _agiLoadPresetsList();
+    } else {
+      showToast('Save failed', 'error');
+    }
+  } catch (e) {
+    showToast('Save failed: ' + e.message, 'error');
+  }
+}
+
+async function _agiLoadPreset(filename) {
+  if (!confirm('Load this preset? Your current router config will be replaced.')) return;
+  try {
+    const resp = await fetch(`/api/model-router/presets/${filename}/load`, { method: 'POST' });
+    const data = await resp.json();
+    if (data.ok) {
+      Object.assign(_routerConfig, data.config);
+      _tiers = JSON.parse(JSON.stringify(data.config.tiers || []));
+      _taskTierMap = JSON.parse(JSON.stringify(data.config.task_tier_map || {}));
+      renderTierTable();
+      renderTaskTierMap();
+      showToast(`Preset "${data.name || filename}" loaded`, 'ok');
+      _agiClosePresetsModal();
+    } else {
+      showToast(data.error || 'Load failed', 'error');
+    }
+  } catch (e) {
+    showToast('Load failed: ' + e.message, 'error');
+  }
+}
+
+async function _agiDeletePreset(filename, name) {
+  if (!confirm(`Delete preset "${name}"?`)) return;
+  try {
+    await fetch(`/api/model-router/presets/${filename}`, { method: 'DELETE' });
+    showToast(`Preset "${name}" deleted`, 'ok');
+    _agiLoadPresetsList();
+  } catch (e) {
+    showToast('Delete failed: ' + e.message, 'error');
+  }
+}
+
 /* ── Initialize tier table on page load ── */
 renderTierTable();
+
+/* ── Initialize task-tier mapping on page load ── */
+renderTaskTierMap();
+
+/* ── Initialize AGI loop runtime (must run after _connections is defined) ── */
+_initAGILoop();
+
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/*  Inbox tab — live API-connected                                   */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+
+let _inboxEntries = [];
+let _inboxFilter = 'all';
+let _inboxSelectedId = null;
+
+const _INBOX_TYPE_ICONS = {
+  message: '\uD83D\uDCAC',
+  warning: '\u26A0\uFE0F',
+  idea: '\uD83D\uDCA1',
+  tool_request: '\uD83D\uDD27',
+  task: '\u2611\uFE0F',
+};
+
+function switchTabById(id) {
+  const btns = document.querySelectorAll('.tab-btn');
+  btns.forEach(b => {
+    if (b.textContent.trim().toLowerCase().startsWith(id.toLowerCase())) {
+      b.click();
+    }
+  });
+}
+
+async function inboxRefresh() {
+  try {
+    const resp = await fetch('/api/inbox/list');
+    const data = await resp.json();
+    _inboxEntries = data.entries || [];
+    _renderInboxList();
+    _updateInboxBadges();
+  } catch (e) {
+    console.error('Inbox refresh failed:', e);
+  }
+}
+
+function _updateInboxBadges() {
+  const unread = _inboxEntries.filter(e => e.status === 'unread').length;
+  const pending = _inboxEntries.filter(e => e.type === 'task' && e.status === 'pending').length;
+  const active = unread + pending;
+
+  // Tab badge
+  const badge = document.getElementById('inbox-tab-badge');
+  if (badge) {
+    badge.textContent = active;
+    badge.classList.toggle('empty', active === 0);
+  }
+
+  // Dashboard bubble
+  const statEl = document.getElementById('stat-inbox');
+  if (statEl) statEl.textContent = active;
+  const dot = document.getElementById('inbox-bubble-dot');
+  if (dot) dot.classList.toggle('has-items', active > 0);
+
+  // Stats sidebar
+  const su = document.getElementById('inbox-stat-unread');
+  const sp = document.getElementById('inbox-stat-pending');
+  const st = document.getElementById('inbox-stat-total');
+  const sw = document.getElementById('inbox-stat-warnings');
+  if (su) su.textContent = unread;
+  if (sp) sp.textContent = pending;
+  if (st) st.textContent = _inboxEntries.length;
+  if (sw) sw.textContent = _inboxEntries.filter(e => e.type === 'warning').length;
+}
+
+function _renderInboxList() {
+  const container = document.getElementById('inbox-list');
+  if (!container) return;
+
+  let filtered = _inboxEntries;
+  if (_inboxFilter === 'unread') filtered = filtered.filter(e => e.status === 'unread' || (e.type === 'task' && e.status === 'pending'));
+  else if (_inboxFilter === 'task') filtered = filtered.filter(e => e.type === 'task');
+  else if (_inboxFilter === 'message') filtered = filtered.filter(e => e.type === 'message' || e.type === 'idea');
+  else if (_inboxFilter === 'warning') filtered = filtered.filter(e => e.type === 'warning' || e.type === 'tool_request');
+
+  // Sort newest first
+  filtered.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div class="inbox-empty">
+        <div class="inbox-empty-icon">\uD83D\uDCEC</div>
+        <div class="text-sm">${_inboxFilter === 'all' ? 'No messages yet' : 'No matching messages'}</div>
+        <div class="text-xs text-forge-muted mt-1">Agent messages, warnings, tasks and ideas will appear here</div>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = filtered.map(entry => {
+    const icon = _INBOX_TYPE_ICONS[entry.type] || '\uD83D\uDCAC';
+    const subject = _esc(entry.subject || entry.task || '(no subject)');
+    const preview = _esc((entry.body || entry.task || '').substring(0, 80));
+    const ts = entry.created_at ? entry.created_at.substring(0, 16).replace('T', ' ') : '';
+    const statusCls = (entry.status === 'unread') ? 'unread' : (entry.type === 'task' && entry.status === 'pending') ? 'pending' : '';
+    const priorityHtml = (entry.priority && entry.priority !== 'normal') ? `<span class="inbox-priority ${entry.priority}">${entry.priority}</span>` : '';
+    const approvalHtml = entry.needs_approval ? '<span class="inbox-priority urgent">NEEDS APPROVAL</span>' : '';
+    const fromHtml = entry.from ? `<span>from: ${_esc(entry.from)}</span>` : '';
+
+    return `
+      <div class="inbox-entry ${statusCls}" onclick="inboxSelect('${entry.id}')">
+        <span class="inbox-type-icon">${icon}</span>
+        <div class="inbox-entry-body">
+          <div class="inbox-subject">${subject}</div>
+          <div class="inbox-preview">${preview}</div>
+          <div class="inbox-meta">
+            <span>${ts} UTC</span>
+            ${fromHtml}
+            ${priorityHtml}
+            ${approvalHtml}
+            <span style="color:#3f3f46;">${entry.status}</span>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function inboxFilter(filter) {
+  _inboxFilter = filter;
+  document.querySelectorAll('.inbox-filter-btn').forEach(b => b.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  _renderInboxList();
+}
+
+function inboxSelect(id) {
+  const entry = _inboxEntries.find(e => e.id === id);
+  if (!entry) return;
+  _inboxSelectedId = id;
+
+  const card = document.getElementById('inbox-detail-card');
+  card.style.display = '';
+
+  const icon = _INBOX_TYPE_ICONS[entry.type] || '\uD83D\uDCAC';
+  document.getElementById('inbox-detail-type').textContent = `${icon} ${(entry.type || 'message').toUpperCase()}`;
+  document.getElementById('inbox-detail-subject').textContent = entry.subject || entry.task || '(no subject)';
+  document.getElementById('inbox-detail-body').textContent = entry.body || entry.task || '';
+
+  const ts = entry.created_at ? entry.created_at.substring(0, 16).replace('T', ' ') + ' UTC' : '';
+  const meta = [`From: ${entry.from || 'system'}`, ts, `Priority: ${entry.priority || 'normal'}`, `Status: ${entry.status}`];
+  if (entry.needs_approval) meta.push('NEEDS APPROVAL');
+  document.getElementById('inbox-detail-meta').textContent = meta.join(' \u2022 ');
+
+  // Action buttons
+  const actionsEl = document.getElementById('inbox-detail-actions');
+  let btns = '';
+  if (entry.status === 'unread' || entry.status === 'pending') {
+    btns += `<button class="ctrl-btn btn-start" onclick="inboxAck('${entry.id}')">\u2713 Acknowledge</button>`;
+  }
+  btns += `<button class="ctrl-btn btn-stop" onclick="inboxDelete('${entry.id}')">\u2716 Delete</button>`;
+  actionsEl.innerHTML = btns;
+}
+
+function inboxCloseDetail() {
+  document.getElementById('inbox-detail-card').style.display = 'none';
+  _inboxSelectedId = null;
+}
+
+async function inboxAck(id) {
+  try {
+    const resp = await fetch('/api/inbox/ack', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ task_id: id }),
+    });
+    const data = await resp.json();
+    if (data.ok) {
+      showToast('Acknowledged', 'ok');
+      inboxRefresh();
+      inboxCloseDetail();
+    } else {
+      showToast(data.error || 'Failed', 'error');
+    }
+  } catch (e) {
+    showToast('Error: ' + e.message, 'error');
+  }
+}
+
+async function inboxDelete(id) {
+  try {
+    const resp = await fetch('/api/inbox/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: id }),
+    });
+    const data = await resp.json();
+    if (data.ok) {
+      showToast('Deleted', 'ok');
+      inboxRefresh();
+      inboxCloseDetail();
+    } else {
+      showToast(data.error || 'Failed', 'error');
+    }
+  } catch (e) {
+    showToast('Error: ' + e.message, 'error');
+  }
+}
+
+async function inboxComposeSend() {
+  const action = document.getElementById('inbox-compose-action').value;
+  const subject = document.getElementById('inbox-compose-subject').value.trim();
+  const body = document.getElementById('inbox-compose-body').value.trim();
+  const priority = document.getElementById('inbox-compose-priority').value;
+  const type = document.getElementById('inbox-compose-type').value;
+
+  if (!subject) {
+    showToast('Subject is required', 'error');
+    return;
+  }
+
+  const payload = { action, priority, profile: 'operator' };
+  if (action === 'send') {
+    payload.subject = subject;
+    payload.body = body || subject;
+    payload.type = type;
+  } else {
+    payload.task = subject;
+  }
+
+  try {
+    const resp = await fetch('/api/inbox/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await resp.json();
+    if (data.ok) {
+      showToast('Sent to inbox', 'ok');
+      document.getElementById('inbox-compose-subject').value = '';
+      document.getElementById('inbox-compose-body').value = '';
+      inboxRefresh();
+    } else {
+      showToast(data.error || 'Send failed', 'error');
+    }
+  } catch (e) {
+    showToast('Error: ' + e.message, 'error');
+  }
+}
+
+/* Auto-refresh inbox every 15s when on that tab */
+setInterval(() => {
+  const panel = document.getElementById('panel-inbox');
+  if (panel && panel.classList.contains('active')) {
+    inboxRefresh();
+  }
+}, 15000);
+
+/* Initial load */
+inboxRefresh();
 </script>
 {% endblock %}

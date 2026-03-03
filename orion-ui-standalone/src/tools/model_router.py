@@ -59,8 +59,8 @@ def load_router_config() -> dict:
     merged = {**saved}
     if "tiers" not in merged:
         merged["tiers"] = []
-    if "task_tier_map" not in merged:
-        merged["task_tier_map"] = _DEFAULTS["task_tier_map"]
+    if not merged.get("task_tier_map"):
+        merged["task_tier_map"] = dict(_DEFAULTS["task_tier_map"])
     if "enabled" not in merged:
         merged["enabled"] = True
     return merged
@@ -106,10 +106,24 @@ def classify_task(stimulus: str) -> str:
 
 # ── Tier resolution ───────────────────────────────────────────────
 
+def _is_direct_model(value: str) -> bool:
+    """Check if a task_tier_map value is a direct model override (model:<conn_id>:<model>)."""
+    return isinstance(value, str) and value.startswith("model:")
+
+
+def _parse_direct_model(value: str) -> Tuple[str, str]:
+    """Parse ``model:<connection_id>:<model_name>`` → (connection_id, model_name)."""
+    parts = value.split(":", 2)
+    if len(parts) == 3:
+        return parts[1], parts[2]
+    return "", ""
+
+
 def resolve_tier(task_type: str, config: Optional[dict] = None) -> Optional[dict]:
     """Given a task type, return the matching tier config dict.
 
-    Returns None if no matching tier is found or router is disabled.
+    Returns None if no matching tier is found, router is disabled,
+    or the task is mapped to a direct model override.
     """
     cfg = config or load_router_config()
 
@@ -121,6 +135,10 @@ def resolve_tier(task_type: str, config: Optional[dict] = None) -> Optional[dict
 
     if tier_label == "__auto__":
         return None  # let default model resolution handle it
+
+    # Direct model overrides bypass tier resolution
+    if _is_direct_model(tier_label):
+        return None
 
     tiers = cfg.get("tiers", [])
     for tier in tiers:
@@ -139,9 +157,29 @@ def resolve_model_for_task(
     Returns ``(model, provider, task_type)``.
     model/provider are ``None`` if the router doesn't override
     (falls back to default resolution).
+
+    If the task is mapped to a direct model (``model:<conn_id>:<name>``),
+    the model name is returned and provider is set to
+    ``__direct__:<connection_id>`` so callers can resolve the connection.
     """
+    cfg = config or load_router_config()
     task_type = classify_task(stimulus)
-    tier = resolve_tier(task_type, config)
+
+    if not cfg.get("enabled", True):
+        return None, None, task_type
+
+    # Check for direct model override in task_tier_map
+    task_map = cfg.get("task_tier_map", {})
+    mapping_value = task_map.get(task_type, "__auto__")
+
+    if _is_direct_model(mapping_value):
+        conn_id, model_name = _parse_direct_model(mapping_value)
+        log.info("[router] Task '%s' → direct model '%s' (conn=%s)",
+                 task_type, model_name, conn_id)
+        return model_name, f"__direct__:{conn_id}", task_type
+
+    # Standard tier resolution
+    tier = resolve_tier(task_type, cfg)
 
     if tier:
         model = tier.get("primary_model")

@@ -1632,11 +1632,16 @@ async def _execute_agi_tick(agent: str, stimulus: str, agi_config: dict) -> dict
         routed_model = None
         routed_provider = None
         task_type = "agi_tick"
+        _direct_conn_id = None          # set when task_tier_map uses model:<conn>:<name>
         try:
             from src.tools.model_router import resolve_model_for_task, resolve_tier, load_router_config
             router_cfg = load_router_config()
             if router_cfg.get("enabled", True):
                 routed_model, routed_provider, task_type = resolve_model_for_task(stimulus, router_cfg)
+                # Check for direct-model override (provider == "__direct__:<conn_id>")
+                if routed_provider and routed_provider.startswith("__direct__:"):
+                    _direct_conn_id = routed_provider.split(":", 1)[1]
+                    routed_provider = None   # not a real provider string
                 # If nothing matched, use the agi_tick tier
                 if not routed_model:
                     tier = resolve_tier("agi_tick", router_cfg)
@@ -1652,8 +1657,12 @@ async def _execute_agi_tick(agent: str, stimulus: str, agi_config: dict) -> dict
             or (conn["models"][0] if conn.get("models") else "gpt-4o-mini")
         )
 
-        # Connection override for routed tier
-        if routed_provider:
+        # Connection override for routed tier (or direct-model connection)
+        if _direct_conn_id:
+            direct_conn = _resolve_connection(_direct_conn_id, agent)
+            if direct_conn:
+                conn = direct_conn
+        elif routed_provider:
             try:
                 from src.tools.model_router import resolve_tier as _rt
                 tier = _rt(task_type, router_cfg)
@@ -1972,6 +1981,51 @@ async def api_agi_loop_history(limit: int = Query(50)):
     })
 
 
+# ── Inbox API ────────────────────────────────────────────────────
+
+@app.get("/api/inbox/list")
+async def api_inbox_list():
+    """Return all inbox entries."""
+    from src.tools.inbox import _read_all
+    entries = _read_all()
+    return JSONResponse({"entries": entries, "total": len(entries)})
+
+
+@app.post("/api/inbox/send")
+async def api_inbox_send(request: Request):
+    """Send a message or add a task via the inbox tool."""
+    from src.tools.inbox import InboxTool
+    body = await request.json()
+    result = InboxTool.execute(body)
+    ok = not result.startswith("Error")
+    return JSONResponse({"ok": ok, "result": result, "error": None if ok else result})
+
+
+@app.post("/api/inbox/ack")
+async def api_inbox_ack(request: Request):
+    """Acknowledge an inbox entry by ID."""
+    from src.tools.inbox import InboxTool
+    body = await request.json()
+    task_id = body.get("task_id", "")
+    result = InboxTool.execute({"action": "ack", "task_id": task_id})
+    ok = not result.startswith("Error")
+    return JSONResponse({"ok": ok, "result": result, "error": None if ok else result})
+
+
+@app.post("/api/inbox/delete")
+async def api_inbox_delete(request: Request):
+    """Delete an inbox entry by ID."""
+    from src.tools.inbox import _read_all, _write_all
+    body = await request.json()
+    entry_id = body.get("id", "")
+    entries = _read_all()
+    new_entries = [e for e in entries if e.get("id") != entry_id]
+    if len(new_entries) == len(entries):
+        return JSONResponse({"ok": False, "error": f"Entry '{entry_id}' not found"})
+    _write_all(new_entries)
+    return JSONResponse({"ok": True})
+
+
 # ── Model Router config ──────────────────────────────────────────
 MODEL_ROUTER_FILE = _CONFIG_DIR / "model_router.json"
 
@@ -2038,8 +2092,8 @@ def _load_model_router_config() -> dict:
     merged = {**_MODEL_ROUTER_DEFAULTS, **saved}
     if "tiers" not in merged:
         merged["tiers"] = _MODEL_ROUTER_DEFAULTS["tiers"]
-    if "task_tier_map" not in merged:
-        merged["task_tier_map"] = _MODEL_ROUTER_DEFAULTS["task_tier_map"]
+    if not merged.get("task_tier_map"):
+        merged["task_tier_map"] = dict(_MODEL_ROUTER_DEFAULTS["task_tier_map"])
     if "enabled" not in merged:
         merged["enabled"] = True
     return merged
@@ -2064,6 +2118,76 @@ async def api_model_router_config_save(request: Request):
 async def api_model_router_reset():
     _save_model_router_config(_MODEL_ROUTER_DEFAULTS)
     return JSONResponse({"ok": True, "config": _MODEL_ROUTER_DEFAULTS})
+
+
+# ── Model Router presets (save-states) ───────────────────────────
+_ROUTER_PRESETS_DIR = _CONFIG_DIR / "router_presets"
+
+def _ensure_router_presets_dir():
+    _ROUTER_PRESETS_DIR.mkdir(parents=True, exist_ok=True)
+
+def _list_router_presets() -> list:
+    _ensure_router_presets_dir()
+    presets = []
+    for f in sorted(_ROUTER_PRESETS_DIR.glob("*.json")):
+        try:
+            data = json.loads(f.read_text(encoding="utf-8"))
+            presets.append({
+                "name": data.get("name", f.stem),
+                "description": data.get("description", ""),
+                "filename": f.stem,
+                "created": data.get("created", ""),
+            })
+        except Exception:
+            pass
+    return presets
+
+@app.get("/api/model-router/presets")
+async def api_model_router_presets_list():
+    return JSONResponse({"presets": _list_router_presets()})
+
+@app.post("/api/model-router/presets")
+async def api_model_router_presets_save(request: Request):
+    body = await request.json()
+    name = (body.get("name") or "").strip()
+    if not name:
+        return JSONResponse({"ok": False, "error": "Name is required"}, status_code=400)
+    description = (body.get("description") or "").strip()
+    config = body.get("config") or _load_model_router_config()
+    _ensure_router_presets_dir()
+    import re as _re, datetime as _dt
+    safe = _re.sub(r'[^\w\-. ]', '', name).strip().replace(' ', '_')[:80] or "preset"
+    payload = {
+        "name": name,
+        "description": description,
+        "created": _dt.datetime.now().isoformat(timespec="seconds"),
+        "config": config,
+    }
+    dest = _ROUTER_PRESETS_DIR / f"{safe}.json"
+    dest.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    return JSONResponse({"ok": True, "filename": safe})
+
+@app.post("/api/model-router/presets/{filename}/load")
+async def api_model_router_presets_load(filename: str):
+    _ensure_router_presets_dir()
+    f = _ROUTER_PRESETS_DIR / f"{filename}.json"
+    if not f.exists():
+        return JSONResponse({"ok": False, "error": "Preset not found"}, status_code=404)
+    try:
+        data = json.loads(f.read_text(encoding="utf-8"))
+        config = data.get("config", {})
+        _save_model_router_config(config)
+        return JSONResponse({"ok": True, "config": config, "name": data.get("name", filename)})
+    except Exception as exc:
+        return JSONResponse({"ok": False, "error": str(exc)}, status_code=500)
+
+@app.delete("/api/model-router/presets/{filename}")
+async def api_model_router_presets_delete(filename: str):
+    _ensure_router_presets_dir()
+    f = _ROUTER_PRESETS_DIR / f"{filename}.json"
+    if f.exists():
+        f.unlink()
+    return JSONResponse({"ok": True})
 
 
 # ── About / Wiki page ────────────────────────────────────────────
@@ -2177,6 +2301,7 @@ async def api_chat_send(req: ChatRequest):
     routed_provider = None
     task_type = "general"
     router_tier = None
+    _direct_conn_id = None
     try:
         from src.tools.model_router import resolve_model_for_task, resolve_tier, load_router_config
         router_cfg = load_router_config()
@@ -2184,7 +2309,11 @@ async def api_chat_send(req: ChatRequest):
             routed_model, routed_provider, task_type = resolve_model_for_task(
                 req.stimulus, router_cfg,
             )
-            if routed_model:
+            # Check for direct-model override (provider == "__direct__:<conn_id>")
+            if routed_provider and routed_provider.startswith("__direct__:"):
+                _direct_conn_id = routed_provider.split(":", 1)[1]
+                routed_provider = None
+            elif routed_model:
                 router_tier = resolve_tier(task_type, router_cfg)
     except Exception as exc:
         log.warning("[router] Model router failed: %s", exc)
@@ -2197,8 +2326,14 @@ async def api_chat_send(req: ChatRequest):
         or (conn["models"][0] if conn.get("models") else "gpt-4o-mini")
     )
 
+    # If the router chose a direct-model connection, switch to it
+    if _direct_conn_id and not req.model_override:
+        direct_conn = _resolve_connection(_direct_conn_id, req.agent)
+        if direct_conn:
+            conn = direct_conn
+            log.info("[router] Switched connection to direct model '%s' (conn=%s)", model, _direct_conn_id)
     # If the router chose a tier with its own connection, switch to it
-    if router_tier and router_tier.get("connection_id") and not req.model_override:
+    elif router_tier and router_tier.get("connection_id") and not req.model_override:
         tier_conn = _resolve_connection(router_tier["connection_id"], req.agent)
         if tier_conn:
             conn = tier_conn

@@ -89,12 +89,12 @@ OrionForge is organized into three directories — an active development branch,
 ```
 OrionForge/
 ├── orion-ui-standalone/  # 🔧 Active Development Branch
-│   ├── web/              # FastAPI app (3,556 lines, 113 routes, 12 templates)
+│   ├── web/              # FastAPI app (4,168 lines, 127 routes, 12 templates)
 │   │   ├── app.py        # Main application — all page & API routes
 │   │   ├── image_gen.py  # Image generation (8 providers)
 │   │   ├── static/       # CSS
 │   │   └── templates/    # Jinja2 HTML templates (12 pages)
-│   ├── src/              # Soul Script Engine modules (33 source files)
+│   ├── src/              # Soul Script Engine modules (34 source files)
 │   │   ├── memory/       # FAISS memory, vault, chunker, PII guard, notes FAISS
 │   │   ├── llm_client/   # LLM API clients (OpenAI, Anthropic, Ollama, DeepSeek)
 │   │   ├── directives/   # Directive parser, injector, manifest, store
@@ -102,7 +102,7 @@ OrionForge/
 │   │   ├── storage/      # Note collection & user notes loader
 │   │   ├── observability/ # Token metering & cost tracking
 │   │   ├── policy/       # Boundary enforcement & capability gating
-│   │   └── tools/        # 8 tool implementations + registry
+│   │   └── tools/        # 11 tool implementations + registry
 │   ├── config/           # 11 config files (connections, pricing, memory profile, etc.)
 │   ├── data/             # Runtime data (chats, memory vault, FAISS indexes, uploads)
 │   ├── profiles/         # Agent identity YAML files
@@ -110,7 +110,7 @@ OrionForge/
 │   ├── directives/       # Agent directive markdown files
 │   ├── notes/            # Agent note markdown files
 │   ├── scripts/          # Seed scripts (seed_memories.py, seed_ui_knowledge.py)
-│   └── tests/            # Test suite (11 files, 205 functions, ~1,905 checks)
+│   └── tests/            # Test suite (11 files, 210 functions, ~2,895 checks)
 │
 ├── engine/               # ⚙️  Stable Frozen Core
 │   └── src/              # Synced from orion-ui-standalone after testing
@@ -153,7 +153,7 @@ OrionForge/
 | **Profiles** | `/profiles` | Create/edit agents, system prompts, attach knowledge, configure models |
 | **Vault** | `/vault` | Browse & search persistent memory — sort by 8 fields, max memory limits, metadata display |
 | **Knowledge** | `/knowledge` | Rich text editor for soul scripts and always-on context notes |
-| **Tools** | `/tools` | Configure tools, memory profiles, email, web search, cost tracking |
+| **Tools** | `/tools` | Configure tools, memory profiles, email, web search, cost tracking, model router with presets |
 | **Settings** | `/settings` | API connections, chat backgrounds, timezone, voice/image settings |
 | **Pricing** | `/pricing` | LLM pricing registry — view/edit per-model token costs |
 | **Skins** | `/skins` | 12 UI themes with marketplace-style grid and live preview |
@@ -212,6 +212,9 @@ The engine connects to any **OpenAI-compatible** endpoint. Native provider suppo
 | `email` | SMTP email sending with multi-account support |
 | `cost_tracker` | Token usage and cost tracking per session |
 | `inbox` | Message inbox for agent-to-agent or external notifications |
+| `model_router` | Intelligent task-based model routing with tier classification and presets |
+| `agi_loop` | Autonomous agent loop control (start, stop, pause, resume, status) |
+| `runtime_info` | System runtime information and environment details |
 | `echo` | Debug/test tool — echoes input back |
 | `continuation_update` | Multi-turn continuation status updates |
 
@@ -219,7 +222,7 @@ The engine connects to any **OpenAI-compatible** endpoint. Native provider suppo
 
 ## Test Suite
 
-11 test files with **205** test functions and **~1,905** assertions:
+11 test files with **210** test functions and **~2,895** assertions:
 
 ```powershell
 cd orion-ui-standalone
@@ -228,18 +231,18 @@ python tests/run_all.py
 
 | Test File | Functions | Checks | Coverage Area |
 |---|---|---|---|
-| `test_torture.py` | 65 | ~1,086 | Deep torture of all code paths — memory, vault, sort, policy, tools, templates |
-| `test_memory.py` | 23 | 155 | VaultStore, MemoryVault, Memory types, PII guard |
-| `test_stress.py` | 22 | 139 | Rapid-fire ops, concurrent access, boundary conditions |
-| `test_registry_and_tools.py` | 17 | 86 | Tool registry, cost tracker, web search |
-| `test_governance.py` | 16 | 74 | ActiveDirectives, validate_manifest |
-| `test_directives.py` | 14 | 108 | Parser, store, injector, manifest, DirectivesTool |
-| `test_chunker_injector.py` | 14 | 51 | Chunking logic, merge/split, formatting |
-| `test_storage_and_llm.py` | 14 | 45 | User notes loader, LLM client base |
-| `test_metering.py` | 11 | 92 | Token accounting, cost computation, aggregation |
-| `test_data_paths.py` | 5 | 31 | Data directory layout, auto-creation, isolation |
-| `test_tools.py` | 4 | 38 | EchoTool, ContinuationUpdateTool, EmailTool, RuntimePolicy |
-| **Total** | **205** | **~1,905** | |
+| `test_torture.py` | 67 | 1,948 | Deep torture of all code paths — memory, vault, sort, policy, tools, templates, model router, presets |
+| `test_memory.py` | 23 | 154 | VaultStore, MemoryVault, Memory types, PII guard |
+| `test_stress.py` | 25 | 248 | Rapid-fire ops, concurrent access, boundary conditions, router presets |
+| `test_registry_and_tools.py` | 17 | 99 | Tool registry, cost tracker, web search |
+| `test_governance.py` | 16 | 72 | ActiveDirectives, validate_manifest |
+| `test_directives.py` | 14 | 107 | Parser, store, injector, manifest, DirectivesTool |
+| `test_chunker_injector.py` | 14 | 69 | Chunking logic, merge/split, formatting |
+| `test_storage_and_llm.py` | 14 | 44 | User notes loader, LLM client base |
+| `test_metering.py` | 11 | 91 | Token accounting, cost computation, aggregation |
+| `test_data_paths.py` | 5 | 30 | Data directory layout, auto-creation, isolation |
+| `test_tools.py` | 4 | 33 | EchoTool, ContinuationUpdateTool, EmailTool, RuntimePolicy |
+| **Total** | **210** | **~2,895** | |
 
 ---
 
@@ -319,7 +322,7 @@ These run as separate Docker containers via `docker compose` inside their respec
 
 | Technology | Role |
 |---|---|
-| **FastAPI** + **Uvicorn** | Web server & async API (113 routes) |
+| **FastAPI** + **Uvicorn** | Web server & async API (127 routes) |
 | **FAISS** (`faiss-cpu`) | Vector similarity search for memory + soul script retrieval |
 | **sentence-transformers** | Semantic embeddings (`all-mpnet-base-v2`) |
 | **Jinja2** | HTML templates (12 pages) |
