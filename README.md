@@ -34,7 +34,7 @@ Creators can publish:
 - **Tools** (writers, coders, converters, TTS engines, memory modules, etc.)
 - **Mods** (new UI components, workflows, abilities)
 
-Users can browse, download, install, and run them in their own virtual environments.
+Users can browse, install, and run them in their own virtual environments.
 
 It's basically a **Steam Workshop + Minecraft Mod Marketplace**, but for AI identity systems.
 
@@ -82,9 +82,9 @@ Agents can also **save memories** during conversation using `[MEMORY_SAVE: ...]`
 
 ---
 
-## Repository Structure
+## Project Structure
 
-This repo contains the **Modular Web UI** and its supporting **engine core**, organized as two clearly separated modules:
+OrionForge contains the **Modular Web UI** and its supporting **engine core**, organized as two clearly separated modules:
 
 ```
 OrionForge-Modular-AI-Identity-Ecosystem/
@@ -147,15 +147,12 @@ OrionForge-Modular-AI-Identity-Ecosystem/
 | Requirement | Version |
 |---|---|
 | **Python** | 3.10+ (3.11 recommended) |
-| **Git** | Any |
 
 > **First launch note:** The engine uses `sentence-transformers` with the `all-mpnet-base-v2` model (~420 MB). It downloads automatically on first launch and is cached for future runs.
 
-### Clone & Install
+### Install Dependencies
 
 ```bash
-git clone https://github.com/DrTHunter/OrionForge-Modular-AI-Identity-Ecosystem.git
-cd OrionForge-Modular-AI-Identity-Ecosystem
 pip install -r requirements.txt
 ```
 
@@ -243,12 +240,6 @@ These run as separate Docker containers via `docker compose` inside their respec
 
 ---
 
-## Related
-
-- **[SoulScript Engine](https://github.com/DrTHunter/SoulScript-Engine)** — The core engine repo with full Soul Script documentation, examples, and the specification format
-
----
-
 ## License
 
-See [LICENSE](LICENSE) for details.
+OrionForge is proprietary software. All rights reserved. See [LICENSE](LICENSE) for details.

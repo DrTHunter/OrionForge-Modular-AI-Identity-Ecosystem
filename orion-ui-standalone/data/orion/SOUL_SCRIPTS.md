@@ -130,6 +130,4 @@ These identities stabilize. These AIs begin to feel like characters, partners, b
 
 ## Learn More
 
-- [SoulScript Engine Repository](https://github.com/DrTHunter/SoulScript-Engine)
-- [About Soul Scripts (Full Document)](https://github.com/DrTHunter/SoulScript-Engine/blob/main/Soul%20Scripts/ABOUT_SOUL_SCRIPTS.md)
-- [SoulScript Engine README](https://github.com/DrTHunter/SoulScript-Engine/blob/main/README.md)
+See the internal SoulScript Engine documentation and the Soul Scripts reference included with OrionForge.

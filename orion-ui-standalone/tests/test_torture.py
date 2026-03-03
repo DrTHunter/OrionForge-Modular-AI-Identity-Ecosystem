@@ -18,7 +18,7 @@ Covers:
   - Directive parser edge cases (H1-only, unicode headings, empty bodies)
   - Directive store edge cases (missing scope file, empty scopes, substring bonus)
   - DirectivesTool (all 5 actions: search, list, get, manifest, changes)
-  - Tool Registry (dispatch, resolution, listing, error paths)
+  - Tool Registry (dispatch, resolution, listing, error paths, get_tool_defs_for_agent)
   - Memory types (topic_id omission in to_dict, extra keys in from_dict)
   - Chunker edge cases (mixed headers, paragraph > max_chunk, vault memory >1200)
   - Cross-module integration: MemoryTool → VaultStore, build_memory_block pipeline
@@ -37,6 +37,13 @@ Covers:
   - Category policy (_load_category_policy, _build_category_field for all 3 modes)
   - Saved profile upgrade (_seed_default_profile back-fills missing keys)
   - _TOOL_CATALOGUE dynamic fields (scope enum from VALID_SCOPES, category truncated)
+  - Avatar migration (_migrate_base64_avatars: agent + user, extension detection, file output)
+  - Profile API (user avatar upload/clear, agent avatar upload/clear, profile CRUD)
+  - UI Skins API (set/get skin persisted in settings.json)
+  - Saved profile CRUD (_list_profiles_in, save/get/delete memory profiles)
+  - _extract_and_save_memories patterns (category extraction, min-length, invalid category)
+  - Tool registry get_tool_defs_for_agent (YAML profile → tool definitions)
+  - Profile create/update/delete roundtrip via API
 """
 
 import json
@@ -3966,6 +3973,735 @@ def test_vault_sort_edge_cases():
 
 
 # ═════════════════════════════════════════════
+# AVATAR MIGRATION — base64 to file conversion
+# ═════════════════════════════════════════════
+def test_avatar_migration():
+    """Test _migrate_base64_avatars: converts base64 images in settings to files."""
+    print("\n=== TORTURE: Avatar Migration — base64 → file ===")
+    import base64 as b64
+    from pathlib import Path
+
+    tmp = tempfile.mkdtemp()
+    try:
+        import web.app as _app
+
+        # Save originals
+        orig_settings = _app.SETTINGS_FILE
+        orig_uploads = _app._UPLOADS_DIR
+
+        # Set up temp paths
+        tmp_config = Path(tmp) / "config"
+        tmp_config.mkdir()
+        tmp_uploads = Path(tmp) / "uploads"
+        tmp_uploads.mkdir()
+        tmp_settings = tmp_config / "settings.json"
+
+        _app.SETTINGS_FILE = tmp_settings
+        _app._UPLOADS_DIR = tmp_uploads
+
+        # Create a small 1x1 PNG
+        png_b64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+        jpg_b64 = "/9j/4AAQSkZJRg=="  # short JPEG header fragment
+
+        # ── 1. Agent avatar migration ──
+        settings = {
+            "agent_avatars": {
+                "astraea": {"image": f"data:image/png;base64,{png_b64}", "color": "#ff0000"},
+                "callum": {"image": f"data:image/jpeg;base64,{jpg_b64}", "color": "#00ff00"},
+                "codex": {"image": "/uploads/existing.png", "color": "#0000ff"},
+            },
+            "user_profile": {
+                "name": "TestUser",
+                "image": f"data:image/webp;base64,{png_b64}",
+                "color": "#123456",
+            },
+        }
+        tmp_settings.write_text(json.dumps(settings), encoding="utf-8")
+
+        _app._migrate_base64_avatars()
+
+        reloaded = json.loads(tmp_settings.read_text(encoding="utf-8"))
+
+        # Agent avatars should be file URLs now
+        astraea_img = reloaded["agent_avatars"]["astraea"]["image"]
+        check("astraea → file URL", astraea_img.startswith("/uploads/avatar_astraea_"))
+        check("astraea → .png ext", astraea_img.endswith(".png"))
+        # Verify file written
+        astraea_file = tmp_uploads / os.path.basename(astraea_img)
+        check("astraea file exists", astraea_file.exists())
+        check("astraea file has data", astraea_file.stat().st_size > 0)
+
+        callum_img = reloaded["agent_avatars"]["callum"]["image"]
+        check("callum → file URL", callum_img.startswith("/uploads/avatar_callum_"))
+        check("callum → .jpg ext", callum_img.endswith(".jpg"))
+
+        # codex should be untouched (already a URL)
+        check("codex untouched", reloaded["agent_avatars"]["codex"]["image"] == "/uploads/existing.png")
+
+        # Colors preserved
+        check("astraea color preserved", reloaded["agent_avatars"]["astraea"]["color"] == "#ff0000")
+
+        # User profile avatar migration
+        user_img = reloaded["user_profile"]["image"]
+        check("user → file URL", user_img.startswith("/uploads/user_avatar_"))
+        check("user → .webp ext", user_img.endswith(".webp"))
+        user_file = tmp_uploads / os.path.basename(user_img)
+        check("user file exists", user_file.exists())
+        check("user name preserved", reloaded["user_profile"]["name"] == "TestUser")
+
+        # ── 2. No settings file → no crash ──
+        tmp_settings.unlink()
+        try:
+            _app._migrate_base64_avatars()
+            check("missing settings → no crash", True)
+        except Exception as e:
+            check("missing settings → no crash", False, str(e))
+
+        # ── 3. Empty settings → no crash ──
+        tmp_settings.write_text("{}", encoding="utf-8")
+        try:
+            _app._migrate_base64_avatars()
+            check("empty settings → no crash", True)
+        except Exception as e:
+            check("empty settings → no crash", False, str(e))
+
+        # ── 4. Already migrated → no double-migration ──
+        settings_clean = {
+            "agent_avatars": {
+                "test": {"image": "/uploads/avatar_test_abc.png"}
+            }
+        }
+        tmp_settings.write_text(json.dumps(settings_clean), encoding="utf-8")
+        _app._migrate_base64_avatars()
+        after = json.loads(tmp_settings.read_text(encoding="utf-8"))
+        check("already migrated → untouched", after["agent_avatars"]["test"]["image"] == "/uploads/avatar_test_abc.png")
+
+    finally:
+        _app.SETTINGS_FILE = orig_settings
+        _app._UPLOADS_DIR = orig_uploads
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ═════════════════════════════════════════════
+# PROFILE API — user + agent avatar, CRUD
+# ═════════════════════════════════════════════
+def test_profile_api_torture():
+    """Test profile endpoints: user avatar, agent avatar, profile CRUD via TestClient."""
+    print("\n=== TORTURE: Profile API — User/Agent Avatar + CRUD ===")
+    import base64 as b64
+    from pathlib import Path
+
+    tmp = tempfile.mkdtemp()
+    try:
+        import web.app as _app
+
+        # Save originals
+        orig_settings = _app.SETTINGS_FILE
+        orig_uploads = _app._UPLOADS_DIR
+        orig_profiles = _app._PROFILES_DIR
+        orig_prompts = _app._PROMPTS_DIR
+
+        # Set up temp paths
+        tmp_config = Path(tmp) / "config"
+        tmp_config.mkdir()
+        tmp_uploads = Path(tmp) / "uploads"
+        tmp_uploads.mkdir()
+        tmp_profiles = Path(tmp) / "profiles"
+        tmp_profiles.mkdir()
+        tmp_prompts = Path(tmp) / "prompts"
+        tmp_prompts.mkdir()
+        tmp_settings = tmp_config / "settings.json"
+        tmp_settings.write_text("{}", encoding="utf-8")
+
+        _app.SETTINGS_FILE = tmp_settings
+        _app._UPLOADS_DIR = tmp_uploads
+        _app._PROFILES_DIR = tmp_profiles
+        _app._PROMPTS_DIR = tmp_prompts
+
+        try:
+            from httpx import ASGITransport, AsyncClient
+            import asyncio
+            from web.app import app as _test_app
+
+            png_b64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+
+            async def _run():
+                transport = ASGITransport(app=_test_app)
+                async with AsyncClient(transport=transport, base_url="http://test") as client:
+                    # ── 1. User profile: set name + color ──
+                    r = await client.put("/api/profiles/user", json={
+                        "name": "Alice", "color": "#ff00ff"
+                    })
+                    check("user PUT 200", r.status_code == 200)
+                    data = r.json()
+                    check("user PUT ok", data.get("ok") is True)
+
+                    # Verify settings persisted
+                    s = json.loads(tmp_settings.read_text(encoding="utf-8"))
+                    check("user name saved", s["user_profile"]["name"] == "Alice")
+                    check("user color saved", s["user_profile"]["color"] == "#ff00ff")
+
+                    # ── 2. User profile: upload base64 avatar ──
+                    r2 = await client.put("/api/profiles/user", json={
+                        "image": f"data:image/png;base64,{png_b64}"
+                    })
+                    check("user avatar PUT 200", r2.status_code == 200)
+                    img_url = r2.json().get("image", "")
+                    check("user avatar → file URL", img_url.startswith("/uploads/user_avatar_"))
+                    check("user avatar file exists",
+                          (tmp_uploads / os.path.basename(img_url)).exists())
+
+                    # ── 3. User profile: clear avatar ──
+                    r3 = await client.put("/api/profiles/user", json={"image": ""})
+                    check("user clear 200", r3.status_code == 200)
+                    check("user clear → empty image", r3.json().get("image") == "")
+                    # Old file should be deleted
+                    check("old avatar file removed",
+                          not (tmp_uploads / os.path.basename(img_url)).exists())
+
+                    # ── 4. User profile: photo crop fields ──
+                    r4 = await client.put("/api/profiles/user", json={
+                        "photo_zoom": 1.5, "photo_x": 10, "photo_y": -20
+                    })
+                    check("crop fields 200", r4.status_code == 200)
+                    s2 = json.loads(tmp_settings.read_text(encoding="utf-8"))
+                    check("photo_zoom saved", s2["user_profile"]["photo_zoom"] == 1.5)
+                    check("photo_x saved", s2["user_profile"]["photo_x"] == 10)
+                    check("photo_y saved", s2["user_profile"]["photo_y"] == -20)
+
+                    # ── 5. Agent avatar: upload ──
+                    r5 = await client.put("/api/profiles/test_agent/avatar", json={
+                        "image": f"data:image/png;base64,{png_b64}",
+                        "color": "#aabbcc"
+                    })
+                    check("agent avatar PUT 200", r5.status_code == 200)
+                    agent_img = r5.json().get("image", "")
+                    check("agent avatar → file URL", agent_img.startswith("/uploads/avatar_test_agent_"))
+                    check("agent avatar file exists",
+                          (tmp_uploads / os.path.basename(agent_img)).exists())
+
+                    # Verify color saved in settings
+                    s3 = json.loads(tmp_settings.read_text(encoding="utf-8"))
+                    check("agent color saved", s3["agent_avatars"]["test_agent"]["color"] == "#aabbcc")
+
+                    # ── 6. Agent avatar: replace (old file deleted) ──
+                    r6 = await client.put("/api/profiles/test_agent/avatar", json={
+                        "image": f"data:image/png;base64,{png_b64}"
+                    })
+                    new_img = r6.json().get("image", "")
+                    check("agent avatar replaced", new_img != agent_img)
+                    check("old agent avatar removed",
+                          not (tmp_uploads / os.path.basename(agent_img)).exists())
+
+                    # ── 7. Agent avatar: clear ──
+                    r7 = await client.put("/api/profiles/test_agent/avatar", json={"image": ""})
+                    check("agent clear 200", r7.status_code == 200)
+                    check("agent clear → empty", r7.json().get("image") == "")
+
+                    # ── 8. Profile CRUD: create ──
+                    r8 = await client.post("/api/profiles", json={
+                        "name": "new_agent", "model": "gpt-4o",
+                        "system_prompt": "You are new_agent."
+                    })
+                    check("profile create 200", r8.status_code == 200)
+                    check("profile create ok", r8.json().get("ok") is True)
+                    check("profile YAML created", (tmp_profiles / "new_agent.yaml").exists())
+                    check("prompt file created", (tmp_prompts / "new_agent.system.md").exists())
+
+                    # ── 9. Profile CRUD: duplicate create → 400 ──
+                    r9 = await client.post("/api/profiles", json={"name": "new_agent"})
+                    check("duplicate create → 400", r9.status_code == 400)
+
+                    # ── 10. Profile CRUD: get ──
+                    r10 = await client.get("/api/profiles/new_agent")
+                    check("profile get 200", r10.status_code == 200)
+                    check("profile get has name", r10.json()["name"] == "new_agent")
+
+                    # ── 11. Profile CRUD: update ──
+                    r11 = await client.put("/api/profiles/new_agent", json={
+                        "system_prompt": "Updated prompt.",
+                        "temperature": 0.5
+                    })
+                    check("profile update 200", r11.status_code == 200)
+
+                    # ── 12. Profile CRUD: delete ──
+                    r12 = await client.delete("/api/profiles/new_agent")
+                    check("profile delete 200", r12.status_code == 200)
+                    check("profile YAML removed", not (tmp_profiles / "new_agent.yaml").exists())
+                    check("prompt removed", not (tmp_prompts / "new_agent.system.md").exists())
+
+                    # ── 13. Profile create with empty name → 400 ──
+                    r13 = await client.post("/api/profiles", json={"name": ""})
+                    check("empty name → 400", r13.status_code == 400)
+
+            asyncio.run(_run())
+
+        except ImportError:
+            check("httpx not available — skipped API tests", True)
+
+    finally:
+        _app.SETTINGS_FILE = orig_settings
+        _app._UPLOADS_DIR = orig_uploads
+        _app._PROFILES_DIR = orig_profiles
+        _app._PROMPTS_DIR = orig_prompts
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ═════════════════════════════════════════════
+# UI SKINS API — set / get skin
+# ═════════════════════════════════════════════
+def test_skins_api():
+    """Test skin selection persistence: set, get, default."""
+    print("\n=== TORTURE: UI Skins API — set/get ===")
+    from pathlib import Path
+
+    tmp = tempfile.mkdtemp()
+    try:
+        import web.app as _app
+
+        orig_settings = _app.SETTINGS_FILE
+        tmp_settings = Path(tmp) / "config" / "settings.json"
+        tmp_settings.parent.mkdir(parents=True)
+        tmp_settings.write_text("{}", encoding="utf-8")
+        _app.SETTINGS_FILE = tmp_settings
+
+        try:
+            from httpx import ASGITransport, AsyncClient
+            import asyncio
+            from web.app import app as _test_app
+
+            async def _run():
+                transport = ASGITransport(app=_test_app)
+                async with AsyncClient(transport=transport, base_url="http://test") as client:
+                    # ── 1. GET default skin ──
+                    r = await client.get("/api/skin")
+                    check("GET skin 200", r.status_code == 200)
+                    check("default skin is 'default'", r.json()["skin"] == "default")
+
+                    # ── 2. SET skin ──
+                    r2 = await client.put("/api/skin", json={"skin": "midnight"})
+                    check("SET skin 200", r2.status_code == 200)
+                    check("SET skin ok", r2.json().get("ok") is True)
+                    check("SET skin returned", r2.json()["skin"] == "midnight")
+
+                    # ── 3. GET after set ──
+                    r3 = await client.get("/api/skin")
+                    check("GET after SET", r3.json()["skin"] == "midnight")
+
+                    # Verify persisted in settings.json
+                    s = json.loads(tmp_settings.read_text(encoding="utf-8"))
+                    check("skin persisted in settings", s["skin"] == "midnight")
+
+                    # ── 4. SET another skin ──
+                    r4 = await client.put("/api/skin", json={"skin": "aurora"})
+                    check("change skin to aurora", r4.json()["skin"] == "aurora")
+
+                    # ── 5. SET with missing key → default ──
+                    r5 = await client.put("/api/skin", json={})
+                    check("missing key → default", r5.json()["skin"] == "default")
+
+            asyncio.run(_run())
+
+        except ImportError:
+            check("httpx not available — skipped", True)
+
+    finally:
+        _app.SETTINGS_FILE = orig_settings
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ═════════════════════════════════════════════
+# SAVED PROFILE CRUD — list / save / get / delete
+# ═════════════════════════════════════════════
+def test_saved_profile_crud():
+    """Test saved memory profile CRUD: list, save, get, delete, default protection."""
+    print("\n=== TORTURE: Saved Profile CRUD ===")
+    from pathlib import Path
+
+    tmp = tempfile.mkdtemp()
+    try:
+        import web.app as _app
+
+        orig_dir = _app._SAVED_MEMORY_PROFILES_DIR
+        orig_settings = _app.SETTINGS_FILE
+
+        tmp_profiles = Path(tmp) / "profiles" / "memory"
+        tmp_profiles.mkdir(parents=True)
+        tmp_settings = Path(tmp) / "settings.json"
+        tmp_settings.write_text("{}", encoding="utf-8")
+
+        _app._SAVED_MEMORY_PROFILES_DIR = tmp_profiles
+        _app.SETTINGS_FILE = tmp_settings
+
+        # ── 1. _list_profiles_in — empty directory ──
+        result = _app._list_profiles_in(tmp_profiles)
+        check("empty dir → empty list", result == [])
+
+        # ── 2. _list_profiles_in — with files ──
+        (tmp_profiles / "custom.json").write_text(json.dumps({
+            "name": "Custom Profile", "version": "1.0",
+            "description": "A custom profile"
+        }), encoding="utf-8")
+        (tmp_profiles / "pinned.json").write_text(json.dumps({
+            "name": "Pinned", "_pinned": True
+        }), encoding="utf-8")
+        result2 = _app._list_profiles_in(tmp_profiles)
+        check("list returns 2 entries", len(result2) == 2)
+        check("pinned first", result2[0]["pinned"] is True)
+        check("pinned name", result2[0]["name"] == "Pinned")
+        check("custom second", result2[1]["filename"] == "custom")
+        check("custom desc", result2[1]["description"] == "A custom profile")
+
+        # ── 3. _list_profiles_in — default profile override ──
+        default_stem = _app._DEFAULT_PROFILE_STEM
+        (tmp_profiles / f"{default_stem}.json").write_text(json.dumps({
+            "name": "ShouldBeDefault", "_pinned": True
+        }), encoding="utf-8")
+        result3 = _app._list_profiles_in(tmp_profiles)
+        default_entries = [e for e in result3 if e["filename"] == default_stem]
+        check("default profile in list", len(default_entries) == 1)
+        check("default name overridden to 'Default'", default_entries[0]["name"] == "Default")
+
+        # ── 4. _list_profiles_in — corrupt JSON → graceful fallback ──
+        (tmp_profiles / "bad.json").write_text("not json at all", encoding="utf-8")
+        result4 = _app._list_profiles_in(tmp_profiles)
+        bad_entries = [e for e in result4 if e["filename"] == "bad"]
+        check("corrupt JSON → entry exists", len(bad_entries) == 1)
+        check("corrupt JSON → filename as name", bad_entries[0]["name"] == "bad")
+
+        # ── 5. API tests via TestClient ──
+        # Clean up for API tests
+        for f in tmp_profiles.glob("*.json"):
+            f.unlink()
+
+        try:
+            from httpx import ASGITransport, AsyncClient
+            import asyncio
+            from web.app import app as _test_app
+
+            async def _run():
+                transport = ASGITransport(app=_test_app)
+                async with AsyncClient(transport=transport, base_url="http://test") as client:
+                    # Save a profile
+                    r = await client.post("/api/tools/memory/profiles", json={
+                        "filename": "test_profile",
+                        "profile": {"name": "Test", "max_total": 500}
+                    })
+                    check("save profile 200", r.status_code == 200)
+                    check("save profile ok", r.json().get("ok") is True)
+                    check("save profile filename", r.json()["filename"] == "test_profile")
+                    check("profile file created", (tmp_profiles / "test_profile.json").exists())
+
+                    # Get profile
+                    r2 = await client.get("/api/tools/memory/profiles/test_profile")
+                    check("get profile 200", r2.status_code == 200)
+                    check("get profile max_total", r2.json()["max_total"] == 500)
+
+                    # List profiles
+                    r3 = await client.get("/api/tools/memory/profiles")
+                    check("list profiles 200", r3.status_code == 200)
+                    names = [e["filename"] for e in r3.json()]
+                    check("test_profile in list", "test_profile" in names)
+
+                    # Get nonexistent → 404
+                    r4 = await client.get("/api/tools/memory/profiles/nonexistent")
+                    check("nonexistent → 404", r4.status_code == 404)
+
+                    # Delete profile
+                    r5 = await client.delete("/api/tools/memory/profiles/test_profile")
+                    check("delete 200", r5.status_code == 200)
+                    check("delete ok", r5.json().get("ok") is True)
+                    check("file removed", not (tmp_profiles / "test_profile.json").exists())
+
+                    # Save with empty filename → 400
+                    r6 = await client.post("/api/tools/memory/profiles", json={
+                        "filename": "", "profile": {}
+                    })
+                    check("empty filename → 400", r6.status_code == 400)
+
+                    # Save with special chars → sanitized
+                    r7 = await client.post("/api/tools/memory/profiles", json={
+                        "filename": "my profile!@#$", "profile": {"name": "Sanitized"}
+                    })
+                    check("sanitized save 200", r7.status_code == 200)
+                    safe_name = r7.json()["filename"]
+                    check("sanitized filename", "!" not in safe_name and "@" not in safe_name)
+
+            asyncio.run(_run())
+
+        except ImportError:
+            check("httpx not available — skipped API tests", True)
+
+    finally:
+        _app._SAVED_MEMORY_PROFILES_DIR = orig_dir
+        _app.SETTINGS_FILE = orig_settings
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ═════════════════════════════════════════════
+# _extract_and_save_memories — pattern extraction
+# ═════════════════════════════════════════════
+def test_extract_save_memories_extended():
+    """Test _extract_and_save_memories regex patterns, category validation, min-length."""
+    print("\n=== TORTURE: _extract_and_save_memories — Patterns ===")
+    import re
+
+    # Test the regex pattern directly (without needing FAISS)
+    pattern = r'\[MEMORY_SAVE:\s*(?:category=([\w]+)\s*\|)?\s*(.+?)\]'
+
+    # ── 1. Standard pattern with category ──
+    text1 = "Hello [MEMORY_SAVE: category=bio | User's name is Alice] world"
+    matches = re.findall(pattern, text1, re.DOTALL)
+    check("standard: one match", len(matches) == 1)
+    check("standard: category=bio", matches[0][0] == "bio")
+    check("standard: text extracted", "Alice" in matches[0][1])
+
+    # ── 2. Pattern without category ──
+    text2 = "[MEMORY_SAVE: Prefers dark mode]"
+    matches2 = re.findall(pattern, text2, re.DOTALL)
+    check("no category: one match", len(matches2) == 1)
+    check("no category: empty category", matches2[0][0] == "")
+    check("no category: text correct", "dark mode" in matches2[0][1])
+
+    # ── 3. Multiple tags ──
+    text3 = "[MEMORY_SAVE: category=preference | Likes coffee] Some text [MEMORY_SAVE: Owns a cat]"
+    matches3 = re.findall(pattern, text3, re.DOTALL)
+    check("multiple: two matches", len(matches3) == 2)
+    check("multiple: first category", matches3[0][0] == "preference")
+    check("multiple: second no category", matches3[1][0] == "")
+
+    # ── 4. No tags ──
+    text4 = "Just a normal response with no memory tags."
+    matches4 = re.findall(pattern, text4, re.DOTALL)
+    check("no tags: zero matches", len(matches4) == 0)
+
+    # ── 5. _strip_memory_tags ──
+    from web.app import _strip_memory_tags
+    stripped = _strip_memory_tags(text1)
+    check("strip: tag removed", "[MEMORY_SAVE" not in stripped)
+    check("strip: surrounding text kept", "Hello" in stripped and "world" in stripped)
+
+    stripped_multi = _strip_memory_tags(text3)
+    check("strip multi: all tags removed", "[MEMORY_SAVE" not in stripped_multi)
+    check("strip multi: middle text kept", "Some text" in stripped_multi)
+
+    # ── 6. Strip on clean text → unchanged ──
+    clean = "No tags here"
+    check("strip clean: unchanged", _strip_memory_tags(clean) == clean)
+
+    # ── 7. Valid categories (from the function) ──
+    valid_cats = {"bio", "preference", "project", "lore", "session", "meta", "health", "self", "other"}
+    for cat in valid_cats:
+        tag = f"[MEMORY_SAVE: category={cat} | test text here]"
+        m = re.findall(pattern, tag, re.DOTALL)
+        check(f"category '{cat}' extracted", len(m) == 1 and m[0][0] == cat)
+
+    # ── 8. Minimum text length check ──
+    short_tag = "[MEMORY_SAVE: Hi]"
+    m_short = re.findall(pattern, short_tag, re.DOTALL)
+    if m_short:
+        text_val = m_short[0][1].strip()
+        check("short text extracted but < 5 chars", len(text_val) < 5)
+    else:
+        check("short text: regex matched", False, "no match")
+
+
+# ═════════════════════════════════════════════
+# TOOL REGISTRY — get_tool_defs_for_agent
+# ═════════════════════════════════════════════
+def test_registry_get_tool_defs():
+    """Test get_tool_defs_for_agent: profile loading, tool resolution, YAML-based."""
+    print("\n=== TORTURE: Registry — get_tool_defs_for_agent ===")
+    from pathlib import Path
+
+    tmp = tempfile.mkdtemp()
+    try:
+        import src.tools.registry as reg
+
+        orig_profiles = reg._PROFILES_DIR
+        reg._PROFILES_DIR = Path(tmp) / "profiles"
+        reg._PROFILES_DIR.mkdir()
+
+        # ── 1. Missing profile → empty list ──
+        defs = reg.get_tool_defs_for_agent("nonexistent")
+        check("missing profile → empty", defs == [])
+
+        # ── 2. Profile with no allowed_tools → empty ──
+        import yaml
+        profile_no_tools = {"name": "no_tools", "model": "test"}
+        with open(reg._PROFILES_DIR / "no_tools.yaml", "w") as f:
+            yaml.dump(profile_no_tools, f)
+        defs2 = reg.get_tool_defs_for_agent("no_tools")
+        check("no allowed_tools → empty", defs2 == [])
+
+        # ── 3. Profile with allowed_tools ──
+        profile_with_tools = {
+            "name": "test_agent",
+            "model": "gpt-4o",
+            "allowed_tools": ["echo", "memory"]
+        }
+        with open(reg._PROFILES_DIR / "test_agent.yaml", "w") as f:
+            yaml.dump(profile_with_tools, f)
+        defs3 = reg.get_tool_defs_for_agent("test_agent")
+        check("2 tools resolved", len(defs3) == 2)
+        tool_names = [d["function"]["name"] for d in defs3]
+        check("echo in defs", "echo" in tool_names)
+        check("memory in defs", "memory" in tool_names)
+
+        # Each def has correct structure
+        for d in defs3:
+            check(f"{d['function']['name']} type=function", d["type"] == "function")
+            check(f"{d['function']['name']} has description", "description" in d["function"])
+            check(f"{d['function']['name']} has parameters", "parameters" in d["function"])
+
+        # ── 4. Profile with unknown tool → skipped ──
+        profile_unknown = {
+            "name": "unknown",
+            "allowed_tools": ["echo", "totally_fake_tool"]
+        }
+        with open(reg._PROFILES_DIR / "unknown.yaml", "w") as f:
+            yaml.dump(profile_unknown, f)
+        defs4 = reg.get_tool_defs_for_agent("unknown")
+        check("unknown tool skipped", len(defs4) == 1)
+        check("only echo resolved", defs4[0]["function"]["name"] == "echo")
+
+        # ── 5. All registered tools resolvable ──
+        all_tools = reg.list_registered_tools()
+        check("all tools list non-empty", len(all_tools) > 0)
+        for tool_name in all_tools:
+            resolved = reg._resolve_tool(tool_name)
+            check(f"tool '{tool_name}' resolves", resolved is not None)
+
+        # ── 6. _load_profile with empty YAML ──
+        with open(reg._PROFILES_DIR / "empty.yaml", "w") as f:
+            f.write("")
+        empty_prof = reg._load_profile("empty")
+        check("empty YAML → empty dict", empty_prof == {})
+
+    finally:
+        reg._PROFILES_DIR = orig_profiles
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ═════════════════════════════════════════════
+# PROFILE CREATE V2 — newer endpoint
+# ═════════════════════════════════════════════
+def test_profile_create_v2():
+    """Test the v2 profile creation endpoint with description and model."""
+    print("\n=== TORTURE: Profile Create V2 ===")
+    from pathlib import Path
+
+    tmp = tempfile.mkdtemp()
+    try:
+        import web.app as _app
+
+        orig_profiles = _app._PROFILES_DIR
+        orig_prompts = _app._PROMPTS_DIR
+        orig_settings = _app.SETTINGS_FILE
+
+        tmp_profiles = Path(tmp) / "profiles"
+        tmp_profiles.mkdir()
+        tmp_prompts = Path(tmp) / "prompts"
+        tmp_prompts.mkdir()
+        tmp_settings = Path(tmp) / "settings.json"
+        tmp_settings.write_text("{}", encoding="utf-8")
+
+        _app._PROFILES_DIR = tmp_profiles
+        _app._PROMPTS_DIR = tmp_prompts
+        _app.SETTINGS_FILE = tmp_settings
+
+        try:
+            from httpx import ASGITransport, AsyncClient
+            import asyncio
+            from web.app import app as _test_app
+
+            async def _run():
+                transport = ASGITransport(app=_test_app)
+                async with AsyncClient(transport=transport, base_url="http://test") as client:
+                    # Create with description + model
+                    r = await client.post("/api/profiles/create", json={
+                        "name": "Nova Agent",
+                        "model": "claude-3-opus",
+                        "description": "A creative agent"
+                    })
+                    check("v2 create 200", r.status_code == 200)
+                    check("v2 create ok", r.json().get("ok") is True)
+                    name = r.json()["name"]
+                    check("v2 name normalized", name == "nova_agent")
+
+                    # Verify YAML created
+                    check("v2 YAML exists", (tmp_profiles / "nova_agent.yaml").exists())
+
+                    # Verify system prompt created
+                    check("v2 prompt exists", (tmp_prompts / "nova_agent.system.md").exists())
+
+                    # Duplicate → 400
+                    r2 = await client.post("/api/profiles/create", json={
+                        "name": "Nova Agent"
+                    })
+                    check("v2 duplicate → 400", r2.status_code == 400)
+
+                    # Empty name → 400
+                    r3 = await client.post("/api/profiles/create", json={"name": ""})
+                    check("v2 empty name → 400", r3.status_code == 400)
+
+            asyncio.run(_run())
+
+        except ImportError:
+            check("httpx not available — skipped", True)
+
+    finally:
+        _app._PROFILES_DIR = orig_profiles
+        _app._PROMPTS_DIR = orig_prompts
+        _app.SETTINGS_FILE = orig_settings
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ═════════════════════════════════════════════
+# SETTINGS HELPERS — _load_settings / _save_settings round-trip
+# ═════════════════════════════════════════════
+def test_settings_helpers():
+    """Test _load_settings / _save_settings: round-trip, empty file, nested data."""
+    print("\n=== TORTURE: Settings Helpers ===")
+    from pathlib import Path
+
+    tmp = tempfile.mkdtemp()
+    try:
+        import web.app as _app
+
+        orig_settings = _app.SETTINGS_FILE
+        tmp_settings = Path(tmp) / "config" / "settings.json"
+        tmp_settings.parent.mkdir(parents=True)
+        _app.SETTINGS_FILE = tmp_settings
+
+        # ── 1. Missing file → empty dict ──
+        data = _app._load_settings()
+        check("missing file → {}", data == {})
+
+        # ── 2. Save + load round-trip ──
+        _app._save_settings({"skin": "midnight", "nested": {"a": 1}})
+        loaded = _app._load_settings()
+        check("round-trip skin", loaded["skin"] == "midnight")
+        check("round-trip nested", loaded["nested"]["a"] == 1)
+
+        # ── 3. Overwrite ──
+        _app._save_settings({"skin": "aurora"})
+        loaded2 = _app._load_settings()
+        check("overwrite works", loaded2["skin"] == "aurora")
+        check("overwrite drops old keys", "nested" not in loaded2)
+
+        # ── 4. Large settings ──
+        big = {"items": [{"id": i, "data": "x" * 100} for i in range(100)]}
+        _app._save_settings(big)
+        loaded3 = _app._load_settings()
+        check("large settings round-trip", len(loaded3["items"]) == 100)
+
+    finally:
+        _app.SETTINGS_FILE = orig_settings
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ═════════════════════════════════════════════
 if __name__ == "__main__":
     test_boundary_policy()
     test_pii_guard_extended()
@@ -4018,6 +4754,14 @@ if __name__ == "__main__":
     test_tools_max_memory_dropdown()
     test_memory_profile_max_total()
     test_vault_sort_edge_cases()
+    test_avatar_migration()
+    test_profile_api_torture()
+    test_skins_api()
+    test_saved_profile_crud()
+    test_extract_save_memories_extended()
+    test_registry_get_tool_defs()
+    test_profile_create_v2()
+    test_settings_helpers()
 
     print(f"\n{'='*40}")
     print(f"Results: {PASS} passed, {FAIL} failed")

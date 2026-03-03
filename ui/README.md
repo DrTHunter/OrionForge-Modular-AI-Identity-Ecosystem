@@ -15,7 +15,7 @@ The `ui/` directory is the **production-ready deployment build** of OrionForge. 
 ```
 ui/
 ├── config/             # Configuration files (connections, settings, pricing, profiles)
-├── data/               # Runtime data directories (clean .gitkeep placeholders)
+├── data/               # Runtime data directories (clean placeholder files)
 ├── directives/         # Agent directive files (astraea, callum, codex_animus, shared)
 ├── notes/              # Developer notes per agent
 ├── profiles/           # Agent YAML profiles (provider, model, parameters)
@@ -55,4 +55,4 @@ cd ui && python -m uvicorn web.app:app --host 0.0.0.0 --port 8989 --reload
 
 ## Data Directory
 
-The `data/` directory is pre-populated with `.gitkeep` files to maintain the directory structure in Git. All runtime data (chats, memories, uploads) is generated during use.
+The `data/` directory is pre-populated with placeholder files to maintain the directory structure. All runtime data (chats, memories, uploads) is generated during use.
