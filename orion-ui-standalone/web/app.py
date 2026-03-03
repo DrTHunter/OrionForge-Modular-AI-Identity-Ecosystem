@@ -1473,7 +1473,7 @@ AGI_LOOP_FILE = _CONFIG_DIR / "agi_loop.json"
 _AGI_LOOP_DEFAULTS = {
     "interval_hours": 0,
     "interval_minutes": 30,
-    "max_loops": 0,
+    "max_loops": 5,
     "ticks_per_loop": 15,
     "max_steps_per_tick": 3,
     "stimulus": "",
@@ -1564,7 +1564,7 @@ async def page_agi_loop(request: Request):
 class AGILoopConfigUpdate(BaseModel):
     interval_hours: int = 0
     interval_minutes: int = 30
-    max_loops: int = 0
+    max_loops: int = 5
     ticks_per_loop: int = 15
     max_steps_per_tick: int = 3
     stimulus: str = ""
