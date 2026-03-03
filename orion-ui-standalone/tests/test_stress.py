@@ -27,6 +27,10 @@ Covers:
   - Skin toggle stress (50 rapid skin switches)
   - Tool registry resolution stress (all tools x 10 rounds)
   - Memory strip-tags stress (100 mixed-tag strings)
+  - Model router classification stress (500 classify_task ops, resolve_model_for_task,
+    tier escalation, ModelRouterTool.execute 100 rapid calls)
+  - AGI loop state stress (500 tick logs, state transitions, 200 tool executions,
+    50 pause/resume cycles, double-pause/double-resume edge cases)
 """
 
 import json
@@ -1191,6 +1195,257 @@ def test_strip_memory_tags_stress():
 
 
 # ═════════════════════════════════════════════
+# 23. Model Router classification stress
+# ═════════════════════════════════════════════
+def test_model_router_classify_stress():
+    print("\n=== STRESS: Model Router Classification (500 ops) ===")
+    from src.tools.model_router import (
+        classify_task, resolve_model_for_task, resolve_tier,
+        get_next_tier, ModelRouterTool, _CLASSIFICATION_RULES,
+    )
+
+    # ── Rapid classification — 500 diverse stimuli ──
+    stimuli = [
+        "write code for a REST API",
+        "summarize the meeting notes",
+        "plan the sprint for Q3",
+        "review the security audit report",
+        "polish the final document",
+        "remember that the user likes dark mode",
+        "reflect on today's progress",
+        "search for Python documentation",
+        "hello how are you today",
+        "debug the authentication module",
+    ]
+
+    t0 = time.time()
+    for i in range(500):
+        text = stimuli[i % len(stimuli)]
+        result = classify_task(text)
+        if not isinstance(result, str) or len(result) == 0:
+            check(f"classify #{i} valid", False, f"got {result!r}")
+            break
+    else:
+        elapsed = time.time() - t0
+        check(f"500 classifications in {elapsed:.3f}s", elapsed < 2.0)
+
+    # Verify deterministic results
+    for text in stimuli:
+        r1 = classify_task(text)
+        r2 = classify_task(text)
+        if r1 != r2:
+            check(f"deterministic: {text[:30]}", False, f"{r1} != {r2}")
+            break
+    else:
+        check("all classifications deterministic", True)
+
+    # ── Known task types: each classification rule must fire ──
+    rule_task_types = [task_type for _, task_type in _CLASSIFICATION_RULES]
+    for task_type in rule_task_types:
+        # Find a stimulus that triggers this rule
+        for keywords, tt in _CLASSIFICATION_RULES:
+            if tt == task_type:
+                test_text = keywords[0]  # use the first keyword
+                result = classify_task(test_text)
+                check(f"rule fires: {task_type}", result == task_type,
+                      f"input='{test_text}' got '{result}'")
+                break
+
+    # ── resolve_model_for_task stress with mock config ──
+    mock_cfg = {
+        "enabled": True,
+        "tiers": [
+            {"id": "t0", "label": "local_cheap", "enabled": True,
+             "provider": "ollama", "primary_model": "qwen:7b"},
+            {"id": "t1", "label": "cheap_cloud", "enabled": True,
+             "provider": "openai", "primary_model": "gpt-4o-mini"},
+            {"id": "t2", "label": "expensive_cloud", "enabled": True,
+             "provider": "openai", "primary_model": "gpt-4o"},
+        ],
+        "task_tier_map": {
+            "coding": "cheap_cloud",
+            "summarization": "local_cheap",
+            "planning": "cheap_cloud",
+            "high_stakes": "expensive_cloud",
+            "final_polish": "expensive_cloud",
+            "memory_ops": "local_cheap",
+            "reflection": "local_cheap",
+            "tool_use": "cheap_cloud",
+            "agi_tick": "cheap_cloud",
+            "general": "__auto__",
+        },
+    }
+
+    t0 = time.time()
+    for i in range(200):
+        text = stimuli[i % len(stimuli)]
+        model, provider, task_type = resolve_model_for_task(text, mock_cfg)
+        # For non-general tasks, model and provider should be set
+        if task_type != "general":
+            if model is None or provider is None:
+                check(f"resolve #{i} model set", False,
+                      f"task={task_type} model={model} provider={provider}")
+                break
+        else:
+            # general → __auto__ → fallback
+            if model is not None:
+                check(f"resolve #{i} general fallback", False, f"model={model}")
+                break
+    else:
+        elapsed = time.time() - t0
+        check(f"200 resolve_model_for_task in {elapsed:.3f}s", elapsed < 2.0)
+
+    # ── get_next_tier escalation stress ──
+    tier_ids = ["t0", "t1", "t2"]
+    for current_id in tier_ids:
+        nt = get_next_tier(current_id, mock_cfg)
+        idx = tier_ids.index(current_id)
+        if idx + 1 < len(tier_ids):
+            check(f"escalate {current_id} valid", nt is not None and nt["id"] == tier_ids[idx + 1])
+        else:
+            check(f"escalate {current_id} → None (top)", nt is None)
+
+    # ── ModelRouterTool.execute stress (100 rapid calls) ──
+    actions_cycle = [
+        {"action": "classify", "text": "write code"},
+        {"action": "resolve", "text": "summarize this"},
+        {"action": "list_tiers"},
+        {"action": "get_map"},
+    ]
+    t0 = time.time()
+    for i in range(100):
+        args = actions_cycle[i % len(actions_cycle)]
+        result = ModelRouterTool.execute(args)
+        parsed = json.loads(result)
+        if "error" in parsed and args.get("text"):
+            check(f"tool execute #{i}", False, f"unexpected error: {parsed}")
+            break
+    else:
+        elapsed = time.time() - t0
+        check(f"100 tool executions in {elapsed:.3f}s", elapsed < 3.0)
+
+
+# ═════════════════════════════════════════════
+# 24. AGI Loop state stress
+# ═════════════════════════════════════════════
+def test_agi_loop_state_stress():
+    print("\n=== STRESS: AGI Loop State (rapid ticks + transitions) ===")
+    from src.tools.agi_loop import AGILoopTool, AGILoopState, get_loop_state
+
+    state = get_loop_state()
+    state.reset()
+
+    # ── Rapid tick logging — 500 ticks ──
+    t0 = time.time()
+    for i in range(500):
+        state.log_tick({
+            "tick": i,
+            "cost": 0.001,
+            "model": "gpt-4o-mini",
+            "status": "ok" if i % 10 != 0 else "error",
+            "ts": f"2026-01-01T00:{i // 60:02d}:{i % 60:02d}Z",
+        })
+    elapsed = time.time() - t0
+    check(f"500 tick logs in {elapsed:.3f}s", elapsed < 2.0)
+
+    # In-memory cap at 200
+    check("tick_history capped at 200", len(state.tick_history) == 200)
+    check("oldest tick is 300", state.tick_history[0]["tick"] == 300)
+    check("newest tick is 499", state.tick_history[-1]["tick"] == 499)
+
+    # ── to_dict under load ──
+    t0 = time.time()
+    for _ in range(100):
+        d = state.to_dict()
+    elapsed = time.time() - t0
+    check(f"100 to_dict in {elapsed:.3f}s", elapsed < 1.0)
+    check("to_dict recent_ticks capped at 20", len(d["recent_ticks"]) == 20)
+
+    # ── Rapid state transitions ──
+    t0 = time.time()
+    for i in range(100):
+        state.running = True
+        state.paused = False
+        state.current_tick = i
+        state.total_cost += 0.001
+        state.error_streak = i % 5
+        state.paused = True
+        state.running = False
+    elapsed = time.time() - t0
+    check(f"100 state transitions in {elapsed:.3f}s", elapsed < 0.5)
+
+    # ── Tool execute stress — 200 rapid calls ──
+    state.reset()
+    state.running = True
+    for i in range(20):
+        state.log_tick({"tick": i})
+
+    actions = [
+        {"action": "status"},
+        {"action": "tick_history"},
+        {"action": "tick_history", "limit": 5},
+    ]
+
+    t0 = time.time()
+    for i in range(200):
+        args = actions[i % len(actions)]
+        result = AGILoopTool.execute(args)
+        parsed = json.loads(result)
+        if not isinstance(parsed, dict):
+            check(f"tool call #{i}", False, f"not a dict: {type(parsed)}")
+            break
+    else:
+        elapsed = time.time() - t0
+        check(f"200 tool executions in {elapsed:.3f}s", elapsed < 2.0)
+
+    # ── Pause/resume cycle stress ──
+    state.reset()
+    state.running = True
+    t0 = time.time()
+    for i in range(50):
+        # Pause
+        r_pause = json.loads(AGILoopTool.execute({"action": "request_pause"}))
+        if not r_pause.get("ok"):
+            check(f"pause #{i}", False, f"ok=False: {r_pause}")
+            break
+        # Resume
+        r_resume = json.loads(AGILoopTool.execute({"action": "request_resume"}))
+        if not r_resume.get("ok"):
+            check(f"resume #{i}", False, f"ok=False: {r_resume}")
+            break
+    else:
+        elapsed = time.time() - t0
+        check(f"50 pause/resume cycles in {elapsed:.3f}s", elapsed < 1.0)
+
+    # ── Edge: Double pause → second still works (already paused) ──
+    state.reset()
+    state.running = True
+    AGILoopTool.execute({"action": "request_pause"})
+    r_double = json.loads(AGILoopTool.execute({"action": "request_pause"}))
+    # Already paused → still ok because state.paused is already True
+    check("double pause: state still paused", state.paused is True)
+
+    # ── Edge: Double resume ──
+    AGILoopTool.execute({"action": "request_resume"})
+    r_double_resume = json.loads(AGILoopTool.execute({"action": "request_resume"}))
+    check("double resume: ok=False", r_double_resume["ok"] is False)
+
+    # ── Reset round-trip ──
+    state.running = True
+    state.total_cost = 99.99
+    state.error_streak = 10
+    state.log_tick({"tick": 999})
+    state.reset()
+    check("reset clears running", state.running is False)
+    check("reset clears cost", state.total_cost == 0.0)
+    check("reset clears streak", state.error_streak == 0)
+    check("reset clears history", len(state.tick_history) == 0)
+
+    # Clean up
+    state.reset()
+
+
+# ═════════════════════════════════════════════
 if __name__ == "__main__":
     test_vault_rapid_crud()
     test_vault_bulk_delete()
@@ -1214,6 +1469,8 @@ if __name__ == "__main__":
     test_skin_toggle_stress()
     test_tool_registry_stress()
     test_strip_memory_tags_stress()
+    test_model_router_classify_stress()
+    test_agi_loop_state_stress()
 
     print(f"\n{'='*40}")
     print(f"Results: {PASS} passed, {FAIL} failed")
