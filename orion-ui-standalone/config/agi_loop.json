@@ -1,7 +1,7 @@
 {
   "interval_hours": 0,
   "interval_minutes": 30,
-  "max_loops": 0,
+  "max_loops": 5,
   "ticks_per_loop": 15,
   "max_steps_per_tick": 3,
   "stimulus": "",
