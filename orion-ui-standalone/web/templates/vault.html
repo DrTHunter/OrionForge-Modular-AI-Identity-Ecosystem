@@ -37,6 +37,22 @@
   }
   .manage-toggle:hover { color:#a1a1aa; background:rgba(63,63,70,0.3); }
   .manage-toggle.active { color:#fca5a5; border-color:rgba(239,68,68,0.3); background:rgba(239,68,68,0.1); }
+  /* Sort controls */
+  .sort-select {
+    padding:0.25rem 0.5rem; font-size:0.75rem; border-radius:0.375rem;
+    border:1px solid rgba(63,63,70,0.5); background:rgba(24,24,27,0.8);
+    color:#d4d4d8; cursor:pointer; transition:all 0.15s;
+  }
+  .sort-select:hover { border-color:rgba(129,140,248,0.4); }
+  .sort-select:focus { outline:none; border-color:rgba(129,140,248,0.5); box-shadow:0 0 0 2px rgba(129,140,248,0.15); }
+  /* Metadata row under each memory */
+  .mem-meta {
+    display:flex; align-items:center; gap:0.5rem; margin-top:0.375rem; flex-wrap:wrap;
+  }
+  .mem-meta-item {
+    font-size:0.6875rem; color:#71717a; display:inline-flex; align-items:center; gap:0.2rem;
+  }
+  .mem-meta-item .meta-icon { opacity:0.6; }
 </style>
 
 <div>
@@ -50,15 +66,26 @@
     <div class="flex flex-wrap items-center gap-6">
       <div>
         <span class="text-xs text-forge-muted uppercase tracking-wider">Active</span>
-        <p class="text-xl font-bold text-white">{{ stats.active_count }}<span class="text-sm text-forge-muted font-normal"> / {{ stats.max_active }}</span></p>
+        {% if stats.max_active == 0 or stats.max_active == '∞' %}
+        <p class="text-xl font-bold text-white">{{ stats.active_count }}<span class="text-sm text-forge-muted font-normal"> / ∞</span></p>
+        {% else %}
+        <p class="text-xl font-bold text-white">{{ stats.active_count }}<span class="text-sm text-forge-muted font-normal"> / {{ "{:,}".format(stats.max_active) }}</span></p>
+        {% endif %}
       </div>
       <div class="w-48">
         <span class="text-xs text-forge-muted uppercase tracking-wider">Utilization</span>
+        {% if stats.max_active == 0 or stats.max_active == '∞' %}
+        <div class="stat-bar mt-1.5">
+          <div class="stat-bar-fill bg-forge-success" style="width:0%"></div>
+        </div>
+        <p class="text-xs text-forge-muted mt-0.5">Unlimited</p>
+        {% else %}
         <div class="stat-bar mt-1.5">
           <div class="stat-bar-fill {% if stats.utilization_pct|default(0) < 60 %}bg-forge-success{% elif stats.utilization_pct|default(0) < 85 %}bg-forge-warn{% else %}bg-forge-danger{% endif %}"
                style="width:{{ stats.utilization_pct|default(0) }}%"></div>
         </div>
         <p class="text-xs text-forge-muted mt-0.5">{{ stats.utilization_pct|default(0) }}%</p>
+        {% endif %}
       </div>
       {% for scope, count in (stats.by_scope or {}).items()|sort %}
       <div>
@@ -71,15 +98,16 @@
 
   <!-- Search + Filters -->
   <div class="flex flex-wrap items-center gap-3 mb-4">
-    <form method="get" action="/vault" class="flex gap-2 flex-1 min-w-[200px] max-w-md">
+    <form method="get" action="/vault" class="flex gap-2 flex-1 min-w-[200px] max-w-md" id="vault-search-form">
       <input type="text" name="q" value="{{ search_query }}" placeholder="Search memories…" class="search-input flex-1">
       {% if current_scope %}<input type="hidden" name="scope" value="{{ current_scope }}">{% endif %}
+      {% if current_sort and current_sort != 'newest' %}<input type="hidden" name="sort" value="{{ current_sort }}">{% endif %}
       <button type="submit" class="filter-btn">Search</button>
     </form>
     <div class="flex gap-1.5">
-      <a href="/vault" class="filter-btn {% if not current_scope %}active{% endif %}">All</a>
+      <a href="/vault{% if current_sort and current_sort != 'newest' %}?sort={{ current_sort }}{% endif %}" class="filter-btn {% if not current_scope %}active{% endif %}">All</a>
       {% for scope in scopes %}
-      <a href="/vault?scope={{ scope }}{% if search_query %}&q={{ search_query }}{% endif %}"
+      <a href="/vault?scope={{ scope }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_sort and current_sort != 'newest' %}&sort={{ current_sort }}{% endif %}"
          class="filter-btn {% if current_scope == scope %}active{% endif %}">{{ scope }}</a>
       {% endfor %}
     </div>
@@ -88,9 +116,22 @@
     {% endif %}
   </div>
 
-  <!-- Action Bar -->
+  <!-- Action Bar with Sort -->
   <div class="flex items-center gap-2 mb-4">
     <span class="text-xs text-forge-muted">{{ memories|length }} memor{{ "y" if memories|length == 1 else "ies" }}{% if search_query %} matching "{{ search_query }}"{% endif %}</span>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:0.5rem;">
+      <span class="text-xs text-forge-muted">Sort:</span>
+      <select class="sort-select" id="vault-sort" onchange="applySort(this.value)">
+        <option value="newest" {% if current_sort == 'newest' or not current_sort %}selected{% endif %}>Newest First</option>
+        <option value="oldest" {% if current_sort == 'oldest' %}selected{% endif %}>Oldest First</option>
+        <option value="scope" {% if current_sort == 'scope' %}selected{% endif %}>Scope (A→Z)</option>
+        <option value="category" {% if current_sort == 'category' %}selected{% endif %}>Category (A→Z)</option>
+        <option value="tier" {% if current_sort == 'tier' %}selected{% endif %}>Tier</option>
+        <option value="alpha" {% if current_sort == 'alpha' %}selected{% endif %}>Text (A→Z)</option>
+        <option value="source" {% if current_sort == 'source' %}selected{% endif %}>Source</option>
+        <option value="updated" {% if current_sort == 'updated' %}selected{% endif %}>Recently Updated</option>
+      </select>
+    </div>
     <button onclick="toggleManage()" class="manage-toggle" id="manage-toggle" title="Manage memories">🗑</button>
     <span class="sel-count manage-ctrl" id="sel-count" style="display:none;"></span>
     <button onclick="deleteSelected()" id="btn-delete-sel" class="action-btn danger manage-ctrl" style="display:none;">Delete Selected</button>
@@ -107,10 +148,26 @@
           <div class="flex items-center gap-2 mb-1.5 flex-wrap">
             <span class="badge badge-scope">{{ mem.scope or m.scope or '' }}</span>
             <span class="badge badge-category">{{ mem.category or m.category or '' }}</span>
+            {% set _tier = mem.tier or m.tier or 'canon' %}
+            {% if _tier == 'register' %}
+            <span class="badge" style="background:rgba(234,179,8,0.15);color:#fcd34d;border:1px solid rgba(234,179,8,0.3);font-size:0.625rem;padding:0.1rem 0.4rem;border-radius:9999px;">register</span>
+            {% else %}
+            <span class="badge" style="background:rgba(129,140,248,0.12);color:#a5b4fc;border:1px solid rgba(129,140,248,0.25);font-size:0.625rem;padding:0.1rem 0.4rem;border-radius:9999px;">canon</span>
+            {% endif %}
             <button onclick="deleteSingle('{{ mem.id or m.id }}')" class="action-btn danger manage-ctrl" style="display:none;padding:0.125rem 0.5rem;">✕</button>
           </div>
           <p class="text-sm text-zinc-300 leading-relaxed">{{ mem.text or m.text or '' }}</p>
-          <div class="flex items-center gap-2 mt-2 flex-wrap">
+          <div class="mem-meta">
+            {% set _created = mem.created_at or m.created_at or '' %}
+            {% set _updated = mem.updated_at or m.updated_at or '' %}
+            {% set _source = mem.source or m.source or '' %}
+            {% set _version = mem.version or m.version or 1 %}
+            {% if _created %}<span class="mem-meta-item"><span class="meta-icon">🕐</span> {{ _created[:16] }}</span>{% endif %}
+            {% if _source %}<span class="mem-meta-item"><span class="meta-icon">📥</span> {{ _source }}</span>{% endif %}
+            {% if _version > 1 %}<span class="mem-meta-item"><span class="meta-icon">🔄</span> v{{ _version }}</span>{% endif %}
+            {% if _updated %}<span class="mem-meta-item"><span class="meta-icon">✏️</span> {{ _updated[:16] }}</span>{% endif %}
+          </div>
+          <div class="flex items-center gap-2 mt-1.5 flex-wrap">
             {% for tag in (mem.tags or m.tags or []) %}<span class="tag">{{ tag }}</span>{% endfor %}
           </div>
         </div>
@@ -134,6 +191,18 @@ function toast(msg, isError) {
   setTimeout(() => el.remove(), 3200);
 }
 
+/* ── Sort ──────────────────────────────────────────────────────── */
+function applySort(sortVal) {
+  const url = new URL(window.location);
+  if (sortVal && sortVal !== 'newest') {
+    url.searchParams.set('sort', sortVal);
+  } else {
+    url.searchParams.delete('sort');
+  }
+  window.location = url.toString();
+}
+
+/* ── Manage mode ───────────────────────────────────────────────── */
 let _manageMode = false;
 function toggleManage() {
   _manageMode = !_manageMode;
