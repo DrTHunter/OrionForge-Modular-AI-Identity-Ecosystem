@@ -38,7 +38,7 @@
     ]
   },
   "retention_policy": {
-    "max_total_memories": 5000,
+    "max_total_memories": 25000,
     "decay_strategy": "soft_decay",
     "decay_half_life_days": 90,
     "protect_high_importance": true,

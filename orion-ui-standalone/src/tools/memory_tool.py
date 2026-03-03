@@ -20,7 +20,11 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from src.memory.faiss_memory import FAISSMemory
-from src.memory.types import VALID_CATEGORIES, VALID_SCOPES, VALID_SOURCES
+from src.memory.types import (
+    VALID_CATEGORIES, VALID_SCOPES, VALID_SOURCES,
+    MAX_MEMORY_TEXT_LENGTH, HARD_MAX_TOTAL_MEMORIES,
+    MAX_TAGS_PER_MEMORY, MAX_BATCH_SIZE,
+)
 from src.data_paths import vault_path as _get_vault_path, faiss_dir as _get_faiss_dir
 
 _CONFIG_DIR = Path(__file__).resolve().parent.parent.parent / "config"
@@ -213,6 +217,12 @@ class MemoryTool:
             return json.dumps({"status": "error", "message": "scope is required"})
         if not category:
             return json.dumps({"status": "error", "message": "category is required"})
+        # ── Hard limits ──
+        if len(text) > MAX_MEMORY_TEXT_LENGTH:
+            return json.dumps({"status": "error", "message": f"text too long: {len(text)} chars (max {MAX_MEMORY_TEXT_LENGTH})"})
+        tags = args.get("tags") or []
+        if len(tags) > MAX_TAGS_PER_MEMORY:
+            return json.dumps({"status": "error", "message": f"too many tags: {len(tags)} (max {MAX_TAGS_PER_MEMORY})"})
 
         mem = self._get_mem().add(
             text=text,
@@ -235,6 +245,10 @@ class MemoryTool:
         if not memories or not isinstance(memories, list):
             return json.dumps({"status": "error",
                                "message": "memories array is required"})
+        # ── Hard limit: batch size ──
+        if len(memories) > MAX_BATCH_SIZE:
+            return json.dumps({"status": "error",
+                               "message": f"batch too large: {len(memories)} items (max {MAX_BATCH_SIZE})"})
         # Validate each item has required fields before sending to batch.
         for i, item in enumerate(memories):
             if not isinstance(item, dict):
@@ -243,12 +257,19 @@ class MemoryTool:
             if not item.get("text"):
                 return json.dumps({"status": "error",
                                    "message": f"memories[{i}].text is required"})
+            if len(item["text"]) > MAX_MEMORY_TEXT_LENGTH:
+                return json.dumps({"status": "error",
+                                   "message": f"memories[{i}].text too long: {len(item['text'])} chars (max {MAX_MEMORY_TEXT_LENGTH})"})
             if not item.get("scope"):
                 return json.dumps({"status": "error",
                                    "message": f"memories[{i}].scope is required"})
             if not item.get("category"):
                 return json.dumps({"status": "error",
                                    "message": f"memories[{i}].category is required"})
+            item_tags = item.get("tags") or []
+            if len(item_tags) > MAX_TAGS_PER_MEMORY:
+                return json.dumps({"status": "error",
+                                   "message": f"memories[{i}] has too many tags: {len(item_tags)} (max {MAX_TAGS_PER_MEMORY})"})
             # Default source to "tool" for agent-originated batch writes.
             item.setdefault("source", "tool")
             item.setdefault("tier", "register")

@@ -797,12 +797,15 @@ async def page_vault(request: Request, q: str = "", scope: str = "", category: s
                 return (get("text", "") or "").lower()
             elif sort == "source":
                 return (get("source", "") or "", get("created_at", ""))
+            elif sort == "tag":
+                tags = get("tags", []) or []
+                return ((tags[0] if tags else "~"), get("created_at", ""))
             elif sort == "updated":
                 return get("updated_at", "") or get("created_at", "") or ""
             else:  # newest (default)
                 return get("created_at", "")
 
-        reverse = sort not in ("oldest", "alpha")  # ascending for oldest & alpha
+        reverse = sort not in ("oldest", "alpha", "tag")  # ascending for oldest, alpha, tag
         if sort == "updated":
             reverse = True
         memories = sorted(memories, key=_sort_key, reverse=reverse)
@@ -1277,6 +1280,15 @@ async def api_memory_profile_put(request: Request):
             else:
                 base[k] = v
     _deep_merge(profile, body)
+
+    # ── Enforce hard ceilings on retention_policy.max_total_memories ──
+    HARD_MAX_TOTAL = 25_000  # must match types.HARD_MAX_TOTAL_MEMORIES
+    rp = profile.get("retention_policy", {})
+    mtm = rp.get("max_total_memories", 5000)
+    if isinstance(mtm, (int, float)) and mtm != 0 and mtm > HARD_MAX_TOTAL:
+        rp["max_total_memories"] = HARD_MAX_TOTAL
+    profile["retention_policy"] = rp
+
     _save_memory_profile(profile)
     return JSONResponse(profile)
 
