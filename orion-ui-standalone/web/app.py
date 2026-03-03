@@ -771,7 +771,10 @@ async def page_vault(request: Request, q: str = "", scope: str = "", category: s
         except Exception:
             pass
         if q:
-            memories = fm.search(q, scope=scope or None, top_k=50)
+            raw_results = fm.search(q, scope=scope or None, top_k=50)
+            # Filter out low-relevance results (cosine similarity threshold)
+            MIN_SCORE = 0.25
+            memories = [r for r in raw_results if r.get("score", 0) >= MIN_SCORE]
         else:
             all_mems = fm.list_all(scope=scope or None)
             if category:
