@@ -1793,6 +1793,47 @@ async def _execute_agi_tick(agent: str, stimulus: str, agi_config: dict) -> dict
         return {"error": str(exc), "response": "", "cost": 0.0, "tool_calls": []}
 
 
+def _build_tick_narrative(
+    tick_result: dict,
+    agent: str,
+    loop_num: int,
+    tick_num: int,
+    cost: float,
+) -> str:
+    """Build a short human-readable narrative from a tick result."""
+    parts: list[str] = []
+
+    # Error case
+    if tick_result.get("error"):
+        parts.append(f"Encountered an error: {str(tick_result['error'])[:200]}")
+        return " ".join(parts)
+
+    # Tool usage summary
+    tools = tick_result.get("tool_calls", [])
+    if tools:
+        names = list(dict.fromkeys(tc.get("tool", "unknown") for tc in tools))
+        if len(names) == 1:
+            parts.append(f"Used {names[0]}.")
+        else:
+            parts.append(f"Used {', '.join(names[:-1])} and {names[-1]}.")
+
+    # Response excerpt — first sentence or first 300 chars
+    response = (tick_result.get("response") or "").strip()
+    if response:
+        # Take first two sentences or 300 chars, whichever is shorter
+        sentences = response.replace("\n", " ").split(". ")
+        excerpt = ". ".join(sentences[:2])
+        if not excerpt.endswith("."):
+            excerpt += "."
+        if len(excerpt) > 300:
+            excerpt = excerpt[:297] + "..."
+        parts.append(excerpt)
+    else:
+        parts.append("No textual response returned.")
+
+    return " ".join(parts)
+
+
 async def _agi_loop_runner():
     """Background coroutine that drives the autonomous AGI loop."""
     from src.tools.agi_loop import get_loop_state
@@ -1877,6 +1918,23 @@ async def _agi_loop_runner():
                     "error": tick_result.get("error"),
                     "model": tick_result.get("model", ""),
                     "task_type": tick_result.get("task_type", ""),
+                })
+
+                # ── Journal narrative ─────────────────────────────
+                _journal_narrative = _build_tick_narrative(
+                    tick_result, agent, loop_count, tick, tick_cost,
+                )
+                state.log_journal({
+                    "ts": datetime.now(timezone.utc).isoformat(),
+                    "loop": loop_count,
+                    "tick": tick,
+                    "agent": agent,
+                    "model": tick_result.get("model", ""),
+                    "task_type": tick_result.get("task_type", ""),
+                    "narrative": _journal_narrative,
+                    "tools_used": [tc.get("tool", "") for tc in tick_result.get("tool_calls", [])],
+                    "cost": round(tick_cost, 6),
+                    "had_error": bool(tick_result.get("error")),
                 })
 
                 # Budget checks
@@ -1979,6 +2037,27 @@ async def api_agi_loop_history(limit: int = Query(50)):
         "ticks": state.tick_history[-limit:],
         "total": len(state.tick_history),
     })
+
+
+@app.get("/api/agi-loop/journal")
+async def api_agi_loop_journal(limit: int = Query(100)):
+    """Return recent narrative journal entries."""
+    from src.tools.agi_loop import get_loop_state
+    state = get_loop_state()
+    entries = state.journal_entries[-limit:]
+    return JSONResponse({
+        "entries": entries,
+        "total": len(state.journal_entries),
+    })
+
+
+@app.delete("/api/agi-loop/journal")
+async def api_agi_loop_journal_clear():
+    """Clear all journal entries."""
+    from src.tools.agi_loop import get_loop_state
+    state = get_loop_state()
+    state.clear_journal()
+    return JSONResponse({"ok": True, "message": "Journal cleared"})
 
 
 # ── Inbox API ────────────────────────────────────────────────────

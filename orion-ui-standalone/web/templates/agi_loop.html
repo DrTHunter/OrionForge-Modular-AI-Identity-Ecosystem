@@ -359,6 +359,7 @@
   <div class="tab-bar">
     <button class="tab-btn active" onclick="switchTab('dashboard')">Dashboard</button>
     <button class="tab-btn" onclick="switchTab('inbox')">Inbox <span class="inbox-badge empty" id="inbox-tab-badge">0</span></button>
+    <button class="tab-btn" onclick="switchTab('journal')">Journal</button>
     <button class="tab-btn" onclick="switchTab('config')">Configuration</button>
     <button class="tab-btn" onclick="switchTab('pipeline')">Pipeline</button>
     <button class="tab-btn" onclick="switchTab('routing')">Model Router</button>
@@ -1206,32 +1207,32 @@
   <div class="view-panel" id="panel-log">
     <div class="card mb-5">
       <span class="card-header">Loop Execution Log</span>
-      <p class="text-xs text-forge-muted mt-1 mb-3">Recent loop cycle outcomes. Full journal: <code class="text-zinc-400">data/{profile}/burst_journal.jsonl</code></p>
+      <p class="text-xs text-forge-muted mt-1 mb-3">Recent loop cycle outcomes. Full log: <code class="text-zinc-400">data/orion/agi_loop_history.jsonl</code></p>
 
       <div class="loop-timeline" id="loop-log-list">
         <div class="text-sm text-forge-muted p-4 text-center">No ticks recorded yet. Start the loop to begin autonomous execution.</div>
       </div>
     </div>
 
-    <!-- Journal outputs -->
+    <!-- Journal link -->
     <div class="card mb-5">
       <span class="card-header">Journal &amp; Narrative Outputs</span>
       <div class="grid grid-cols-2 gap-4 mt-3 max-md:grid-cols-1">
         <div>
           <div class="text-sm font-bold text-white mb-1">Machine Journal (JSONL)</div>
           <p class="text-xs text-zinc-400 leading-relaxed">
-            Structured log: <code class="text-indigo-300">burst_start</code>, <code class="text-indigo-300">burst_tick</code>,
-            <code class="text-indigo-300">burst_end</code>, tool calls, errors, metering. For programmatic analysis.
+            Structured tick log with loop/tick numbers, agent, model, tool calls, cost and errors.
+            Written after every tick.
           </p>
-          <code class="text-xs text-zinc-600 block mt-2">data/{profile}/burst_journal.jsonl</code>
+          <code class="text-xs text-zinc-600 block mt-2">data/orion/agi_loop_history.jsonl</code>
         </div>
         <div>
-          <div class="text-sm font-bold text-white mb-1">Human Narrative</div>
+          <div class="text-sm font-bold text-white mb-1">Narrative Journal</div>
           <p class="text-xs text-zinc-400 leading-relaxed">
-            Diary-style entries by <code class="text-indigo-300">NarrativeWriter</code>. Session start/end, tick summaries, and stats.
-            Also appended via <code class="text-indigo-300">human_journal.append_entry()</code>.
+            Human-readable narrative entries generated from each tick.
+            View them in the <strong class="text-indigo-300 cursor-pointer" onclick="switchTab('journal');document.querySelectorAll('.tab-btn')[2].click();">Journal tab</strong>.
           </p>
-          <code class="text-xs text-zinc-600 block mt-2">data/{profile}/narrative.md</code>
+          <code class="text-xs text-zinc-600 block mt-2">data/orion/agi_loop_journal.jsonl</code>
         </div>
       </div>
     </div>
@@ -1521,7 +1522,116 @@ function _initAGILoop() {
     }
   });
   _loadHistory();
+  journalRefresh();
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════ */
+/*  Journal — narrative log                                          */
+/* ═══════════════════════════════════════════════════════════════════ */
+
+let _journalEntries = [];
+
+async function journalRefresh() {
+  try {
+    const resp = await fetch('/api/agi-loop/journal?limit=200');
+    const data = await resp.json();
+    _journalEntries = data.entries || [];
+    _populateJournalAgentFilter();
+    journalRender();
+  } catch (e) {
+    console.error('Journal refresh failed:', e);
+  }
+}
+
+function _populateJournalAgentFilter() {
+  const sel = document.getElementById('journal-agent-filter');
+  if (!sel) return;
+  const agents = [...new Set(_journalEntries.map(e => e.agent).filter(Boolean))];
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">All Agents</option>' + agents.map(a =>
+    `<option value="${_esc(a)}"${a === cur ? ' selected' : ''}>${_esc(a)}</option>`
+  ).join('');
+}
+
+function journalRender() {
+  const container = document.getElementById('journal-list');
+  if (!container) return;
+
+  const agentFilter = (document.getElementById('journal-agent-filter') || {}).value || '';
+  const errorsOnly = (document.getElementById('journal-errors-only') || {}).checked;
+
+  let filtered = _journalEntries;
+  if (agentFilter) filtered = filtered.filter(e => e.agent === agentFilter);
+  if (errorsOnly) filtered = filtered.filter(e => e.had_error);
+
+  document.getElementById('journal-count').textContent = filtered.length + ' entries';
+
+  if (!filtered.length) {
+    container.innerHTML = `
+      <div class="text-sm text-forge-muted p-8 text-center">
+        <div style="font-size:2rem;margin-bottom:0.5rem;">&#128214;</div>
+        ${_journalEntries.length ? 'No entries match the current filter.' : 'No journal entries yet. Start the AGI loop to begin recording the agent&#39;s narrative.'}
+      </div>`;
+    return;
+  }
+
+  const reversed = [...filtered].reverse();
+  container.innerHTML = reversed.map(entry => {
+    const ts = entry.ts ? new Date(entry.ts).toLocaleString() : '—';
+    const tools = (entry.tools_used || []).filter(Boolean);
+    const toolBadges = tools.map(t => `<span style="background:#312e81;color:#a5b4fc;padding:1px 6px;border-radius:4px;font-size:0.65rem;">${_esc(t)}</span>`).join(' ');
+    const costStr = '$' + (entry.cost || 0).toFixed(4);
+    const errorCls = entry.had_error ? 'border-red-900/50' : 'border-zinc-800';
+    const errorIcon = entry.had_error ? '<span title="Error" style="color:#ef4444;">&#9888;</span> ' : '';
+    const loopTick = `L${entry.loop || '?'}.T${entry.tick || '?'}`;
+
+    return `
+      <div style="border:1px solid;padding:0.75rem 1rem;border-radius:0.5rem;margin-bottom:0.5rem;" class="${errorCls}">
+        <div class="flex items-start gap-3">
+          <div style="min-width:3.5rem;text-align:center;">
+            <div style="font-size:0.7rem;font-weight:700;color:#6366f1;">${loopTick}</div>
+            <div style="font-size:0.6rem;color:#52525b;">${_esc(entry.agent || '')}</div>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:0.8rem;color:#e4e4e7;line-height:1.5;">${errorIcon}${_esc(entry.narrative || '')}</div>
+            <div class="flex flex-wrap gap-2 mt-2 items-center" style="font-size:0.7rem;color:#71717a;">
+              <span>${_esc(entry.model || '—')}</span>
+              <span>${_esc(entry.task_type || '—')}</span>
+              ${toolBadges}
+              <span style="color:${entry.had_error ? '#ef4444' : '#22c55e'};">${costStr}</span>
+              <span>${ts}</span>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+async function journalClear() {
+  if (!confirm('Clear all journal entries? This cannot be undone.')) return;
+  try {
+    const resp = await fetch('/api/agi-loop/journal', { method: 'DELETE' });
+    const data = await resp.json();
+    if (data.ok) {
+      _journalEntries = [];
+      journalRender();
+      showToast('Journal cleared', 'ok');
+    } else {
+      showToast('Failed to clear journal', 'error');
+    }
+  } catch (e) {
+    showToast('Error: ' + e.message, 'error');
+  }
+}
+
+/* Auto-refresh journal every 5s when on that tab */
+setInterval(() => {
+  const panel = document.getElementById('panel-journal');
+  if (panel && panel.classList.contains('active')) {
+    journalRefresh();
+  }
+}, 5000);
 
 
 /*  Toast helper                                                     */
