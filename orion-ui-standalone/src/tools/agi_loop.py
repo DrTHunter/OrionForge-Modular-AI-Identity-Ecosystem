@@ -61,6 +61,7 @@ class AGILoopState:
         self.session_cost: float = 0.0
         self.error_streak: int = 0
         self.tick_history: List[Dict[str, Any]] = []
+        self.journal_entries: List[Dict[str, Any]] = []
         self.last_error: Optional[str] = None
         self.started_at: Optional[str] = None
         self.stopped_at: Optional[str] = None
@@ -81,7 +82,52 @@ class AGILoopState:
             "stopped_at": self.stopped_at,
             "stop_reason": self.stop_reason,
             "recent_ticks": self.tick_history[-20:],
+            "recent_journal": self.journal_entries[-20:],
         }
+
+    def log_journal(self, entry: dict):
+        """Append a narrative journal entry."""
+        self.journal_entries.append(entry)
+        if len(self.journal_entries) > 500:
+            self.journal_entries = self.journal_entries[-500:]
+        self._persist_journal(entry)
+
+    def _persist_journal(self, entry: dict):
+        """Append a journal entry to disk."""
+        path = _DATA_DIR / "agi_loop_journal.jsonl"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            with open(path, "a", encoding="utf-8") as f:
+                f.write(json.dumps(entry, default=str) + "\n")
+        except Exception as exc:
+            log.warning("[agi_loop] Failed to persist journal: %s", exc)
+
+    def load_journal_from_disk(self):
+        """Reload journal entries from the JSONL file on disk."""
+        path = _DATA_DIR / "agi_loop_journal.jsonl"
+        if not path.is_file():
+            return
+        entries: List[Dict[str, Any]] = []
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line:
+                        entries.append(json.loads(line))
+        except Exception as exc:
+            log.warning("[agi_loop] Failed to load journal: %s", exc)
+            return
+        self.journal_entries = entries[-500:]
+
+    def clear_journal(self):
+        """Wipe journal from memory and disk."""
+        self.journal_entries.clear()
+        path = _DATA_DIR / "agi_loop_journal.jsonl"
+        try:
+            if path.is_file():
+                path.unlink()
+        except Exception as exc:
+            log.warning("[agi_loop] Failed to clear journal file: %s", exc)
 
     def log_tick(self, tick_data: dict):
         self.tick_history.append(tick_data)
@@ -103,6 +149,7 @@ class AGILoopState:
 
 # Global singleton
 _state = AGILoopState()
+_state.load_journal_from_disk()
 
 
 def get_loop_state() -> AGILoopState:
