@@ -33,6 +33,10 @@ Covers:
     filename sanitisation, overwrite, concurrent-ish access)
   - AGI loop state stress (500 tick logs, state transitions, 200 tool executions,
     50 pause/resume cycles, double-pause/double-resume edge cases)
+  - AGI journal stress (600 rapid writes, in-memory cap, disk persistence,
+    to_dict under load, 10 clear/reload cycles, 1000-entry reload, agent filtering)
+  - Narrative builder stress (200 rapid _build_tick_narrative calls, error/tool/response
+    variants, unicode, truncation, multi-tool, empty input)
 """
 
 import json
@@ -1574,6 +1578,170 @@ def test_agi_loop_state_stress():
 
 
 # ═════════════════════════════════════════════
+# 26. AGI Journal stress (rapid writes, disk I/O, clear/reload)
+# ═════════════════════════════════════════════
+def test_agi_journal_stress():
+    print("\n=== STRESS: AGI Journal (rapid writes + disk I/O) ===")
+    from src.tools.agi_loop import get_loop_state
+    import src.tools.agi_loop as _agi_mod
+    from pathlib import Path
+
+    state = get_loop_state()
+    state.reset()
+
+    tmp = tempfile.mkdtemp()
+    orig_data_dir = _agi_mod._DATA_DIR
+    _agi_mod._DATA_DIR = Path(tmp)
+
+    try:
+        # ── Rapid journal writes — 600 entries (test cap at 500) ──
+        t0 = time.time()
+        for i in range(600):
+            state.log_journal({
+                "ts": f"2026-01-01T00:00:{i % 60:02d}Z",
+                "loop": i // 15,
+                "tick": i % 15,
+                "agent": ["astraea", "callum", "codex_animus"][i % 3],
+                "narrative": f"Journal stress entry {i}: " + "x" * 40,
+                "cost": round(0.001 * (i % 10), 4),
+                "had_error": i % 50 == 0,
+            })
+        elapsed = time.time() - t0
+        check(f"600 journal writes in {elapsed:.3f}s", elapsed < 3.0)
+        check("in-memory capped at 500", len(state.journal_entries) == 500)
+        check("oldest entry is #100", state.journal_entries[0]["narrative"].endswith("100: " + "x" * 40))
+        check("newest entry is #599", state.journal_entries[-1]["narrative"].endswith("599: " + "x" * 40))
+
+        # ── JSONL disk file size ──
+        jpath = Path(tmp) / "agi_loop_journal.jsonl"
+        check("journal file exists", jpath.is_file())
+        lines = jpath.read_text(encoding="utf-8").strip().split("\n")
+        check("all 600 lines persisted on disk", len(lines) == 600)
+
+        # ── Rapid to_dict calls under load ──
+        t0 = time.time()
+        for _ in range(100):
+            d = state.to_dict()
+        elapsed = time.time() - t0
+        check(f"100 to_dict (journal) in {elapsed:.3f}s", elapsed < 1.0)
+        check("recent_journal capped at 20", len(d["recent_journal"]) == 20)
+        check("recent_journal latest correct", "599" in d["recent_journal"][-1]["narrative"])
+
+        # ── Clear and reload cycles ──
+        t0 = time.time()
+        for cycle in range(10):
+            # Write 50 entries
+            for i in range(50):
+                state.log_journal({"ts": f"c{cycle}-{i}", "narrative": f"Cycle{cycle}-{i}"})
+            # Clear
+            state.clear_journal()
+            check_ok = len(state.journal_entries) == 0
+            if not check_ok:
+                check(f"clear cycle {cycle}", False, f"got {len(state.journal_entries)}")
+                break
+            # Reload should be empty since file was deleted
+            state.load_journal_from_disk()
+            if len(state.journal_entries) != 0:
+                check(f"reload after clear cycle {cycle}", False, f"got {len(state.journal_entries)}")
+                break
+        else:
+            elapsed = time.time() - t0
+            check(f"10 clear/reload cycles in {elapsed:.3f}s", elapsed < 3.0)
+
+        # ── Reload large file stress ──
+        state.clear_journal()
+        with open(jpath, "w", encoding="utf-8") as f:
+            for i in range(1000):
+                f.write(json.dumps({"narrative": f"Reload{i}", "ts": f"t{i}"}) + "\n")
+        t0 = time.time()
+        state.load_journal_from_disk()
+        elapsed = time.time() - t0
+        check(f"reload 1000 entries in {elapsed:.3f}s", elapsed < 2.0)
+        check("reload caps at 500", len(state.journal_entries) == 500)
+        check("reload has latest (999)", state.journal_entries[-1]["narrative"] == "Reload999")
+        check("reload oldest (500)", state.journal_entries[0]["narrative"] == "Reload500")
+
+        # ── Mixed agent filtering readiness — verify unique agents ──
+        state.clear_journal()
+        agents = ["astraea", "callum", "codex_animus", "test_agent"]
+        for i in range(200):
+            state.log_journal({"agent": agents[i % len(agents)], "narrative": f"A{i}"})
+        unique = set(e["agent"] for e in state.journal_entries)
+        check("4 unique agents", len(unique) == 4)
+        check("all agents present", unique == set(agents))
+
+    finally:
+        _agi_mod._DATA_DIR = orig_data_dir
+        shutil.rmtree(tmp, ignore_errors=True)
+        state.reset()
+
+
+# ═════════════════════════════════════════════
+# 27. Narrative builder stress (rapid _build_tick_narrative calls)
+# ═════════════════════════════════════════════
+def test_narrative_builder_stress():
+    print("\n=== STRESS: _build_tick_narrative (200 rapid builds) ===")
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+    from web.app import _build_tick_narrative
+
+    # Build varied tick results
+    variants = [
+        # Error
+        {"error": "Connection refused"},
+        # Single tool + short response
+        {"tool_calls": [{"tool": "echo"}], "response": "Hello world."},
+        # Multiple tools
+        {"tool_calls": [{"tool": "web.search"}, {"tool": "memory.add"}],
+         "response": "Found it. Saved to memory."},
+        # Long response
+        {"response": "A" * 400 + ". Done."},
+        # No response
+        {"tool_calls": [], "response": ""},
+        # Empty dict
+        {},
+        # Only response, no tools
+        {"response": "Simple answer. Clear and concise."},
+        # Error with tool calls (error takes priority)
+        {"error": "Timeout", "tool_calls": [{"tool": "echo"}], "response": "ignored"},
+        # Many tool calls
+        {"tool_calls": [{"tool": f"tool_{i}"} for i in range(10)],
+         "response": "Lots of tools used."},
+        # Unicode response
+        {"response": "Réponse en français. Très bien."},
+    ]
+
+    t0 = time.time()
+    errors = 0
+    for i in range(200):
+        tick = variants[i % len(variants)]
+        try:
+            result = _build_tick_narrative(tick, "astraea", i // 15, i % 15, 0.001 * i)
+            if not isinstance(result, str) or len(result) == 0:
+                errors += 1
+        except Exception:
+            errors += 1
+    elapsed = time.time() - t0
+    check(f"200 narratives in {elapsed:.3f}s", elapsed < 2.0)
+    check("no errors in 200 builds", errors == 0, f"got {errors} errors")
+
+    # Verify specific outputs
+    narr_err = _build_tick_narrative({"error": "boom"}, "a", 0, 0, 0.0)
+    check("error narrative correct", "boom" in narr_err)
+
+    narr_tools = _build_tick_narrative(
+        {"tool_calls": [{"tool": "a"}, {"tool": "b"}, {"tool": "c"}], "response": "Done."},
+        "a", 0, 0, 0.0
+    )
+    check("multi tool narrative has 'and'", " and " in narr_tools)
+
+    narr_long = _build_tick_narrative({"response": "W" * 500}, "a", 0, 0, 0.0)
+    check("long response capped", len(narr_long) <= 310 or "..." in narr_long)
+
+    narr_empty = _build_tick_narrative({}, "a", 0, 0, 0.0)
+    check("empty → No textual response", "No textual response" in narr_empty)
+
+
+# ═════════════════════════════════════════════
 if __name__ == "__main__":
     test_vault_rapid_crud()
     test_vault_bulk_delete()
@@ -1600,6 +1768,8 @@ if __name__ == "__main__":
     test_model_router_classify_stress()
     test_router_presets_stress()
     test_agi_loop_state_stress()
+    test_agi_journal_stress()
+    test_narrative_builder_stress()
 
     print(f"\n{'='*40}")
     print(f"Results: {PASS} passed, {FAIL} failed")
