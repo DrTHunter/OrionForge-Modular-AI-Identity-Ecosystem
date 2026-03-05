@@ -2,7 +2,7 @@
 
 Tool implementations for the OrionForge agent runtime.
 
-**8 tools · 35 actions · 3 stateful singletons**
+**11 tools · 46 actions · 3 stateful singletons**
 
 Each tool is a Python class with two methods:
 
@@ -25,6 +25,9 @@ Central hub that maps tool names → modules, builds OpenAI-format definitions, 
 | `email` | `email_tool.py` | `EmailTool` | **Yes** | SMTP email sender |
 | `inbox` | `inbox.py` | `InboxTool` | No | Agent-to-operator messaging |
 | `cost_tracker` | `cost_tracker.py` | `CostTrackerTool` | No | Token spend & pricing |
+| `runtime_info` | `runtime_info.py` | `RuntimeInfoTool` | No | System runtime information |
+| `agi_loop` | `agi_loop.py` | `AGILoopTool` | No | Autonomous agent loop control |
+| `model_router` | `model_router.py` | `ModelRouterTool` | No | 6-tier task-based model routing |
 
 Tools are resolved per-agent via the `allowed_tools` list in `profiles/{agent}.yaml`.
 

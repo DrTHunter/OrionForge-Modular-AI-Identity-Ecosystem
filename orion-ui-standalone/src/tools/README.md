@@ -2,7 +2,7 @@
 
 Tool implementations for the OrionForge agent runtime.
 
-**8 tools · 35 actions · 3 stateful singletons**
+**11 tools · 46 actions · 3 stateful singletons**
 
 Each tool is a Python class with two methods:
 

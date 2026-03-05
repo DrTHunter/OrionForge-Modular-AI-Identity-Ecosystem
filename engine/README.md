@@ -23,8 +23,9 @@ engine/src/
 ├── memory/                # FAISS-backed semantic memory — vault, chunking, PII guard, injection
 ├── observability/         # Token metering, cost tracking, pricing engine
 ├── policy/                # Boundary enforcement — risk classification, denial payloads
+├── routing/               # 6-tier model router, budget tracking, escalation chains
 ├── storage/               # Note collection & user notes loading
-└── tools/                 # 8 tool implementations + registry
+└── tools/                 # 11 tool implementations + registry
 ```
 
 ## Key Capabilities
@@ -38,11 +39,12 @@ engine/src/
 | **Observability** | Per-request token metering, cost computation from `pricing.yaml`, aggregation with `+` operator |
 | **Policy** | Risk classification (low/med/high), deterministic denial payloads, append-only event logging |
 | **Storage** | Note collection (always-on vs directive modes), HTML stripping, dual note systems |
-| **Tools** | Memory (13 actions), directives (5 actions), web search, email, inbox, cost tracker, echo, continuation |
+| **Tools** | Memory (13 actions), directives (5 actions), web search, email, inbox, cost tracker, model router, agi loop, runtime info, echo, continuation |
+| **Routing** | 6-tier model router (LOCAL, CHEAP_CLOUD, MID_CLOUD, EXPENSIVE_CLOUD, CODE_LIGHT, CODE_HEAVY) with task classification, escalation chains, budget-aware gating |
 
 ## Stability Contract
 
 Code in `engine/` should not be modified for experimental features.  
 New capabilities are developed in `orion-ui-standalone/src/`, tested thoroughly, then promoted here once stable.
 
-Files are synced from `orion-ui-standalone/src/` → `engine/src/` after passing the full test suite (205 functions, ~1,905 assertions).
+Files are synced from `orion-ui-standalone/src/` → `engine/src/` after passing the full test suite (220 functions, ~3,300 assertions).
