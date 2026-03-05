@@ -136,27 +136,27 @@ _TASK_KEYWORDS: Dict[str, List[str]] = {
         "write code", "implement", "function", "class ", "debug",
         "fix bug", "refactor", "script", "program", "syntax",
         "compile", "api endpoint", "unit test", "regex",
-        "code", "error", "method", "architect",
+        "code", "error", "method",
         "algorithm", "data structure", "migration",
         "build", "integration", "complex",
-        "design pattern", "framework", "module",
+        "design pattern", "framework",
         "database", "schema", "rewrite", "api",
     ],
     TaskType.CODING_LIGHT: [
-        "typo", "rename", "add comment", "format", "lint",
+        "typo", "rename", "add comment", "reformat", "lint",
         "type hint", "import", "simple", "tweak",
         "quick fix", "one-liner", "small change",
         "docstring", "cleanup", "tidy", "minor",
         "snippet", "whitespace", "indent", "spelling",
-        "variable", "log", "print",
+        "variable", "add log", "print statement",
     ],
     TaskType.SUMMARIZATION: [
         "summarize", "summary", "tldr", "condense", "recap",
         "brief", "shorten", "digest", "overview", "compress",
     ],
     TaskType.PLANNING: [
-        "plan", "strategy", "roadmap", "design", "architect",
-        "outline", "milestone", "breakdown", "proposal",
+        "plan", "strategy", "roadmap", "design", "outline",
+        "milestone", "breakdown", "proposal", "architect",
         "organize", "prioritize", "suggest",
     ],
     TaskType.HIGH_STAKES: [
@@ -386,7 +386,7 @@ def load_router_config() -> dict:
     """Load the merged router configuration as a raw dict (for UI/API)."""
     saved = _read_json(MODEL_ROUTER_FILE, {})
     merged = {**CONFIG_DEFAULTS, **saved}
-    if "tiers" not in merged:
+    if not merged.get("tiers"):
         merged["tiers"] = list(_DEFAULT_TIERS)
     if not merged.get("task_tier_map"):
         merged["task_tier_map"] = dict(DEFAULT_TASK_TIER_MAP)
@@ -530,41 +530,41 @@ class ModelRouter:
         if mapping_value is None:
             mapping_value = "__auto__"
 
-        # 3. Handle direct model overrides (model:<conn_id>:<model>)
-        if _is_direct_model(mapping_value):
-            conn_id, model_name = _parse_direct_model(mapping_value)
-            log.info("[router] Task '%s' → direct model '%s' (conn=%s)",
-                     task_type, model_name, conn_id)
-            return RoutingDecision(
-                tier=None, tier_name="direct", tier_id="",
-                task_type=task_type, model=model_name, provider=None,
-                connection_id="", reason=f"Direct model override for '{task_type}'",
-                is_direct_model=True, direct_conn_id=conn_id,
-            )
-
-        # 4. Handle __auto__ (defer to caller's default model)
-        if mapping_value == "__auto__":
-            return RoutingDecision(
-                tier=None, tier_name="__auto__", tier_id="",
-                task_type=task_type, model=None, provider=None,
-                reason=f"Task '{task_type}' mapped to __auto__", fallback=True,
-            )
-
-        # 5. Resolve the target tier from the label
-        target_tier = _LABEL_TO_TIER.get(mapping_value)
-        if target_tier is None:
-            return RoutingDecision(
-                tier=None, tier_name=mapping_value, tier_id="",
-                task_type=task_type, model=None, provider=None,
-                reason=f"Unknown tier label '{mapping_value}'", fallback=True,
-            )
-
-        reason = f"Task '{task_type}' → tier '{TIER_NAMES[target_tier]}'"
-
-        # 6. Force tier if specified
+        # 3. Force tier bypasses all mapping / __auto__ logic
         if force_tier is not None:
             target_tier = force_tier
             reason = f"Forced to tier {TIER_NAMES[force_tier]}"
+        else:
+            # 4. Handle direct model overrides (model:<conn_id>:<model>)
+            if _is_direct_model(mapping_value):
+                conn_id, model_name = _parse_direct_model(mapping_value)
+                log.info("[router] Task '%s' → direct model '%s' (conn=%s)",
+                         task_type, model_name, conn_id)
+                return RoutingDecision(
+                    tier=None, tier_name="direct", tier_id="",
+                    task_type=task_type, model=model_name, provider=None,
+                    connection_id="", reason=f"Direct model override for '{task_type}'",
+                    is_direct_model=True, direct_conn_id=conn_id,
+                )
+
+            # 5. Handle __auto__ (defer to caller's default model)
+            if mapping_value == "__auto__":
+                return RoutingDecision(
+                    tier=None, tier_name="__auto__", tier_id="",
+                    task_type=task_type, model=None, provider=None,
+                    reason=f"Task '{task_type}' mapped to __auto__", fallback=True,
+                )
+
+            # 6. Resolve the target tier from the label
+            target_tier = _LABEL_TO_TIER.get(mapping_value)
+            if target_tier is None:
+                return RoutingDecision(
+                    tier=None, tier_name=mapping_value, tier_id="",
+                    task_type=task_type, model=None, provider=None,
+                    reason=f"Unknown tier label '{mapping_value}'", fallback=True,
+                )
+
+            reason = f"Task '{task_type}' → tier '{TIER_NAMES[target_tier]}'"
 
         # 7. Stuck-loop escalation (uses _ESCALATION_CHAIN)
         original_target = target_tier
@@ -624,8 +624,9 @@ class ModelRouter:
 
         # 10. Resolve final tier config
         cfg = self.tier_configs.get(target_tier)
-        if cfg is None:
-            # Fallback to cheapest available
+        if cfg is None or not cfg.enabled:
+            # Fallback to cheapest available enabled tier
+            cfg = None
             for t in Tier:
                 if t in self.tier_configs and self.tier_configs[t].enabled:
                     cfg = self.tier_configs[t]
@@ -658,6 +659,8 @@ class ModelRouter:
 
     def resolve_tier(self, task_type: str) -> Optional[TierConfig]:
         """Given a task type, return the matching TierConfig (or None)."""
+        if not self.enabled:
+            return None
         mapping_value = self.task_tier_map.get(task_type)
         if mapping_value is None and task_type in (TaskType.CODING_LIGHT, TaskType.CODING_HEAVY):
             mapping_value = self.task_tier_map.get(TaskType.CODING)

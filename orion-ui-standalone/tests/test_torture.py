@@ -1518,11 +1518,14 @@ def test_model_router_config():
             _read_json, _write_json,
         )
         import web.app as _app_mod
+        import src.routing.model_router as _router_mod
 
         # Save original path and redirect to temp
         orig_file = _app_mod.MODEL_ROUTER_FILE
+        orig_router_file = _router_mod.MODEL_ROUTER_FILE
         tmp_file = Path(tmp) / "model_router.json"
         _app_mod.MODEL_ROUTER_FILE = tmp_file
+        _router_mod.MODEL_ROUTER_FILE = tmp_file
 
         # ── 1. Defaults structure ──
         check("defaults has tiers", "tiers" in _MODEL_ROUTER_DEFAULTS)
@@ -1855,6 +1858,7 @@ def test_model_router_config():
 
     finally:
         _app_mod.MODEL_ROUTER_FILE = orig_file
+        _router_mod.MODEL_ROUTER_FILE = orig_router_file
         shutil.rmtree(tmp, ignore_errors=True)
 
 
@@ -1876,21 +1880,23 @@ def test_model_router_tool():
     check("MR def name", defn["name"] == "model_router")
     check("MR def has params", "parameters" in defn)
     actions = defn["parameters"]["properties"]["action"]["enum"]
-    check("MR 4 actions", len(actions) == 4)
-    check("MR actions list", set(actions) == {"resolve", "list_tiers", "get_map", "classify"})
+    check("MR 5 actions", len(actions) == 5)
+    check("MR actions list", set(actions) == {"resolve", "list_tiers", "get_map", "classify", "budget"})
     check("MR has text param", "text" in defn["parameters"]["properties"])
 
-    # ── 2. classify_task — keyword mapping ──
-    check("classify coding", classify_task("write code for a REST API") == "coding")
-    check("classify implement", classify_task("implement the login feature") == "coding")
-    check("classify debug", classify_task("debug this crash") == "coding")
-    check("classify refactor", classify_task("refactor the module") == "coding")
-    check("classify regex", classify_task("write a regex to match emails") == "coding")
+    # ── 2. classify_task — keyword mapping (coding split into heavy/light) ──
+    check("classify coding_heavy", classify_task("write code for a REST API") == "coding_heavy")
+    check("classify implement", classify_task("implement the login feature") == "coding_heavy")
+    check("classify debug", classify_task("debug this crash") == "coding_heavy")
+    check("classify refactor", classify_task("refactor the module") == "coding_heavy")
+    check("classify regex", classify_task("write a regex to match emails") == "coding_heavy")
+    check("classify rename", classify_task("rename this variable") == "coding_light")
+    check("classify typo", classify_task("fix the typo") == "coding_light")
 
     check("classify summarize", classify_task("summarize the meeting notes") == "summarization")
     check("classify tldr", classify_task("give me a tldr") == "summarization")
 
-    check("classify plan", classify_task("plan the sprint") == "planning")
+    check("classify plan", classify_task("plan the project") == "planning")
     check("classify roadmap", classify_task("create a roadmap for Q3") == "planning")
     check("classify architect", classify_task("architect the system") == "planning")
 
@@ -1914,12 +1920,12 @@ def test_model_router_tool():
 
     # Case insensitivity
     check("classify UPPER", classify_task("SUMMARIZE THIS") == "summarization")
-    check("classify mixed", classify_task("Debug My Script") == "coding")
+    check("classify mixed", classify_task("Debug My Script") == "coding_heavy")
 
-    # ── 3. Priority ordering — first match wins ──
-    # "write code to plan a deployment" → should classify as coding (first rule)
+    # ── 3. Priority ordering — highest-score wins ──
+    # "write code to plan a deployment" → coding_heavy has more keyword hits
     result = classify_task("write code to plan a deployment")
-    check("priority: coding before planning", result == "coding")
+    check("priority: coding_heavy before planning", result == "coding_heavy")
 
     # ── 4. Classification rules structure ──
     check("rules is list", isinstance(_CLASSIFICATION_RULES, list))
@@ -1932,7 +1938,7 @@ def test_model_router_tool():
     check("defaults has enabled", "enabled" in _DEFAULTS)
     check("defaults has task_tier_map", "task_tier_map" in _DEFAULTS)
     check("defaults enabled True", _DEFAULTS["enabled"] is True)
-    check("defaults 10 task types", len(_DEFAULTS["task_tier_map"]) == 10)
+    check("defaults 11 task types", len(_DEFAULTS["task_tier_map"]) == 11)
 
     # ── 6. resolve_tier — with mock config ──
     mock_cfg = {
@@ -1977,7 +1983,8 @@ def test_model_router_tool():
 
     # ── 7. resolve_model_for_task ──
     model, provider, task_type = resolve_model_for_task("write a python function", mock_cfg)
-    check("resolve_model task_type=coding", task_type == "coding")
+    check("resolve_model task_type=coding_heavy", task_type == "coding_heavy")
+    # With backward-compat fallback, coding_heavy → coding → cheap_cloud
     check("resolve_model model set", model == "gpt-4o-mini")
     check("resolve_model provider set", provider == "openai")
 
@@ -2011,10 +2018,10 @@ def test_model_router_tool():
     t_missing = get_tier_for_connection("nonexistent_label", mock_cfg)
     check("tier_for_connection missing → None", t_missing is None)
 
-    # ── 10. Tool execute — all 4 actions ──
+    # ── 10. Tool execute — all 5 actions ──
     # classify action
     r = json.loads(ModelRouterTool.execute({"action": "classify", "text": "write a function"}))
-    check("execute classify → coding", r["task_type"] == "coding")
+    check("execute classify → coding_heavy", r["task_type"] == "coding_heavy")
     check("execute classify has model field", "model" in r)
 
     # classify missing text
