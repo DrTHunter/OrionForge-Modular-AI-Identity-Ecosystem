@@ -1074,11 +1074,11 @@ _TOOL_CATALOGUE = [
         "icon": "🔀",
         "icon_bg": "rgba(245,158,11,0.12)",
         "icon_color": "#f59e0b",
-        "description": "Task-aware model tier selection. Classifies prompts by task type (coding, planning, summarization, etc.) and routes them to the optimal model tier. Agents can query routing decisions or inspect the tier map.",
+        "description": "Task-aware tiered model routing with scored classification, stuck-loop escalation, budget gates, and disabled-tier skipping. Classifies prompts by task type and routes to the optimal model tier. Agents can query routing decisions, inspect the tier map, or check budget status.",
         "status": "ready",
         "tags": ["agi_loop"],
         "parameters": [
-            {"name": "action", "type": "string", "required": True, "description": "Action to perform", "enum": ["resolve", "list_tiers", "get_map", "classify"]},
+            {"name": "action", "type": "string", "required": True, "description": "Action to perform", "enum": ["resolve", "list_tiers", "get_map", "classify", "budget"]},
             {"name": "text", "type": "string", "required": False, "description": "Stimulus text to classify (for resolve/classify)", "enum": []},
         ],
     },
@@ -1633,18 +1633,24 @@ async def _execute_agi_tick(agent: str, stimulus: str, agi_config: dict) -> dict
         routed_provider = None
         task_type = "agi_tick"
         _direct_conn_id = None          # set when task_tier_map uses model:<conn>:<name>
+        _router_tier_cfg = None         # resolved TierConfig (for connection override)
         try:
-            from src.tools.model_router import resolve_model_for_task, resolve_tier, load_router_config
-            router_cfg = load_router_config()
-            if router_cfg.get("enabled", True):
-                routed_model, routed_provider, task_type = resolve_model_for_task(stimulus, router_cfg)
-                # Check for direct-model override (provider == "__direct__:<conn_id>")
-                if routed_provider and routed_provider.startswith("__direct__:"):
-                    _direct_conn_id = routed_provider.split(":", 1)[1]
-                    routed_provider = None   # not a real provider string
+            from src.routing.model_router import ModelRouter
+            router = ModelRouter.from_config()
+            if router.enabled:
+                decision = router.route(stimulus, fallback_task="agi_tick")
+                task_type = decision.task_type
+                if decision.is_direct_model:
+                    routed_model = decision.model
+                    _direct_conn_id = decision.direct_conn_id
+                elif not decision.fallback:
+                    routed_model = decision.model
+                    routed_provider = decision.provider
+                    _router_tier_cfg = decision  # carries connection_id
                 # If nothing matched, use the agi_tick tier
                 if not routed_model:
-                    tier = resolve_tier("agi_tick", router_cfg)
+                    from src.routing.model_router import resolve_tier
+                    tier = resolve_tier("agi_tick")
                     if tier:
                         routed_model = tier.get("primary_model")
                         routed_provider = tier.get("provider")
@@ -1662,16 +1668,10 @@ async def _execute_agi_tick(agent: str, stimulus: str, agi_config: dict) -> dict
             direct_conn = _resolve_connection(_direct_conn_id, agent)
             if direct_conn:
                 conn = direct_conn
-        elif routed_provider:
-            try:
-                from src.tools.model_router import resolve_tier as _rt
-                tier = _rt(task_type, router_cfg)
-                if tier and tier.get("connection_id"):
-                    tier_conn = _resolve_connection(tier["connection_id"], agent)
-                    if tier_conn:
-                        conn = tier_conn
-            except Exception:
-                pass
+        elif _router_tier_cfg and getattr(_router_tier_cfg, 'connection_id', ''):
+            tier_conn = _resolve_connection(_router_tier_cfg.connection_id, agent)
+            if tier_conn:
+                conn = tier_conn
 
         url = conn["url"].rstrip("/")
         if not url.endswith("/chat/completions"):
@@ -2105,80 +2105,14 @@ async def api_inbox_delete(request: Request):
     return JSONResponse({"ok": True})
 
 
-# ── Model Router config ──────────────────────────────────────────
-MODEL_ROUTER_FILE = _CONFIG_DIR / "model_router.json"
+# ── Model Router config (delegated to src.routing) ───────────────────────
+from src.routing.model_router import (
+    load_router_config  as _load_model_router_config,
+    save_router_config  as _save_model_router_config,
+    CONFIG_DEFAULTS     as _MODEL_ROUTER_DEFAULTS,
+    MODEL_ROUTER_FILE,
+)
 
-_MODEL_ROUTER_DEFAULTS = {
-    "enabled": True,
-    "tiers": [
-        {
-            "id": "t0", "label": "local_cheap", "enabled": True,
-            "connection_id": "", "provider": "ollama",
-            "primary_model": "qwen2.5:7b",
-            "temperature": 0.6, "max_output_tokens": 2048,
-            "max_iterations": 8, "retries_before_escalate": 3,
-            "alt_models": [],
-            "cost_per_call": "~$0.00",
-            "default_for": "",
-        },
-        {
-            "id": "t1", "label": "local_strong", "enabled": True,
-            "connection_id": "", "provider": "ollama",
-            "primary_model": "llama3:70b",
-            "temperature": 0.5, "max_output_tokens": 4096,
-            "max_iterations": 10, "retries_before_escalate": 3,
-            "alt_models": [],
-            "cost_per_call": "~$0.00",
-            "default_for": "",
-        },
-        {
-            "id": "t2", "label": "cheap_cloud", "enabled": True,
-            "connection_id": "", "provider": "deepseek",
-            "primary_model": "deepseek-chat",
-            "temperature": 0.4, "max_output_tokens": 8192,
-            "max_iterations": 12, "retries_before_escalate": 2,
-            "alt_models": [],
-            "cost_per_call": "~$0.001",
-            "default_for": "",
-        },
-        {
-            "id": "t3", "label": "expensive_cloud", "enabled": True,
-            "connection_id": "", "provider": "openai",
-            "primary_model": "gpt-4o",
-            "temperature": 0.3, "max_output_tokens": 16384,
-            "max_iterations": 15, "retries_before_escalate": 2,
-            "alt_models": [],
-            "cost_per_call": "~$0.01\u20130.10",
-            "default_for": "",
-        },
-    ],
-    "task_tier_map": {
-        "coding": "cheap_cloud",
-        "summarization": "local_cheap",
-        "planning": "local_strong",
-        "high_stakes": "cheap_cloud",
-        "final_polish": "expensive_cloud",
-        "memory_ops": "local_cheap",
-        "reflection": "local_cheap",
-        "tool_use": "cheap_cloud",
-        "agi_tick": "cheap_cloud",
-        "general": "__auto__",
-    },
-}
-
-def _load_model_router_config() -> dict:
-    saved = _read_json(MODEL_ROUTER_FILE, {})
-    merged = {**_MODEL_ROUTER_DEFAULTS, **saved}
-    if "tiers" not in merged:
-        merged["tiers"] = _MODEL_ROUTER_DEFAULTS["tiers"]
-    if not merged.get("task_tier_map"):
-        merged["task_tier_map"] = dict(_MODEL_ROUTER_DEFAULTS["task_tier_map"])
-    if "enabled" not in merged:
-        merged["enabled"] = True
-    return merged
-
-def _save_model_router_config(data: dict):
-    _write_json(MODEL_ROUTER_FILE, data)
 
 
 @app.get("/api/model-router/config")
@@ -2197,6 +2131,30 @@ async def api_model_router_config_save(request: Request):
 async def api_model_router_reset():
     _save_model_router_config(_MODEL_ROUTER_DEFAULTS)
     return JSONResponse({"ok": True, "config": _MODEL_ROUTER_DEFAULTS})
+
+
+# ── Budget Tracker API ───────────────────────────────────────────
+@app.get("/api/model-router/budget")
+async def api_budget_get():
+    """Return current budget/spending summary."""
+    try:
+        from src.routing.budget_tracker import BudgetTracker
+        tracker = BudgetTracker()
+        return JSONResponse(tracker.get_summary())
+    except Exception as exc:
+        return JSONResponse({"error": str(exc)}, status_code=500)
+
+
+@app.post("/api/model-router/budget/reset-session")
+async def api_budget_reset_session():
+    """Reset the session-level spending counter."""
+    try:
+        from src.routing.budget_tracker import BudgetTracker
+        tracker = BudgetTracker()
+        tracker.reset_session()
+        return JSONResponse({"ok": True, "summary": tracker.get_summary()})
+    except Exception as exc:
+        return JSONResponse({"ok": False, "error": str(exc)}, status_code=500)
 
 
 # ── Model Router presets (save-states) ───────────────────────────
@@ -2379,21 +2337,21 @@ async def api_chat_send(req: ChatRequest):
     routed_model = None
     routed_provider = None
     task_type = "general"
-    router_tier = None
     _direct_conn_id = None
+    _router_decision = None
     try:
-        from src.tools.model_router import resolve_model_for_task, resolve_tier, load_router_config
-        router_cfg = load_router_config()
-        if router_cfg.get("enabled", True) and not req.model_override:
-            routed_model, routed_provider, task_type = resolve_model_for_task(
-                req.stimulus, router_cfg,
-            )
-            # Check for direct-model override (provider == "__direct__:<conn_id>")
-            if routed_provider and routed_provider.startswith("__direct__:"):
-                _direct_conn_id = routed_provider.split(":", 1)[1]
-                routed_provider = None
-            elif routed_model:
-                router_tier = resolve_tier(task_type, router_cfg)
+        from src.routing.model_router import ModelRouter
+        router = ModelRouter.from_config()
+        if router.enabled and not req.model_override:
+            decision = router.route(req.stimulus)
+            task_type = decision.task_type
+            _router_decision = decision
+            if decision.is_direct_model:
+                routed_model = decision.model
+                _direct_conn_id = decision.direct_conn_id
+            elif not decision.fallback:
+                routed_model = decision.model
+                routed_provider = decision.provider
     except Exception as exc:
         log.warning("[router] Model router failed: %s", exc)
 
@@ -2412,11 +2370,11 @@ async def api_chat_send(req: ChatRequest):
             conn = direct_conn
             log.info("[router] Switched connection to direct model '%s' (conn=%s)", model, _direct_conn_id)
     # If the router chose a tier with its own connection, switch to it
-    elif router_tier and router_tier.get("connection_id") and not req.model_override:
-        tier_conn = _resolve_connection(router_tier["connection_id"], req.agent)
+    elif _router_decision and _router_decision.connection_id and not req.model_override:
+        tier_conn = _resolve_connection(_router_decision.connection_id, req.agent)
         if tier_conn:
             conn = tier_conn
-            log.info("[router] Switched connection to tier '%s'", router_tier.get("label"))
+            log.info("[router] Switched connection to tier '%s'", _router_decision.tier_name)
 
     # Call LLM API (with tool-call loop)
     url = conn["url"].rstrip("/")

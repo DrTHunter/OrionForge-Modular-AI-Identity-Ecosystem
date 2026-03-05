@@ -37,6 +37,11 @@ Covers:
     to_dict under load, 10 clear/reload cycles, 1000-entry reload, agent filtering)
   - Narrative builder stress (200 rapid _build_tick_narrative calls, error/tool/response
     variants, unicode, truncation, multi-tool, empty input)
+  - ModelRouter.route() stress (500 rapid calls, determinism, escalation chains,
+    budget+routing under load, config permutations, to_dict stress)
+  - BudgetTracker stress (500 record_cost, 5000 limit checks, reset cycles,
+    get_summary stress, update_caps, BudgetState round-trips, reload stress,
+    corrupt file recovery)
 """
 
 import json
@@ -1742,6 +1747,255 @@ def test_narrative_builder_stress():
 
 
 # ═════════════════════════════════════════════
+# 28. ModelRouter.route() stress (500 rapid route calls)
+# ═════════════════════════════════════════════
+def test_model_router_route_stress():
+    """Rapid-fire ModelRouter.route() calls with varied stimuli, escalation,
+    budget interaction, and config permutations."""
+    print("\n=== STRESS: ModelRouter.route() (500 rapid calls) ===")
+
+    from src.routing.model_router import ModelRouter, Tier, classify_task
+    from src.routing.budget_tracker import BudgetTracker
+
+    tmp = tempfile.mkdtemp()
+    try:
+        cfg = {
+            "enabled": True,
+            "tiers": [
+                {"id": "t0", "label": "local_cheap", "enabled": True,
+                 "provider": "ollama", "primary_model": "phi3"},
+                {"id": "t1", "label": "local_strong", "enabled": True,
+                 "provider": "ollama", "primary_model": "llama3:70b"},
+                {"id": "t2", "label": "cheap_cloud", "enabled": True,
+                 "provider": "deepseek", "primary_model": "deepseek-chat"},
+                {"id": "t3", "label": "expensive_cloud", "enabled": True,
+                 "provider": "openai", "primary_model": "gpt-4o"},
+            ],
+            "task_tier_map": {
+                "coding": "cheap_cloud",
+                "summarization": "local_cheap",
+                "planning": "local_strong",
+                "general": "__auto__",
+                "high_stakes": "expensive_cloud",
+                "final_polish": "expensive_cloud",
+                "memory_ops": "local_cheap",
+                "reflection": "local_cheap",
+                "tool_use": "cheap_cloud",
+                "agi_tick": "cheap_cloud",
+            },
+        }
+
+        stimuli = [
+            "write code for login",
+            "summarize the doc",
+            "plan Q3 sprint",
+            "review security audit",
+            "polish the final report",
+            "remember my preference",
+            "reflect on this week",
+            "search for python docs",
+            "hello how are you",
+            "debug the crash log",
+            "implement REST API",
+            "deploy to production",
+        ]
+
+        # ── 1. 500 rapid route calls ──
+        router = ModelRouter.from_config(cfg)
+        t0 = time.time()
+        errors = 0
+        for i in range(500):
+            text = stimuli[i % len(stimuli)]
+            try:
+                d = router.route(text)
+                if not isinstance(d.task_type, str):
+                    errors += 1
+            except Exception:
+                errors += 1
+        elapsed = time.time() - t0
+        check(f"500 route() in {elapsed:.3f}s", elapsed < 3.0)
+        check("no route errors", errors == 0, f"got {errors}")
+
+        # ── 2. Deterministic: same input → same output ──
+        for text in stimuli:
+            d1 = router.route(text)
+            d2 = router.route(text)
+            if d1.task_type != d2.task_type or d1.model != d2.model:
+                check(f"deterministic: {text[:25]}", False)
+                break
+        else:
+            check("all route calls deterministic", True)
+
+        # ── 3. Escalation chain stress — 100 stuck loops ──
+        for i in range(100):
+            r_stuck = ModelRouter.from_config(cfg)
+            # Feed 5 errors to trigger escalation
+            for _ in range(5):
+                d = r_stuck.route("write code", recent_errors=[f"error_{i}"])
+            if d.tier is not None:
+                check(f"escalation #{i} tier >= cheap_cloud",
+                      d.tier >= Tier.CHEAP_CLOUD or d.tier_name in ("cheap_cloud", "expensive_cloud"))
+            else:
+                check(f"escalation #{i} fallback", d.fallback)
+            if i == 0:
+                # Only report the first one so we don't spam
+                check("first escalation has reason", len(d.reason) > 0)
+
+        # ── 4. Route with budget tracker — 200 calls with concurrent recording ──
+        bt = BudgetTracker(monthly_hard_cap=5.0, state_path=os.path.join(tmp, "stress_b.json"))
+        router_bt = ModelRouter.from_config(cfg, budget_tracker=bt)
+        for i in range(200):
+            text = stimuli[i % len(stimuli)]
+            d = router_bt.route(text)
+            # Record a tiny cost each time
+            bt.record_cost(0.025, d.tier_name or "fallback")
+        check("budget after 200 calls", bt.state.monthly_spent >= 5.0)
+        # Budget now exhausted — routing should force local
+        d_exhausted = router_bt.route("write code")
+        check("exhausted budget → local tier",
+              d_exhausted.tier is None or d_exhausted.tier <= Tier.LOCAL_STRONG or d_exhausted.fallback)
+
+        # ── 5. Multiple config permutations ── 
+        configs = [
+            {**cfg, "enabled": False},
+            {**cfg, "task_tier_map": {**cfg["task_tier_map"], "coding": "model:cx:gpt-5"}},
+            {**cfg, "task_tier_map": {**cfg["task_tier_map"], "coding": "nonexistent_label"}},
+            {**cfg, "tiers": []},
+        ]
+        for c in configs:
+            r = ModelRouter.from_config(c)
+            d = r.route("write code")
+            check(f"config variant → valid decision", isinstance(d.task_type, str))
+
+        # ── 6. to_dict stress ──
+        t0 = time.time()
+        for i in range(200):
+            d = router.route(stimuli[i % len(stimuli)])
+            dd = d.to_dict()
+            if not isinstance(dd, dict) or "task_type" not in dd:
+                check(f"to_dict #{i}", False)
+                break
+        else:
+            elapsed = time.time() - t0
+            check(f"200 to_dict in {elapsed:.3f}s", elapsed < 2.0)
+
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ═════════════════════════════════════════════
+# 29. BudgetTracker stress (500 record_cost + limits)
+# ═════════════════════════════════════════════
+def test_budget_tracker_stress():
+    """Rapid-fire BudgetTracker operations: record_cost, limit checks,
+    reset, reload from disk, concurrent-ish access patterns."""
+    print("\n=== STRESS: BudgetTracker (500 ops) ===")
+
+    from src.routing.budget_tracker import BudgetTracker, BudgetState
+
+    tmp = tempfile.mkdtemp()
+    try:
+        state_file = os.path.join(tmp, "budget_stress.json")
+
+        # ── 1. 500 rapid record_cost calls ──
+        bt = BudgetTracker(monthly_hard_cap=100.0, state_path=state_file)
+        t0 = time.time()
+        for i in range(500):
+            tier = ["local_cheap", "local_strong", "cheap_cloud", "expensive_cloud"][i % 4]
+            bt.record_cost(0.01, tier)
+        elapsed = time.time() - t0
+        check(f"500 record_cost in {elapsed:.3f}s", elapsed < 5.0)
+        check("total after 500 records", abs(bt.state.monthly_spent - 5.00) < 0.01)
+        check("tier_spending has all 4 tiers", len(bt.state.tier_spending) == 4)
+        for tier_name in ["local_cheap", "local_strong", "cheap_cloud", "expensive_cloud"]:
+            expected = 125 * 0.01
+            actual = bt.state.tier_spending.get(tier_name, 0)
+            check(f"tier {tier_name} ≈ {expected:.2f}", abs(actual - expected) < 0.01)
+
+        # ── 2. Rapid limit checks ──
+        t0 = time.time()
+        for _ in range(1000):
+            bt.is_hard_limit_hit()
+            bt.is_soft_limit_hit()
+            bt.is_session_limit_hit()
+            bt.remaining()
+            bt.check_tick_budget(0.01)
+        elapsed = time.time() - t0
+        check(f"5000 limit checks in {elapsed:.3f}s", elapsed < 2.0)
+
+        # ── 3. Rapid reset_session cycles ──
+        for _ in range(50):
+            bt.record_cost(0.01, "test")
+            bt.reset_session()
+        check("50 reset cycles → session=0", bt.state.session_spent == 0.0)
+        check("50 resets → monthly still accumulated", bt.state.monthly_spent > 5.0)
+
+        # ── 4. get_summary stress ──
+        t0 = time.time()
+        for _ in range(200):
+            s = bt.get_summary()
+            if not isinstance(s, dict):
+                check("summary is dict", False)
+                break
+        else:
+            elapsed = time.time() - t0
+            check(f"200 get_summary in {elapsed:.3f}s", elapsed < 2.0)
+
+        # ── 5. update_caps stress — 100 rapid cap changes ──
+        for i in range(100):
+            bt.update_caps(
+                monthly_hard_cap=10 + i,
+                per_tick_cap=0.01 + (i * 0.001),
+            )
+        check("100 update_caps → last cap applied", bt.state.monthly_hard_cap == 109)
+        check("100 update_caps → tick cap", abs(bt.state.per_tick_cap - 0.109) < 0.001)
+
+        # ── 6. BudgetState round-trip stress ──
+        for i in range(100):
+            state = BudgetState(
+                monthly_spent=i * 0.1,
+                session_spent=i * 0.01,
+                total_spent_all_time=i * 1.0,
+                tier_spending={f"tier_{i}": i * 0.05},
+            )
+            d = state.to_dict()
+            restored = BudgetState.from_dict(d)
+            if abs(restored.monthly_spent - state.monthly_spent) > 0.000001:
+                check(f"round-trip #{i}", False)
+                break
+        else:
+            check("100 BudgetState round-trips", True)
+
+        # ── 7. Reload from disk stress ──
+        for i in range(20):
+            path = os.path.join(tmp, f"bt_{i}.json")
+            b = BudgetTracker(monthly_hard_cap=50.0, state_path=path)
+            b.record_cost(i * 0.1, "test")
+            # Reload
+            b2 = BudgetTracker(monthly_hard_cap=50.0, state_path=path)
+            if abs(b2.state.monthly_spent - i * 0.1) > 0.001:
+                check(f"reload #{i}", False, f"{b2.state.monthly_spent} != {i * 0.1}")
+                break
+        else:
+            check("20 save/reload cycles", True)
+
+        # ── 8. Corrupt file recovery stress ──
+        for i in range(10):
+            path = os.path.join(tmp, f"corrupt_{i}.json")
+            with open(path, "w") as f:
+                f.write("{{NOT JSON" * (i + 1))
+            b = BudgetTracker(state_path=path)
+            if b.state.monthly_spent != 0.0:
+                check(f"corrupt #{i} → fresh", False)
+                break
+        else:
+            check("10 corrupt file recoveries", True)
+
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ═════════════════════════════════════════════
 if __name__ == "__main__":
     test_vault_rapid_crud()
     test_vault_bulk_delete()
@@ -1770,6 +2024,8 @@ if __name__ == "__main__":
     test_agi_loop_state_stress()
     test_agi_journal_stress()
     test_narrative_builder_stress()
+    test_model_router_route_stress()
+    test_budget_tracker_stress()
 
     print(f"\n{'='*40}")
     print(f"Results: {PASS} passed, {FAIL} failed")
