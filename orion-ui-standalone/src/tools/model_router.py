@@ -32,6 +32,9 @@ from src.routing.model_router import (   # noqa: F401
     CONFIG_DEFAULTS,
     MODEL_ROUTER_FILE,
     _TASK_KEYWORDS,
+    _ESCALATION_CHAIN,
+    _PAID_TIERS,
+    _PREMIUM_TIERS,
     DEFAULT_TASK_TIER_MAP,
 )
 from src.routing.budget_tracker import BudgetTracker  # noqa: F401

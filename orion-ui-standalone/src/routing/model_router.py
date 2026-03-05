@@ -1,15 +1,21 @@
 """ModelRouter — tiered routing with escalation for agent LLM calls.
 
 Tier ladder (cheapest → most expensive):
-  T0  local_cheap    — Ollama small models (qwen2.5:7b, phi-3, etc.)    ~$0/call
-  T1  local_strong   — Ollama large models (llama3:70b, mixtral, etc.)  ~$0/call
-  T2  cheap_cloud    — DeepSeek-V3/Chat, GPT-5-mini, GPT-5-nano        ~$0.001/call
-  T3  expensive_cloud— GPT-5.2, Claude Opus 4.6, GPT-5.2-pro           ~$0.01–0.10/call
+  T0  local_cheap     — Ollama small models (qwen2.5:7b, phi-3, etc.)   ~$0/call
+  T1  local_strong    — Ollama large models (llama3:70b, mixtral, etc.) ~$0/call
+  T2  cheap_cloud     — DeepSeek-V3/Chat, GPT-5-mini, GPT-5-nano       ~$0.001/call
+  T3  expensive_cloud — GPT-5.2, Claude Opus 4.6, GPT-5.2-pro          ~$0.01–0.10/call
+  T4  code_light      — Fast coding model (DeepSeek, Codestral, etc.)   ~$0.001/call
+  T5  code_heavy      — Power coding model (Claude, GPT-4o, etc.)       ~$0.01–0.10/call
+
+Escalation chains:
+  General : local_cheap → local_strong → cheap_cloud → expensive_cloud
+  Coding  : code_light  → code_heavy   → expensive_cloud
 
 Routing algorithm:
-  1. Classify task type from stimulus (coding, summarization, planning, etc.)
+  1. Classify task type from stimulus (coding_light, coding_heavy, etc.)
   2. Start at the tier mapped for that task type
-  3. If stuck (same error 3+ times), escalate one tier
+  3. If stuck (same error 3+ times), escalate via chain
   4. Skip disabled tiers automatically
   5. Enforce budget gates — refuse to escalate if budget exceeded
   6. Support direct model overrides (model:<conn_id>:<name>)
@@ -38,6 +44,8 @@ class Tier(IntEnum):
     LOCAL_STRONG = 1
     CHEAP_CLOUD = 2
     EXPENSIVE_CLOUD = 3
+    CODE_LIGHT = 4
+    CODE_HEAVY = 5
 
 
 TIER_NAMES = {
@@ -45,6 +53,8 @@ TIER_NAMES = {
     Tier.LOCAL_STRONG: "local_strong",
     Tier.CHEAP_CLOUD: "cheap_cloud",
     Tier.EXPENSIVE_CLOUD: "expensive_cloud",
+    Tier.CODE_LIGHT: "code_light",
+    Tier.CODE_HEAVY: "code_heavy",
 }
 
 TIER_IDS = {
@@ -52,10 +62,29 @@ TIER_IDS = {
     Tier.LOCAL_STRONG: "t1",
     Tier.CHEAP_CLOUD: "t2",
     Tier.EXPENSIVE_CLOUD: "t3",
+    Tier.CODE_LIGHT: "t4",
+    Tier.CODE_HEAVY: "t5",
 }
 
 _LABEL_TO_TIER = {v: k for k, v in TIER_NAMES.items()}
 _ID_TO_TIER = {v: k for k, v in TIER_IDS.items()}
+
+# Escalation paths: which tier comes next when stuck-looping
+_ESCALATION_CHAIN = {
+    Tier.LOCAL_CHEAP: Tier.LOCAL_STRONG,
+    Tier.LOCAL_STRONG: Tier.CHEAP_CLOUD,
+    Tier.CHEAP_CLOUD: Tier.EXPENSIVE_CLOUD,
+    Tier.EXPENSIVE_CLOUD: None,          # top of general chain
+    Tier.CODE_LIGHT: Tier.CODE_HEAVY,
+    Tier.CODE_HEAVY: Tier.EXPENSIVE_CLOUD,
+}
+
+# Tiers that cost money (triggers budget gates)
+_PAID_TIERS = frozenset({Tier.CHEAP_CLOUD, Tier.EXPENSIVE_CLOUD,
+                         Tier.CODE_LIGHT, Tier.CODE_HEAVY})
+
+# Premium tiers (soft-limit caps to a cheaper alternative)
+_PREMIUM_TIERS = frozenset({Tier.EXPENSIVE_CLOUD, Tier.CODE_HEAVY})
 
 
 # ------------------------------------------------------------------
@@ -63,7 +92,9 @@ _ID_TO_TIER = {v: k for k, v in TIER_IDS.items()}
 # ------------------------------------------------------------------
 
 class TaskType:
-    CODING = "coding"
+    CODING = "coding"                # backward-compat alias
+    CODING_LIGHT = "coding_light"    # simple fixes, renames, formatting
+    CODING_HEAVY = "coding_heavy"    # implement, debug, refactor, architect
     SUMMARIZATION = "summarization"
     PLANNING = "planning"
     HIGH_STAKES = "high_stakes"
@@ -75,7 +106,8 @@ class TaskType:
     AGI_TICK = "agi_tick"
 
     _ALL = {
-        "coding", "summarization", "planning", "high_stakes",
+        "coding", "coding_light", "coding_heavy",
+        "summarization", "planning", "high_stakes",
         "final_polish", "general", "memory_ops", "reflection",
         "tool_use", "agi_tick",
     }
@@ -83,7 +115,8 @@ class TaskType:
 
 # Default task → tier mapping (used when no config file exists)
 DEFAULT_TASK_TIER_MAP = {
-    TaskType.CODING: "cheap_cloud",
+    TaskType.CODING_LIGHT: "code_light",
+    TaskType.CODING_HEAVY: "code_heavy",
     TaskType.SUMMARIZATION: "local_cheap",
     TaskType.PLANNING: "local_strong",
     TaskType.HIGH_STAKES: "cheap_cloud",
@@ -96,13 +129,26 @@ DEFAULT_TASK_TIER_MAP = {
 }
 
 
-# Priority-ordered keyword sets for task classification (scored, not first-match)
+# Priority-ordered keyword sets for task classification (scored, not first-match).
+# Heavy coding is listed first so it wins ties (dict insertion order).
 _TASK_KEYWORDS: Dict[str, List[str]] = {
-    TaskType.CODING: [
+    TaskType.CODING_HEAVY: [
         "write code", "implement", "function", "class ", "debug",
         "fix bug", "refactor", "script", "program", "syntax",
         "compile", "api endpoint", "unit test", "regex",
-        "code", "error", "lint", "method", "variable",
+        "code", "error", "method", "architect",
+        "algorithm", "data structure", "migration",
+        "build", "integration", "complex",
+        "design pattern", "framework", "module",
+        "database", "schema", "rewrite", "api",
+    ],
+    TaskType.CODING_LIGHT: [
+        "typo", "rename", "add comment", "format", "lint",
+        "type hint", "import", "simple", "tweak",
+        "quick fix", "one-liner", "small change",
+        "docstring", "cleanup", "tidy", "minor",
+        "snippet", "whitespace", "indent", "spelling",
+        "variable", "log", "print",
     ],
     TaskType.SUMMARIZATION: [
         "summarize", "summary", "tldr", "condense", "recap",
@@ -173,9 +219,9 @@ def classify_task(
         if score > 0:
             scores[task_type] = score
 
-    # Boost coding if there are recent errors
+    # Boost heavy coding if there are recent errors (errors = complex problem)
     if recent_errors and len(recent_errors) > 0:
-        scores[TaskType.CODING] = scores.get(TaskType.CODING, 0) + len(recent_errors)
+        scores[TaskType.CODING_HEAVY] = scores.get(TaskType.CODING_HEAVY, 0) + len(recent_errors)
 
     if not scores:
         return TaskType.GENERAL
@@ -296,8 +342,24 @@ _DEFAULT_TIERS = [
         "temperature": 0.3, "max_output_tokens": 16384,
         "max_iterations": 15, "retries_before_escalate": 2,
         "alt_models": [], "cost_per_call": "~$0.01\u20130.10", "default_for": "",
+    },    {
+        "id": "t4", "label": "code_light", "enabled": True,
+        "connection_id": "", "provider": "deepseek",
+        "primary_model": "deepseek-chat",
+        "temperature": 0.3, "max_output_tokens": 4096,
+        "max_iterations": 8, "retries_before_escalate": 3,
+        "alt_models": [], "cost_per_call": "~$0.001",
+        "default_for": "Light coding — typos, renames, formatting",
     },
-]
+    {
+        "id": "t5", "label": "code_heavy", "enabled": True,
+        "connection_id": "", "provider": "openai",
+        "primary_model": "gpt-4o",
+        "temperature": 0.2, "max_output_tokens": 16384,
+        "max_iterations": 15, "retries_before_escalate": 2,
+        "alt_models": [], "cost_per_call": "~$0.01–0.10",
+        "default_for": "Heavy coding — implement, debug, refactor",
+    },]
 
 CONFIG_DEFAULTS: Dict[str, Any] = {
     "enabled": True,
@@ -461,7 +523,12 @@ class ModelRouter:
         task_type = classify_task(stimulus, recent_errors, explicit_task_type)
 
         # 2. Look up the tier mapping for this task type
-        mapping_value = self.task_tier_map.get(task_type, "__auto__")
+        mapping_value = self.task_tier_map.get(task_type)
+        # Backward compat: coding_light/coding_heavy fall back to "coding" entry
+        if mapping_value is None and task_type in (TaskType.CODING_LIGHT, TaskType.CODING_HEAVY):
+            mapping_value = self.task_tier_map.get(TaskType.CODING)
+        if mapping_value is None:
+            mapping_value = "__auto__"
 
         # 3. Handle direct model overrides (model:<conn_id>:<model>)
         if _is_direct_model(mapping_value):
@@ -499,7 +566,7 @@ class ModelRouter:
             target_tier = force_tier
             reason = f"Forced to tier {TIER_NAMES[force_tier]}"
 
-        # 7. Stuck-loop escalation
+        # 7. Stuck-loop escalation (uses _ESCALATION_CHAIN)
         original_target = target_tier
         if recent_errors:
             error_key = recent_errors[-1][:100]
@@ -507,9 +574,10 @@ class ModelRouter:
             count = self._stuck_counter[error_key]
             cfg = self.tier_configs.get(target_tier)
             threshold = cfg.max_retries_before_escalate if cfg else 3
-            if count >= threshold and target_tier < Tier.EXPENSIVE_CLOUD:
+            next_tier = _ESCALATION_CHAIN.get(target_tier)
+            if count >= threshold and next_tier is not None:
                 old_tier = target_tier
-                target_tier = Tier(min(target_tier + 1, Tier.EXPENSIVE_CLOUD))
+                target_tier = next_tier
                 reason = (
                     f"Stuck loop ({count} retries), "
                     f"escalating {TIER_NAMES[old_tier]} → {TIER_NAMES[target_tier]}"
@@ -518,26 +586,24 @@ class ModelRouter:
         else:
             self._stuck_counter.clear()
 
-        # 8. Skip disabled tiers — escalate upwards
+        # 8. Skip disabled tiers — follow escalation chain
         checked = set()
-        while target_tier <= Tier.EXPENSIVE_CLOUD:
+        while True:
             cfg = self.tier_configs.get(target_tier)
             if cfg and cfg.enabled:
                 break
             checked.add(target_tier)
-            if target_tier < Tier.EXPENSIVE_CLOUD:
-                target_tier = Tier(target_tier + 1)
-            else:
+            next_tier = _ESCALATION_CHAIN.get(target_tier)
+            if next_tier is None or next_tier in checked:
                 break
-            if target_tier in checked:
-                break
+            target_tier = next_tier
 
         # 9. Budget gate
         budget_remaining = -1.0
         if self.budget_tracker:
             try:
                 budget_remaining = self.budget_tracker.remaining()
-                if budget_remaining <= 0 and target_tier >= Tier.CHEAP_CLOUD:
+                if budget_remaining <= 0 and target_tier in _PAID_TIERS:
                     # Force down to local
                     target_tier = Tier.LOCAL_STRONG
                     cfg_ls = self.tier_configs.get(Tier.LOCAL_STRONG)
@@ -545,9 +611,13 @@ class ModelRouter:
                         target_tier = Tier.LOCAL_CHEAP
                     reason = "Budget exhausted — forced to local tier"
                     log.warning("[router] %s", reason)
-                elif self.budget_tracker.is_soft_limit_hit() and target_tier >= Tier.EXPENSIVE_CLOUD:
-                    target_tier = Tier.CHEAP_CLOUD
-                    reason = "Soft budget limit hit — capped at cheap cloud"
+                elif self.budget_tracker.is_soft_limit_hit() and target_tier in _PREMIUM_TIERS:
+                    if target_tier == Tier.CODE_HEAVY:
+                        target_tier = Tier.CODE_LIGHT
+                        reason = "Soft budget limit hit — capped at code_light"
+                    else:
+                        target_tier = Tier.CHEAP_CLOUD
+                        reason = "Soft budget limit hit — capped at cheap cloud"
                     log.info("[router] %s", reason)
             except Exception as exc:
                 log.warning("[router] Budget check failed: %s", exc)
@@ -588,7 +658,11 @@ class ModelRouter:
 
     def resolve_tier(self, task_type: str) -> Optional[TierConfig]:
         """Given a task type, return the matching TierConfig (or None)."""
-        mapping_value = self.task_tier_map.get(task_type, "__auto__")
+        mapping_value = self.task_tier_map.get(task_type)
+        if mapping_value is None and task_type in (TaskType.CODING_LIGHT, TaskType.CODING_HEAVY):
+            mapping_value = self.task_tier_map.get(TaskType.CODING)
+        if mapping_value is None:
+            mapping_value = "__auto__"
         if mapping_value == "__auto__" or _is_direct_model(mapping_value):
             return None
         tier_enum = _LABEL_TO_TIER.get(mapping_value)
@@ -600,12 +674,12 @@ class ModelRouter:
         return None
 
     def get_next_tier(self, current_tier: Tier) -> Optional[TierConfig]:
-        """Get the next escalation tier (or None if at highest)."""
-        for t in Tier:
-            if t > current_tier:
-                cfg = self.tier_configs.get(t)
-                if cfg and cfg.enabled:
-                    return cfg
+        """Get the next escalation tier via _ESCALATION_CHAIN (or None)."""
+        next_t = _ESCALATION_CHAIN.get(current_tier)
+        if next_t is not None:
+            cfg = self.tier_configs.get(next_t)
+            if cfg and cfg.enabled:
+                return cfg
         return None
 
     def clear_stuck_counter(self) -> None:
