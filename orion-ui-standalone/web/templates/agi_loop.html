@@ -332,6 +332,107 @@
   .inbox-bubble .bubble-count { font-size: 1.75rem; font-weight: 800; }
   .inbox-bubble .bubble-dot { position: absolute; top: 0.625rem; right: 0.625rem; width: 8px; height: 8px; border-radius: 50%; background: #ef4444; display: none; }
   .inbox-bubble .bubble-dot.has-items { display: block; animation: pulse-dot 1.5s infinite; }
+
+  /* ── Journal tab (inbox-style) ── */
+  .jnl-filter-bar {
+    display: flex; align-items: center; gap: 0.625rem; padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(42,42,58,0.4); flex-wrap: wrap;
+  }
+  .jnl-filter-select {
+    background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 0.375rem;
+    color: #d4d4d8; font-size: 0.75rem; padding: 0.3rem 0.5rem; outline: none;
+    cursor: pointer; transition: border-color 0.15s;
+  }
+  .jnl-filter-select:focus { border-color: #6366f1; }
+  .jnl-filter-checkbox {
+    display: flex; align-items: center; gap: 0.375rem; font-size: 0.75rem;
+    color: #71717a; cursor: pointer; user-select: none;
+  }
+  .jnl-filter-checkbox input { accent-color: #6366f1; cursor: pointer; }
+  .jnl-entry-count {
+    font-size: 0.6875rem; color: #52525b; font-weight: 600;
+    padding: 0.2rem 0.625rem; background: rgba(42,42,58,0.3);
+    border-radius: 9999px;
+  }
+  .jnl-action-btn {
+    background: none; border: 1px solid rgba(42,42,58,0.4); border-radius: 0.375rem;
+    color: #71717a; cursor: pointer; font-size: 0.875rem; padding: 0.25rem 0.5rem;
+    transition: all 0.15s;
+  }
+  .jnl-action-btn:hover { color: #a5b4fc; border-color: rgba(99,102,241,0.3); background: rgba(99,102,241,0.06); }
+  .jnl-action-danger:hover { color: #fca5a5 !important; border-color: rgba(239,68,68,0.3) !important; background: rgba(239,68,68,0.06) !important; }
+
+  .jnl-list-wrap { max-height: 560px; overflow-y: auto; }
+
+  /* Individual journal entry – inbox row style */
+  .jnl-row {
+    display: flex; align-items: flex-start; gap: 0.75rem;
+    padding: 0.75rem 1rem; border-bottom: 1px solid rgba(42,42,58,0.25);
+    transition: background 0.12s; cursor: pointer; position: relative;
+  }
+  .jnl-row:hover { background: rgba(99,102,241,0.04); }
+  .jnl-row:last-child { border-bottom: none; }
+  .jnl-row.has-error { border-left: 3px solid #ef4444; }
+  .jnl-row.selected { background: rgba(99,102,241,0.08); }
+
+  .jnl-row-icon {
+    flex-shrink: 0; width: 2.25rem; height: 2.25rem; border-radius: 0.5rem;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.875rem; font-weight: 700; margin-top: 0.0625rem;
+  }
+  .jnl-row-icon.ok  { background: rgba(99,102,241,0.12); color: #818cf8; }
+  .jnl-row-icon.err { background: rgba(239,68,68,0.12); color: #fca5a5; }
+
+  .jnl-row-body { flex: 1; min-width: 0; }
+  .jnl-row-subject {
+    font-size: 0.8125rem; font-weight: 600; color: #e4e4e7;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    line-height: 1.4;
+  }
+  .jnl-row-preview {
+    font-size: 0.75rem; color: #71717a; margin-top: 0.125rem;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .jnl-row-meta {
+    font-size: 0.6875rem; color: #52525b; margin-top: 0.3125rem;
+    display: flex; gap: 0.625rem; align-items: center; flex-wrap: wrap;
+  }
+  .jnl-tool-chip {
+    display: inline-block; padding: 0.0625rem 0.375rem;
+    background: rgba(49,46,129,0.5); color: #a5b4fc;
+    border-radius: 0.25rem; font-size: 0.625rem; font-weight: 600;
+  }
+  .jnl-row-cost {
+    font-size: 0.6875rem; font-weight: 600; font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+  }
+  .jnl-row-ts {
+    flex-shrink: 0; font-size: 0.6875rem; color: #3f3f46;
+    text-align: right; min-width: 4.5rem; margin-top: 0.0625rem;
+  }
+
+  /* Empty state */
+  .jnl-empty { text-align: center; padding: 3rem 1rem; color: #52525b; }
+  .jnl-empty-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+
+  /* Detail panel */
+  .jnl-close-btn {
+    background: none; border: none; color: #52525b; cursor: pointer;
+    font-size: 1.25rem; padding: 0.25rem; line-height: 1; transition: color 0.15s;
+  }
+  .jnl-close-btn:hover { color: #fff; }
+  .jnl-detail-tick {
+    font-size: 0.75rem; font-weight: 700; color: #6366f1;
+    margin-bottom: 0.5rem; font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+  }
+  .jnl-detail-narrative {
+    font-size: 0.875rem; color: #d4d4d8; line-height: 1.65;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .jnl-detail-tools { display: flex; flex-wrap: wrap; gap: 0.375rem; }
+  .jnl-detail-meta {
+    font-size: 0.75rem; color: #52525b; display: flex; flex-direction: column; gap: 0.25rem;
+  }
+
 </style>
 
 <div>
@@ -553,6 +654,88 @@
       </div>
     </div>
   </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!--  TAB: Journal  (Inbox-style narrative log)                       -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="view-panel" id="panel-journal">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      <!-- Left: journal entries list -->
+      <div class="lg:col-span-2">
+        <div class="card" style="padding:0; overflow:hidden;">
+          <!-- Filter bar -->
+          <div class="jnl-filter-bar">
+            <select id="journal-agent-filter" onchange="journalRender()" class="jnl-filter-select">
+              <option value="">All Agents</option>
+            </select>
+            <label class="jnl-filter-checkbox">
+              <input type="checkbox" id="journal-errors-only" onchange="journalRender()">
+              <span>Errors only</span>
+            </label>
+            <div style="flex:1;"></div>
+            <span class="jnl-entry-count" id="journal-count">0 entries</span>
+            <button class="jnl-action-btn" onclick="journalRefresh()" title="Refresh">&#8635;</button>
+            <button class="jnl-action-btn jnl-action-danger" onclick="journalClear()" title="Clear journal">&#128465;</button>
+          </div>
+          <!-- Scrollable entry list -->
+          <div class="jnl-list-wrap" id="journal-list">
+            <div class="jnl-empty">
+              <div class="jnl-empty-icon">&#128214;</div>
+              <div class="text-sm">No journal entries yet</div>
+              <div class="text-xs text-forge-muted mt-1">Start the AGI loop to begin recording the agent&#39;s narrative</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: detail + stats -->
+      <div>
+        <!-- Detail view (shown on click) -->
+        <div class="card mb-5" id="jnl-detail-card" style="display:none;">
+          <div class="flex items-center justify-between mb-3">
+            <span class="card-header mb-0">Entry Detail</span>
+            <button onclick="jnlCloseDetail()" class="jnl-close-btn">&times;</button>
+          </div>
+          <div id="jnl-detail-tick" class="jnl-detail-tick"></div>
+          <div id="jnl-detail-narrative" class="jnl-detail-narrative"></div>
+          <div id="jnl-detail-tools" class="jnl-detail-tools mt-3"></div>
+          <div id="jnl-detail-meta" class="jnl-detail-meta mt-3"></div>
+        </div>
+
+        <!-- Stats -->
+        <div class="card mb-5">
+          <span class="card-header">Journal Stats</span>
+          <div class="grid grid-cols-2 gap-3 mt-3">
+            <div class="text-center">
+              <div class="text-xl font-bold text-white" id="jnl-stat-total">0</div>
+              <div class="text-xs text-forge-muted">Total Entries</div>
+            </div>
+            <div class="text-center">
+              <div class="text-xl font-bold text-red-400" id="jnl-stat-errors">0</div>
+              <div class="text-xs text-forge-muted">Errors</div>
+            </div>
+            <div class="text-center">
+              <div class="text-xl font-bold text-white" id="jnl-stat-agents">0</div>
+              <div class="text-xs text-forge-muted">Agents</div>
+            </div>
+            <div class="text-center">
+              <div class="text-xl font-bold text-green-400" id="jnl-stat-cost">$0.00</div>
+              <div class="text-xs text-forge-muted">Total Cost</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Storage info -->
+        <div class="card">
+          <span class="card-header">Storage</span>
+          <p class="text-xs text-forge-muted mt-1 mb-2">Journal entries are persisted to disk as JSONL</p>
+          <code class="text-xs text-zinc-600 block">data/orion/agi_loop_journal.jsonl</code>
+          <p class="text-xs text-forge-muted mt-2">Auto-refresh every 5 s when this tab is active.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
 
   <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
   <!--  TAB: Configuration  (Settings-style, fully working)            -->
@@ -1567,45 +1750,100 @@ function journalRender() {
 
   document.getElementById('journal-count').textContent = filtered.length + ' entries';
 
+  // Update stats
+  const totalEl = document.getElementById('jnl-stat-total');
+  if (totalEl) totalEl.textContent = _journalEntries.length;
+  const errEl = document.getElementById('jnl-stat-errors');
+  if (errEl) errEl.textContent = _journalEntries.filter(e => e.had_error).length;
+  const agentsEl = document.getElementById('jnl-stat-agents');
+  if (agentsEl) agentsEl.textContent = new Set(_journalEntries.map(e => e.agent).filter(Boolean)).size;
+  const costEl = document.getElementById('jnl-stat-cost');
+  if (costEl) costEl.textContent = '$' + _journalEntries.reduce((s, e) => s + (e.cost || 0), 0).toFixed(4);
+
   if (!filtered.length) {
     container.innerHTML = `
-      <div class="text-sm text-forge-muted p-8 text-center">
-        <div style="font-size:2rem;margin-bottom:0.5rem;">&#128214;</div>
-        ${_journalEntries.length ? 'No entries match the current filter.' : 'No journal entries yet. Start the AGI loop to begin recording the agent&#39;s narrative.'}
+      <div class="jnl-empty">
+        <div class="jnl-empty-icon">&#128214;</div>
+        <div class="text-sm">${_journalEntries.length ? 'No entries match the current filter.' : 'No journal entries yet. Start the AGI loop to begin recording.'}</div>
       </div>`;
     return;
   }
 
   const reversed = [...filtered].reverse();
-  container.innerHTML = reversed.map(entry => {
-    const ts = entry.ts ? new Date(entry.ts).toLocaleString() : '—';
+  container.innerHTML = reversed.map((entry, i) => {
+    const ts = entry.ts ? new Date(entry.ts).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '';
+    const dateStr = entry.ts ? new Date(entry.ts).toLocaleDateString([], {month:'short',day:'numeric'}) : '';
     const tools = (entry.tools_used || []).filter(Boolean);
-    const toolBadges = tools.map(t => `<span style="background:#312e81;color:#a5b4fc;padding:1px 6px;border-radius:4px;font-size:0.65rem;">${_esc(t)}</span>`).join(' ');
+    const toolChips = tools.slice(0, 3).map(t => `<span class="jnl-tool-chip">${_esc(t)}</span>`).join('');
+    const moreTools = tools.length > 3 ? `<span class="jnl-tool-chip">+${tools.length - 3}</span>` : '';
     const costStr = '$' + (entry.cost || 0).toFixed(4);
-    const errorCls = entry.had_error ? 'border-red-900/50' : 'border-zinc-800';
-    const errorIcon = entry.had_error ? '<span title="Error" style="color:#ef4444;">&#9888;</span> ' : '';
     const loopTick = `L${entry.loop || '?'}.T${entry.tick || '?'}`;
+    const narrative = entry.narrative || '(no narrative)';
+    // Truncate for preview
+    const preview = tools.length ? ('Used ' + tools.join(', ')) : (entry.model || '—');
+    const isErr = entry.had_error;
+    const idx = reversed.length - 1 - i;
 
     return `
-      <div style="border:1px solid;padding:0.75rem 1rem;border-radius:0.5rem;margin-bottom:0.5rem;" class="${errorCls}">
-        <div class="flex items-start gap-3">
-          <div style="min-width:3.5rem;text-align:center;">
-            <div style="font-size:0.7rem;font-weight:700;color:#6366f1;">${loopTick}</div>
-            <div style="font-size:0.6rem;color:#52525b;">${_esc(entry.agent || '')}</div>
-          </div>
-          <div style="flex:1;min-width:0;">
-            <div style="font-size:0.8rem;color:#e4e4e7;line-height:1.5;">${errorIcon}${_esc(entry.narrative || '')}</div>
-            <div class="flex flex-wrap gap-2 mt-2 items-center" style="font-size:0.7rem;color:#71717a;">
-              <span>${_esc(entry.model || '—')}</span>
-              <span>${_esc(entry.task_type || '—')}</span>
-              ${toolBadges}
-              <span style="color:${entry.had_error ? '#ef4444' : '#22c55e'};">${costStr}</span>
-              <span>${ts}</span>
-            </div>
+      <div class="jnl-row ${isErr ? 'has-error' : ''}" onclick="jnlShowDetail(${i})" data-jnl-idx="${i}">
+        <div class="jnl-row-icon ${isErr ? 'err' : 'ok'}">${isErr ? '&#9888;' : loopTick.replace(/^L/, '').charAt(0)}</div>
+        <div class="jnl-row-body">
+          <div class="jnl-row-subject">${isErr ? '<span style="color:#fca5a5;">Error</span> — ' : ''}${_esc(narrative)}</div>
+          <div class="jnl-row-preview">${_esc(entry.agent || 'unknown')} &middot; ${_esc(preview)}</div>
+          <div class="jnl-row-meta">
+            <span style="color:#6366f1;font-weight:700;">${loopTick}</span>
+            ${toolChips}${moreTools}
+            <span class="jnl-row-cost" style="color:${isErr ? '#ef4444' : '#22c55e'};">${costStr}</span>
           </div>
         </div>
+        <div class="jnl-row-ts">${dateStr}<br>${ts}</div>
       </div>`;
   }).join('');
+}
+
+/* Show detail in right panel */
+let _jnlReversed = [];
+function jnlShowDetail(revIdx) {
+  const agentFilter = (document.getElementById('journal-agent-filter') || {}).value || '';
+  const errorsOnly = (document.getElementById('journal-errors-only') || {}).checked;
+  let filtered = _journalEntries;
+  if (agentFilter) filtered = filtered.filter(e => e.agent === agentFilter);
+  if (errorsOnly) filtered = filtered.filter(e => e.had_error);
+  const reversed = [...filtered].reverse();
+  const entry = reversed[revIdx];
+  if (!entry) return;
+
+  // Highlight selected
+  document.querySelectorAll('.jnl-row').forEach(r => r.classList.remove('selected'));
+  const row = document.querySelector(`.jnl-row[data-jnl-idx="${revIdx}"]`);
+  if (row) row.classList.add('selected');
+
+  const card = document.getElementById('jnl-detail-card');
+  card.style.display = '';
+
+  document.getElementById('jnl-detail-tick').textContent =
+    `Loop ${entry.loop || '?'} · Tick ${entry.tick || '?'} · ${_esc(entry.agent || 'unknown')}`;
+
+  document.getElementById('jnl-detail-narrative').textContent = entry.narrative || '(no narrative)';
+
+  const tools = (entry.tools_used || []).filter(Boolean);
+  document.getElementById('jnl-detail-tools').innerHTML = tools.length
+    ? tools.map(t => `<span class="jnl-tool-chip" style="font-size:0.75rem;padding:0.125rem 0.5rem;">${_esc(t)}</span>`).join('')
+    : '<span style="font-size:0.75rem;color:#52525b;">No tools used</span>';
+
+  const ts = entry.ts ? new Date(entry.ts).toLocaleString() : '—';
+  document.getElementById('jnl-detail-meta').innerHTML = `
+    <span>Model: <strong style="color:#a1a1aa;">${_esc(entry.model || '—')}</strong></span>
+    <span>Task: <strong style="color:#a1a1aa;">${_esc(entry.task_type || '—')}</strong></span>
+    <span>Cost: <strong style="color:${entry.had_error ? '#ef4444' : '#22c55e'};">$${(entry.cost || 0).toFixed(6)}</strong></span>
+    <span>Time: <strong style="color:#a1a1aa;">${ts}</strong></span>
+    ${entry.had_error ? '<span style="color:#fca5a5;font-weight:700;">⚠ Error occurred during this tick</span>' : ''}
+  `;
+}
+
+function jnlCloseDetail() {
+  document.getElementById('jnl-detail-card').style.display = 'none';
+  document.querySelectorAll('.jnl-row').forEach(r => r.classList.remove('selected'));
 }
 
 async function journalClear() {

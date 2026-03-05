@@ -234,6 +234,7 @@ def test_cost_tracker_set_pricing():
     print("\n=== CostTrackerTool — set_pricing ===")
     import yaml
     import src.tools.cost_tracker as ct_mod
+    from src.tools.cost_tracker import CostTrackerTool
 
     tmp = tempfile.mkdtemp()
     config_dir = os.path.join(tmp, "config")
@@ -280,7 +281,7 @@ def test_cost_tracker_unknown_action():
 def test_cost_tracker_list_models():
     print("\n=== CostTrackerTool — list_models ===")
     import src.tools.cost_tracker as ct_mod
-
+    from src.tools.cost_tracker import CostTrackerTool
     tmp = tempfile.mkdtemp()
     config_dir = os.path.join(tmp, "config")
     os.makedirs(config_dir)

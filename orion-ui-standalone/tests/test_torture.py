@@ -63,6 +63,17 @@ Covers:
     long truncation, bare response, empty, multi-sentence, error priority)
   - AGI Loop template (Journal tab button, panel-journal, JS functions,
     API fetch, auto-refresh, entry count, JSONL reference, Loop Log links)
+  - Routing ModelRouter class (from_config, route() all code-paths, Tier enum,
+    TierConfig, RoutingDecision, classify_task scored matching, direct model
+    overrides, stuck-loop escalation, disabled-tier skipping, force_tier,
+    unknown tier labels, no-tiers edge case, to_config_dict round-trip)
+  - BudgetTracker (create, record_cost, remaining, hard/soft/session limits,
+    check_tick_budget, reset_session, get_summary, update_caps, month_rollover,
+    corrupt state file, from_config, BudgetState to_dict/from_dict round-trip)
+  - Router + Budget integration (hard limit forces local, soft limit caps at
+    cheap_cloud, budget remaining in RoutingDecision)
+  - ModelRouterTool budget action (5 actions including budget, resolve with
+    new ModelRouter.from_config path)
 """
 
 import json
@@ -5823,6 +5834,563 @@ def test_vault_filter_dropdown():
 
 
 # ═════════════════════════════════════════════
+# 70. Routing subsystem — ModelRouter class deep coverage
+# ═════════════════════════════════════════════
+def test_routing_model_router():
+    """Test the ModelRouter class from src.routing.model_router directly:
+    from_config, route() all code-paths, resolve_tier, get_next_tier,
+    clear_stuck_counter, to_config_dict, RoutingDecision.to_dict,
+    TierConfig.to_json_dict, Tier enum, TaskType constants, direct model
+    overrides, stuck-loop escalation, disabled-tier skipping, budget gating,
+    force_tier, unknown tier labels, no-tiers edge case."""
+    print("\n=== TORTURE: Routing — ModelRouter Deep Coverage ===")
+
+    from src.routing.model_router import (
+        ModelRouter, RoutingDecision, Tier, TierConfig, TaskType,
+        classify_task, CONFIG_DEFAULTS, TIER_NAMES, TIER_IDS,
+        _LABEL_TO_TIER, _ID_TO_TIER, _parse_tier_config, _is_direct_model,
+        _parse_direct_model, DEFAULT_TASK_TIER_MAP, _TASK_KEYWORDS,
+    )
+
+    # ── 1. Tier enum ──
+    check("Tier LOCAL_CHEAP=0", Tier.LOCAL_CHEAP == 0)
+    check("Tier LOCAL_STRONG=1", Tier.LOCAL_STRONG == 1)
+    check("Tier CHEAP_CLOUD=2", Tier.CHEAP_CLOUD == 2)
+    check("Tier EXPENSIVE_CLOUD=3", Tier.EXPENSIVE_CLOUD == 3)
+    check("Tier ordering", Tier.LOCAL_CHEAP < Tier.EXPENSIVE_CLOUD)
+    check("4 tiers", len(list(Tier)) == 4)
+
+    # ── 2. TIER_NAMES / TIER_IDS maps ──
+    check("TIER_NAMES t0", TIER_NAMES[Tier.LOCAL_CHEAP] == "local_cheap")
+    check("TIER_NAMES t3", TIER_NAMES[Tier.EXPENSIVE_CLOUD] == "expensive_cloud")
+    check("TIER_IDS t0", TIER_IDS[Tier.LOCAL_CHEAP] == "t0")
+    check("TIER_IDS t3", TIER_IDS[Tier.EXPENSIVE_CLOUD] == "t3")
+    check("_LABEL_TO_TIER", _LABEL_TO_TIER["cheap_cloud"] == Tier.CHEAP_CLOUD)
+    check("_ID_TO_TIER", _ID_TO_TIER["t2"] == Tier.CHEAP_CLOUD)
+
+    # ── 3. TaskType constants ──
+    check("TaskType.CODING", TaskType.CODING == "coding")
+    check("TaskType.GENERAL", TaskType.GENERAL == "general")
+    check("TaskType.AGI_TICK", TaskType.AGI_TICK == "agi_tick")
+    check("TaskType._ALL has 10", len(TaskType._ALL) == 10)
+    for tt in ["coding", "summarization", "planning", "high_stakes", "final_polish",
+               "general", "memory_ops", "reflection", "tool_use", "agi_tick"]:
+        check(f"TaskType._ALL has {tt}", tt in TaskType._ALL)
+
+    # ── 4. classify_task — scored keyword matching ──
+    check("classify coding", classify_task("implement a REST api") == "coding")
+    check("classify summarize", classify_task("summarize the report") == "summarization")
+    check("classify plan", classify_task("plan the roadmap") == "planning")
+    check("classify high_stakes", classify_task("audit the security") == "high_stakes")
+    check("classify final_polish", classify_task("proofread and polish the essay") == "final_polish")
+    check("classify memory_ops", classify_task("remember this fact in vault") == "memory_ops")
+    check("classify reflection", classify_task("reflect on the day") == "reflection")
+    check("classify tool_use", classify_task("web search for info") == "tool_use")
+    check("classify general fallback", classify_task("hello world") == "general")
+    check("classify empty", classify_task("") == "general")
+
+    # Explicit type override
+    check("classify explicit", classify_task("hello", explicit_type="coding") == "coding")
+    check("classify invalid explicit", classify_task("hello", explicit_type="bogus") == "general")
+
+    # Recent errors boost coding
+    r = classify_task("hello world", recent_errors=["KeyError: 'foo'", "NameError"])
+    check("recent errors boost coding", r == "coding")
+
+    # Scored: more keywords wins
+    r2 = classify_task("write code function class debug fix bug refactor")
+    check("high keyword score → coding", r2 == "coding")
+
+    # ── 5. _is_direct_model / _parse_direct_model ──
+    check("is_direct model:x:y", _is_direct_model("model:conn1:gpt-4"))
+    check("not direct plain", not _is_direct_model("cheap_cloud"))
+    check("not direct auto", not _is_direct_model("__auto__"))
+    check("not direct int", not _is_direct_model(42))
+    conn, mod = _parse_direct_model("model:my_conn:gpt-4o")
+    check("parse direct conn", conn == "my_conn")
+    check("parse direct model", mod == "gpt-4o")
+    conn2, mod2 = _parse_direct_model("model:bad")
+    check("parse bad direct → empty", conn2 == "" and mod2 == "")
+
+    # ── 6. _parse_tier_config ──
+    tc = _parse_tier_config({
+        "id": "t2", "label": "cheap_cloud", "enabled": True,
+        "provider": "deepseek", "primary_model": "deepseek-chat",
+        "temperature": 0.4, "max_output_tokens": 8192,
+        "max_iterations": 12, "retries_before_escalate": 2,
+        "alt_models": ["gpt-3.5"], "cost_per_call": "~$0.001",
+        "default_for": "", "connection_id": "c1",
+    })
+    check("parse tier → TierConfig", isinstance(tc, TierConfig))
+    check("parse tier tier=CHEAP_CLOUD", tc.tier == Tier.CHEAP_CLOUD)
+    check("parse tier label", tc.label == "cheap_cloud")
+    check("parse tier model", tc.model == "deepseek-chat")
+    check("parse tier provider", tc.provider == "deepseek")
+    check("parse tier conn_id", tc.connection_id == "c1")
+    check("parse tier alt", tc.alt_models == ["gpt-3.5"])
+    check("parse tier enabled", tc.enabled is True)
+
+    # to_json_dict round-trip
+    jd = tc.to_json_dict()
+    check("to_json_dict id", jd["id"] == "t2")
+    check("to_json_dict label", jd["label"] == "cheap_cloud")
+    check("to_json_dict model", jd["primary_model"] == "deepseek-chat")
+    check("to_json_dict enabled", jd["enabled"] is True)
+    check("to_json_dict alt", jd["alt_models"] == ["gpt-3.5"])
+    check("to_json_dict retries", jd["retries_before_escalate"] == 2)
+
+    # ── 7. CONFIG_DEFAULTS structure ──
+    check("CONFIG_DEFAULTS.enabled", CONFIG_DEFAULTS["enabled"] is True)
+    check("CONFIG_DEFAULTS.tiers count", len(CONFIG_DEFAULTS["tiers"]) == 4)
+    check("CONFIG_DEFAULTS.task_tier_map count", len(CONFIG_DEFAULTS["task_tier_map"]) == 10)
+
+    # ── 8. ModelRouter.from_config ──
+    router = ModelRouter.from_config()
+    check("from_config creates router", isinstance(router, ModelRouter))
+    check("from_config enabled", router.enabled is True)
+    check("from_config has tier_configs", len(router.tier_configs) > 0)
+    check("from_config has task_tier_map", len(router.task_tier_map) > 0)
+
+    # from_config with custom config
+    custom_cfg = {
+        "enabled": True,
+        "tiers": [
+            {"id": "t0", "label": "local_cheap", "enabled": True,
+             "provider": "ollama", "primary_model": "qwen:7b"},
+            {"id": "t1", "label": "local_strong", "enabled": True,
+             "provider": "ollama", "primary_model": "llama3:70b"},
+            {"id": "t2", "label": "cheap_cloud", "enabled": True,
+             "provider": "deepseek", "primary_model": "deepseek-chat"},
+            {"id": "t3", "label": "expensive_cloud", "enabled": True,
+             "provider": "openai", "primary_model": "gpt-4o"},
+        ],
+        "task_tier_map": {
+            "coding": "cheap_cloud",
+            "summarization": "local_cheap",
+            "planning": "local_strong",
+            "general": "__auto__",
+            "high_stakes": "expensive_cloud",
+            "final_polish": "expensive_cloud",
+            "memory_ops": "local_cheap",
+            "reflection": "local_cheap",
+            "tool_use": "cheap_cloud",
+            "agi_tick": "cheap_cloud",
+        },
+    }
+    router2 = ModelRouter.from_config(custom_cfg)
+    check("custom router 4 tiers", len(router2.tier_configs) == 4)
+    check("custom router coding→cheap_cloud", router2.task_tier_map["coding"] == "cheap_cloud")
+
+    # ── 9. route() — basic task classification and tier resolution ──
+    d = router2.route("write a python function")
+    check("route coding → task_type", d.task_type == "coding")
+    check("route coding → model set", d.model == "deepseek-chat")
+    check("route coding → tier cheap_cloud", d.tier_name == "cheap_cloud")
+    check("route coding → tier_id t2", d.tier_id == "t2")
+    check("route coding → provider", d.provider == "deepseek")
+    check("route coding → not fallback", d.fallback is False)
+    check("route coding → not direct", d.is_direct_model is False)
+
+    # ── 10. route() — __auto__ → fallback ──
+    d_auto = router2.route("hello there")
+    check("route auto → task_type general", d_auto.task_type == "general")
+    check("route auto → fallback True", d_auto.fallback is True)
+    check("route auto → model None", d_auto.model is None)
+    check("route auto → tier_name __auto__", d_auto.tier_name == "__auto__")
+
+    # ── 11. route() — disabled router ──
+    disabled_router = ModelRouter.from_config({**custom_cfg, "enabled": False})
+    d_dis = disabled_router.route("write code")
+    check("disabled → fallback", d_dis.fallback is True)
+    check("disabled → model None", d_dis.model is None)
+    check("disabled → reason contains disabled", "disabled" in d_dis.reason.lower())
+
+    # ── 12. route() — direct model override ──
+    direct_cfg = {**custom_cfg, "task_tier_map": {
+        **custom_cfg["task_tier_map"],
+        "coding": "model:conn42:gpt-4-turbo",
+    }}
+    router3 = ModelRouter.from_config(direct_cfg)
+    d_direct = router3.route("write a function")
+    check("direct → is_direct_model", d_direct.is_direct_model is True)
+    check("direct → model name", d_direct.model == "gpt-4-turbo")
+    check("direct → direct_conn_id", d_direct.direct_conn_id == "conn42")
+    check("direct → tier_name 'direct'", d_direct.tier_name == "direct")
+
+    # ── 13. route() — unknown tier label → fallback ──
+    bad_cfg = {**custom_cfg, "task_tier_map": {
+        **custom_cfg["task_tier_map"],
+        "coding": "nonexistent_tier",
+    }}
+    router_bad = ModelRouter.from_config(bad_cfg)
+    d_bad = router_bad.route("write code")
+    check("unknown tier → fallback", d_bad.fallback is True)
+    check("unknown tier → reason", "Unknown tier" in d_bad.reason)
+
+    # ── 14. route() — force_tier ──
+    d_forced = router2.route("hello", force_tier=Tier.EXPENSIVE_CLOUD)
+    check("force_tier → expensive_cloud model", d_forced.model == "gpt-4o")
+    check("force_tier → tier_name", d_forced.tier_name == "expensive_cloud")
+
+    # ── 15. route() — stuck-loop escalation ──
+    router_stuck = ModelRouter.from_config(custom_cfg)
+    # Simulate 3 errors (threshold for retries_before_escalate)
+    for _ in range(3):
+        d_esc = router_stuck.route("write code", recent_errors=["same error"])
+    check("stuck escalation → tier > cheap_cloud", d_esc.tier is not None and d_esc.tier > Tier.CHEAP_CLOUD)
+    check("stuck escalation → reason contains 'Stuck'", "Stuck" in d_esc.reason or "stuck" in d_esc.reason.lower())
+    check("stuck escalation → escalated_from set", d_esc.escalated_from is not None)
+
+    # Clear stuck counter
+    router_stuck.clear_stuck_counter()
+    d_clear = router_stuck.route("write code")
+    check("after clear → back to cheap_cloud", d_clear.tier_name == "cheap_cloud")
+
+    # ── 16. route() — disabled tier skipping ──
+    skip_cfg = {
+        "enabled": True,
+        "tiers": [
+            {"id": "t0", "label": "local_cheap", "enabled": False,
+             "provider": "ollama", "primary_model": "phi3"},
+            {"id": "t1", "label": "local_strong", "enabled": False,
+             "provider": "ollama", "primary_model": "llama3:70b"},
+            {"id": "t2", "label": "cheap_cloud", "enabled": True,
+             "provider": "deepseek", "primary_model": "deepseek-chat"},
+            {"id": "t3", "label": "expensive_cloud", "enabled": True,
+             "provider": "openai", "primary_model": "gpt-4o"},
+        ],
+        "task_tier_map": {"summarization": "local_cheap", "general": "__auto__"},
+    }
+    router_skip = ModelRouter.from_config(skip_cfg)
+    d_skip = router_skip.route("summarize this document")
+    check("disabled skip → lands on cheap_cloud", d_skip.tier_name == "cheap_cloud")
+    check("disabled skip → model deepseek-chat", d_skip.model == "deepseek-chat")
+
+    # All tiers disabled
+    all_disabled_cfg = {
+        "enabled": True,
+        "tiers": [
+            {"id": "t0", "label": "local_cheap", "enabled": False,
+             "provider": "ollama", "primary_model": "phi3"},
+            {"id": "t3", "label": "expensive_cloud", "enabled": False,
+             "provider": "openai", "primary_model": "gpt-4o"},
+        ],
+        "task_tier_map": {"coding": "local_cheap"},
+    }
+    router_alloff = ModelRouter.from_config(all_disabled_cfg)
+    d_alloff = router_alloff.route("write code")
+    check("all disabled → fallback", d_alloff.fallback is True or d_alloff.model is None)
+
+    # No tiers at all
+    empty_cfg = {"enabled": True, "tiers": [], "task_tier_map": {"coding": "cheap_cloud"}}
+    router_empty = ModelRouter.from_config(empty_cfg)
+    d_empty = router_empty.route("write code")
+    check("no tiers → fallback", d_empty.fallback is True)
+
+    # ── 17. RoutingDecision.to_dict ──
+    d_dict = d.to_dict()
+    check("to_dict has tier", "tier" in d_dict)
+    check("to_dict has task_type", "task_type" in d_dict)
+    check("to_dict has model", "model" in d_dict)
+    check("to_dict has provider", "provider" in d_dict)
+    check("to_dict has reason", "reason" in d_dict)
+    check("to_dict has fallback", "fallback" in d_dict)
+    check("to_dict has is_direct_model", "is_direct_model" in d_dict)
+
+    # ── 18. ModelRouter.resolve_tier ──
+    tc_coding = router2.resolve_tier("coding")
+    check("resolve_tier coding → TierConfig", isinstance(tc_coding, TierConfig))
+    check("resolve_tier coding label", tc_coding.label == "cheap_cloud")
+
+    tc_auto = router2.resolve_tier("general")
+    check("resolve_tier general → None", tc_auto is None)
+
+    # ── 19. ModelRouter.get_next_tier ──
+    nt = router2.get_next_tier(Tier.LOCAL_CHEAP)
+    check("get_next LOCAL_CHEAP → LOCAL_STRONG", nt is not None and nt.tier == Tier.LOCAL_STRONG)
+    nt2 = router2.get_next_tier(Tier.EXPENSIVE_CLOUD)
+    check("get_next EXPENSIVE_CLOUD → None", nt2 is None)
+
+    # ── 20. to_config_dict round-trip ──
+    exported = router2.to_config_dict()
+    check("to_config_dict has enabled", "enabled" in exported)
+    check("to_config_dict has tiers", "tiers" in exported)
+    check("to_config_dict has task_tier_map", "task_tier_map" in exported)
+    check("to_config_dict 4 tiers", len(exported["tiers"]) == 4)
+    # Re-create router from exported config
+    router_round = ModelRouter.from_config(exported)
+    d_round = router_round.route("write code")
+    check("round-trip route same model", d_round.model == d.model)
+    check("round-trip route same task", d_round.task_type == d.task_type)
+
+
+# ═════════════════════════════════════════════
+# 71. Budget Tracker — deep coverage
+# ═════════════════════════════════════════════
+def test_budget_tracker():
+    """Test BudgetTracker: create, record_cost, limits, check_tick_budget,
+    reset_session, get_summary, update_caps, month_rollover, corrupt file,
+    from_config, BudgetState to_dict/from_dict round-trip."""
+    print("\n=== TORTURE: Budget Tracker — Deep Coverage ===")
+
+    from src.routing.budget_tracker import BudgetTracker, BudgetState
+
+    tmp = tempfile.mkdtemp()
+    try:
+        state_file = os.path.join(tmp, "budget_state.json")
+
+        # ── 1. BudgetState dataclass ──
+        bs = BudgetState()
+        check("BudgetState default hard_cap", bs.monthly_hard_cap == 20.00)
+        check("BudgetState default soft_cap", bs.monthly_soft_cap == 16.00)
+        check("BudgetState default session_cap", bs.per_session_cap == 2.00)
+        check("BudgetState default tick_cap", bs.per_tick_cap == 0.10)
+        check("BudgetState default monthly_spent", bs.monthly_spent == 0.0)
+
+        # to_dict / from_dict round-trip
+        d = bs.to_dict()
+        check("to_dict has monthly_hard_cap", "monthly_hard_cap" in d)
+        check("to_dict has tier_spending", "tier_spending" in d)
+        bs2 = BudgetState.from_dict(d)
+        check("from_dict hard_cap", bs2.monthly_hard_cap == 20.00)
+        check("from_dict monthly_spent", bs2.monthly_spent == 0.0)
+
+        # from_dict with missing keys → defaults
+        bs3 = BudgetState.from_dict({})
+        check("from_dict empty → defaults", bs3.monthly_hard_cap == 20.00)
+        check("from_dict empty → 0 spent", bs3.monthly_spent == 0.0)
+
+        # to_dict rounding
+        bs4 = BudgetState(monthly_spent=1.23456789)
+        d4 = bs4.to_dict()
+        check("to_dict rounds to 6", d4["monthly_spent"] == round(1.23456789, 6))
+
+        # ── 2. BudgetTracker creation ──
+        bt = BudgetTracker(state_path=state_file)
+        check("BudgetTracker created", bt is not None)
+        check("BT state file set", bt._state_path == state_file)
+        check("BT remaining = hard_cap", bt.remaining() == 20.00)
+        check("BT hard_limit not hit", not bt.is_hard_limit_hit())
+        check("BT soft_limit not hit", not bt.is_soft_limit_hit())
+        check("BT session_limit not hit", not bt.is_session_limit_hit())
+
+        # ── 3. record_cost ──
+        bt.record_cost(0.50, "cheap_cloud")
+        check("after record → remaining 19.50", abs(bt.remaining() - 19.50) < 0.001)
+        check("after record → monthly_spent 0.50", abs(bt.state.monthly_spent - 0.50) < 0.001)
+        check("after record → session_spent 0.50", abs(bt.state.session_spent - 0.50) < 0.001)
+        check("after record → total 0.50", abs(bt.state.total_spent_all_time - 0.50) < 0.001)
+        check("tier_spending cheap_cloud", abs(bt.state.tier_spending.get("cheap_cloud", 0) - 0.50) < 0.001)
+        check("state persisted", os.path.isfile(state_file))
+
+        # Multiple records
+        bt.record_cost(1.00, "expensive_cloud")
+        bt.record_cost(0.25, "cheap_cloud")
+        check("multiple records total", abs(bt.state.monthly_spent - 1.75) < 0.001)
+        check("tier_spending cheap 0.75", abs(bt.state.tier_spending["cheap_cloud"] - 0.75) < 0.001)
+        check("tier_spending expensive 1.00", abs(bt.state.tier_spending["expensive_cloud"] - 1.00) < 0.001)
+
+        # ── 4. check_tick_budget ──
+        check("tick within budget", bt.check_tick_budget(0.05) is None)
+        check("tick over per_tick_cap", bt.check_tick_budget(0.20) is not None)
+        check("tick msg contains cap", "cap" in bt.check_tick_budget(0.20).lower())
+
+        # ── 5. Soft limit ──
+        # Spend up to soft cap (16.00) → already at 1.75, need 14.25 more
+        bt.record_cost(14.25, "expensive_cloud")
+        check("at soft cap → hit", bt.is_soft_limit_hit())
+        check("at soft cap → hard not hit", not bt.is_hard_limit_hit())
+
+        # ── 6. Hard limit ──
+        bt.record_cost(4.00, "expensive_cloud")
+        check("over hard cap → hit", bt.is_hard_limit_hit())
+        check("over hard cap → remaining 0", bt.remaining() == 0.0)
+        check("over hard cap → tick blocked", bt.check_tick_budget(0.0) is not None)
+
+        # ── 7. reset_session ──
+        bt.reset_session()
+        check("reset session → session 0", bt.state.session_spent == 0.0)
+        check("reset session → monthly unchanged", bt.state.monthly_spent > 0)
+
+        # ── 8. get_summary ──
+        summary = bt.get_summary()
+        check("summary has monthly_spent", "monthly_spent" in summary)
+        check("summary has remaining", "remaining" in summary)
+        check("summary has hard_limit_hit", "hard_limit_hit" in summary)
+        check("summary has soft_limit_hit", "soft_limit_hit" in summary)
+        check("summary has tier_spending", "tier_spending" in summary)
+        check("summary has month_key", "month_key" in summary)
+        check("summary has total_all_time", "total_all_time" in summary)
+        check("summary remaining is 0", summary["remaining"] == 0.0)
+        check("summary hard_limit_hit True", summary["hard_limit_hit"] is True)
+
+        # ── 9. update_caps ──
+        bt.update_caps(monthly_hard_cap=50.0, per_tick_cap=0.50)
+        check("update hard_cap → 50", bt.state.monthly_hard_cap == 50.0)
+        check("update tick_cap → 0.50", bt.state.per_tick_cap == 0.50)
+        check("update soft unchanged", bt.state.monthly_soft_cap == 16.0)
+        check("after cap update → remaining > 0", bt.remaining() > 0)
+        check("after cap update → hard not hit", not bt.is_hard_limit_hit())
+
+        # ── 10. Reload from disk ──
+        bt2 = BudgetTracker(state_path=state_file)
+        check("reload monthly_spent preserved", abs(bt2.state.monthly_spent - bt.state.monthly_spent) < 0.001)
+        check("reload total preserved", abs(bt2.state.total_spent_all_time - bt.state.total_spent_all_time) < 0.001)
+        # Caps are overridden from constructor defaults
+        check("reload caps from constructor", bt2.state.monthly_hard_cap == 20.0)
+
+        # ── 11. Corrupt state file ──
+        with open(state_file, "w") as f:
+            f.write("NOT VALID JSON!!!")
+        bt3 = BudgetTracker(state_path=state_file)
+        check("corrupt file → fresh state", bt3.state.monthly_spent == 0.0)
+        check("corrupt file → default caps", bt3.state.monthly_hard_cap == 20.0)
+
+        # ── 12. from_config factory ──
+        bt4 = BudgetTracker.from_config({
+            "monthly_hard_cap": 100.0,
+            "per_session_cap": 5.0,
+            "per_tick_cap": 0.25,
+        })
+        check("from_config hard_cap", bt4.state.monthly_hard_cap == 100.0)
+        check("from_config soft_cap auto", bt4.state.monthly_soft_cap == 80.0)
+        check("from_config session_cap", bt4.state.per_session_cap == 5.0)
+        check("from_config tick_cap", bt4.state.per_tick_cap == 0.25)
+
+        # from_config empty dict → defaults
+        bt5 = BudgetTracker.from_config({})
+        check("from_config empty → default hard", bt5.state.monthly_hard_cap == 20.0)
+
+        # ── 13. Session limit ──
+        bt6 = BudgetTracker(per_session_cap=0.10, state_path=os.path.join(tmp, "bt6.json"))
+        check("session not hit initially", not bt6.is_session_limit_hit())
+        bt6.record_cost(0.15, "test")
+        check("session hit after 0.15", bt6.is_session_limit_hit())
+
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ═════════════════════════════════════════════
+# 72. Budget + Router integration — budget gating in route()
+# ═════════════════════════════════════════════
+def test_router_budget_integration():
+    """Test ModelRouter.route() budget gating: hard limit forces local,
+    soft limit caps at cheap cloud, budget remaining in decision."""
+    print("\n=== TORTURE: Router + Budget Integration ===")
+
+    from src.routing.model_router import ModelRouter, Tier
+    from src.routing.budget_tracker import BudgetTracker
+
+    tmp = tempfile.mkdtemp()
+    try:
+        cfg = {
+            "enabled": True,
+            "tiers": [
+                {"id": "t0", "label": "local_cheap", "enabled": True,
+                 "provider": "ollama", "primary_model": "phi3"},
+                {"id": "t1", "label": "local_strong", "enabled": True,
+                 "provider": "ollama", "primary_model": "llama3:70b"},
+                {"id": "t2", "label": "cheap_cloud", "enabled": True,
+                 "provider": "deepseek", "primary_model": "deepseek-chat"},
+                {"id": "t3", "label": "expensive_cloud", "enabled": True,
+                 "provider": "openai", "primary_model": "gpt-4o"},
+            ],
+            "task_tier_map": {
+                "coding": "cheap_cloud",
+                "high_stakes": "expensive_cloud",
+                "general": "__auto__",
+                "summarization": "local_cheap",
+                "planning": "local_strong",
+                "final_polish": "expensive_cloud",
+                "memory_ops": "local_cheap",
+                "reflection": "local_cheap",
+                "tool_use": "cheap_cloud",
+                "agi_tick": "cheap_cloud",
+            },
+        }
+
+        # ── 1. Budget remaining shows in decision ──
+        bt = BudgetTracker(monthly_hard_cap=10.0, state_path=os.path.join(tmp, "b1.json"))
+        router = ModelRouter.from_config(cfg, budget_tracker=bt)
+        d = router.route("write code")
+        check("budget remaining in decision", d.budget_remaining >= 0)
+        check("budget remaining ~10", abs(d.budget_remaining - 10.0) < 0.01)
+
+        # ── 2. Hard budget exhausted → forced to local ──
+        bt2 = BudgetTracker(monthly_hard_cap=1.0, state_path=os.path.join(tmp, "b2.json"))
+        bt2.record_cost(1.50, "test")  # exceed hard cap
+        router2 = ModelRouter.from_config(cfg, budget_tracker=bt2)
+        d2 = router2.route("deploy to production")  # high_stakes → expensive_cloud
+        check("hard limit → forced local tier", d2.tier is not None and d2.tier <= Tier.LOCAL_STRONG)
+        check("hard limit → reason mentions budget", "budget" in d2.reason.lower())
+
+        # ── 3. Soft limit hit → caps at cheap cloud ──
+        bt3 = BudgetTracker(monthly_hard_cap=10.0, monthly_soft_cap=5.0,
+                            state_path=os.path.join(tmp, "b3.json"))
+        bt3.record_cost(6.0, "test")  # exceed soft cap but not hard
+        router3 = ModelRouter.from_config(cfg, budget_tracker=bt3)
+        d3 = router3.route("final polish the doc")  # final_polish → expensive_cloud
+        check("soft limit → capped at cheap_cloud", d3.tier is not None and d3.tier <= Tier.CHEAP_CLOUD)
+        check("soft limit → reason mentions soft", "soft" in d3.reason.lower())
+
+        # ── 4. Budget tracker with no spending → normal routing ──
+        bt4 = BudgetTracker(monthly_hard_cap=100.0, state_path=os.path.join(tmp, "b4.json"))
+        router4 = ModelRouter.from_config(cfg, budget_tracker=bt4)
+        d4 = router4.route("deploy critical production change")
+        check("no budget pressure → expensive_cloud", d4.tier_name == "expensive_cloud")
+
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ═════════════════════════════════════════════
+# 73. ModelRouterTool — budget action + resolve with new router
+# ═════════════════════════════════════════════
+def test_model_router_tool_budget():
+    """Test ModelRouterTool.execute budget action and resolve action
+    using the new ModelRouter.from_config path."""
+    print("\n=== TORTURE: ModelRouterTool — Budget Action ===")
+    from src.tools.model_router import ModelRouterTool
+
+    # ── 1. Definition includes budget action ──
+    defn = ModelRouterTool.definition()
+    actions = defn["parameters"]["properties"]["action"]["enum"]
+    check("definition has 5 actions", len(actions) == 5)
+    check("budget in actions", "budget" in actions)
+
+    # ── 2. Execute budget action ──
+    r = json.loads(ModelRouterTool.execute({"action": "budget"}))
+    # Should return summary dict (or error if no state file — both are valid)
+    check("budget returns dict", isinstance(r, dict))
+    if "error" not in r:
+        check("budget has monthly_spent", "monthly_spent" in r)
+        check("budget has remaining", "remaining" in r)
+        check("budget has hard_limit_hit", "hard_limit_hit" in r)
+        check("budget has tier_spending", "tier_spending" in r)
+    else:
+        check("budget error is string", isinstance(r["error"], str))
+
+    # ── 3. Resolve action uses new ModelRouter path ──
+    r2 = json.loads(ModelRouterTool.execute({"action": "resolve", "text": "write python code"}))
+    check("resolve has task_type", "task_type" in r2)
+    check("resolve has routed_model", "routed_model" in r2)
+    check("resolve has tier", "tier" in r2)
+    check("resolve has reason", "reason" in r2)
+    check("resolve has fallback", "fallback" in r2)
+    check("resolve has is_direct_model", "is_direct_model" in r2)
+
+    # ── 4. Classify still works ──
+    r3 = json.loads(ModelRouterTool.execute({"action": "classify", "text": "summarize this"}))
+    check("classify task_type", "task_type" in r3)
+    check("classify would_route_to", "would_route_to" in r3)
+
+    # ── 5. Unknown action → error ──
+    r4 = json.loads(ModelRouterTool.execute({"action": "INVALID"}))
+    check("invalid action → error", "error" in r4)
+
+
+# ═════════════════════════════════════════════
 if __name__ == "__main__":
     test_boundary_policy()
     test_pii_guard_extended()
@@ -5893,6 +6461,10 @@ if __name__ == "__main__":
     test_wiki_articles_loader()
     test_about_api()
     test_vault_filter_dropdown()
+    test_routing_model_router()
+    test_budget_tracker()
+    test_router_budget_integration()
+    test_model_router_tool_budget()
 
     print(f"\n{'='*40}")
     print(f"Results: {PASS} passed, {FAIL} failed")

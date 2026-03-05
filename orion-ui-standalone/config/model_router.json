@@ -1,21 +1,4 @@
 {
-  "enabled": true,
-  "task_tier_map": {},
-  "tiers": [
-    {
-      "id": "t0",
-      "label": "new_tier_0",
-      "enabled": true,
-      "connection_id": "",
-      "provider": "",
-      "primary_model": "",
-      "temperature": 0.6,
-      "max_output_tokens": 2048,
-      "max_iterations": 8,
-      "retries_before_escalate": 3,
-      "alt_models": [],
-      "cost_per_call": "~$0.00",
-      "default_for": ""
-    }
-  ]
+  "tiers": [],
+  "task_tier_map": {}
 }
