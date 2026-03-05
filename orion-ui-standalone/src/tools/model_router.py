@@ -10,7 +10,7 @@ All core logic lives in ``src/routing/model_router.py``.
 
 import json
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Optional
 
 log = logging.getLogger(__name__)
 

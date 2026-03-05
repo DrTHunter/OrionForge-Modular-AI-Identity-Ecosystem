@@ -8,13 +8,9 @@ import re
 import time
 from typing import Optional
 
-from src.data_paths import continuation_path as _continuation_path, profile_dir
+from src.data_paths import continuation_path as _continuation_path
 
 _SAFE_NAME = re.compile(r"^[a-zA-Z0-9_-]+$")
-
-
-def _ensure_dir() -> None:
-    pass  # profile_dir auto-creates
 
 
 def _file_for(profile: str) -> str:
@@ -87,7 +83,6 @@ class ContinuationUpdateTool:
         if not content.strip():
             return "Error: 'content' must not be empty."
 
-        _ensure_dir()
         path = _file_for(profile)
 
         if mode == "append":
