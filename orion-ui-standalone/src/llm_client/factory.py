@@ -17,11 +17,6 @@ _PROVIDERS = {
     "anthropic": AnthropicClient,
 }
 
-# Environment variable mapping for non-OpenAI providers using OpenAI-compat client
-_API_KEY_ENV_VARS = {
-    "deepseek": "DEEPSEEK_API_KEY",
-}
-
 
 def create_client(profile: dict) -> LLMClient:
     provider = profile["provider"]

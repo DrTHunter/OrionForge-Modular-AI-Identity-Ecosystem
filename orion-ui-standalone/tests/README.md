@@ -58,7 +58,7 @@ Tests use a lightweight manual framework (no pytest dependency). Each test funct
 
 The `test_torture.py` suite alone covers the most code paths and is the best single test to run for regression. It exercises:
 - All 11 tool implementations (memory, directives, echo, continuation, email, web search, inbox, cost tracker, model router, agi loop, runtime info) + registry
-- 6-tier model router (LOCAL, CHEAP_CLOUD, MID_CLOUD, EXPENSIVE_CLOUD, CODE_LIGHT, CODE_HEAVY)
+- 6-tier model router (LOCAL_CHEAP, LOCAL_STRONG, CHEAP_CLOUD, EXPENSIVE_CLOUD, CODE_LIGHT, CODE_HEAVY)
 - Task classification, escalation chains, force tier, budget tracking
 - Vault sort logic (8 modes × dict & object forms × edge cases)
 - Max memory limit & utilization calculation

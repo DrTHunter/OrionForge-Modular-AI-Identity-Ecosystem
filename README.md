@@ -89,9 +89,9 @@ OrionForge is organized into three directories — an active development branch,
 ```
 OrionForge/
 ├── orion-ui-standalone/  # 🔧 Active Development Branch
-│   ├── web/              # FastAPI app (4,225 lines, 131 routes, 12 templates)
+│   ├── web/              # FastAPI app (3,728 lines, 131 routes, 12 templates)
 │   │   ├── app.py        # Main application — all page & API routes
-│   │   ├── image_gen.py  # Image generation (8 providers)
+│   │   ├── image_gen.py  # Image generation (9 providers)
 │   │   ├── static/       # CSS
 │   │   └── templates/    # Jinja2 HTML templates (12 pages)
 │   ├── src/              # Soul Script Engine modules (48 source files)
@@ -180,7 +180,7 @@ The engine connects to any **OpenAI-compatible** endpoint. Native provider suppo
 
 ### Image Generation
 
-8 providers supported via `image_gen.py`:
+9 providers supported via `image_gen.py`:
 
 | Provider | Models |
 |---|---|

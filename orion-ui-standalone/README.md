@@ -22,9 +22,9 @@ Open **http://localhost:8989**.
 
 ```
 orion-ui-standalone/
-├── web/                # FastAPI application (app.py — 4,225 lines, 131 routes, 12 templates)
+├── web/                # FastAPI application (app.py — 3,728 lines, 131 routes, 12 templates)
 │   ├── app.py          # Main application — all page & API routes
-│   ├── image_gen.py    # Image generation helper (8 providers)
+│   ├── image_gen.py    # Image generation helper (9 providers)
 │   ├── static/         # CSS
 │   └── templates/      # Jinja2 HTML (12 pages)
 │
@@ -104,7 +104,7 @@ The FastAPI app exposes 131 routes across these domains:
 
 ## Image Generation
 
-8 providers supported via `web/image_gen.py`:
+9 providers supported via `web/image_gen.py`:
 
 | Provider | Models |
 |----------|--------|

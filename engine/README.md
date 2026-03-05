@@ -40,7 +40,7 @@ engine/src/
 | **Policy** | Risk classification (low/med/high), deterministic denial payloads, append-only event logging |
 | **Storage** | Note collection (always-on vs directive modes), HTML stripping, dual note systems |
 | **Tools** | Memory (13 actions), directives (5 actions), web search, email, inbox, cost tracker, model router, agi loop, runtime info, echo, continuation |
-| **Routing** | 6-tier model router (LOCAL, CHEAP_CLOUD, MID_CLOUD, EXPENSIVE_CLOUD, CODE_LIGHT, CODE_HEAVY) with task classification, escalation chains, budget-aware gating |
+| **Routing** | 6-tier model router (LOCAL_CHEAP, LOCAL_STRONG, CHEAP_CLOUD, EXPENSIVE_CLOUD, CODE_LIGHT, CODE_HEAVY) with task classification, escalation chains, budget-aware gating |
 
 ## Stability Contract
 
