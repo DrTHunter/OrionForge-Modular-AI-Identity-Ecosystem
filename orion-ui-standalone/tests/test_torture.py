@@ -1528,11 +1528,11 @@ def test_model_router_config():
         check("defaults has tiers", "tiers" in _MODEL_ROUTER_DEFAULTS)
         check("defaults has task_tier_map", "task_tier_map" in _MODEL_ROUTER_DEFAULTS)
         tiers = _MODEL_ROUTER_DEFAULTS["tiers"]
-        check("4 default tiers", len(tiers) == 4)
+        check("6 default tiers", len(tiers) == 6)
 
         # Tier IDs
         tier_ids = [t["id"] for t in tiers]
-        check("tier ids are t0-t3", tier_ids == ["t0", "t1", "t2", "t3"])
+        check("tier ids are t0-t5", tier_ids == ["t0", "t1", "t2", "t3", "t4", "t5"])
 
         # Each tier has required fields
         required_fields = [
@@ -1546,7 +1546,7 @@ def test_model_router_config():
 
         # Tier labels
         labels = [t["label"] for t in tiers]
-        check("labels correct", labels == ["local_cheap", "local_strong", "cheap_cloud", "expensive_cloud"])
+        check("labels correct", labels == ["local_cheap", "local_strong", "cheap_cloud", "expensive_cloud", "code_light", "code_heavy"])
 
         # All tiers enabled by default
         check("all tiers enabled", all(t["enabled"] for t in tiers))
@@ -1574,19 +1574,21 @@ def test_model_router_config():
 
         # ── 2. Task tier map ──
         ttm = _MODEL_ROUTER_DEFAULTS["task_tier_map"]
-        expected_tasks = ["coding", "summarization", "planning", "high_stakes",
-                          "final_polish", "memory_ops", "reflection", "general",
-                          "tool_use", "agi_tick"]
-        check("10 default task types", len(ttm) == 10, f"got {len(ttm)}")
+        expected_tasks = ["coding_light", "coding_heavy", "summarization", "planning",
+                          "high_stakes", "final_polish", "memory_ops", "reflection",
+                          "general", "tool_use", "agi_tick"]
+        check("11 default task types", len(ttm) == 11, f"got {len(ttm)}")
         for task in expected_tasks:
             check(f"task '{task}' in map", task in ttm, f"missing: {task}")
 
-        valid_tiers = {"local_cheap", "local_strong", "cheap_cloud", "expensive_cloud", "__auto__"}
+        valid_tiers = {"local_cheap", "local_strong", "cheap_cloud", "expensive_cloud",
+                       "code_light", "code_heavy", "__auto__"}
         for task, tier in ttm.items():
             check(f"task '{task}' → valid tier", tier in valid_tiers, f"got: {tier}")
 
         check("general → __auto__", ttm["general"] == "__auto__")
-        check("coding → cheap_cloud", ttm["coding"] == "cheap_cloud")
+        check("coding_light → code_light", ttm["coding_light"] == "code_light")
+        check("coding_heavy → code_heavy", ttm["coding_heavy"] == "code_heavy")
         check("final_polish → expensive_cloud", ttm["final_polish"] == "expensive_cloud")
         check("planning → local_strong", ttm["planning"] == "local_strong")
 
@@ -1595,9 +1597,9 @@ def test_model_router_config():
             tmp_file.unlink()
         cfg = _load_model_router_config()
         check("missing file → has tiers", "tiers" in cfg)
-        check("missing file → 4 tiers", len(cfg["tiers"]) == 4)
+        check("missing file → 6 tiers", len(cfg["tiers"]) == 6)
         check("missing file → has task_tier_map", "task_tier_map" in cfg)
-        check("missing file → 10 tasks", len(cfg["task_tier_map"]) == 10)
+        check("missing file → 11 tasks", len(cfg["task_tier_map"]) == 11)
 
         # ── 4. Save + reload round-trip ──
         custom = {
@@ -1624,21 +1626,22 @@ def test_model_router_config():
         # ── 5. Partial save → merge with defaults ──
         _write_json(tmp_file, {"task_tier_map": {"coding": "expensive_cloud"}})
         merged = _load_model_router_config()
-        check("partial → tiers from defaults", len(merged["tiers"]) == 4)
+        check("partial → tiers from defaults", len(merged["tiers"]) == 6)
         check("partial → coding overridden", merged["task_tier_map"]["coding"] == "expensive_cloud")
 
         # ── 6. Empty save → defaults restored ──
         _write_json(tmp_file, {})
         empty_load = _load_model_router_config()
-        check("empty file → tiers from defaults", len(empty_load["tiers"]) == 4)
-        check("empty file → task_tier_map from defaults", len(empty_load["task_tier_map"]) == 10)
+        check("empty file → tiers from defaults", len(empty_load["tiers"]) == 6)
+        check("empty file → task_tier_map from defaults", len(empty_load["task_tier_map"]) == 11)
 
         # ── 6b. Empty task_tier_map {} → defaults restored (regression fix) ──
         _write_json(tmp_file, {"task_tier_map": {}, "tiers": [{"id": "t0", "label": "x", "enabled": True}]})
         empty_map_load = _load_model_router_config()
-        check("empty map → task_tier_map repopulated", len(empty_map_load["task_tier_map"]) == 10,
+        check("empty map → task_tier_map repopulated", len(empty_map_load["task_tier_map"]) == 11,
               f"got {len(empty_map_load['task_tier_map'])} keys")
-        check("empty map → coding present", "coding" in empty_map_load["task_tier_map"])
+        check("empty map → coding_light present", "coding_light" in empty_map_load["task_tier_map"])
+        check("empty map → coding_heavy present", "coding_heavy" in empty_map_load["task_tier_map"])
         check("empty map → general is __auto__", empty_map_load["task_tier_map"]["general"] == "__auto__")
         # Tiers should NOT be overwritten since they were provided
         check("empty map → tiers preserved", len(empty_map_load["tiers"]) == 1)
@@ -1664,7 +1667,7 @@ def test_model_router_config():
                     data = r.json()
                     check("GET has tiers", "tiers" in data)
                     check("GET has task_tier_map", "task_tier_map" in data)
-                    check("GET 4 tiers", len(data["tiers"]) == 4)
+                    check("GET 6 tiers", len(data["tiers"]) == 6)
 
                     # POST → save custom config
                     custom_post = {
@@ -1688,15 +1691,15 @@ def test_model_router_config():
                     check("RESET status 200", r4.status_code == 200)
                     resp4 = r4.json()
                     check("RESET ok", resp4.get("ok") is True)
-                    check("RESET coding back to default",
-                          resp4["config"]["task_tier_map"]["coding"] == "cheap_cloud")
-                    check("RESET 4 tiers", len(resp4["config"]["tiers"]) == 4)
+                    check("RESET coding_light back to default",
+                          resp4["config"]["task_tier_map"].get("coding_light") == "code_light")
+                    check("RESET 6 tiers", len(resp4["config"]["tiers"]) == 6)
 
                     # GET after reset → defaults
                     r5 = await client.get("/api/model-router/config")
                     data5 = r5.json()
-                    check("GET after reset → default coding",
-                          data5["task_tier_map"]["coding"] == "cheap_cloud")
+                    check("GET after reset → default coding_heavy",
+                          data5["task_tier_map"].get("coding_heavy") == "code_heavy")
 
             asyncio.run(_run_api_tests())
 
@@ -5857,8 +5860,10 @@ def test_routing_model_router():
     check("Tier LOCAL_STRONG=1", Tier.LOCAL_STRONG == 1)
     check("Tier CHEAP_CLOUD=2", Tier.CHEAP_CLOUD == 2)
     check("Tier EXPENSIVE_CLOUD=3", Tier.EXPENSIVE_CLOUD == 3)
+    check("Tier CODE_LIGHT=4", Tier.CODE_LIGHT == 4)
+    check("Tier CODE_HEAVY=5", Tier.CODE_HEAVY == 5)
     check("Tier ordering", Tier.LOCAL_CHEAP < Tier.EXPENSIVE_CLOUD)
-    check("4 tiers", len(list(Tier)) == 4)
+    check("6 tiers", len(list(Tier)) == 6)
 
     # ── 2. TIER_NAMES / TIER_IDS maps ──
     check("TIER_NAMES t0", TIER_NAMES[Tier.LOCAL_CHEAP] == "local_cheap")
@@ -5870,15 +5875,19 @@ def test_routing_model_router():
 
     # ── 3. TaskType constants ──
     check("TaskType.CODING", TaskType.CODING == "coding")
+    check("TaskType.CODING_LIGHT", TaskType.CODING_LIGHT == "coding_light")
+    check("TaskType.CODING_HEAVY", TaskType.CODING_HEAVY == "coding_heavy")
     check("TaskType.GENERAL", TaskType.GENERAL == "general")
     check("TaskType.AGI_TICK", TaskType.AGI_TICK == "agi_tick")
-    check("TaskType._ALL has 10", len(TaskType._ALL) == 10)
-    for tt in ["coding", "summarization", "planning", "high_stakes", "final_polish",
-               "general", "memory_ops", "reflection", "tool_use", "agi_tick"]:
+    check("TaskType._ALL has 12", len(TaskType._ALL) == 12)
+    for tt in ["coding", "coding_light", "coding_heavy", "summarization", "planning",
+               "high_stakes", "final_polish", "general", "memory_ops", "reflection",
+               "tool_use", "agi_tick"]:
         check(f"TaskType._ALL has {tt}", tt in TaskType._ALL)
 
     # ── 4. classify_task — scored keyword matching ──
-    check("classify coding", classify_task("implement a REST api") == "coding")
+    check("classify coding_heavy", classify_task("implement a REST api") == "coding_heavy")
+    check("classify coding_light", classify_task("rename this variable") == "coding_light")
     check("classify summarize", classify_task("summarize the report") == "summarization")
     check("classify plan", classify_task("plan the roadmap") == "planning")
     check("classify high_stakes", classify_task("audit the security") == "high_stakes")
@@ -5893,13 +5902,13 @@ def test_routing_model_router():
     check("classify explicit", classify_task("hello", explicit_type="coding") == "coding")
     check("classify invalid explicit", classify_task("hello", explicit_type="bogus") == "general")
 
-    # Recent errors boost coding
+    # Recent errors boost heavy coding
     r = classify_task("hello world", recent_errors=["KeyError: 'foo'", "NameError"])
-    check("recent errors boost coding", r == "coding")
+    check("recent errors boost coding_heavy", r == "coding_heavy")
 
     # Scored: more keywords wins
     r2 = classify_task("write code function class debug fix bug refactor")
-    check("high keyword score → coding", r2 == "coding")
+    check("high keyword score → coding_heavy", r2 == "coding_heavy")
 
     # ── 5. _is_direct_model / _parse_direct_model ──
     check("is_direct model:x:y", _is_direct_model("model:conn1:gpt-4"))
@@ -5941,8 +5950,8 @@ def test_routing_model_router():
 
     # ── 7. CONFIG_DEFAULTS structure ──
     check("CONFIG_DEFAULTS.enabled", CONFIG_DEFAULTS["enabled"] is True)
-    check("CONFIG_DEFAULTS.tiers count", len(CONFIG_DEFAULTS["tiers"]) == 4)
-    check("CONFIG_DEFAULTS.task_tier_map count", len(CONFIG_DEFAULTS["task_tier_map"]) == 10)
+    check("CONFIG_DEFAULTS.tiers count", len(CONFIG_DEFAULTS["tiers"]) == 6)
+    check("CONFIG_DEFAULTS.task_tier_map count", len(CONFIG_DEFAULTS["task_tier_map"]) == 11)
 
     # ── 8. ModelRouter.from_config ──
     router = ModelRouter.from_config()
@@ -5983,13 +5992,13 @@ def test_routing_model_router():
 
     # ── 9. route() — basic task classification and tier resolution ──
     d = router2.route("write a python function")
-    check("route coding → task_type", d.task_type == "coding")
-    check("route coding → model set", d.model == "deepseek-chat")
-    check("route coding → tier cheap_cloud", d.tier_name == "cheap_cloud")
-    check("route coding → tier_id t2", d.tier_id == "t2")
-    check("route coding → provider", d.provider == "deepseek")
-    check("route coding → not fallback", d.fallback is False)
-    check("route coding → not direct", d.is_direct_model is False)
+    check("route coding_heavy → task_type", d.task_type == "coding_heavy")
+    check("route coding_heavy → model set", d.model == "deepseek-chat")
+    check("route coding_heavy → tier cheap_cloud", d.tier_name == "cheap_cloud")
+    check("route coding_heavy → tier_id t2", d.tier_id == "t2")
+    check("route coding_heavy → provider", d.provider == "deepseek")
+    check("route coding_heavy → not fallback", d.fallback is False)
+    check("route coding_heavy → not direct", d.is_direct_model is False)
 
     # ── 10. route() — __auto__ → fallback ──
     d_auto = router2.route("hello there")
