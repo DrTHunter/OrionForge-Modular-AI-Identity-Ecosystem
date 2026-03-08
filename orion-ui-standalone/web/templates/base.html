@@ -87,6 +87,16 @@
       </div>
 
       <div class="nav-footer">
+        <!-- User info (populated by JS if authenticated) -->
+        <div id="nav-user-section" style="display:none; margin-bottom: 0.5rem;">
+          <div style="display:flex; align-items:center; gap:0.5rem; padding:0.35rem 0.5rem; background:rgba(99,102,241,0.08); border-radius:0.5rem; border:1px solid rgba(99,102,241,0.15);">
+            <span style="font-size:1.1rem;">👤</span>
+            <span id="nav-user-email" class="nav-label" style="font-size:0.72rem; color:#a1a1aa; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:120px;"></span>
+          </div>
+          <button onclick="doLogout()" class="nav-label" style="margin-top:0.35rem; font-size:0.72rem; color:#ef4444; background:none; border:none; cursor:pointer; padding:0.2rem 0.5rem; width:100%; text-align:left;" onmouseover="this.style.color='#f87171'" onmouseout="this.style.color='#ef4444'">
+            ↪ Sign Out
+          </button>
+        </div>
         <p class="text-xs text-forge-muted">v0.2 · SoulScript Engine</p>
       </div>
     </nav>
@@ -516,6 +526,30 @@ select optgroup{color:${tm}!important}
         if (d.skin && d.skin !== 'default') applySkinGlobal(d.skin);
       }).catch(() => {});
     })();
+
+    /* ── Auth: User display & logout ─────────────────────────── */
+    (function loadAuthState() {
+      fetch('/api/auth/user').then(r => r.json()).then(d => {
+        if (d.authenticated && d.user) {
+          const section = document.getElementById('nav-user-section');
+          const emailEl = document.getElementById('nav-user-email');
+          if (section && emailEl) {
+            emailEl.textContent = d.user.email || 'User';
+            emailEl.title = d.user.email || '';
+            section.style.display = 'block';
+          }
+        }
+      }).catch(() => {});
+    })();
+
+    async function doLogout() {
+      try {
+        await fetch('/api/auth/logout', { method: 'POST' });
+        window.location.href = '/login';
+      } catch (e) {
+        window.location.href = '/login';
+      }
+    }
   </script>
 </body>
 </html>

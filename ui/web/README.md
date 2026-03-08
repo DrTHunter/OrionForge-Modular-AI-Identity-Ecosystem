@@ -70,7 +70,10 @@ python -m web.app --host 0.0.0.0
 | `GET /api/profiles/{name}` | Get agent profile |
 | `PUT /api/profiles/{name}` | Update agent profile |
 | `POST /api/profiles` | Create new agent |
-| `DELETE /api/profiles/{name}` | Delete agent |
+| `DELETE /api/profiles/{name}` | Soft-delete agent (moves to 30-day trash) |
+| `GET /api/profiles/trash` | List trashed agents |
+| `POST /api/profiles/trash/{id}/restore` | Restore agent from trash |
+| `DELETE /api/profiles/trash/{id}` | Permanently delete trashed agent |
 | `PUT /api/profiles/{name}/knowledge` | Update agent knowledge attachments |
 
 ### Vault API

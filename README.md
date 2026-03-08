@@ -105,7 +105,7 @@ OrionForge/
 │   │   ├── routing/      # 6-tier model router, budget tracking, escalation chains
 │   │   └── tools/        # 11 tool implementations + registry
 │   ├── config/           # 10 config files (connections, pricing, memory profile, etc.)
-│   ├── data/             # Runtime data (chats, memory vault, FAISS indexes, uploads)
+│   ├── data/             # Runtime data (chats, memory vault, FAISS indexes, uploads, trash)
 │   ├── profiles/         # Agent identity YAML files
 │   ├── prompts/          # System prompt markdown (*.system.md)
 │   ├── directives/       # Agent directive markdown files
@@ -152,7 +152,7 @@ OrionForge/
 | Page | URL | Description |
 |---|---|---|
 | **Chat** | `/chat` | Talk to agents — 5-layer identity injection (prompt → soul script → knowledge → memory → history) |
-| **Profiles** | `/profiles` | Create/edit agents, system prompts, attach knowledge, configure models |
+| **Profiles** | `/profiles` | Create/edit/delete agents, system prompts, attach knowledge, configure models — with 30-day trash retention |
 | **Vault** | `/vault` | Browse & search persistent memory — sort by 8 fields, max memory limits, metadata display |
 | **Knowledge** | `/knowledge` | Rich text editor for soul scripts and always-on context notes |
 | **Tools** | `/tools` | Configure tools, memory profiles, email, web search, cost tracking, model router with presets |
