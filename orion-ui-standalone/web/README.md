@@ -75,7 +75,7 @@ python -m uvicorn web.app:app --host 0.0.0.0 --port 8989 --reload
 | `DELETE /api/chats/folders/{folder_id}` | Delete folder |
 | `PUT /api/chats/{chat_id}/move` | Move chat to folder |
 
-### Profiles API (~10 routes)
+### Profiles API (~14 routes)
 
 | Route | Description |
 |-------|-------------|
@@ -83,7 +83,10 @@ python -m uvicorn web.app:app --host 0.0.0.0 --port 8989 --reload
 | `PUT /api/profiles/{name}` | Update agent profile |
 | `POST /api/profiles` | Create new agent |
 | `POST /api/profiles/create` | Create agent (alternate) |
-| `DELETE /api/profiles/{name}` | Delete agent |
+| `DELETE /api/profiles/{name}` | Soft-delete agent (moves to 30-day trash) |
+| `GET /api/profiles/trash` | List trashed agents |
+| `POST /api/profiles/trash/{id}/restore` | Restore agent from trash |
+| `DELETE /api/profiles/trash/{id}` | Permanently delete trashed agent |
 | `PUT /api/profiles/{name}/config` | Update profile config |
 | `PUT /api/profiles/{name}/avatar` | Upload agent avatar |
 | `PUT /api/profiles/user` | Update user profile |

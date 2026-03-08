@@ -23,7 +23,7 @@ import sys
 import threading
 import uuid
 import base64 as _b64
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -35,7 +35,10 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
+from starlette.middleware.base import BaseHTTPMiddleware
+
 from web.image_gen import _generate_image
+from web.auth import get_auth_config, verify_supabase_token, extract_user_from_token, is_public_path
 from src.memory.types import VALID_SCOPES, VALID_CATEGORIES
 
 # ── Project paths ────────────────────────────────────────────────
@@ -48,6 +51,7 @@ _CHATS_DIR    = _DATA_DIR / "chats"
 _NOTES_DIR    = _DATA_DIR / "user_notes"
 _VAULT_PATH   = _DATA_DIR / "memory" / "vault.jsonl"
 _FAISS_DIR    = _DATA_DIR / "memory" / "faiss"
+_TRASH_DIR    = _DATA_DIR / "trash" / "profiles"
 
 CONNECTIONS_FILE = _CONFIG_DIR / "connections.json"
 SETTINGS_FILE    = _CONFIG_DIR / "settings.json"
@@ -56,7 +60,7 @@ PRICING_FILE     = _CONFIG_DIR / "pricing.yaml"
 log = logging.getLogger("soulscript")
 
 # ── Ensure data directories exist ────────────────────────────────
-for _d in [_CHATS_DIR, _NOTES_DIR, _VAULT_PATH.parent, _FAISS_DIR]:
+for _d in [_CHATS_DIR, _NOTES_DIR, _VAULT_PATH.parent, _FAISS_DIR, _TRASH_DIR]:
     _d.mkdir(parents=True, exist_ok=True)
 
 # ── FastAPI app ──────────────────────────────────────────────────
@@ -76,6 +80,50 @@ async def _lifespan(application: FastAPI):
 app = FastAPI(title="SoulScript Engine", version="0.2.0", lifespan=_lifespan)
 app.mount("/static", StaticFiles(directory=str(Path(__file__).parent / "static")), name="static")
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
+
+# ── Auth file path ───────────────────────────────────────────────
+_AUTH_FILE = _CONFIG_DIR / "auth.json"
+
+
+# ── Authentication Middleware ────────────────────────────────────
+class AuthMiddleware(BaseHTTPMiddleware):
+    """Redirect unauthenticated users to /login for protected pages."""
+
+    async def dispatch(self, request: Request, call_next):
+        auth_cfg = get_auth_config()
+        if not auth_cfg.get("auth_enabled", False):
+            # Auth disabled — pass everything through
+            response = await call_next(request)
+            return response
+
+        path = request.url.path
+
+        # Let public paths through (login page, auth API, static assets)
+        if is_public_path(path):
+            response = await call_next(request)
+            return response
+
+        # Check for auth cookie
+        token = request.cookies.get("sb_access_token")
+        if not token:
+            # API requests get 401, page requests get redirected
+            if path.startswith("/api/"):
+                return JSONResponse({"error": "Not authenticated"}, status_code=401)
+            return RedirectResponse(url="/login", status_code=302)
+
+        payload = verify_supabase_token(token)
+        if not payload:
+            if path.startswith("/api/"):
+                return JSONResponse({"error": "Invalid or expired token"}, status_code=401)
+            return RedirectResponse(url="/login", status_code=302)
+
+        # Attach user info to request state for use in route handlers
+        request.state.user = extract_user_from_token(payload)
+        response = await call_next(request)
+        return response
+
+
+app.add_middleware(AuthMiddleware)
 
 # ── Uploads directory (chat backgrounds, etc.) ──────────────────
 _UPLOADS_DIR = _DATA_DIR / "uploads"
@@ -258,6 +306,153 @@ def _save_agent_config(agent: str, cfg: dict):
     settings = _load_settings()
     settings.setdefault("agent_configs", {})[agent] = cfg
     _save_settings(settings)
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  AGENT TRASH (soft-delete with 30-day retention)
+# ═══════════════════════════════════════════════════════════════════
+
+_TRASH_INDEX_FILE = _TRASH_DIR / "index.json"
+_TRASH_RETENTION_DAYS = 30
+
+
+def _load_trash_index() -> list[dict]:
+    return _read_json(_TRASH_INDEX_FILE, [])
+
+
+def _save_trash_index(data: list[dict]):
+    _write_json(_TRASH_INDEX_FILE, data)
+
+
+def _trash_agent(name: str):
+    """Soft-delete an agent by moving files to the trash directory."""
+    import shutil
+    now = datetime.now(timezone.utc).isoformat()
+    trash_id = f"{name}_{uuid.uuid4().hex[:8]}"
+    agent_trash_dir = _TRASH_DIR / trash_id
+    agent_trash_dir.mkdir(parents=True, exist_ok=True)
+
+    # Move profile yaml
+    profile_src = _PROFILES_DIR / f"{name}.yaml"
+    if profile_src.exists():
+        shutil.move(str(profile_src), str(agent_trash_dir / f"{name}.yaml"))
+
+    # Move system prompt
+    prompt_src = _PROMPTS_DIR / f"{name}.system.md"
+    if prompt_src.exists():
+        shutil.move(str(prompt_src), str(agent_trash_dir / f"{name}.system.md"))
+
+    # Save agent config snapshot so we can restore it
+    settings = _load_settings()
+    agent_cfg = settings.get("agent_configs", {}).pop(name, {})
+    agent_avatar = settings.get("agent_avatars", {}).pop(name, {})
+    _save_settings(settings)
+
+    # Write config snapshot into trash folder
+    _write_json(agent_trash_dir / "config_snapshot.json", {
+        "agent_config": agent_cfg,
+        "agent_avatar": agent_avatar,
+    })
+
+    # Update trash index
+    idx = _load_trash_index()
+    idx.append({
+        "id": trash_id,
+        "name": name,
+        "display_name": agent_cfg.get("display_name", name),
+        "deleted_at": now,
+        "expires_at": (datetime.now(timezone.utc) + timedelta(days=_TRASH_RETENTION_DAYS)).isoformat(),
+    })
+    _save_trash_index(idx)
+    log.info("[trash] Agent '%s' moved to trash as '%s'", name, trash_id)
+
+
+def _restore_agent(trash_id: str) -> str | None:
+    """Restore an agent from trash. Returns the agent name or None on failure."""
+    import shutil
+    idx = _load_trash_index()
+    entry = next((e for e in idx if e["id"] == trash_id), None)
+    if not entry:
+        return None
+
+    agent_trash_dir = _TRASH_DIR / trash_id
+    if not agent_trash_dir.exists():
+        # Clean up orphan index entry
+        idx = [e for e in idx if e["id"] != trash_id]
+        _save_trash_index(idx)
+        return None
+
+    name = entry["name"]
+
+    # Check name collision — if a new agent with the same name exists, bail
+    if (_PROFILES_DIR / f"{name}.yaml").exists():
+        return None
+
+    # Move files back
+    profile_file = agent_trash_dir / f"{name}.yaml"
+    if profile_file.exists():
+        shutil.move(str(profile_file), str(_PROFILES_DIR / f"{name}.yaml"))
+
+    prompt_file = agent_trash_dir / f"{name}.system.md"
+    if prompt_file.exists():
+        shutil.move(str(prompt_file), str(_PROMPTS_DIR / f"{name}.system.md"))
+
+    # Restore config & avatar
+    snapshot_file = agent_trash_dir / "config_snapshot.json"
+    if snapshot_file.exists():
+        snapshot = _read_json(snapshot_file, {})
+        settings = _load_settings()
+        if snapshot.get("agent_config"):
+            settings.setdefault("agent_configs", {})[name] = snapshot["agent_config"]
+        if snapshot.get("agent_avatar"):
+            settings.setdefault("agent_avatars", {})[name] = snapshot["agent_avatar"]
+        _save_settings(settings)
+
+    # Clean up trash folder
+    shutil.rmtree(str(agent_trash_dir), ignore_errors=True)
+
+    # Remove from index
+    idx = [e for e in idx if e["id"] != trash_id]
+    _save_trash_index(idx)
+    log.info("[trash] Agent '%s' restored from trash", name)
+    return name
+
+
+def _permanently_delete_from_trash(trash_id: str):
+    """Permanently remove a trashed agent."""
+    import shutil
+    agent_trash_dir = _TRASH_DIR / trash_id
+    if agent_trash_dir.exists():
+        shutil.rmtree(str(agent_trash_dir), ignore_errors=True)
+    idx = _load_trash_index()
+    idx = [e for e in idx if e["id"] != trash_id]
+    _save_trash_index(idx)
+    log.info("[trash] Permanently deleted trash entry '%s'", trash_id)
+
+
+def _purge_expired_trash():
+    """Remove any trash entries older than the retention period."""
+    idx = _load_trash_index()
+    now = datetime.now(timezone.utc)
+    to_purge = []
+    remaining = []
+    for entry in idx:
+        try:
+            expires = datetime.fromisoformat(entry["expires_at"])
+            if now >= expires:
+                to_purge.append(entry)
+            else:
+                remaining.append(entry)
+        except (KeyError, ValueError):
+            to_purge.append(entry)
+    if to_purge:
+        for entry in to_purge:
+            _permanently_delete_from_trash(entry["id"])
+        log.info("[trash] Purged %d expired agent(s) from trash", len(to_purge))
+
+
+# Run purge on startup
+_purge_expired_trash()
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -662,6 +857,173 @@ def _strip_memory_tags(text: str) -> str:
     """Remove [MEMORY_SAVE: ...] tags from text shown to user."""
     import re
     return re.sub(r'\[MEMORY_SAVE:\s*(?:category=[\w]+\s*\|)?\s*.+?\]', '', text).strip()
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  AUTH ROUTES
+# ═══════════════════════════════════════════════════════════════════
+
+@app.get("/login", response_class=HTMLResponse)
+async def page_login(request: Request):
+    """Login / signup page."""
+    auth_cfg = get_auth_config()
+    return templates.TemplateResponse("login.html", {
+        "request": request,
+        "auth_config": auth_cfg,
+    })
+
+
+@app.get("/api/auth/config")
+async def api_auth_config():
+    """Return public auth config for frontend."""
+    cfg = get_auth_config()
+    return JSONResponse({
+        "supabase_url": cfg.get("supabase_url", ""),
+        "supabase_anon_key": cfg.get("supabase_anon_key", ""),
+        "auth_enabled": cfg.get("auth_enabled", False),
+        "free_tier_features": cfg.get("free_tier_features", []),
+        "paid_features": cfg.get("paid_features", []),
+    })
+
+
+@app.post("/api/auth/set-session")
+async def api_auth_set_session(request: Request):
+    """Store Supabase JWT in httpOnly cookie after frontend auth."""
+    try:
+        body = await request.json()
+        access_token = body.get("access_token", "")
+        refresh_token = body.get("refresh_token", "")
+        expires_at = body.get("expires_at", 0)
+
+        if not access_token:
+            return JSONResponse({"error": "No access token"}, status_code=400)
+
+        # Verify the token is valid
+        payload = verify_supabase_token(access_token)
+        if not payload:
+            return JSONResponse({"error": "Invalid token"}, status_code=401)
+
+        user = extract_user_from_token(payload)
+
+        response = JSONResponse({"ok": True, "user": user})
+
+        # Set httpOnly cookies (secure in production, lax for local dev)
+        response.set_cookie(
+            key="sb_access_token",
+            value=access_token,
+            httponly=True,
+            samesite="lax",
+            secure=False,  # Set True in production with HTTPS
+            max_age=3600,  # 1 hour — matches Supabase default
+            path="/",
+        )
+        if refresh_token:
+            response.set_cookie(
+                key="sb_refresh_token",
+                value=refresh_token,
+                httponly=True,
+                samesite="lax",
+                secure=False,
+                max_age=60 * 60 * 24 * 30,  # 30 days
+                path="/",
+            )
+
+        return response
+    except Exception as exc:
+        log.error("[auth] set-session failed: %s", exc)
+        return JSONResponse({"error": str(exc)}, status_code=500)
+
+
+@app.get("/api/auth/session")
+async def api_auth_session(request: Request):
+    """Check if the current user has a valid session."""
+    token = request.cookies.get("sb_access_token")
+    if not token:
+        return JSONResponse({"authenticated": False})
+
+    payload = verify_supabase_token(token)
+    if not payload:
+        return JSONResponse({"authenticated": False})
+
+    user = extract_user_from_token(payload)
+    return JSONResponse({"authenticated": True, "user": user})
+
+
+@app.post("/api/auth/logout")
+async def api_auth_logout():
+    """Clear auth cookies to log out."""
+    response = JSONResponse({"ok": True})
+    response.delete_cookie("sb_access_token", path="/")
+    response.delete_cookie("sb_refresh_token", path="/")
+    return response
+
+
+@app.get("/api/auth/user")
+async def api_auth_user(request: Request):
+    """Get current user info (used by base template)."""
+    user = getattr(request.state, "user", None)
+    if user:
+        return JSONResponse({"authenticated": True, "user": user})
+    return JSONResponse({"authenticated": False})
+
+
+@app.get("/auth/callback", response_class=HTMLResponse)
+async def auth_callback(request: Request):
+    """OAuth callback page.
+
+    Supabase redirects here with tokens in the URL fragment (#access_token=...).
+    Since fragments aren't sent to the server, a small JS page extracts them
+    and POSTs to /api/auth/set-session to create the httpOnly cookie.
+    """
+    auth_cfg = get_auth_config()
+    return HTMLResponse(f"""
+<!DOCTYPE html>
+<html><head><title>Signing in…</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>body{{background:#0f0f14;color:#e4e4e7;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:system-ui,sans-serif}}.box{{text-align:center}}.spinner{{display:inline-block;width:32px;height:32px;border:3px solid #2a2a3a;border-top-color:#6366f1;border-radius:50%;animation:spin .8s linear infinite}}@keyframes spin{{to{{transform:rotate(360deg)}}}}</style>
+</head><body>
+<div class="box">
+  <div class="spinner" id="spinner"></div>
+  <p style="margin-top:1rem;color:#a1a1aa" id="status">Completing sign-in…</p>
+</div>
+<script>
+(async () => {{
+  try {{
+    const sb = window.supabase.createClient(
+      "{auth_cfg['supabase_url']}",
+      "{auth_cfg['supabase_anon_key']}"
+    );
+    // Supabase JS auto-detects the hash fragment and hydrates the session
+    const {{ data, error }} = await sb.auth.getSession();
+    if (error || !data.session) {{
+      document.getElementById('status').textContent = 'Sign-in failed. Redirecting to login…';
+      setTimeout(() => window.location.href = '/login', 2000);
+      return;
+    }}
+    const resp = await fetch('/api/auth/set-session', {{
+      method: 'POST',
+      headers: {{ 'Content-Type': 'application/json' }},
+      body: JSON.stringify({{
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+        expires_at: data.session.expires_at,
+      }}),
+    }});
+    if (resp.ok) {{
+      window.location.href = '/chat';
+    }} else {{
+      document.getElementById('status').textContent = 'Session error. Redirecting…';
+      setTimeout(() => window.location.href = '/login', 2000);
+    }}
+  }} catch (e) {{
+    console.error('[callback]', e);
+    document.getElementById('status').textContent = 'Error. Redirecting…';
+    setTimeout(() => window.location.href = '/login', 2000);
+  }}
+}})();
+</script>
+</body></html>
+""")
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -2733,6 +3095,36 @@ async def api_profile_user(request: Request):
     _save_settings(settings)
     return {"ok": True, "image": user_profile.get("image", "")}
 
+# ── Trash routes must come BEFORE {name} wildcard ────────────────
+@app.get("/api/profiles/trash")
+async def api_trash_list():
+    """List all trashed agents."""
+    idx = _load_trash_index()
+    now = datetime.now(timezone.utc)
+    for entry in idx:
+        try:
+            expires = datetime.fromisoformat(entry["expires_at"])
+            entry["days_remaining"] = max(0, (expires - now).days)
+        except (KeyError, ValueError):
+            entry["days_remaining"] = 0
+    return {"items": idx}
+
+
+@app.post("/api/profiles/trash/{trash_id}/restore")
+async def api_trash_restore(trash_id: str):
+    """Restore a trashed agent."""
+    name = _restore_agent(trash_id)
+    if not name:
+        return JSONResponse({"error": "Cannot restore — agent may already exist or trash entry not found"}, 400)
+    return {"ok": True, "name": name}
+
+
+@app.delete("/api/profiles/trash/{trash_id}")
+async def api_trash_permanently_delete(trash_id: str):
+    """Permanently delete a trashed agent."""
+    _permanently_delete_from_trash(trash_id)
+    return {"ok": True}
+
 @app.get("/api/profiles/{name}")
 async def api_profile_get(name: str):
     profile = _load_profile(name)
@@ -2772,12 +3164,10 @@ async def api_profile_create(request: Request):
 
 @app.delete("/api/profiles/{name}")
 async def api_profile_delete(name: str):
-    for p in [_PROFILES_DIR / f"{name}.yaml", _PROMPTS_DIR / f"{name}.system.md"]:
-        if p.exists():
-            p.unlink()
-    settings = _load_settings()
-    settings.get("agent_configs", {}).pop(name, None)
-    _save_settings(settings)
+    """Soft-delete: move agent to trash (30-day retention)."""
+    if not (_PROFILES_DIR / f"{name}.yaml").exists():
+        return JSONResponse({"error": "Agent not found"}, 404)
+    _trash_agent(name)
     return {"ok": True}
 
 @app.put("/api/profiles/{name}/config")

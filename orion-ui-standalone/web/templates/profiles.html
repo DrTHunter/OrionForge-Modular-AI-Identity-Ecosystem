@@ -518,6 +518,8 @@
   .btn-primary:hover { background: #4f46e5; }
   .btn-secondary { background: rgba(42,42,58,0.5); color: #a1a1aa; border: 1px solid #2a2a3a; }
   .btn-secondary:hover { background: rgba(42,42,58,0.8); color: #e4e4e7; }
+  .btn-danger { background: rgba(239,68,68,0.12); color: #fca5a5; border: 1px solid rgba(239,68,68,0.25); }
+  .btn-danger:hover { background: rgba(239,68,68,0.25); color: #fecaca; }
 
   /* ── New Agent Button ── */
   .new-agent-btn {
@@ -631,6 +633,83 @@
     transition: all 0.15s;
   }
   .photo-editor-reset:hover { border-color: #ef4444; color: #fca5a5; }
+
+  /* ── Trash View ── */
+  .trash-empty {
+    text-align: center; padding: 4rem 2rem; color: #3f3f46;
+  }
+  .trash-empty i { font-size: 3rem; margin-bottom: 1rem; display: block; opacity: 0.4; }
+  .trash-empty p { font-size: 0.9rem; margin-bottom: 0.25rem; }
+  .trash-empty .hint { font-size: 0.8rem; color: #27272a; }
+  .trash-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1rem;
+  }
+  .trash-card {
+    background: rgba(13, 18, 36, 0.5);
+    border: 1px solid rgba(239,68,68,0.12);
+    border-radius: 0.875rem; padding: 1.25rem;
+    display: flex; flex-direction: column; gap: 0.75rem;
+    transition: border-color 0.15s;
+  }
+  .trash-card:hover { border-color: rgba(239,68,68,0.3); }
+  .trash-card-header {
+    display: flex; align-items: center; gap: 0.75rem;
+  }
+  .trash-card-icon {
+    width: 2.75rem; height: 2.75rem; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.125rem; font-weight: 800; color: #fff;
+    background: rgba(239,68,68,0.15); flex-shrink: 0;
+    border: 1px solid rgba(239,68,68,0.2);
+  }
+  .trash-card-info { flex: 1; min-width: 0; }
+  .trash-card-name {
+    font-size: 1rem; font-weight: 700; color: #e4e4e7;
+    text-transform: capitalize;
+  }
+  .trash-card-meta {
+    font-size: 0.75rem; color: #52525b; margin-top: 0.125rem;
+  }
+  .trash-card-meta .days-badge {
+    display: inline-flex; align-items: center; gap: 0.25rem;
+    padding: 2px 8px; border-radius: 50px;
+    font-size: 0.65rem; font-weight: 600;
+    background: rgba(239,68,68,0.1); color: #f87171;
+    border: 1px solid rgba(239,68,68,0.15);
+  }
+  .trash-card-actions {
+    display: flex; gap: 0.5rem; padding-top: 0.5rem;
+    border-top: 1px solid rgba(255,255,255,0.04);
+  }
+  .trash-btn {
+    flex: 1; padding: 0.45rem 0.75rem; border-radius: 0.5rem;
+    font-size: 0.75rem; font-weight: 600; cursor: pointer;
+    transition: all 0.15s; border: none; text-align: center;
+  }
+  .trash-btn-restore {
+    background: rgba(99,102,241,0.12); color: #a5b4fc;
+    border: 1px solid rgba(99,102,241,0.2);
+  }
+  .trash-btn-restore:hover { background: rgba(99,102,241,0.25); color: #c7d2fe; }
+  .trash-btn-delete {
+    background: rgba(239,68,68,0.08); color: #f87171;
+    border: 1px solid rgba(239,68,68,0.15);
+  }
+  .trash-btn-delete:hover { background: rgba(239,68,68,0.2); color: #fca5a5; }
+  .trash-info-bar {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.75rem 1rem; margin-bottom: 1.25rem;
+    background: rgba(239,68,68,0.05); border: 1px solid rgba(239,68,68,0.12);
+    border-radius: 0.625rem; font-size: 0.8125rem; color: #a1a1aa;
+  }
+  .trash-info-bar i { color: #f87171; }
+
+  /* ── Delete Confirm Modal ── */
+  .confirm-delete-body { font-size: 0.875rem; color: #a1a1aa; line-height: 1.7; margin-bottom: 1rem; }
+  .confirm-delete-body strong { color: #f1f5f9; }
+  .confirm-delete-body .warn { color: #f87171; font-size: 0.8rem; margin-top: 0.5rem; }
 </style>
 
 {% set _COLORS = ['#4f46e5','#6366f1','#818cf8','#9333ea','#a855f7','#db2777','#ec4899','#ef4444','#f97316','#ea580c','#f59e0b','#eab308','#10b981','#059669','#0891b2','#06b6d4','#3b82f6','#2563eb','#71717a','#a1a1aa'] %}
@@ -641,6 +720,9 @@
   <div class="tab-bar">
     <button class="tab-btn active" id="tab-btn-agents" onclick="showAgentsList()">
       Agents <span class="tab-count">{{ agents | length }}</span>
+    </button>
+    <button class="tab-btn" id="tab-btn-trash" onclick="showTrashView()">
+      🗑️ Trash <span class="tab-count" id="trash-count">…</span>
     </button>
   </div>
 
@@ -987,11 +1069,29 @@
 
     <!-- Save -->
     <div class="action-bar">
+      <button class="btn btn-danger" onclick="confirmDeleteAgent('{{ name }}')" style="margin-right:auto;">
+        <i class="fas fa-trash-alt" style="margin-right:0.35rem;"></i> Delete Agent
+      </button>
       <button class="btn btn-secondary" onclick="showAgentsList()">Back</button>
       <button class="btn btn-primary" onclick="saveAll('{{ name }}')">Save &amp; Apply</button>
     </div>
   </div>
   {% endfor %}
+
+  <!-- ═══ VIEW: TRASH ═══ -->
+  <div class="view-panel" id="view-trash">
+    <div class="trash-info-bar">
+      <i class="fas fa-info-circle"></i>
+      Deleted agents are kept for 30 days before being permanently removed.
+    </div>
+    <div id="trash-content">
+      <div class="trash-empty">
+        <i class="fas fa-trash-alt"></i>
+        <p>Trash is empty</p>
+        <p class="hint">Deleted agents will appear here for 30 days.</p>
+      </div>
+    </div>
+  </div>
 
 </div>
 
@@ -1004,6 +1104,21 @@
     <div style="display:flex; justify-content:flex-end; gap:0.75rem;">
       <button class="btn btn-secondary" onclick="closeAddNotesModal()">Cancel</button>
       <button class="btn btn-primary" onclick="confirmAddNotes()">Attach Selected</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ DELETE CONFIRM MODAL ═══ -->
+<div class="modal-overlay" id="delete-agent-modal">
+  <div class="modal-box">
+    <div class="modal-title" style="color:#f87171;">🗑️ Delete Agent</div>
+    <div class="confirm-delete-body">
+      Are you sure you want to delete <strong id="delete-agent-name-display"></strong>?<br>
+      <div class="warn">The agent will be moved to trash and kept for 30 days. You can restore it anytime during that period.</div>
+    </div>
+    <div style="display:flex; justify-content:flex-end; gap:0.75rem;">
+      <button class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+      <button class="btn btn-danger" id="confirm-delete-btn" onclick="executeDeleteAgent()">Delete Agent</button>
     </div>
   </div>
 </div>
@@ -1111,11 +1226,24 @@
   // ── View Navigation ──
   function showAgentsList() {
     document.querySelectorAll('.editor-view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.view-panel').forEach(v => v.classList.remove('active'));
     document.getElementById('view-agents').classList.add('active');
     const btn = document.getElementById('tab-btn-agents');
     btn.innerHTML = 'Agents <span class="tab-count">{{ agents | length }}</span>';
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     _currentEditor = null;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function showTrashView() {
+    document.querySelectorAll('.editor-view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.view-panel').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-trash').classList.add('active');
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-btn-trash').classList.add('active');
+    _currentEditor = null;
+    loadTrashItems();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -1893,6 +2021,114 @@
       alert(err.error || 'Failed to create agent');
     }
   }
+
+  // ── Delete Agent ──
+  let _deleteAgentName = null;
+  function confirmDeleteAgent(name) {
+    _deleteAgentName = name;
+    const displayEl = document.getElementById('delete-agent-name-display');
+    const nameInput = document.getElementById('name-' + name);
+    displayEl.textContent = nameInput ? nameInput.value : name;
+    document.getElementById('delete-agent-modal').classList.add('open');
+  }
+  function closeDeleteModal() {
+    document.getElementById('delete-agent-modal').classList.remove('open');
+    _deleteAgentName = null;
+  }
+  async function executeDeleteAgent() {
+    if (!_deleteAgentName) return;
+    const name = _deleteAgentName;
+    const resp = await fetch('/api/profiles/' + encodeURIComponent(name), { method: 'DELETE' });
+    closeDeleteModal();
+    if (resp.ok) {
+      showToast('Agent moved to trash');
+      setTimeout(() => location.reload(), 600);
+    } else {
+      const err = await resp.json().catch(() => ({}));
+      showToast(err.error || 'Delete failed', true);
+    }
+  }
+
+  // ── Trash Management ──
+  async function loadTrashItems() {
+    const resp = await fetch('/api/profiles/trash');
+    const data = await resp.json();
+    const items = data.items || [];
+    const countEl = document.getElementById('trash-count');
+    countEl.textContent = items.length;
+    const container = document.getElementById('trash-content');
+    if (items.length === 0) {
+      container.innerHTML = `
+        <div class="trash-empty">
+          <i class="fas fa-trash-alt"></i>
+          <p>Trash is empty</p>
+          <p class="hint">Deleted agents will appear here for 30 days.</p>
+        </div>`;
+      return;
+    }
+    let html = '<div class="trash-grid">';
+    for (const item of items) {
+      const deletedDate = new Date(item.deleted_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      const initial = (item.display_name || item.name || '?')[0].toUpperCase();
+      html += `
+        <div class="trash-card" data-trash-id="${_esc(item.id)}">
+          <div class="trash-card-header">
+            <div class="trash-card-icon">${_esc(initial)}</div>
+            <div class="trash-card-info">
+              <div class="trash-card-name">${_esc(item.display_name || item.name)}</div>
+              <div class="trash-card-meta">
+                Deleted ${_esc(deletedDate)}
+                &nbsp;·&nbsp;
+                <span class="days-badge"><i class="fas fa-clock" style="font-size:0.55rem;"></i> ${item.days_remaining}d left</span>
+              </div>
+            </div>
+          </div>
+          <div class="trash-card-actions">
+            <button class="trash-btn trash-btn-restore" onclick="restoreAgent('${_esc(item.id)}')">
+              <i class="fas fa-undo" style="margin-right:0.3rem;"></i> Restore
+            </button>
+            <button class="trash-btn trash-btn-delete" onclick="permanentlyDeleteAgent('${_esc(item.id)}', '${_esc(item.display_name || item.name)}')">
+              <i class="fas fa-times" style="margin-right:0.3rem;"></i> Delete Forever
+            </button>
+          </div>
+        </div>`;
+    }
+    html += '</div>';
+    container.innerHTML = html;
+  }
+
+  async function restoreAgent(trashId) {
+    const resp = await fetch('/api/profiles/trash/' + encodeURIComponent(trashId) + '/restore', { method: 'POST' });
+    if (resp.ok) {
+      showToast('Agent restored');
+      setTimeout(() => location.reload(), 600);
+    } else {
+      const err = await resp.json().catch(() => ({}));
+      showToast(err.error || 'Restore failed', true);
+    }
+  }
+
+  async function permanentlyDeleteAgent(trashId, displayName) {
+    if (!confirm(`Permanently delete "${displayName}"? This cannot be undone.`)) return;
+    const resp = await fetch('/api/profiles/trash/' + encodeURIComponent(trashId), { method: 'DELETE' });
+    if (resp.ok) {
+      showToast('Agent permanently deleted');
+      loadTrashItems();
+    } else {
+      showToast('Failed to delete', true);
+    }
+  }
+
+  // Load trash count on page load
+  (async function() {
+    try {
+      const resp = await fetch('/api/profiles/trash');
+      const data = await resp.json();
+      document.getElementById('trash-count').textContent = (data.items || []).length;
+    } catch(e) {
+      document.getElementById('trash-count').textContent = '0';
+    }
+  })();
 
   // ── Toast ──
   function showToast(msg, isError) {

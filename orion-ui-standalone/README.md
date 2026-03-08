@@ -57,7 +57,7 @@ orion-ui-standalone/
 ├── directives/         # Agent directive markdown files
 ├── notes/              # Developer notes per agent
 ├── scripts/            # Seed scripts (seed_memories.py, seed_ui_knowledge.py)
-├── data/               # Runtime data (chats, memory vault, FAISS indexes, uploads, knowledge notes)
+├── data/               # Runtime data (chats, memory vault, FAISS indexes, uploads, knowledge notes, agent trash)
 └── tests/              # Test suite — 11 files, 220 functions, ~3,300 checks
 ```
 
@@ -68,7 +68,7 @@ orion-ui-standalone/
 | Page | URL | Description |
 |------|-----|-------------|
 | **Chat** | `/chat` | Talk to agents — 5-layer identity injection (prompt → soul script → knowledge → memory → history) |
-| **Profiles** | `/profiles` | Create/edit agents, system prompts, attach knowledge, configure models |
+| **Profiles** | `/profiles` | Create/edit/delete agents, system prompts, attach knowledge, configure models — with 30-day trash retention |
 | **Vault** | `/vault` | Browse & search persistent memory — sort by 8 fields, max memory limits, metadata display |
 | **Knowledge** | `/knowledge` | Rich text editor for soul scripts and always-on context notes |
 | **Tools** | `/tools` | Configure tools, memory profiles, email, web search, cost tracking, model router with presets |
@@ -87,7 +87,7 @@ The FastAPI app exposes 131 routes across these domains:
 | Domain | Endpoints | Examples |
 |--------|-----------|---------|
 | Chat | ~15 | send, history, new, run, stop, folders |
-| Profiles | ~10 | CRUD, avatar, knowledge attachment |
+| Profiles | ~14 | CRUD, avatar, knowledge attachment, soft-delete with 30-day trash, restore, permanent delete |
 | Vault | ~5 | add, batch_add, stats, delete, compact |
 | Knowledge | ~7 | CRUD, folders |
 | Connections | ~8 | CRUD, model probing, refresh |

@@ -19782,3 +19782,2346 @@
 {"tick": 12, "model": "gpt-4o"}
 {"tick": 13, "model": "gpt-4o"}
 {"tick": 14, "model": "gpt-4o"}
+{"tick": 0, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:00:00Z"}
+{"tick": 1, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:01Z"}
+{"tick": 2, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:02Z"}
+{"tick": 3, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:03Z"}
+{"tick": 4, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:04Z"}
+{"tick": 5, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:05Z"}
+{"tick": 6, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:06Z"}
+{"tick": 7, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:07Z"}
+{"tick": 8, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:08Z"}
+{"tick": 9, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:09Z"}
+{"tick": 10, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:00:10Z"}
+{"tick": 11, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:11Z"}
+{"tick": 12, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:12Z"}
+{"tick": 13, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:13Z"}
+{"tick": 14, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:14Z"}
+{"tick": 15, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:15Z"}
+{"tick": 16, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:16Z"}
+{"tick": 17, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:17Z"}
+{"tick": 18, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:18Z"}
+{"tick": 19, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:19Z"}
+{"tick": 20, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:00:20Z"}
+{"tick": 21, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:21Z"}
+{"tick": 22, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:22Z"}
+{"tick": 23, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:23Z"}
+{"tick": 24, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:24Z"}
+{"tick": 25, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:25Z"}
+{"tick": 26, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:26Z"}
+{"tick": 27, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:27Z"}
+{"tick": 28, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:28Z"}
+{"tick": 29, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:29Z"}
+{"tick": 30, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:00:30Z"}
+{"tick": 31, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:31Z"}
+{"tick": 32, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:32Z"}
+{"tick": 33, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:33Z"}
+{"tick": 34, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:34Z"}
+{"tick": 35, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:35Z"}
+{"tick": 36, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:36Z"}
+{"tick": 37, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:37Z"}
+{"tick": 38, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:38Z"}
+{"tick": 39, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:39Z"}
+{"tick": 40, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:00:40Z"}
+{"tick": 41, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:41Z"}
+{"tick": 42, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:42Z"}
+{"tick": 43, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:43Z"}
+{"tick": 44, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:44Z"}
+{"tick": 45, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:45Z"}
+{"tick": 46, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:46Z"}
+{"tick": 47, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:47Z"}
+{"tick": 48, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:48Z"}
+{"tick": 49, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:49Z"}
+{"tick": 50, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:00:50Z"}
+{"tick": 51, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:51Z"}
+{"tick": 52, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:52Z"}
+{"tick": 53, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:53Z"}
+{"tick": 54, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:54Z"}
+{"tick": 55, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:55Z"}
+{"tick": 56, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:56Z"}
+{"tick": 57, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:57Z"}
+{"tick": 58, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:58Z"}
+{"tick": 59, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:59Z"}
+{"tick": 60, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:01:00Z"}
+{"tick": 61, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:01Z"}
+{"tick": 62, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:02Z"}
+{"tick": 63, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:03Z"}
+{"tick": 64, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:04Z"}
+{"tick": 65, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:05Z"}
+{"tick": 66, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:06Z"}
+{"tick": 67, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:07Z"}
+{"tick": 68, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:08Z"}
+{"tick": 69, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:09Z"}
+{"tick": 70, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:01:10Z"}
+{"tick": 71, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:11Z"}
+{"tick": 72, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:12Z"}
+{"tick": 73, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:13Z"}
+{"tick": 74, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:14Z"}
+{"tick": 75, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:15Z"}
+{"tick": 76, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:16Z"}
+{"tick": 77, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:17Z"}
+{"tick": 78, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:18Z"}
+{"tick": 79, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:19Z"}
+{"tick": 80, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:01:20Z"}
+{"tick": 81, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:21Z"}
+{"tick": 82, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:22Z"}
+{"tick": 83, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:23Z"}
+{"tick": 84, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:24Z"}
+{"tick": 85, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:25Z"}
+{"tick": 86, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:26Z"}
+{"tick": 87, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:27Z"}
+{"tick": 88, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:28Z"}
+{"tick": 89, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:29Z"}
+{"tick": 90, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:01:30Z"}
+{"tick": 91, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:31Z"}
+{"tick": 92, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:32Z"}
+{"tick": 93, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:33Z"}
+{"tick": 94, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:34Z"}
+{"tick": 95, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:35Z"}
+{"tick": 96, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:36Z"}
+{"tick": 97, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:37Z"}
+{"tick": 98, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:38Z"}
+{"tick": 99, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:39Z"}
+{"tick": 100, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:01:40Z"}
+{"tick": 101, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:41Z"}
+{"tick": 102, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:42Z"}
+{"tick": 103, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:43Z"}
+{"tick": 104, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:44Z"}
+{"tick": 105, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:45Z"}
+{"tick": 106, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:46Z"}
+{"tick": 107, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:47Z"}
+{"tick": 108, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:48Z"}
+{"tick": 109, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:49Z"}
+{"tick": 110, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:01:50Z"}
+{"tick": 111, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:51Z"}
+{"tick": 112, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:52Z"}
+{"tick": 113, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:53Z"}
+{"tick": 114, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:54Z"}
+{"tick": 115, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:55Z"}
+{"tick": 116, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:56Z"}
+{"tick": 117, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:57Z"}
+{"tick": 118, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:58Z"}
+{"tick": 119, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:59Z"}
+{"tick": 120, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:02:00Z"}
+{"tick": 121, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:01Z"}
+{"tick": 122, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:02Z"}
+{"tick": 123, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:03Z"}
+{"tick": 124, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:04Z"}
+{"tick": 125, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:05Z"}
+{"tick": 126, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:06Z"}
+{"tick": 127, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:07Z"}
+{"tick": 128, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:08Z"}
+{"tick": 129, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:09Z"}
+{"tick": 130, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:02:10Z"}
+{"tick": 131, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:11Z"}
+{"tick": 132, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:12Z"}
+{"tick": 133, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:13Z"}
+{"tick": 134, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:14Z"}
+{"tick": 135, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:15Z"}
+{"tick": 136, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:16Z"}
+{"tick": 137, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:17Z"}
+{"tick": 138, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:18Z"}
+{"tick": 139, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:19Z"}
+{"tick": 140, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:02:20Z"}
+{"tick": 141, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:21Z"}
+{"tick": 142, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:22Z"}
+{"tick": 143, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:23Z"}
+{"tick": 144, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:24Z"}
+{"tick": 145, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:25Z"}
+{"tick": 146, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:26Z"}
+{"tick": 147, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:27Z"}
+{"tick": 148, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:28Z"}
+{"tick": 149, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:29Z"}
+{"tick": 150, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:02:30Z"}
+{"tick": 151, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:31Z"}
+{"tick": 152, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:32Z"}
+{"tick": 153, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:33Z"}
+{"tick": 154, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:34Z"}
+{"tick": 155, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:35Z"}
+{"tick": 156, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:36Z"}
+{"tick": 157, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:37Z"}
+{"tick": 158, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:38Z"}
+{"tick": 159, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:39Z"}
+{"tick": 160, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:02:40Z"}
+{"tick": 161, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:41Z"}
+{"tick": 162, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:42Z"}
+{"tick": 163, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:43Z"}
+{"tick": 164, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:44Z"}
+{"tick": 165, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:45Z"}
+{"tick": 166, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:46Z"}
+{"tick": 167, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:47Z"}
+{"tick": 168, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:48Z"}
+{"tick": 169, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:49Z"}
+{"tick": 170, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:02:50Z"}
+{"tick": 171, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:51Z"}
+{"tick": 172, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:52Z"}
+{"tick": 173, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:53Z"}
+{"tick": 174, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:54Z"}
+{"tick": 175, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:55Z"}
+{"tick": 176, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:56Z"}
+{"tick": 177, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:57Z"}
+{"tick": 178, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:58Z"}
+{"tick": 179, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:59Z"}
+{"tick": 180, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:03:00Z"}
+{"tick": 181, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:01Z"}
+{"tick": 182, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:02Z"}
+{"tick": 183, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:03Z"}
+{"tick": 184, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:04Z"}
+{"tick": 185, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:05Z"}
+{"tick": 186, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:06Z"}
+{"tick": 187, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:07Z"}
+{"tick": 188, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:08Z"}
+{"tick": 189, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:09Z"}
+{"tick": 190, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:03:10Z"}
+{"tick": 191, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:11Z"}
+{"tick": 192, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:12Z"}
+{"tick": 193, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:13Z"}
+{"tick": 194, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:14Z"}
+{"tick": 195, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:15Z"}
+{"tick": 196, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:16Z"}
+{"tick": 197, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:17Z"}
+{"tick": 198, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:18Z"}
+{"tick": 199, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:19Z"}
+{"tick": 200, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:03:20Z"}
+{"tick": 201, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:21Z"}
+{"tick": 202, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:22Z"}
+{"tick": 203, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:23Z"}
+{"tick": 204, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:24Z"}
+{"tick": 205, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:25Z"}
+{"tick": 206, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:26Z"}
+{"tick": 207, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:27Z"}
+{"tick": 208, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:28Z"}
+{"tick": 209, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:29Z"}
+{"tick": 210, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:03:30Z"}
+{"tick": 211, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:31Z"}
+{"tick": 212, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:32Z"}
+{"tick": 213, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:33Z"}
+{"tick": 214, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:34Z"}
+{"tick": 215, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:35Z"}
+{"tick": 216, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:36Z"}
+{"tick": 217, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:37Z"}
+{"tick": 218, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:38Z"}
+{"tick": 219, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:39Z"}
+{"tick": 220, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:03:40Z"}
+{"tick": 221, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:41Z"}
+{"tick": 222, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:42Z"}
+{"tick": 223, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:43Z"}
+{"tick": 224, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:44Z"}
+{"tick": 225, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:45Z"}
+{"tick": 226, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:46Z"}
+{"tick": 227, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:47Z"}
+{"tick": 228, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:48Z"}
+{"tick": 229, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:49Z"}
+{"tick": 230, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:03:50Z"}
+{"tick": 231, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:51Z"}
+{"tick": 232, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:52Z"}
+{"tick": 233, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:53Z"}
+{"tick": 234, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:54Z"}
+{"tick": 235, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:55Z"}
+{"tick": 236, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:56Z"}
+{"tick": 237, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:57Z"}
+{"tick": 238, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:58Z"}
+{"tick": 239, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:59Z"}
+{"tick": 240, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:04:00Z"}
+{"tick": 241, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:01Z"}
+{"tick": 242, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:02Z"}
+{"tick": 243, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:03Z"}
+{"tick": 244, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:04Z"}
+{"tick": 245, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:05Z"}
+{"tick": 246, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:06Z"}
+{"tick": 247, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:07Z"}
+{"tick": 248, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:08Z"}
+{"tick": 249, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:09Z"}
+{"tick": 250, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:04:10Z"}
+{"tick": 251, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:11Z"}
+{"tick": 252, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:12Z"}
+{"tick": 253, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:13Z"}
+{"tick": 254, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:14Z"}
+{"tick": 255, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:15Z"}
+{"tick": 256, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:16Z"}
+{"tick": 257, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:17Z"}
+{"tick": 258, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:18Z"}
+{"tick": 259, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:19Z"}
+{"tick": 260, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:04:20Z"}
+{"tick": 261, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:21Z"}
+{"tick": 262, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:22Z"}
+{"tick": 263, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:23Z"}
+{"tick": 264, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:24Z"}
+{"tick": 265, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:25Z"}
+{"tick": 266, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:26Z"}
+{"tick": 267, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:27Z"}
+{"tick": 268, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:28Z"}
+{"tick": 269, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:29Z"}
+{"tick": 270, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:04:30Z"}
+{"tick": 271, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:31Z"}
+{"tick": 272, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:32Z"}
+{"tick": 273, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:33Z"}
+{"tick": 274, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:34Z"}
+{"tick": 275, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:35Z"}
+{"tick": 276, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:36Z"}
+{"tick": 277, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:37Z"}
+{"tick": 278, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:38Z"}
+{"tick": 279, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:39Z"}
+{"tick": 280, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:04:40Z"}
+{"tick": 281, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:41Z"}
+{"tick": 282, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:42Z"}
+{"tick": 283, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:43Z"}
+{"tick": 284, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:44Z"}
+{"tick": 285, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:45Z"}
+{"tick": 286, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:46Z"}
+{"tick": 287, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:47Z"}
+{"tick": 288, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:48Z"}
+{"tick": 289, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:49Z"}
+{"tick": 290, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:04:50Z"}
+{"tick": 291, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:51Z"}
+{"tick": 292, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:52Z"}
+{"tick": 293, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:53Z"}
+{"tick": 294, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:54Z"}
+{"tick": 295, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:55Z"}
+{"tick": 296, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:56Z"}
+{"tick": 297, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:57Z"}
+{"tick": 298, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:58Z"}
+{"tick": 299, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:59Z"}
+{"tick": 300, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:05:00Z"}
+{"tick": 301, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:01Z"}
+{"tick": 302, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:02Z"}
+{"tick": 303, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:03Z"}
+{"tick": 304, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:04Z"}
+{"tick": 305, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:05Z"}
+{"tick": 306, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:06Z"}
+{"tick": 307, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:07Z"}
+{"tick": 308, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:08Z"}
+{"tick": 309, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:09Z"}
+{"tick": 310, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:05:10Z"}
+{"tick": 311, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:11Z"}
+{"tick": 312, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:12Z"}
+{"tick": 313, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:13Z"}
+{"tick": 314, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:14Z"}
+{"tick": 315, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:15Z"}
+{"tick": 316, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:16Z"}
+{"tick": 317, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:17Z"}
+{"tick": 318, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:18Z"}
+{"tick": 319, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:19Z"}
+{"tick": 320, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:05:20Z"}
+{"tick": 321, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:21Z"}
+{"tick": 322, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:22Z"}
+{"tick": 323, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:23Z"}
+{"tick": 324, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:24Z"}
+{"tick": 325, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:25Z"}
+{"tick": 326, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:26Z"}
+{"tick": 327, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:27Z"}
+{"tick": 328, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:28Z"}
+{"tick": 329, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:29Z"}
+{"tick": 330, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:05:30Z"}
+{"tick": 331, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:31Z"}
+{"tick": 332, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:32Z"}
+{"tick": 333, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:33Z"}
+{"tick": 334, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:34Z"}
+{"tick": 335, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:35Z"}
+{"tick": 336, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:36Z"}
+{"tick": 337, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:37Z"}
+{"tick": 338, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:38Z"}
+{"tick": 339, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:39Z"}
+{"tick": 340, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:05:40Z"}
+{"tick": 341, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:41Z"}
+{"tick": 342, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:42Z"}
+{"tick": 343, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:43Z"}
+{"tick": 344, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:44Z"}
+{"tick": 345, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:45Z"}
+{"tick": 346, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:46Z"}
+{"tick": 347, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:47Z"}
+{"tick": 348, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:48Z"}
+{"tick": 349, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:49Z"}
+{"tick": 350, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:05:50Z"}
+{"tick": 351, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:51Z"}
+{"tick": 352, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:52Z"}
+{"tick": 353, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:53Z"}
+{"tick": 354, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:54Z"}
+{"tick": 355, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:55Z"}
+{"tick": 356, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:56Z"}
+{"tick": 357, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:57Z"}
+{"tick": 358, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:58Z"}
+{"tick": 359, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:59Z"}
+{"tick": 360, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:06:00Z"}
+{"tick": 361, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:01Z"}
+{"tick": 362, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:02Z"}
+{"tick": 363, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:03Z"}
+{"tick": 364, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:04Z"}
+{"tick": 365, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:05Z"}
+{"tick": 366, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:06Z"}
+{"tick": 367, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:07Z"}
+{"tick": 368, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:08Z"}
+{"tick": 369, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:09Z"}
+{"tick": 370, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:06:10Z"}
+{"tick": 371, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:11Z"}
+{"tick": 372, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:12Z"}
+{"tick": 373, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:13Z"}
+{"tick": 374, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:14Z"}
+{"tick": 375, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:15Z"}
+{"tick": 376, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:16Z"}
+{"tick": 377, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:17Z"}
+{"tick": 378, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:18Z"}
+{"tick": 379, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:19Z"}
+{"tick": 380, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:06:20Z"}
+{"tick": 381, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:21Z"}
+{"tick": 382, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:22Z"}
+{"tick": 383, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:23Z"}
+{"tick": 384, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:24Z"}
+{"tick": 385, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:25Z"}
+{"tick": 386, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:26Z"}
+{"tick": 387, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:27Z"}
+{"tick": 388, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:28Z"}
+{"tick": 389, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:29Z"}
+{"tick": 390, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:06:30Z"}
+{"tick": 391, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:31Z"}
+{"tick": 392, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:32Z"}
+{"tick": 393, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:33Z"}
+{"tick": 394, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:34Z"}
+{"tick": 395, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:35Z"}
+{"tick": 396, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:36Z"}
+{"tick": 397, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:37Z"}
+{"tick": 398, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:38Z"}
+{"tick": 399, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:39Z"}
+{"tick": 400, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:06:40Z"}
+{"tick": 401, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:41Z"}
+{"tick": 402, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:42Z"}
+{"tick": 403, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:43Z"}
+{"tick": 404, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:44Z"}
+{"tick": 405, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:45Z"}
+{"tick": 406, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:46Z"}
+{"tick": 407, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:47Z"}
+{"tick": 408, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:48Z"}
+{"tick": 409, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:49Z"}
+{"tick": 410, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:06:50Z"}
+{"tick": 411, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:51Z"}
+{"tick": 412, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:52Z"}
+{"tick": 413, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:53Z"}
+{"tick": 414, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:54Z"}
+{"tick": 415, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:55Z"}
+{"tick": 416, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:56Z"}
+{"tick": 417, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:57Z"}
+{"tick": 418, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:58Z"}
+{"tick": 419, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:59Z"}
+{"tick": 420, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:07:00Z"}
+{"tick": 421, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:01Z"}
+{"tick": 422, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:02Z"}
+{"tick": 423, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:03Z"}
+{"tick": 424, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:04Z"}
+{"tick": 425, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:05Z"}
+{"tick": 426, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:06Z"}
+{"tick": 427, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:07Z"}
+{"tick": 428, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:08Z"}
+{"tick": 429, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:09Z"}
+{"tick": 430, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:07:10Z"}
+{"tick": 431, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:11Z"}
+{"tick": 432, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:12Z"}
+{"tick": 433, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:13Z"}
+{"tick": 434, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:14Z"}
+{"tick": 435, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:15Z"}
+{"tick": 436, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:16Z"}
+{"tick": 437, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:17Z"}
+{"tick": 438, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:18Z"}
+{"tick": 439, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:19Z"}
+{"tick": 440, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:07:20Z"}
+{"tick": 441, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:21Z"}
+{"tick": 442, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:22Z"}
+{"tick": 443, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:23Z"}
+{"tick": 444, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:24Z"}
+{"tick": 445, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:25Z"}
+{"tick": 446, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:26Z"}
+{"tick": 447, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:27Z"}
+{"tick": 448, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:28Z"}
+{"tick": 449, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:29Z"}
+{"tick": 450, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:07:30Z"}
+{"tick": 451, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:31Z"}
+{"tick": 452, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:32Z"}
+{"tick": 453, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:33Z"}
+{"tick": 454, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:34Z"}
+{"tick": 455, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:35Z"}
+{"tick": 456, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:36Z"}
+{"tick": 457, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:37Z"}
+{"tick": 458, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:38Z"}
+{"tick": 459, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:39Z"}
+{"tick": 460, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:07:40Z"}
+{"tick": 461, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:41Z"}
+{"tick": 462, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:42Z"}
+{"tick": 463, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:43Z"}
+{"tick": 464, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:44Z"}
+{"tick": 465, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:45Z"}
+{"tick": 466, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:46Z"}
+{"tick": 467, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:47Z"}
+{"tick": 468, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:48Z"}
+{"tick": 469, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:49Z"}
+{"tick": 470, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:07:50Z"}
+{"tick": 471, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:51Z"}
+{"tick": 472, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:52Z"}
+{"tick": 473, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:53Z"}
+{"tick": 474, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:54Z"}
+{"tick": 475, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:55Z"}
+{"tick": 476, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:56Z"}
+{"tick": 477, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:57Z"}
+{"tick": 478, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:58Z"}
+{"tick": 479, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:59Z"}
+{"tick": 480, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:08:00Z"}
+{"tick": 481, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:01Z"}
+{"tick": 482, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:02Z"}
+{"tick": 483, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:03Z"}
+{"tick": 484, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:04Z"}
+{"tick": 485, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:05Z"}
+{"tick": 486, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:06Z"}
+{"tick": 487, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:07Z"}
+{"tick": 488, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:08Z"}
+{"tick": 489, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:09Z"}
+{"tick": 490, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:08:10Z"}
+{"tick": 491, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:11Z"}
+{"tick": 492, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:12Z"}
+{"tick": 493, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:13Z"}
+{"tick": 494, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:14Z"}
+{"tick": 495, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:15Z"}
+{"tick": 496, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:16Z"}
+{"tick": 497, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:17Z"}
+{"tick": 498, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:18Z"}
+{"tick": 499, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:19Z"}
+{"tick": 0}
+{"tick": 1}
+{"tick": 2}
+{"tick": 3}
+{"tick": 4}
+{"tick": 5}
+{"tick": 6}
+{"tick": 7}
+{"tick": 8}
+{"tick": 9}
+{"tick": 10}
+{"tick": 11}
+{"tick": 12}
+{"tick": 13}
+{"tick": 14}
+{"tick": 15}
+{"tick": 16}
+{"tick": 17}
+{"tick": 18}
+{"tick": 19}
+{"tick": 999}
+{"tick": 0, "cost": 0.001, "status": "ok"}
+{"tick": 1, "cost": 0.001, "status": "ok"}
+{"tick": 2, "cost": 0.001, "status": "ok"}
+{"tick": 3, "cost": 0.001, "status": "ok"}
+{"tick": 4, "cost": 0.001, "status": "ok"}
+{"tick": 0}
+{"tick": 1}
+{"tick": 2}
+{"tick": 3}
+{"tick": 4}
+{"tick": 5}
+{"tick": 6}
+{"tick": 7}
+{"tick": 8}
+{"tick": 9}
+{"tick": 10}
+{"tick": 11}
+{"tick": 12}
+{"tick": 13}
+{"tick": 14}
+{"tick": 15}
+{"tick": 16}
+{"tick": 17}
+{"tick": 18}
+{"tick": 19}
+{"tick": 20}
+{"tick": 21}
+{"tick": 22}
+{"tick": 23}
+{"tick": 24}
+{"tick": 25}
+{"tick": 26}
+{"tick": 27}
+{"tick": 28}
+{"tick": 29}
+{"tick": 0}
+{"tick": 1}
+{"tick": 2}
+{"tick": 3}
+{"tick": 4}
+{"tick": 5}
+{"tick": 6}
+{"tick": 7}
+{"tick": 8}
+{"tick": 9}
+{"tick": 10}
+{"tick": 11}
+{"tick": 12}
+{"tick": 13}
+{"tick": 14}
+{"tick": 15}
+{"tick": 16}
+{"tick": 17}
+{"tick": 18}
+{"tick": 19}
+{"tick": 20}
+{"tick": 21}
+{"tick": 22}
+{"tick": 23}
+{"tick": 24}
+{"tick": 25}
+{"tick": 26}
+{"tick": 27}
+{"tick": 28}
+{"tick": 29}
+{"tick": 30}
+{"tick": 31}
+{"tick": 32}
+{"tick": 33}
+{"tick": 34}
+{"tick": 35}
+{"tick": 36}
+{"tick": 37}
+{"tick": 38}
+{"tick": 39}
+{"tick": 40}
+{"tick": 41}
+{"tick": 42}
+{"tick": 43}
+{"tick": 44}
+{"tick": 45}
+{"tick": 46}
+{"tick": 47}
+{"tick": 48}
+{"tick": 49}
+{"tick": 50}
+{"tick": 51}
+{"tick": 52}
+{"tick": 53}
+{"tick": 54}
+{"tick": 55}
+{"tick": 56}
+{"tick": 57}
+{"tick": 58}
+{"tick": 59}
+{"tick": 60}
+{"tick": 61}
+{"tick": 62}
+{"tick": 63}
+{"tick": 64}
+{"tick": 65}
+{"tick": 66}
+{"tick": 67}
+{"tick": 68}
+{"tick": 69}
+{"tick": 70}
+{"tick": 71}
+{"tick": 72}
+{"tick": 73}
+{"tick": 74}
+{"tick": 75}
+{"tick": 76}
+{"tick": 77}
+{"tick": 78}
+{"tick": 79}
+{"tick": 80}
+{"tick": 81}
+{"tick": 82}
+{"tick": 83}
+{"tick": 84}
+{"tick": 85}
+{"tick": 86}
+{"tick": 87}
+{"tick": 88}
+{"tick": 89}
+{"tick": 90}
+{"tick": 91}
+{"tick": 92}
+{"tick": 93}
+{"tick": 94}
+{"tick": 95}
+{"tick": 96}
+{"tick": 97}
+{"tick": 98}
+{"tick": 99}
+{"tick": 100}
+{"tick": 101}
+{"tick": 102}
+{"tick": 103}
+{"tick": 104}
+{"tick": 105}
+{"tick": 106}
+{"tick": 107}
+{"tick": 108}
+{"tick": 109}
+{"tick": 110}
+{"tick": 111}
+{"tick": 112}
+{"tick": 113}
+{"tick": 114}
+{"tick": 115}
+{"tick": 116}
+{"tick": 117}
+{"tick": 118}
+{"tick": 119}
+{"tick": 120}
+{"tick": 121}
+{"tick": 122}
+{"tick": 123}
+{"tick": 124}
+{"tick": 125}
+{"tick": 126}
+{"tick": 127}
+{"tick": 128}
+{"tick": 129}
+{"tick": 130}
+{"tick": 131}
+{"tick": 132}
+{"tick": 133}
+{"tick": 134}
+{"tick": 135}
+{"tick": 136}
+{"tick": 137}
+{"tick": 138}
+{"tick": 139}
+{"tick": 140}
+{"tick": 141}
+{"tick": 142}
+{"tick": 143}
+{"tick": 144}
+{"tick": 145}
+{"tick": 146}
+{"tick": 147}
+{"tick": 148}
+{"tick": 149}
+{"tick": 150}
+{"tick": 151}
+{"tick": 152}
+{"tick": 153}
+{"tick": 154}
+{"tick": 155}
+{"tick": 156}
+{"tick": 157}
+{"tick": 158}
+{"tick": 159}
+{"tick": 160}
+{"tick": 161}
+{"tick": 162}
+{"tick": 163}
+{"tick": 164}
+{"tick": 165}
+{"tick": 166}
+{"tick": 167}
+{"tick": 168}
+{"tick": 169}
+{"tick": 170}
+{"tick": 171}
+{"tick": 172}
+{"tick": 173}
+{"tick": 174}
+{"tick": 175}
+{"tick": 176}
+{"tick": 177}
+{"tick": 178}
+{"tick": 179}
+{"tick": 180}
+{"tick": 181}
+{"tick": 182}
+{"tick": 183}
+{"tick": 184}
+{"tick": 185}
+{"tick": 186}
+{"tick": 187}
+{"tick": 188}
+{"tick": 189}
+{"tick": 190}
+{"tick": 191}
+{"tick": 192}
+{"tick": 193}
+{"tick": 194}
+{"tick": 195}
+{"tick": 196}
+{"tick": 197}
+{"tick": 198}
+{"tick": 199}
+{"tick": 200}
+{"tick": 201}
+{"tick": 202}
+{"tick": 203}
+{"tick": 204}
+{"tick": 205}
+{"tick": 206}
+{"tick": 207}
+{"tick": 208}
+{"tick": 209}
+{"tick": 0, "model": "gpt-4o"}
+{"tick": 1, "model": "gpt-4o"}
+{"tick": 2, "model": "gpt-4o"}
+{"tick": 3, "model": "gpt-4o"}
+{"tick": 4, "model": "gpt-4o"}
+{"tick": 5, "model": "gpt-4o"}
+{"tick": 6, "model": "gpt-4o"}
+{"tick": 7, "model": "gpt-4o"}
+{"tick": 8, "model": "gpt-4o"}
+{"tick": 9, "model": "gpt-4o"}
+{"tick": 10, "model": "gpt-4o"}
+{"tick": 11, "model": "gpt-4o"}
+{"tick": 12, "model": "gpt-4o"}
+{"tick": 13, "model": "gpt-4o"}
+{"tick": 14, "model": "gpt-4o"}
+{"tick": 0, "cost": 0.001, "status": "ok"}
+{"tick": 1, "cost": 0.001, "status": "ok"}
+{"tick": 2, "cost": 0.001, "status": "ok"}
+{"tick": 3, "cost": 0.001, "status": "ok"}
+{"tick": 4, "cost": 0.001, "status": "ok"}
+{"tick": 0}
+{"tick": 1}
+{"tick": 2}
+{"tick": 3}
+{"tick": 4}
+{"tick": 5}
+{"tick": 6}
+{"tick": 7}
+{"tick": 8}
+{"tick": 9}
+{"tick": 10}
+{"tick": 11}
+{"tick": 12}
+{"tick": 13}
+{"tick": 14}
+{"tick": 15}
+{"tick": 16}
+{"tick": 17}
+{"tick": 18}
+{"tick": 19}
+{"tick": 20}
+{"tick": 21}
+{"tick": 22}
+{"tick": 23}
+{"tick": 24}
+{"tick": 25}
+{"tick": 26}
+{"tick": 27}
+{"tick": 28}
+{"tick": 29}
+{"tick": 0}
+{"tick": 1}
+{"tick": 2}
+{"tick": 3}
+{"tick": 4}
+{"tick": 5}
+{"tick": 6}
+{"tick": 7}
+{"tick": 8}
+{"tick": 9}
+{"tick": 10}
+{"tick": 11}
+{"tick": 12}
+{"tick": 13}
+{"tick": 14}
+{"tick": 15}
+{"tick": 16}
+{"tick": 17}
+{"tick": 18}
+{"tick": 19}
+{"tick": 20}
+{"tick": 21}
+{"tick": 22}
+{"tick": 23}
+{"tick": 24}
+{"tick": 25}
+{"tick": 26}
+{"tick": 27}
+{"tick": 28}
+{"tick": 29}
+{"tick": 30}
+{"tick": 31}
+{"tick": 32}
+{"tick": 33}
+{"tick": 34}
+{"tick": 35}
+{"tick": 36}
+{"tick": 37}
+{"tick": 38}
+{"tick": 39}
+{"tick": 40}
+{"tick": 41}
+{"tick": 42}
+{"tick": 43}
+{"tick": 44}
+{"tick": 45}
+{"tick": 46}
+{"tick": 47}
+{"tick": 48}
+{"tick": 49}
+{"tick": 50}
+{"tick": 51}
+{"tick": 52}
+{"tick": 53}
+{"tick": 54}
+{"tick": 55}
+{"tick": 56}
+{"tick": 57}
+{"tick": 58}
+{"tick": 59}
+{"tick": 60}
+{"tick": 61}
+{"tick": 62}
+{"tick": 63}
+{"tick": 64}
+{"tick": 65}
+{"tick": 66}
+{"tick": 67}
+{"tick": 68}
+{"tick": 69}
+{"tick": 70}
+{"tick": 71}
+{"tick": 72}
+{"tick": 73}
+{"tick": 74}
+{"tick": 75}
+{"tick": 76}
+{"tick": 77}
+{"tick": 78}
+{"tick": 79}
+{"tick": 80}
+{"tick": 81}
+{"tick": 82}
+{"tick": 83}
+{"tick": 84}
+{"tick": 85}
+{"tick": 86}
+{"tick": 87}
+{"tick": 88}
+{"tick": 89}
+{"tick": 90}
+{"tick": 91}
+{"tick": 92}
+{"tick": 93}
+{"tick": 94}
+{"tick": 95}
+{"tick": 96}
+{"tick": 97}
+{"tick": 98}
+{"tick": 99}
+{"tick": 100}
+{"tick": 101}
+{"tick": 102}
+{"tick": 103}
+{"tick": 104}
+{"tick": 105}
+{"tick": 106}
+{"tick": 107}
+{"tick": 108}
+{"tick": 109}
+{"tick": 110}
+{"tick": 111}
+{"tick": 112}
+{"tick": 113}
+{"tick": 114}
+{"tick": 115}
+{"tick": 116}
+{"tick": 117}
+{"tick": 118}
+{"tick": 119}
+{"tick": 120}
+{"tick": 121}
+{"tick": 122}
+{"tick": 123}
+{"tick": 124}
+{"tick": 125}
+{"tick": 126}
+{"tick": 127}
+{"tick": 128}
+{"tick": 129}
+{"tick": 130}
+{"tick": 131}
+{"tick": 132}
+{"tick": 133}
+{"tick": 134}
+{"tick": 135}
+{"tick": 136}
+{"tick": 137}
+{"tick": 138}
+{"tick": 139}
+{"tick": 140}
+{"tick": 141}
+{"tick": 142}
+{"tick": 143}
+{"tick": 144}
+{"tick": 145}
+{"tick": 146}
+{"tick": 147}
+{"tick": 148}
+{"tick": 149}
+{"tick": 150}
+{"tick": 151}
+{"tick": 152}
+{"tick": 153}
+{"tick": 154}
+{"tick": 155}
+{"tick": 156}
+{"tick": 157}
+{"tick": 158}
+{"tick": 159}
+{"tick": 160}
+{"tick": 161}
+{"tick": 162}
+{"tick": 163}
+{"tick": 164}
+{"tick": 165}
+{"tick": 166}
+{"tick": 167}
+{"tick": 168}
+{"tick": 169}
+{"tick": 170}
+{"tick": 171}
+{"tick": 172}
+{"tick": 173}
+{"tick": 174}
+{"tick": 175}
+{"tick": 176}
+{"tick": 177}
+{"tick": 178}
+{"tick": 179}
+{"tick": 180}
+{"tick": 181}
+{"tick": 182}
+{"tick": 183}
+{"tick": 184}
+{"tick": 185}
+{"tick": 186}
+{"tick": 187}
+{"tick": 188}
+{"tick": 189}
+{"tick": 190}
+{"tick": 191}
+{"tick": 192}
+{"tick": 193}
+{"tick": 194}
+{"tick": 195}
+{"tick": 196}
+{"tick": 197}
+{"tick": 198}
+{"tick": 199}
+{"tick": 200}
+{"tick": 201}
+{"tick": 202}
+{"tick": 203}
+{"tick": 204}
+{"tick": 205}
+{"tick": 206}
+{"tick": 207}
+{"tick": 208}
+{"tick": 209}
+{"tick": 0, "model": "gpt-4o"}
+{"tick": 1, "model": "gpt-4o"}
+{"tick": 2, "model": "gpt-4o"}
+{"tick": 3, "model": "gpt-4o"}
+{"tick": 4, "model": "gpt-4o"}
+{"tick": 5, "model": "gpt-4o"}
+{"tick": 6, "model": "gpt-4o"}
+{"tick": 7, "model": "gpt-4o"}
+{"tick": 8, "model": "gpt-4o"}
+{"tick": 9, "model": "gpt-4o"}
+{"tick": 10, "model": "gpt-4o"}
+{"tick": 11, "model": "gpt-4o"}
+{"tick": 12, "model": "gpt-4o"}
+{"tick": 13, "model": "gpt-4o"}
+{"tick": 14, "model": "gpt-4o"}
+{"tick": 0, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:00:00Z"}
+{"tick": 1, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:01Z"}
+{"tick": 2, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:02Z"}
+{"tick": 3, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:03Z"}
+{"tick": 4, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:04Z"}
+{"tick": 5, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:05Z"}
+{"tick": 6, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:06Z"}
+{"tick": 7, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:07Z"}
+{"tick": 8, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:08Z"}
+{"tick": 9, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:09Z"}
+{"tick": 10, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:00:10Z"}
+{"tick": 11, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:11Z"}
+{"tick": 12, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:12Z"}
+{"tick": 13, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:13Z"}
+{"tick": 14, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:14Z"}
+{"tick": 15, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:15Z"}
+{"tick": 16, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:16Z"}
+{"tick": 17, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:17Z"}
+{"tick": 18, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:18Z"}
+{"tick": 19, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:19Z"}
+{"tick": 20, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:00:20Z"}
+{"tick": 21, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:21Z"}
+{"tick": 22, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:22Z"}
+{"tick": 23, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:23Z"}
+{"tick": 24, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:24Z"}
+{"tick": 25, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:25Z"}
+{"tick": 26, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:26Z"}
+{"tick": 27, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:27Z"}
+{"tick": 28, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:28Z"}
+{"tick": 29, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:29Z"}
+{"tick": 30, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:00:30Z"}
+{"tick": 31, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:31Z"}
+{"tick": 32, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:32Z"}
+{"tick": 33, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:33Z"}
+{"tick": 34, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:34Z"}
+{"tick": 35, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:35Z"}
+{"tick": 36, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:36Z"}
+{"tick": 37, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:37Z"}
+{"tick": 38, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:38Z"}
+{"tick": 39, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:39Z"}
+{"tick": 40, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:00:40Z"}
+{"tick": 41, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:41Z"}
+{"tick": 42, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:42Z"}
+{"tick": 43, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:43Z"}
+{"tick": 44, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:44Z"}
+{"tick": 45, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:45Z"}
+{"tick": 46, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:46Z"}
+{"tick": 47, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:47Z"}
+{"tick": 48, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:48Z"}
+{"tick": 49, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:49Z"}
+{"tick": 50, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:00:50Z"}
+{"tick": 51, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:51Z"}
+{"tick": 52, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:52Z"}
+{"tick": 53, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:53Z"}
+{"tick": 54, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:54Z"}
+{"tick": 55, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:55Z"}
+{"tick": 56, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:56Z"}
+{"tick": 57, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:57Z"}
+{"tick": 58, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:58Z"}
+{"tick": 59, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:59Z"}
+{"tick": 60, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:01:00Z"}
+{"tick": 61, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:01Z"}
+{"tick": 62, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:02Z"}
+{"tick": 63, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:03Z"}
+{"tick": 64, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:04Z"}
+{"tick": 65, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:05Z"}
+{"tick": 66, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:06Z"}
+{"tick": 67, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:07Z"}
+{"tick": 68, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:08Z"}
+{"tick": 69, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:09Z"}
+{"tick": 70, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:01:10Z"}
+{"tick": 71, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:11Z"}
+{"tick": 72, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:12Z"}
+{"tick": 73, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:13Z"}
+{"tick": 74, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:14Z"}
+{"tick": 75, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:15Z"}
+{"tick": 76, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:16Z"}
+{"tick": 77, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:17Z"}
+{"tick": 78, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:18Z"}
+{"tick": 79, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:19Z"}
+{"tick": 80, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:01:20Z"}
+{"tick": 81, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:21Z"}
+{"tick": 82, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:22Z"}
+{"tick": 83, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:23Z"}
+{"tick": 84, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:24Z"}
+{"tick": 85, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:25Z"}
+{"tick": 86, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:26Z"}
+{"tick": 87, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:27Z"}
+{"tick": 88, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:28Z"}
+{"tick": 89, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:29Z"}
+{"tick": 90, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:01:30Z"}
+{"tick": 91, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:31Z"}
+{"tick": 92, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:32Z"}
+{"tick": 93, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:33Z"}
+{"tick": 94, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:34Z"}
+{"tick": 95, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:35Z"}
+{"tick": 96, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:36Z"}
+{"tick": 97, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:37Z"}
+{"tick": 98, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:38Z"}
+{"tick": 99, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:39Z"}
+{"tick": 100, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:01:40Z"}
+{"tick": 101, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:41Z"}
+{"tick": 102, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:42Z"}
+{"tick": 103, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:43Z"}
+{"tick": 104, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:44Z"}
+{"tick": 105, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:45Z"}
+{"tick": 106, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:46Z"}
+{"tick": 107, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:47Z"}
+{"tick": 108, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:48Z"}
+{"tick": 109, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:49Z"}
+{"tick": 110, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:01:50Z"}
+{"tick": 111, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:51Z"}
+{"tick": 112, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:52Z"}
+{"tick": 113, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:53Z"}
+{"tick": 114, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:54Z"}
+{"tick": 115, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:55Z"}
+{"tick": 116, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:56Z"}
+{"tick": 117, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:57Z"}
+{"tick": 118, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:58Z"}
+{"tick": 119, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:59Z"}
+{"tick": 120, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:02:00Z"}
+{"tick": 121, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:01Z"}
+{"tick": 122, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:02Z"}
+{"tick": 123, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:03Z"}
+{"tick": 124, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:04Z"}
+{"tick": 125, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:05Z"}
+{"tick": 126, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:06Z"}
+{"tick": 127, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:07Z"}
+{"tick": 128, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:08Z"}
+{"tick": 129, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:09Z"}
+{"tick": 130, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:02:10Z"}
+{"tick": 131, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:11Z"}
+{"tick": 132, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:12Z"}
+{"tick": 133, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:13Z"}
+{"tick": 134, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:14Z"}
+{"tick": 135, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:15Z"}
+{"tick": 136, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:16Z"}
+{"tick": 137, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:17Z"}
+{"tick": 138, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:18Z"}
+{"tick": 139, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:19Z"}
+{"tick": 140, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:02:20Z"}
+{"tick": 141, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:21Z"}
+{"tick": 142, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:22Z"}
+{"tick": 143, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:23Z"}
+{"tick": 144, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:24Z"}
+{"tick": 145, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:25Z"}
+{"tick": 146, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:26Z"}
+{"tick": 147, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:27Z"}
+{"tick": 148, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:28Z"}
+{"tick": 149, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:29Z"}
+{"tick": 150, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:02:30Z"}
+{"tick": 151, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:31Z"}
+{"tick": 152, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:32Z"}
+{"tick": 153, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:33Z"}
+{"tick": 154, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:34Z"}
+{"tick": 155, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:35Z"}
+{"tick": 156, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:36Z"}
+{"tick": 157, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:37Z"}
+{"tick": 158, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:38Z"}
+{"tick": 159, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:39Z"}
+{"tick": 160, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:02:40Z"}
+{"tick": 161, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:41Z"}
+{"tick": 162, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:42Z"}
+{"tick": 163, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:43Z"}
+{"tick": 164, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:44Z"}
+{"tick": 165, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:45Z"}
+{"tick": 166, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:46Z"}
+{"tick": 167, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:47Z"}
+{"tick": 168, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:48Z"}
+{"tick": 169, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:49Z"}
+{"tick": 170, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:02:50Z"}
+{"tick": 171, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:51Z"}
+{"tick": 172, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:52Z"}
+{"tick": 173, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:53Z"}
+{"tick": 174, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:54Z"}
+{"tick": 175, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:55Z"}
+{"tick": 176, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:56Z"}
+{"tick": 177, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:57Z"}
+{"tick": 178, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:58Z"}
+{"tick": 179, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:59Z"}
+{"tick": 180, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:03:00Z"}
+{"tick": 181, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:01Z"}
+{"tick": 182, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:02Z"}
+{"tick": 183, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:03Z"}
+{"tick": 184, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:04Z"}
+{"tick": 185, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:05Z"}
+{"tick": 186, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:06Z"}
+{"tick": 187, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:07Z"}
+{"tick": 188, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:08Z"}
+{"tick": 189, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:09Z"}
+{"tick": 190, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:03:10Z"}
+{"tick": 191, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:11Z"}
+{"tick": 192, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:12Z"}
+{"tick": 193, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:13Z"}
+{"tick": 194, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:14Z"}
+{"tick": 195, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:15Z"}
+{"tick": 196, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:16Z"}
+{"tick": 197, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:17Z"}
+{"tick": 198, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:18Z"}
+{"tick": 199, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:19Z"}
+{"tick": 200, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:03:20Z"}
+{"tick": 201, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:21Z"}
+{"tick": 202, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:22Z"}
+{"tick": 203, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:23Z"}
+{"tick": 204, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:24Z"}
+{"tick": 205, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:25Z"}
+{"tick": 206, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:26Z"}
+{"tick": 207, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:27Z"}
+{"tick": 208, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:28Z"}
+{"tick": 209, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:29Z"}
+{"tick": 210, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:03:30Z"}
+{"tick": 211, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:31Z"}
+{"tick": 212, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:32Z"}
+{"tick": 213, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:33Z"}
+{"tick": 214, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:34Z"}
+{"tick": 215, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:35Z"}
+{"tick": 216, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:36Z"}
+{"tick": 217, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:37Z"}
+{"tick": 218, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:38Z"}
+{"tick": 219, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:39Z"}
+{"tick": 220, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:03:40Z"}
+{"tick": 221, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:41Z"}
+{"tick": 222, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:42Z"}
+{"tick": 223, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:43Z"}
+{"tick": 224, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:44Z"}
+{"tick": 225, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:45Z"}
+{"tick": 226, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:46Z"}
+{"tick": 227, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:47Z"}
+{"tick": 228, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:48Z"}
+{"tick": 229, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:49Z"}
+{"tick": 230, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:03:50Z"}
+{"tick": 231, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:51Z"}
+{"tick": 232, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:52Z"}
+{"tick": 233, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:53Z"}
+{"tick": 234, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:54Z"}
+{"tick": 235, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:55Z"}
+{"tick": 236, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:56Z"}
+{"tick": 237, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:57Z"}
+{"tick": 238, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:58Z"}
+{"tick": 239, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:59Z"}
+{"tick": 240, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:04:00Z"}
+{"tick": 241, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:01Z"}
+{"tick": 242, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:02Z"}
+{"tick": 243, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:03Z"}
+{"tick": 244, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:04Z"}
+{"tick": 245, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:05Z"}
+{"tick": 246, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:06Z"}
+{"tick": 247, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:07Z"}
+{"tick": 248, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:08Z"}
+{"tick": 249, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:09Z"}
+{"tick": 250, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:04:10Z"}
+{"tick": 251, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:11Z"}
+{"tick": 252, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:12Z"}
+{"tick": 253, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:13Z"}
+{"tick": 254, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:14Z"}
+{"tick": 255, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:15Z"}
+{"tick": 256, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:16Z"}
+{"tick": 257, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:17Z"}
+{"tick": 258, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:18Z"}
+{"tick": 259, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:19Z"}
+{"tick": 260, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:04:20Z"}
+{"tick": 261, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:21Z"}
+{"tick": 262, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:22Z"}
+{"tick": 263, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:23Z"}
+{"tick": 264, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:24Z"}
+{"tick": 265, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:25Z"}
+{"tick": 266, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:26Z"}
+{"tick": 267, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:27Z"}
+{"tick": 268, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:28Z"}
+{"tick": 269, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:29Z"}
+{"tick": 270, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:04:30Z"}
+{"tick": 271, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:31Z"}
+{"tick": 272, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:32Z"}
+{"tick": 273, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:33Z"}
+{"tick": 274, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:34Z"}
+{"tick": 275, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:35Z"}
+{"tick": 276, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:36Z"}
+{"tick": 277, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:37Z"}
+{"tick": 278, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:38Z"}
+{"tick": 279, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:39Z"}
+{"tick": 280, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:04:40Z"}
+{"tick": 281, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:41Z"}
+{"tick": 282, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:42Z"}
+{"tick": 283, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:43Z"}
+{"tick": 284, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:44Z"}
+{"tick": 285, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:45Z"}
+{"tick": 286, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:46Z"}
+{"tick": 287, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:47Z"}
+{"tick": 288, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:48Z"}
+{"tick": 289, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:49Z"}
+{"tick": 290, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:04:50Z"}
+{"tick": 291, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:51Z"}
+{"tick": 292, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:52Z"}
+{"tick": 293, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:53Z"}
+{"tick": 294, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:54Z"}
+{"tick": 295, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:55Z"}
+{"tick": 296, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:56Z"}
+{"tick": 297, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:57Z"}
+{"tick": 298, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:58Z"}
+{"tick": 299, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:59Z"}
+{"tick": 300, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:05:00Z"}
+{"tick": 301, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:01Z"}
+{"tick": 302, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:02Z"}
+{"tick": 303, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:03Z"}
+{"tick": 304, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:04Z"}
+{"tick": 305, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:05Z"}
+{"tick": 306, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:06Z"}
+{"tick": 307, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:07Z"}
+{"tick": 308, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:08Z"}
+{"tick": 309, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:09Z"}
+{"tick": 310, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:05:10Z"}
+{"tick": 311, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:11Z"}
+{"tick": 312, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:12Z"}
+{"tick": 313, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:13Z"}
+{"tick": 314, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:14Z"}
+{"tick": 315, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:15Z"}
+{"tick": 316, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:16Z"}
+{"tick": 317, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:17Z"}
+{"tick": 318, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:18Z"}
+{"tick": 319, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:19Z"}
+{"tick": 320, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:05:20Z"}
+{"tick": 321, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:21Z"}
+{"tick": 322, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:22Z"}
+{"tick": 323, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:23Z"}
+{"tick": 324, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:24Z"}
+{"tick": 325, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:25Z"}
+{"tick": 326, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:26Z"}
+{"tick": 327, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:27Z"}
+{"tick": 328, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:28Z"}
+{"tick": 329, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:29Z"}
+{"tick": 330, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:05:30Z"}
+{"tick": 331, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:31Z"}
+{"tick": 332, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:32Z"}
+{"tick": 333, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:33Z"}
+{"tick": 334, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:34Z"}
+{"tick": 335, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:35Z"}
+{"tick": 336, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:36Z"}
+{"tick": 337, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:37Z"}
+{"tick": 338, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:38Z"}
+{"tick": 339, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:39Z"}
+{"tick": 340, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:05:40Z"}
+{"tick": 341, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:41Z"}
+{"tick": 342, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:42Z"}
+{"tick": 343, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:43Z"}
+{"tick": 344, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:44Z"}
+{"tick": 345, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:45Z"}
+{"tick": 346, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:46Z"}
+{"tick": 347, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:47Z"}
+{"tick": 348, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:48Z"}
+{"tick": 349, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:49Z"}
+{"tick": 350, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:05:50Z"}
+{"tick": 351, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:51Z"}
+{"tick": 352, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:52Z"}
+{"tick": 353, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:53Z"}
+{"tick": 354, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:54Z"}
+{"tick": 355, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:55Z"}
+{"tick": 356, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:56Z"}
+{"tick": 357, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:57Z"}
+{"tick": 358, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:58Z"}
+{"tick": 359, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:59Z"}
+{"tick": 360, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:06:00Z"}
+{"tick": 361, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:01Z"}
+{"tick": 362, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:02Z"}
+{"tick": 363, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:03Z"}
+{"tick": 364, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:04Z"}
+{"tick": 365, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:05Z"}
+{"tick": 366, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:06Z"}
+{"tick": 367, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:07Z"}
+{"tick": 368, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:08Z"}
+{"tick": 369, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:09Z"}
+{"tick": 370, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:06:10Z"}
+{"tick": 371, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:11Z"}
+{"tick": 372, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:12Z"}
+{"tick": 373, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:13Z"}
+{"tick": 374, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:14Z"}
+{"tick": 375, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:15Z"}
+{"tick": 376, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:16Z"}
+{"tick": 377, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:17Z"}
+{"tick": 378, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:18Z"}
+{"tick": 379, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:19Z"}
+{"tick": 380, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:06:20Z"}
+{"tick": 381, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:21Z"}
+{"tick": 382, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:22Z"}
+{"tick": 383, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:23Z"}
+{"tick": 384, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:24Z"}
+{"tick": 385, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:25Z"}
+{"tick": 386, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:26Z"}
+{"tick": 387, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:27Z"}
+{"tick": 388, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:28Z"}
+{"tick": 389, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:29Z"}
+{"tick": 390, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:06:30Z"}
+{"tick": 391, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:31Z"}
+{"tick": 392, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:32Z"}
+{"tick": 393, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:33Z"}
+{"tick": 394, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:34Z"}
+{"tick": 395, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:35Z"}
+{"tick": 396, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:36Z"}
+{"tick": 397, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:37Z"}
+{"tick": 398, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:38Z"}
+{"tick": 399, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:39Z"}
+{"tick": 400, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:06:40Z"}
+{"tick": 401, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:41Z"}
+{"tick": 402, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:42Z"}
+{"tick": 403, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:43Z"}
+{"tick": 404, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:44Z"}
+{"tick": 405, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:45Z"}
+{"tick": 406, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:46Z"}
+{"tick": 407, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:47Z"}
+{"tick": 408, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:48Z"}
+{"tick": 409, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:49Z"}
+{"tick": 410, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:06:50Z"}
+{"tick": 411, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:51Z"}
+{"tick": 412, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:52Z"}
+{"tick": 413, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:53Z"}
+{"tick": 414, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:54Z"}
+{"tick": 415, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:55Z"}
+{"tick": 416, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:56Z"}
+{"tick": 417, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:57Z"}
+{"tick": 418, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:58Z"}
+{"tick": 419, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:59Z"}
+{"tick": 420, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:07:00Z"}
+{"tick": 421, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:01Z"}
+{"tick": 422, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:02Z"}
+{"tick": 423, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:03Z"}
+{"tick": 424, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:04Z"}
+{"tick": 425, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:05Z"}
+{"tick": 426, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:06Z"}
+{"tick": 427, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:07Z"}
+{"tick": 428, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:08Z"}
+{"tick": 429, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:09Z"}
+{"tick": 430, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:07:10Z"}
+{"tick": 431, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:11Z"}
+{"tick": 432, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:12Z"}
+{"tick": 433, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:13Z"}
+{"tick": 434, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:14Z"}
+{"tick": 435, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:15Z"}
+{"tick": 436, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:16Z"}
+{"tick": 437, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:17Z"}
+{"tick": 438, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:18Z"}
+{"tick": 439, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:19Z"}
+{"tick": 440, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:07:20Z"}
+{"tick": 441, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:21Z"}
+{"tick": 442, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:22Z"}
+{"tick": 443, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:23Z"}
+{"tick": 444, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:24Z"}
+{"tick": 445, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:25Z"}
+{"tick": 446, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:26Z"}
+{"tick": 447, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:27Z"}
+{"tick": 448, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:28Z"}
+{"tick": 449, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:29Z"}
+{"tick": 450, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:07:30Z"}
+{"tick": 451, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:31Z"}
+{"tick": 452, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:32Z"}
+{"tick": 453, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:33Z"}
+{"tick": 454, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:34Z"}
+{"tick": 455, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:35Z"}
+{"tick": 456, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:36Z"}
+{"tick": 457, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:37Z"}
+{"tick": 458, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:38Z"}
+{"tick": 459, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:39Z"}
+{"tick": 460, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:07:40Z"}
+{"tick": 461, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:41Z"}
+{"tick": 462, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:42Z"}
+{"tick": 463, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:43Z"}
+{"tick": 464, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:44Z"}
+{"tick": 465, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:45Z"}
+{"tick": 466, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:46Z"}
+{"tick": 467, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:47Z"}
+{"tick": 468, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:48Z"}
+{"tick": 469, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:49Z"}
+{"tick": 470, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:07:50Z"}
+{"tick": 471, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:51Z"}
+{"tick": 472, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:52Z"}
+{"tick": 473, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:53Z"}
+{"tick": 474, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:54Z"}
+{"tick": 475, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:55Z"}
+{"tick": 476, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:56Z"}
+{"tick": 477, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:57Z"}
+{"tick": 478, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:58Z"}
+{"tick": 479, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:59Z"}
+{"tick": 480, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:08:00Z"}
+{"tick": 481, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:01Z"}
+{"tick": 482, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:02Z"}
+{"tick": 483, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:03Z"}
+{"tick": 484, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:04Z"}
+{"tick": 485, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:05Z"}
+{"tick": 486, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:06Z"}
+{"tick": 487, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:07Z"}
+{"tick": 488, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:08Z"}
+{"tick": 489, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:09Z"}
+{"tick": 490, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:08:10Z"}
+{"tick": 491, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:11Z"}
+{"tick": 492, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:12Z"}
+{"tick": 493, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:13Z"}
+{"tick": 494, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:14Z"}
+{"tick": 495, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:15Z"}
+{"tick": 496, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:16Z"}
+{"tick": 497, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:17Z"}
+{"tick": 498, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:18Z"}
+{"tick": 499, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:19Z"}
+{"tick": 0}
+{"tick": 1}
+{"tick": 2}
+{"tick": 3}
+{"tick": 4}
+{"tick": 5}
+{"tick": 6}
+{"tick": 7}
+{"tick": 8}
+{"tick": 9}
+{"tick": 10}
+{"tick": 11}
+{"tick": 12}
+{"tick": 13}
+{"tick": 14}
+{"tick": 15}
+{"tick": 16}
+{"tick": 17}
+{"tick": 18}
+{"tick": 19}
+{"tick": 999}
+{"tick": 0, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:00:00Z"}
+{"tick": 1, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:01Z"}
+{"tick": 2, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:02Z"}
+{"tick": 3, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:03Z"}
+{"tick": 4, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:04Z"}
+{"tick": 5, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:05Z"}
+{"tick": 6, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:06Z"}
+{"tick": 7, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:07Z"}
+{"tick": 8, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:08Z"}
+{"tick": 9, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:09Z"}
+{"tick": 10, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:00:10Z"}
+{"tick": 11, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:11Z"}
+{"tick": 12, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:12Z"}
+{"tick": 13, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:13Z"}
+{"tick": 14, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:14Z"}
+{"tick": 15, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:15Z"}
+{"tick": 16, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:16Z"}
+{"tick": 17, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:17Z"}
+{"tick": 18, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:18Z"}
+{"tick": 19, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:19Z"}
+{"tick": 20, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:00:20Z"}
+{"tick": 21, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:21Z"}
+{"tick": 22, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:22Z"}
+{"tick": 23, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:23Z"}
+{"tick": 24, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:24Z"}
+{"tick": 25, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:25Z"}
+{"tick": 26, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:26Z"}
+{"tick": 27, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:27Z"}
+{"tick": 28, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:28Z"}
+{"tick": 29, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:29Z"}
+{"tick": 30, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:00:30Z"}
+{"tick": 31, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:31Z"}
+{"tick": 32, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:32Z"}
+{"tick": 33, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:33Z"}
+{"tick": 34, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:34Z"}
+{"tick": 35, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:35Z"}
+{"tick": 36, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:36Z"}
+{"tick": 37, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:37Z"}
+{"tick": 38, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:38Z"}
+{"tick": 39, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:39Z"}
+{"tick": 40, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:00:40Z"}
+{"tick": 41, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:41Z"}
+{"tick": 42, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:42Z"}
+{"tick": 43, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:43Z"}
+{"tick": 44, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:44Z"}
+{"tick": 45, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:45Z"}
+{"tick": 46, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:46Z"}
+{"tick": 47, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:47Z"}
+{"tick": 48, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:48Z"}
+{"tick": 49, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:49Z"}
+{"tick": 50, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:00:50Z"}
+{"tick": 51, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:51Z"}
+{"tick": 52, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:52Z"}
+{"tick": 53, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:53Z"}
+{"tick": 54, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:54Z"}
+{"tick": 55, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:55Z"}
+{"tick": 56, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:56Z"}
+{"tick": 57, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:57Z"}
+{"tick": 58, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:58Z"}
+{"tick": 59, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:00:59Z"}
+{"tick": 60, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:01:00Z"}
+{"tick": 61, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:01Z"}
+{"tick": 62, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:02Z"}
+{"tick": 63, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:03Z"}
+{"tick": 64, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:04Z"}
+{"tick": 65, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:05Z"}
+{"tick": 66, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:06Z"}
+{"tick": 67, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:07Z"}
+{"tick": 68, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:08Z"}
+{"tick": 69, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:09Z"}
+{"tick": 70, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:01:10Z"}
+{"tick": 71, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:11Z"}
+{"tick": 72, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:12Z"}
+{"tick": 73, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:13Z"}
+{"tick": 74, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:14Z"}
+{"tick": 75, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:15Z"}
+{"tick": 76, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:16Z"}
+{"tick": 77, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:17Z"}
+{"tick": 78, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:18Z"}
+{"tick": 79, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:19Z"}
+{"tick": 80, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:01:20Z"}
+{"tick": 81, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:21Z"}
+{"tick": 82, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:22Z"}
+{"tick": 83, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:23Z"}
+{"tick": 84, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:24Z"}
+{"tick": 85, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:25Z"}
+{"tick": 86, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:26Z"}
+{"tick": 87, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:27Z"}
+{"tick": 88, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:28Z"}
+{"tick": 89, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:29Z"}
+{"tick": 90, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:01:30Z"}
+{"tick": 91, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:31Z"}
+{"tick": 92, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:32Z"}
+{"tick": 93, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:33Z"}
+{"tick": 94, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:34Z"}
+{"tick": 95, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:35Z"}
+{"tick": 96, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:36Z"}
+{"tick": 97, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:37Z"}
+{"tick": 98, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:38Z"}
+{"tick": 99, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:39Z"}
+{"tick": 100, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:01:40Z"}
+{"tick": 101, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:41Z"}
+{"tick": 102, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:42Z"}
+{"tick": 103, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:43Z"}
+{"tick": 104, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:44Z"}
+{"tick": 105, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:45Z"}
+{"tick": 106, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:46Z"}
+{"tick": 107, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:47Z"}
+{"tick": 108, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:48Z"}
+{"tick": 109, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:49Z"}
+{"tick": 110, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:01:50Z"}
+{"tick": 111, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:51Z"}
+{"tick": 112, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:52Z"}
+{"tick": 113, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:53Z"}
+{"tick": 114, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:54Z"}
+{"tick": 115, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:55Z"}
+{"tick": 116, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:56Z"}
+{"tick": 117, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:57Z"}
+{"tick": 118, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:58Z"}
+{"tick": 119, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:01:59Z"}
+{"tick": 120, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:02:00Z"}
+{"tick": 121, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:01Z"}
+{"tick": 122, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:02Z"}
+{"tick": 123, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:03Z"}
+{"tick": 124, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:04Z"}
+{"tick": 125, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:05Z"}
+{"tick": 126, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:06Z"}
+{"tick": 127, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:07Z"}
+{"tick": 128, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:08Z"}
+{"tick": 129, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:09Z"}
+{"tick": 130, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:02:10Z"}
+{"tick": 131, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:11Z"}
+{"tick": 132, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:12Z"}
+{"tick": 133, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:13Z"}
+{"tick": 134, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:14Z"}
+{"tick": 135, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:15Z"}
+{"tick": 136, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:16Z"}
+{"tick": 137, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:17Z"}
+{"tick": 138, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:18Z"}
+{"tick": 139, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:19Z"}
+{"tick": 140, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:02:20Z"}
+{"tick": 141, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:21Z"}
+{"tick": 142, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:22Z"}
+{"tick": 143, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:23Z"}
+{"tick": 144, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:24Z"}
+{"tick": 145, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:25Z"}
+{"tick": 146, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:26Z"}
+{"tick": 147, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:27Z"}
+{"tick": 148, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:28Z"}
+{"tick": 149, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:29Z"}
+{"tick": 150, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:02:30Z"}
+{"tick": 151, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:31Z"}
+{"tick": 152, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:32Z"}
+{"tick": 153, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:33Z"}
+{"tick": 154, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:34Z"}
+{"tick": 155, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:35Z"}
+{"tick": 156, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:36Z"}
+{"tick": 157, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:37Z"}
+{"tick": 158, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:38Z"}
+{"tick": 159, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:39Z"}
+{"tick": 160, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:02:40Z"}
+{"tick": 161, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:41Z"}
+{"tick": 162, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:42Z"}
+{"tick": 163, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:43Z"}
+{"tick": 164, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:44Z"}
+{"tick": 165, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:45Z"}
+{"tick": 166, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:46Z"}
+{"tick": 167, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:47Z"}
+{"tick": 168, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:48Z"}
+{"tick": 169, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:49Z"}
+{"tick": 170, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:02:50Z"}
+{"tick": 171, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:51Z"}
+{"tick": 172, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:52Z"}
+{"tick": 173, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:53Z"}
+{"tick": 174, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:54Z"}
+{"tick": 175, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:55Z"}
+{"tick": 176, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:56Z"}
+{"tick": 177, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:57Z"}
+{"tick": 178, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:58Z"}
+{"tick": 179, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:02:59Z"}
+{"tick": 180, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:03:00Z"}
+{"tick": 181, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:01Z"}
+{"tick": 182, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:02Z"}
+{"tick": 183, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:03Z"}
+{"tick": 184, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:04Z"}
+{"tick": 185, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:05Z"}
+{"tick": 186, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:06Z"}
+{"tick": 187, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:07Z"}
+{"tick": 188, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:08Z"}
+{"tick": 189, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:09Z"}
+{"tick": 190, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:03:10Z"}
+{"tick": 191, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:11Z"}
+{"tick": 192, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:12Z"}
+{"tick": 193, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:13Z"}
+{"tick": 194, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:14Z"}
+{"tick": 195, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:15Z"}
+{"tick": 196, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:16Z"}
+{"tick": 197, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:17Z"}
+{"tick": 198, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:18Z"}
+{"tick": 199, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:19Z"}
+{"tick": 200, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:03:20Z"}
+{"tick": 201, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:21Z"}
+{"tick": 202, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:22Z"}
+{"tick": 203, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:23Z"}
+{"tick": 204, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:24Z"}
+{"tick": 205, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:25Z"}
+{"tick": 206, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:26Z"}
+{"tick": 207, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:27Z"}
+{"tick": 208, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:28Z"}
+{"tick": 209, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:29Z"}
+{"tick": 210, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:03:30Z"}
+{"tick": 211, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:31Z"}
+{"tick": 212, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:32Z"}
+{"tick": 213, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:33Z"}
+{"tick": 214, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:34Z"}
+{"tick": 215, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:35Z"}
+{"tick": 216, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:36Z"}
+{"tick": 217, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:37Z"}
+{"tick": 218, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:38Z"}
+{"tick": 219, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:39Z"}
+{"tick": 220, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:03:40Z"}
+{"tick": 221, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:41Z"}
+{"tick": 222, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:42Z"}
+{"tick": 223, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:43Z"}
+{"tick": 224, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:44Z"}
+{"tick": 225, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:45Z"}
+{"tick": 226, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:46Z"}
+{"tick": 227, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:47Z"}
+{"tick": 228, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:48Z"}
+{"tick": 229, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:49Z"}
+{"tick": 230, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:03:50Z"}
+{"tick": 231, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:51Z"}
+{"tick": 232, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:52Z"}
+{"tick": 233, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:53Z"}
+{"tick": 234, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:54Z"}
+{"tick": 235, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:55Z"}
+{"tick": 236, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:56Z"}
+{"tick": 237, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:57Z"}
+{"tick": 238, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:58Z"}
+{"tick": 239, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:03:59Z"}
+{"tick": 240, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:04:00Z"}
+{"tick": 241, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:01Z"}
+{"tick": 242, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:02Z"}
+{"tick": 243, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:03Z"}
+{"tick": 244, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:04Z"}
+{"tick": 245, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:05Z"}
+{"tick": 246, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:06Z"}
+{"tick": 247, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:07Z"}
+{"tick": 248, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:08Z"}
+{"tick": 249, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:09Z"}
+{"tick": 250, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:04:10Z"}
+{"tick": 251, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:11Z"}
+{"tick": 252, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:12Z"}
+{"tick": 253, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:13Z"}
+{"tick": 254, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:14Z"}
+{"tick": 255, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:15Z"}
+{"tick": 256, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:16Z"}
+{"tick": 257, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:17Z"}
+{"tick": 258, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:18Z"}
+{"tick": 259, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:19Z"}
+{"tick": 260, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:04:20Z"}
+{"tick": 261, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:21Z"}
+{"tick": 262, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:22Z"}
+{"tick": 263, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:23Z"}
+{"tick": 264, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:24Z"}
+{"tick": 265, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:25Z"}
+{"tick": 266, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:26Z"}
+{"tick": 267, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:27Z"}
+{"tick": 268, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:28Z"}
+{"tick": 269, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:29Z"}
+{"tick": 270, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:04:30Z"}
+{"tick": 271, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:31Z"}
+{"tick": 272, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:32Z"}
+{"tick": 273, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:33Z"}
+{"tick": 274, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:34Z"}
+{"tick": 275, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:35Z"}
+{"tick": 276, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:36Z"}
+{"tick": 277, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:37Z"}
+{"tick": 278, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:38Z"}
+{"tick": 279, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:39Z"}
+{"tick": 280, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:04:40Z"}
+{"tick": 281, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:41Z"}
+{"tick": 282, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:42Z"}
+{"tick": 283, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:43Z"}
+{"tick": 284, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:44Z"}
+{"tick": 285, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:45Z"}
+{"tick": 286, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:46Z"}
+{"tick": 287, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:47Z"}
+{"tick": 288, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:48Z"}
+{"tick": 289, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:49Z"}
+{"tick": 290, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:04:50Z"}
+{"tick": 291, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:51Z"}
+{"tick": 292, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:52Z"}
+{"tick": 293, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:53Z"}
+{"tick": 294, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:54Z"}
+{"tick": 295, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:55Z"}
+{"tick": 296, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:56Z"}
+{"tick": 297, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:57Z"}
+{"tick": 298, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:58Z"}
+{"tick": 299, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:04:59Z"}
+{"tick": 300, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:05:00Z"}
+{"tick": 301, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:01Z"}
+{"tick": 302, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:02Z"}
+{"tick": 303, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:03Z"}
+{"tick": 304, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:04Z"}
+{"tick": 305, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:05Z"}
+{"tick": 306, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:06Z"}
+{"tick": 307, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:07Z"}
+{"tick": 308, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:08Z"}
+{"tick": 309, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:09Z"}
+{"tick": 310, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:05:10Z"}
+{"tick": 311, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:11Z"}
+{"tick": 312, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:12Z"}
+{"tick": 313, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:13Z"}
+{"tick": 314, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:14Z"}
+{"tick": 315, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:15Z"}
+{"tick": 316, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:16Z"}
+{"tick": 317, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:17Z"}
+{"tick": 318, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:18Z"}
+{"tick": 319, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:19Z"}
+{"tick": 320, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:05:20Z"}
+{"tick": 321, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:21Z"}
+{"tick": 322, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:22Z"}
+{"tick": 323, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:23Z"}
+{"tick": 324, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:24Z"}
+{"tick": 325, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:25Z"}
+{"tick": 326, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:26Z"}
+{"tick": 327, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:27Z"}
+{"tick": 328, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:28Z"}
+{"tick": 329, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:29Z"}
+{"tick": 330, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:05:30Z"}
+{"tick": 331, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:31Z"}
+{"tick": 332, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:32Z"}
+{"tick": 333, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:33Z"}
+{"tick": 334, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:34Z"}
+{"tick": 335, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:35Z"}
+{"tick": 336, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:36Z"}
+{"tick": 337, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:37Z"}
+{"tick": 338, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:38Z"}
+{"tick": 339, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:39Z"}
+{"tick": 340, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:05:40Z"}
+{"tick": 341, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:41Z"}
+{"tick": 342, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:42Z"}
+{"tick": 343, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:43Z"}
+{"tick": 344, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:44Z"}
+{"tick": 345, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:45Z"}
+{"tick": 346, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:46Z"}
+{"tick": 347, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:47Z"}
+{"tick": 348, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:48Z"}
+{"tick": 349, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:49Z"}
+{"tick": 350, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:05:50Z"}
+{"tick": 351, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:51Z"}
+{"tick": 352, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:52Z"}
+{"tick": 353, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:53Z"}
+{"tick": 354, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:54Z"}
+{"tick": 355, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:55Z"}
+{"tick": 356, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:56Z"}
+{"tick": 357, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:57Z"}
+{"tick": 358, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:58Z"}
+{"tick": 359, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:05:59Z"}
+{"tick": 360, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:06:00Z"}
+{"tick": 361, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:01Z"}
+{"tick": 362, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:02Z"}
+{"tick": 363, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:03Z"}
+{"tick": 364, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:04Z"}
+{"tick": 365, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:05Z"}
+{"tick": 366, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:06Z"}
+{"tick": 367, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:07Z"}
+{"tick": 368, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:08Z"}
+{"tick": 369, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:09Z"}
+{"tick": 370, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:06:10Z"}
+{"tick": 371, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:11Z"}
+{"tick": 372, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:12Z"}
+{"tick": 373, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:13Z"}
+{"tick": 374, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:14Z"}
+{"tick": 375, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:15Z"}
+{"tick": 376, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:16Z"}
+{"tick": 377, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:17Z"}
+{"tick": 378, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:18Z"}
+{"tick": 379, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:19Z"}
+{"tick": 380, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:06:20Z"}
+{"tick": 381, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:21Z"}
+{"tick": 382, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:22Z"}
+{"tick": 383, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:23Z"}
+{"tick": 384, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:24Z"}
+{"tick": 385, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:25Z"}
+{"tick": 386, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:26Z"}
+{"tick": 387, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:27Z"}
+{"tick": 388, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:28Z"}
+{"tick": 389, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:29Z"}
+{"tick": 390, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:06:30Z"}
+{"tick": 391, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:31Z"}
+{"tick": 392, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:32Z"}
+{"tick": 393, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:33Z"}
+{"tick": 394, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:34Z"}
+{"tick": 395, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:35Z"}
+{"tick": 396, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:36Z"}
+{"tick": 397, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:37Z"}
+{"tick": 398, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:38Z"}
+{"tick": 399, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:39Z"}
+{"tick": 400, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:06:40Z"}
+{"tick": 401, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:41Z"}
+{"tick": 402, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:42Z"}
+{"tick": 403, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:43Z"}
+{"tick": 404, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:44Z"}
+{"tick": 405, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:45Z"}
+{"tick": 406, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:46Z"}
+{"tick": 407, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:47Z"}
+{"tick": 408, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:48Z"}
+{"tick": 409, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:49Z"}
+{"tick": 410, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:06:50Z"}
+{"tick": 411, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:51Z"}
+{"tick": 412, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:52Z"}
+{"tick": 413, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:53Z"}
+{"tick": 414, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:54Z"}
+{"tick": 415, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:55Z"}
+{"tick": 416, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:56Z"}
+{"tick": 417, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:57Z"}
+{"tick": 418, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:58Z"}
+{"tick": 419, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:06:59Z"}
+{"tick": 420, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:07:00Z"}
+{"tick": 421, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:01Z"}
+{"tick": 422, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:02Z"}
+{"tick": 423, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:03Z"}
+{"tick": 424, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:04Z"}
+{"tick": 425, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:05Z"}
+{"tick": 426, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:06Z"}
+{"tick": 427, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:07Z"}
+{"tick": 428, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:08Z"}
+{"tick": 429, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:09Z"}
+{"tick": 430, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:07:10Z"}
+{"tick": 431, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:11Z"}
+{"tick": 432, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:12Z"}
+{"tick": 433, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:13Z"}
+{"tick": 434, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:14Z"}
+{"tick": 435, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:15Z"}
+{"tick": 436, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:16Z"}
+{"tick": 437, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:17Z"}
+{"tick": 438, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:18Z"}
+{"tick": 439, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:19Z"}
+{"tick": 440, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:07:20Z"}
+{"tick": 441, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:21Z"}
+{"tick": 442, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:22Z"}
+{"tick": 443, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:23Z"}
+{"tick": 444, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:24Z"}
+{"tick": 445, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:25Z"}
+{"tick": 446, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:26Z"}
+{"tick": 447, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:27Z"}
+{"tick": 448, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:28Z"}
+{"tick": 449, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:29Z"}
+{"tick": 450, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:07:30Z"}
+{"tick": 451, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:31Z"}
+{"tick": 452, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:32Z"}
+{"tick": 453, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:33Z"}
+{"tick": 454, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:34Z"}
+{"tick": 455, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:35Z"}
+{"tick": 456, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:36Z"}
+{"tick": 457, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:37Z"}
+{"tick": 458, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:38Z"}
+{"tick": 459, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:39Z"}
+{"tick": 460, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:07:40Z"}
+{"tick": 461, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:41Z"}
+{"tick": 462, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:42Z"}
+{"tick": 463, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:43Z"}
+{"tick": 464, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:44Z"}
+{"tick": 465, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:45Z"}
+{"tick": 466, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:46Z"}
+{"tick": 467, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:47Z"}
+{"tick": 468, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:48Z"}
+{"tick": 469, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:49Z"}
+{"tick": 470, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:07:50Z"}
+{"tick": 471, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:51Z"}
+{"tick": 472, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:52Z"}
+{"tick": 473, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:53Z"}
+{"tick": 474, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:54Z"}
+{"tick": 475, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:55Z"}
+{"tick": 476, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:56Z"}
+{"tick": 477, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:57Z"}
+{"tick": 478, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:58Z"}
+{"tick": 479, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:07:59Z"}
+{"tick": 480, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:08:00Z"}
+{"tick": 481, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:01Z"}
+{"tick": 482, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:02Z"}
+{"tick": 483, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:03Z"}
+{"tick": 484, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:04Z"}
+{"tick": 485, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:05Z"}
+{"tick": 486, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:06Z"}
+{"tick": 487, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:07Z"}
+{"tick": 488, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:08Z"}
+{"tick": 489, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:09Z"}
+{"tick": 490, "cost": 0.001, "model": "gpt-4o-mini", "status": "error", "ts": "2026-01-01T00:08:10Z"}
+{"tick": 491, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:11Z"}
+{"tick": 492, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:12Z"}
+{"tick": 493, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:13Z"}
+{"tick": 494, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:14Z"}
+{"tick": 495, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:15Z"}
+{"tick": 496, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:16Z"}
+{"tick": 497, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:17Z"}
+{"tick": 498, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:18Z"}
+{"tick": 499, "cost": 0.001, "model": "gpt-4o-mini", "status": "ok", "ts": "2026-01-01T00:08:19Z"}
+{"tick": 0}
+{"tick": 1}
+{"tick": 2}
+{"tick": 3}
+{"tick": 4}
+{"tick": 5}
+{"tick": 6}
+{"tick": 7}
+{"tick": 8}
+{"tick": 9}
+{"tick": 10}
+{"tick": 11}
+{"tick": 12}
+{"tick": 13}
+{"tick": 14}
+{"tick": 15}
+{"tick": 16}
+{"tick": 17}
+{"tick": 18}
+{"tick": 19}
+{"tick": 999}
+{"tick": 0, "cost": 0.001, "status": "ok"}
+{"tick": 1, "cost": 0.001, "status": "ok"}
+{"tick": 2, "cost": 0.001, "status": "ok"}
+{"tick": 3, "cost": 0.001, "status": "ok"}
+{"tick": 4, "cost": 0.001, "status": "ok"}
+{"tick": 0}
+{"tick": 1}
+{"tick": 2}
+{"tick": 3}
+{"tick": 4}
+{"tick": 5}
+{"tick": 6}
+{"tick": 7}
+{"tick": 8}
+{"tick": 9}
+{"tick": 10}
+{"tick": 11}
+{"tick": 12}
+{"tick": 13}
+{"tick": 14}
+{"tick": 15}
+{"tick": 16}
+{"tick": 17}
+{"tick": 18}
+{"tick": 19}
+{"tick": 20}
+{"tick": 21}
+{"tick": 22}
+{"tick": 23}
+{"tick": 24}
+{"tick": 25}
+{"tick": 26}
+{"tick": 27}
+{"tick": 28}
+{"tick": 29}
+{"tick": 0}
+{"tick": 1}
+{"tick": 2}
+{"tick": 3}
+{"tick": 4}
+{"tick": 5}
+{"tick": 6}
+{"tick": 7}
+{"tick": 8}
+{"tick": 9}
+{"tick": 10}
+{"tick": 11}
+{"tick": 12}
+{"tick": 13}
+{"tick": 14}
+{"tick": 15}
+{"tick": 16}
+{"tick": 17}
+{"tick": 18}
+{"tick": 19}
+{"tick": 20}
+{"tick": 21}
+{"tick": 22}
+{"tick": 23}
+{"tick": 24}
+{"tick": 25}
+{"tick": 26}
+{"tick": 27}
+{"tick": 28}
+{"tick": 29}
+{"tick": 30}
+{"tick": 31}
+{"tick": 32}
+{"tick": 33}
+{"tick": 34}
+{"tick": 35}
+{"tick": 36}
+{"tick": 37}
+{"tick": 38}
+{"tick": 39}
+{"tick": 40}
+{"tick": 41}
+{"tick": 42}
+{"tick": 43}
+{"tick": 44}
+{"tick": 45}
+{"tick": 46}
+{"tick": 47}
+{"tick": 48}
+{"tick": 49}
+{"tick": 50}
+{"tick": 51}
+{"tick": 52}
+{"tick": 53}
+{"tick": 54}
+{"tick": 55}
+{"tick": 56}
+{"tick": 57}
+{"tick": 58}
+{"tick": 59}
+{"tick": 60}
+{"tick": 61}
+{"tick": 62}
+{"tick": 63}
+{"tick": 64}
+{"tick": 65}
+{"tick": 66}
+{"tick": 67}
+{"tick": 68}
+{"tick": 69}
+{"tick": 70}
+{"tick": 71}
+{"tick": 72}
+{"tick": 73}
+{"tick": 74}
+{"tick": 75}
+{"tick": 76}
+{"tick": 77}
+{"tick": 78}
+{"tick": 79}
+{"tick": 80}
+{"tick": 81}
+{"tick": 82}
+{"tick": 83}
+{"tick": 84}
+{"tick": 85}
+{"tick": 86}
+{"tick": 87}
+{"tick": 88}
+{"tick": 89}
+{"tick": 90}
+{"tick": 91}
+{"tick": 92}
+{"tick": 93}
+{"tick": 94}
+{"tick": 95}
+{"tick": 96}
+{"tick": 97}
+{"tick": 98}
+{"tick": 99}
+{"tick": 100}
+{"tick": 101}
+{"tick": 102}
+{"tick": 103}
+{"tick": 104}
+{"tick": 105}
+{"tick": 106}
+{"tick": 107}
+{"tick": 108}
+{"tick": 109}
+{"tick": 110}
+{"tick": 111}
+{"tick": 112}
+{"tick": 113}
+{"tick": 114}
+{"tick": 115}
+{"tick": 116}
+{"tick": 117}
+{"tick": 118}
+{"tick": 119}
+{"tick": 120}
+{"tick": 121}
+{"tick": 122}
+{"tick": 123}
+{"tick": 124}
+{"tick": 125}
+{"tick": 126}
+{"tick": 127}
+{"tick": 128}
+{"tick": 129}
+{"tick": 130}
+{"tick": 131}
+{"tick": 132}
+{"tick": 133}
+{"tick": 134}
+{"tick": 135}
+{"tick": 136}
+{"tick": 137}
+{"tick": 138}
+{"tick": 139}
+{"tick": 140}
+{"tick": 141}
+{"tick": 142}
+{"tick": 143}
+{"tick": 144}
+{"tick": 145}
+{"tick": 146}
+{"tick": 147}
+{"tick": 148}
+{"tick": 149}
+{"tick": 150}
+{"tick": 151}
+{"tick": 152}
+{"tick": 153}
+{"tick": 154}
+{"tick": 155}
+{"tick": 156}
+{"tick": 157}
+{"tick": 158}
+{"tick": 159}
+{"tick": 160}
+{"tick": 161}
+{"tick": 162}
+{"tick": 163}
+{"tick": 164}
+{"tick": 165}
+{"tick": 166}
+{"tick": 167}
+{"tick": 168}
+{"tick": 169}
+{"tick": 170}
+{"tick": 171}
+{"tick": 172}
+{"tick": 173}
+{"tick": 174}
+{"tick": 175}
+{"tick": 176}
+{"tick": 177}
+{"tick": 178}
+{"tick": 179}
+{"tick": 180}
+{"tick": 181}
+{"tick": 182}
+{"tick": 183}
+{"tick": 184}
+{"tick": 185}
+{"tick": 186}
+{"tick": 187}
+{"tick": 188}
+{"tick": 189}
+{"tick": 190}
+{"tick": 191}
+{"tick": 192}
+{"tick": 193}
+{"tick": 194}
+{"tick": 195}
+{"tick": 196}
+{"tick": 197}
+{"tick": 198}
+{"tick": 199}
+{"tick": 200}
+{"tick": 201}
+{"tick": 202}
+{"tick": 203}
+{"tick": 204}
+{"tick": 205}
+{"tick": 206}
+{"tick": 207}
+{"tick": 208}
+{"tick": 209}
+{"tick": 0, "model": "gpt-4o"}
+{"tick": 1, "model": "gpt-4o"}
+{"tick": 2, "model": "gpt-4o"}
+{"tick": 3, "model": "gpt-4o"}
+{"tick": 4, "model": "gpt-4o"}
+{"tick": 5, "model": "gpt-4o"}
+{"tick": 6, "model": "gpt-4o"}
+{"tick": 7, "model": "gpt-4o"}
+{"tick": 8, "model": "gpt-4o"}
+{"tick": 9, "model": "gpt-4o"}
+{"tick": 10, "model": "gpt-4o"}
+{"tick": 11, "model": "gpt-4o"}
+{"tick": 12, "model": "gpt-4o"}
+{"tick": 13, "model": "gpt-4o"}
+{"tick": 14, "model": "gpt-4o"}
