@@ -56,8 +56,8 @@ TIER_INFO = {
     },
     "pro": {
         "name": "Pro",
-        "price": 19,
-        "price_label": "$19/mo",
+        "price": 9.99,
+        "price_label": "$9.99/mo",
         "features": sorted(PRO_TIER_FEATURES),
         "limits": {
             "messages_per_day": -1,  # unlimited
