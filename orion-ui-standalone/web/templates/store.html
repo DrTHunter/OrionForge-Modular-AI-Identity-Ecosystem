@@ -138,12 +138,12 @@
     </p>
     <div class="packs-grid">
       {% for pack in credit_packs %}
-      <div class="pack-card {% if pack.bonus > 0 and loop.last %}popular{% endif %}">
+      <div class="pack-card {% if pack.bonus and loop.last %}popular{% endif %}">
         <div style="font-size:0.85rem; color:#71717a; font-weight:600;">{{ pack.label }}</div>
-        <div class="pack-price">${{ "%.2f"|format(pack.price / 100) }}</div>
+        <div class="pack-price">${{ "%.2f"|format(pack.price) }}</div>
         <div class="pack-credits">{{ "{:,}".format(pack.credits) }} credits</div>
-        {% if pack.bonus > 0 %}
-        <div class="pack-bonus">+{{ pack.bonus }} bonus credits!</div>
+        {% if pack.bonus %}
+        <div class="pack-bonus">{{ pack.bonus }}</div>
         {% endif %}
         <button class="pack-btn" onclick="buyPack('{{ pack.id }}')" id="pack-btn-{{ pack.id }}">
           Buy Now
@@ -163,7 +163,7 @@
     </p>
     <div class="catalog-grid">
       {% for item in catalog %}
-      {% if item.type == 'tool' %}
+      {% if item.category == 'premium_tool' %}
       <div class="catalog-card">
         <div class="catalog-card-header">
           <div class="catalog-icon">{{ item.icon }}</div>
