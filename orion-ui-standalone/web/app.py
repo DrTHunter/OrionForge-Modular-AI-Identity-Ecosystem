@@ -3874,16 +3874,20 @@ async def api_knowledge_get(note_id: str):
 #  ADMIN — Platform API Key Management
 # ═══════════════════════════════════════════════════════════════════
 
-# Admin access: set ADMIN_SECRET via `fly secrets set ADMIN_SECRET=your-secret`
-# Access the page at /admin/keys?secret=your-secret
-ADMIN_SECRET = os.environ.get("ADMIN_SECRET", "")
+# Admin access: only the emails listed here can access /admin/*
+# Set via env var (comma-separated) or falls back to this default.
+ADMIN_EMAILS = set(
+    e.strip().lower()
+    for e in os.environ.get("ADMIN_EMAILS", "dr.trent.hunter@gmail.com").split(",")
+    if e.strip()
+)
 
 def _check_admin(request: Request) -> bool:
-    """Verify admin access via query param or header."""
-    if not ADMIN_SECRET:
-        return False  # No secret configured — admin panel disabled
-    secret = request.query_params.get("secret", "") or request.headers.get("x-admin-secret", "")
-    return secret == ADMIN_SECRET
+    """Verify the logged-in user is an admin (by OAuth email)."""
+    user = getattr(request.state, "user", None)
+    if not user:
+        return False
+    return user.get("email", "").lower() in ADMIN_EMAILS
 
 
 def _get_platform_connections() -> list[dict]:
