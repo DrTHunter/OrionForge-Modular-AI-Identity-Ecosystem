@@ -376,31 +376,34 @@
     // ── OAuth Login ──
     async function oauthLogin(provider) {
       clearMessages();
+      showSuccess('Starting ' + provider + ' login...');
 
       if (!supabase) {
         showError(_initError || 'Supabase client not available. Reload the page or check your connection.');
         return;
       }
 
-      console.log('[oauth] Starting', provider, 'login, redirectTo:', window.location.origin + '/auth/callback');
+      const redirectUrl = window.location.origin + '/auth/callback';
+      console.log('[oauth] Starting', provider, 'login, redirectTo:', redirectUrl);
 
       try {
         const { data, error } = await supabase.auth.signInWithOAuth({
           provider: provider,
           options: {
-            redirectTo: window.location.origin + '/auth/callback',
+            redirectTo: redirectUrl,
           },
         });
-        console.log('[oauth] signInWithOAuth result:', { data, error });
+        console.log('[oauth] signInWithOAuth result:', JSON.stringify({ data, error }));
         if (error) {
-          showError(error.message);
+          showError(provider + ' login error: ' + error.message);
+          return;
         }
-        // For providers that return a URL (when skipBrowserRedirect is true),
-        // Supabase JS v2 auto-redirects by default. If we're still here after
-        // a moment, something went wrong.
         if (data?.url) {
           console.log('[oauth] Redirecting to:', data.url);
           window.location.href = data.url;
+        } else {
+          // Supabase JS v2 should auto-redirect; if we get here, show what happened
+          showError('No redirect URL returned. Check Supabase provider config. Data: ' + JSON.stringify(data));
         }
       } catch (err) {
         showError('OAuth login failed: ' + (err.message || 'Unknown error'));
