@@ -1,15 +1,16 @@
-"""Stripe Subscription — Checkout, webhooks, and tier gating.
+"""Stripe Subscription — Checkout, webhooks, tier gating, credits, and LLM markup.
 
-Implements a Free + Pro ($19/mo) model:
-  - Free tier: chat, profiles, knowledge, vault, basic tools, default skins
-  - Pro tier:  AGI loop, cost tracker, premium skins, priority routing,
-               unlimited memory, image generation, internet tools
+Implements a Pro-only ($9.99/mo) paywall with credits and token markup:
+  - All users must subscribe to Pro ($9.99/mo) to access the app
+  - Premium tools (AGI Loop, Email, Voice) cost credits
+  - LLM usage via platform API keys is charged at 1.5× token cost
+  - Users who provide their own API keys get free LLM usage
 
 Flow:
-  1. User signs up via Supabase → starts on Free tier
-  2. User clicks "Upgrade to Pro" → Stripe Checkout session
-  3. Stripe webhook confirms payment → stores subscription in stripe_state.json
-  4. Middleware checks subscription status on gated routes
+  1. User signs up via Supabase → redirected to /plans (paywall)
+  2. User subscribes to Pro → Stripe Checkout → full app access
+  3. Premium tools deduct credits; buy credit packs via Stripe
+  4. LLM calls bill at 1.5× when using platform-hosted keys
 """
 
 import json
@@ -236,7 +237,18 @@ def handle_webhook_event(payload: bytes, sig_header: str) -> dict:
     data = event.get("data", {}).get("object", {})
 
     if event_type == "checkout.session.completed":
-        user_id = data.get("client_reference_id") or data.get("metadata", {}).get("user_id")
+        metadata = data.get("metadata", {})
+        user_id = data.get("client_reference_id") or metadata.get("user_id")
+
+        # Credit pack purchase
+        if metadata.get("type") == "credits" and user_id:
+            credits = int(metadata.get("credits", 0))
+            pack_id = metadata.get("pack_id", "unknown")
+            if credits > 0:
+                add_user_credits(user_id, credits, reason=f"purchase:{pack_id}")
+            return {"ok": True, "action": "credits_purchased", "user_id": user_id, "credits": credits}
+
+        # Subscription purchase
         if user_id:
             set_user_subscription(user_id, {
                 "status": "active",
@@ -271,3 +283,228 @@ def handle_webhook_event(payload: bytes, sig_header: str) -> dict:
 
     log.info("[stripe] Processed webhook: %s", event_type)
     return {"ok": True, "event_type": event_type}
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  CREDIT SYSTEM — per-tool metered billing
+# ═══════════════════════════════════════════════════════════════════
+
+# Tool credit costs — how many credits each premium tool use costs
+TOOL_CREDIT_COSTS = {
+    "agi_loop":         10,   # per autonomous run
+    "email":             2,   # per email sent
+    "voice_tts":         3,   # per minute (rounded up)
+    "voice_stt":         3,   # per minute (rounded up)
+    "image_generation":  5,   # per image generated
+    "web_search":        1,   # per search query
+}
+
+# Credit packs users can purchase ($10, $20, $30)
+CREDIT_PACKS = {
+    "pack_10":  {"credits": 1000,  "price": 10.00, "label": "1,000 credits",  "price_label": "$10",  "bonus": ""},
+    "pack_20":  {"credits": 2200,  "price": 20.00, "label": "2,200 credits",  "price_label": "$20",  "bonus": "+200 bonus"},
+    "pack_30":  {"credits": 3500,  "price": 30.00, "label": "3,500 credits",  "price_label": "$30",  "bonus": "+500 bonus"},
+}
+
+# LLM markup multiplier: users pay 1.5× the actual token cost when using platform keys
+LLM_MARKUP_MULTIPLIER = 1.5
+
+# Store catalog — tools available for individual credit purchase
+STORE_CATALOG = [
+    {
+        "id": "agi_loop",
+        "name": "AGI Loop",
+        "description": "Autonomous multi-step reasoning engine. The agent plans, executes, and iterates without manual prompting.",
+        "icon": "∞",
+        "category": "premium_tool",
+        "credit_cost": 10,
+        "per_label": "per run",
+        "tags": ["autonomy", "reasoning", "advanced"],
+    },
+    {
+        "id": "email",
+        "name": "Email Tool",
+        "description": "Send and receive emails through your AI agents. Compose, reply, and manage communications.",
+        "icon": "✉",
+        "category": "premium_tool",
+        "credit_cost": 2,
+        "per_label": "per email",
+        "tags": ["communication", "productivity"],
+    },
+    {
+        "id": "voice_tts",
+        "name": "Voice — Text to Speech",
+        "description": "Give your agent a voice. High-quality neural TTS synthesis across multiple voices.",
+        "icon": "🔊",
+        "category": "premium_tool",
+        "credit_cost": 3,
+        "per_label": "per minute",
+        "tags": ["voice", "audio", "accessibility"],
+    },
+    {
+        "id": "voice_stt",
+        "name": "Voice — Speech to Text",
+        "description": "Talk to your agent. Real-time speech recognition with provider-grade accuracy.",
+        "icon": "🎙",
+        "category": "premium_tool",
+        "credit_cost": 3,
+        "per_label": "per minute",
+        "tags": ["voice", "audio", "input"],
+    },
+    {
+        "id": "image_generation",
+        "name": "Image Generation",
+        "description": "Generate images from text prompts via DALL·E, Stable Diffusion, or other providers.",
+        "icon": "🖼",
+        "category": "premium_tool",
+        "credit_cost": 5,
+        "per_label": "per image",
+        "tags": ["creative", "visual", "generation"],
+    },
+    {
+        "id": "web_search",
+        "name": "Web Search",
+        "description": "Give agents real-time internet access. Search the web, fetch pages, summarize results.",
+        "icon": "🌐",
+        "category": "premium_tool",
+        "credit_cost": 1,
+        "per_label": "per search",
+        "tags": ["internet", "research", "real-time"],
+    },
+    {
+        "id": "llm_platform_credits",
+        "name": "LLM Usage (Platform Keys)",
+        "description": "Use our hosted API keys for OpenAI, Anthropic, DeepSeek, xAI, Google, and more. Charged at 1.5× token cost in credits. Bring your own keys for free!",
+        "icon": "🧠",
+        "category": "llm_usage",
+        "credit_cost": 0,
+        "per_label": "1.5× token cost",
+        "tags": ["llm", "tokens", "models"],
+    },
+]
+
+
+def estimate_llm_credit_cost(usd_cost: float) -> int:
+    """Convert a USD token cost to credits at 1.5× markup.
+
+    1 credit ≈ $0.01 base value. With 1.5× markup:
+      $0.01 actual cost → 1.5 credits (rounded up to 2)
+    """
+    if usd_cost <= 0:
+        return 0
+    # Convert USD to credits: $0.01 = 1 credit base
+    # Apply 1.5× markup
+    credits = int((usd_cost * 100) * LLM_MARKUP_MULTIPLIER + 0.99)  # round up
+    return max(credits, 1)  # minimum 1 credit
+
+
+def get_user_credits(user_id: str) -> int:
+    """Get the credit balance for a user."""
+    if not user_id:
+        return 0
+    state = _load_stripe_state()
+    return state.get("credits", {}).get(user_id, {}).get("balance", 0)
+
+
+def add_user_credits(user_id: str, amount: int, reason: str = "purchase"):
+    """Add credits to a user's balance."""
+    state = _load_stripe_state()
+    if "credits" not in state:
+        state["credits"] = {}
+    if user_id not in state["credits"]:
+        state["credits"][user_id] = {"balance": 0, "history": []}
+    state["credits"][user_id]["balance"] += amount
+    state["credits"][user_id]["history"].append({
+        "type": "credit",
+        "amount": amount,
+        "reason": reason,
+        "timestamp": time.time(),
+    })
+    # Keep last 200 history entries
+    state["credits"][user_id]["history"] = state["credits"][user_id]["history"][-200:]
+    _save_stripe_state(state)
+    log.info("[credits] +%d credits for user %s (%s). Balance: %d",
+             amount, user_id, reason, state["credits"][user_id]["balance"])
+
+
+def deduct_user_credits(user_id: str, amount: int, tool_name: str) -> dict:
+    """Deduct credits for a tool use. Returns {ok, balance} or {error}."""
+    state = _load_stripe_state()
+    if "credits" not in state:
+        state["credits"] = {}
+    if user_id not in state["credits"]:
+        state["credits"][user_id] = {"balance": 0, "history": []}
+
+    balance = state["credits"][user_id]["balance"]
+    if balance < amount:
+        return {
+            "error": f"Insufficient credits. Need {amount}, have {balance}.",
+            "balance": balance,
+            "needed": amount,
+        }
+
+    state["credits"][user_id]["balance"] -= amount
+    state["credits"][user_id]["history"].append({
+        "type": "debit",
+        "amount": -amount,
+        "tool": tool_name,
+        "timestamp": time.time(),
+    })
+    state["credits"][user_id]["history"] = state["credits"][user_id]["history"][-200:]
+    _save_stripe_state(state)
+    new_balance = state["credits"][user_id]["balance"]
+    log.info("[credits] -%d credits for user %s (tool: %s). Balance: %d",
+             amount, user_id, tool_name, new_balance)
+    return {"ok": True, "balance": new_balance}
+
+
+def get_credit_history(user_id: str, limit: int = 50) -> list:
+    """Get recent credit transaction history for a user."""
+    state = _load_stripe_state()
+    history = state.get("credits", {}).get(user_id, {}).get("history", [])
+    return list(reversed(history[-limit:]))
+
+
+def create_credits_checkout_session(
+    user_id: str, user_email: str, pack_id: str,
+    success_url: str, cancel_url: str
+) -> dict:
+    """Create a Stripe Checkout session for purchasing a credit pack."""
+    stripe = _get_stripe()
+    if not stripe or not STRIPE_SECRET_KEY:
+        return {"error": "Stripe not configured"}
+
+    pack = CREDIT_PACKS.get(pack_id)
+    if not pack:
+        return {"error": f"Unknown credit pack: {pack_id}"}
+
+    try:
+        session = stripe.checkout.Session.create(
+            mode="payment",
+            payment_method_types=["card"],
+            line_items=[{
+                "price_data": {
+                    "currency": "usd",
+                    "product_data": {
+                        "name": f"SoulScript Credits — {pack['label']}",
+                        "description": f"{pack['credits']} credits for premium tool usage",
+                    },
+                    "unit_amount": int(pack["price"] * 100),  # cents
+                },
+                "quantity": 1,
+            }],
+            success_url=success_url,
+            cancel_url=cancel_url,
+            client_reference_id=user_id,
+            customer_email=user_email,
+            metadata={
+                "user_id": user_id,
+                "type": "credits",
+                "pack_id": pack_id,
+                "credits": str(pack["credits"]),
+            },
+        )
+        return {"url": session.url, "session_id": session.id}
+    except Exception as exc:
+        log.error("[stripe] Credit checkout creation failed: %s", exc)
+        return {"error": str(exc)}
