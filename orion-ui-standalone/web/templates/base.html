@@ -90,6 +90,16 @@
       </div>
 
       <div class="nav-footer">
+        <!-- Trial countdown (visible when on trial) -->
+        {% set trial = request.state.trial if request.state.trial is defined else none %}
+        {% set is_subscribed = request.state.is_subscribed if request.state.is_subscribed is defined else false %}
+        {% if trial and trial.active and not is_subscribed %}
+        <a href="/plans" style="display:block; text-decoration:none; margin-bottom:0.5rem; padding:0.5rem 0.6rem; background:rgba(99,102,241,0.08); border:1px solid rgba(99,102,241,0.2); border-radius:0.5rem; text-align:center;">
+          <div style="font-size:0.7rem; color:#a5b4fc; font-weight:700; letter-spacing:0.03em;">FREE TRIAL</div>
+          <div style="font-size:1rem; font-weight:800; color:#fff;">{{ trial.days_left }} day{{ 's' if trial.days_left != 1 else '' }} left</div>
+          <div class="nav-label" style="font-size:0.65rem; color:#71717a; margin-top:2px;">Upgrade to Pro →</div>
+        </a>
+        {% endif %}
         <!-- User info (populated by JS if authenticated) -->
         <div id="nav-user-section" style="display:none; margin-bottom: 0.5rem;">
           <div style="display:flex; align-items:center; gap:0.5rem; padding:0.35rem 0.5rem; background:rgba(99,102,241,0.08); border-radius:0.5rem; border:1px solid rgba(99,102,241,0.15);">
