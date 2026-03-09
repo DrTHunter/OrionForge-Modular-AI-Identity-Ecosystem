@@ -352,6 +352,20 @@ CREDIT_PACKS = {
 # LLM markup multiplier: users pay 1.5× the actual token cost when using platform keys
 LLM_MARKUP_MULTIPLIER = 1.5
 
+# ── Voice API pricing (USD) ──────────────────────────────────────
+# TTS cost per 1,000 characters by provider
+TTS_COST_PER_1K_CHARS = {
+    "elevenlabs": 0.30,    # ElevenLabs standard tier
+    "edge-tts":   0.015,   # Local Piper / XTTS compute
+    "default":    0.03,
+}
+
+# STT cost per minute of audio by provider
+STT_COST_PER_MINUTE = {
+    "whisper": 0.006,      # OpenAI Whisper pricing
+    "default": 0.006,
+}
+
 # ══════════════════════════════════════════════════════════════════
 #  STORE CATALOG — One-time credit purchases & free tools
 # ══════════════════════════════════════════════════════════════════
@@ -394,24 +408,26 @@ STORE_CATALOG = [
     {
         "id": "voice_tts",
         "name": "Voice — Text to Speech",
-        "description": "Give your agent a voice. High-quality neural TTS synthesis across multiple voices. One-time unlock — use unlimited.",
+        "description": "Give your agent a voice. High-quality neural TTS synthesis across multiple voices. One-time unlock to access the tool. Uses API keys — bring your own for free, or use platform keys at 1.5× the API cost in credits per use.",
         "icon": "🔊",
         "category": "premium_tool",
         "purchase_type": "one_time",
         "credit_cost": 150,
         "unlocks": ["voice_tts"],
+        "platform_api": True,
         "tags": ["voice", "audio", "accessibility"],
     },
     # ── One-time unlock: Voice STT (150 credits / $1.50) ────────
     {
         "id": "voice_stt",
         "name": "Voice — Speech to Text",
-        "description": "Talk to your agent. Real-time speech recognition with provider-grade accuracy. One-time unlock — use unlimited.",
+        "description": "Talk to your agent. Real-time speech recognition with provider-grade accuracy. One-time unlock to access the tool. Uses API keys — bring your own for free, or use platform keys at 1.5× the API cost in credits per use.",
         "icon": "🎙",
         "category": "premium_tool",
         "purchase_type": "one_time",
         "credit_cost": 150,
         "unlocks": ["voice_stt"],
+        "platform_api": True,
         "tags": ["voice", "audio", "input"],
     },
     # ── One-time unlock: Cost Tracker (200 credits / $2) ────────
@@ -605,6 +621,32 @@ def estimate_llm_credit_cost(usd_cost: float) -> int:
     # Apply 1.5× markup
     credits = int((usd_cost * 100) * LLM_MARKUP_MULTIPLIER + 0.99)  # round up
     return max(credits, 1)  # minimum 1 credit
+
+
+def estimate_tts_credit_cost(char_count: int, provider: str = "elevenlabs") -> int:
+    """Convert TTS character count to credits at 1.5× markup.
+
+    Uses provider-specific per-1K-char pricing, then applies the same
+    1.5× markup as LLM usage.  Returns 0 for zero-length text.
+    """
+    if char_count <= 0:
+        return 0
+    rate = TTS_COST_PER_1K_CHARS.get(provider, TTS_COST_PER_1K_CHARS["default"])
+    usd_cost = (char_count / 1000) * rate
+    return estimate_llm_credit_cost(usd_cost)
+
+
+def estimate_stt_credit_cost(audio_seconds: float, provider: str = "whisper") -> int:
+    """Convert STT audio duration (seconds) to credits at 1.5× markup.
+
+    Uses provider-specific per-minute pricing, then applies the same
+    1.5× markup as LLM usage.  Returns 0 for zero-length audio.
+    """
+    if audio_seconds <= 0:
+        return 0
+    rate = STT_COST_PER_MINUTE.get(provider, STT_COST_PER_MINUTE["default"])
+    usd_cost = (audio_seconds / 60) * rate
+    return estimate_llm_credit_cost(usd_cost)
 
 
 def get_user_credits(user_id: str) -> int:
