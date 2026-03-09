@@ -1,0 +1,19 @@
+# Exclude heavy/unnecessary files from Docker build context
+.git
+.github
+website
+ui
+notes
+__pycache__
+*.pyc
+*.pyo
+*.egg-info
+.env
+*.log
+data/chats/*
+data/uploads/*
+data/trash/*
+*.zip
+*.tar.gz
+node_modules
+.vscode
