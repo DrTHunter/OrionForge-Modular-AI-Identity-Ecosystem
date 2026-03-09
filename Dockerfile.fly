@@ -1,0 +1,34 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# System deps for FAISS (libgomp for OpenMP)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential libgomp1 curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY orion-ui-standalone/requirements.txt ./requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy engine source
+COPY engine/src/ ./engine/src/
+COPY engine/src/__init__.py ./engine/__init__.py
+
+# Copy UI standalone (the main app)
+COPY orion-ui-standalone/ ./app/
+
+# Symlink engine src into app so imports work: from src.xxx import yyy
+RUN ln -sf /app/engine/src /app/app/src
+
+WORKDIR /app/app
+
+# Expose the port
+EXPOSE 8989
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+    CMD curl -f http://localhost:8989/api/auth/config || exit 1
+
+# Run with uvicorn
+CMD ["python", "-m", "uvicorn", "web.app:app", "--host", "0.0.0.0", "--port", "8989", "--workers", "2"]

@@ -1,0 +1,39 @@
+# Fly.io deployment config for SoulScript Engine
+# Deploy: fly launch / fly deploy
+# Docs: https://fly.io/docs/reference/configuration/
+
+app = "orionforge-engine"
+primary_region = "iad"  # US East (Virginia) — adjust as needed
+
+[build]
+  dockerfile = "Dockerfile.fly"
+
+[env]
+  PORT = "8989"
+  PYTHONUNBUFFERED = "1"
+
+[http_service]
+  internal_port = 8989
+  force_https = true
+  auto_stop_machines = "suspend"
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+  [http_service.concurrency]
+    type = "requests"
+    hard_limit = 250
+    soft_limit = 200
+
+[[vm]]
+  size = "shared-cpu-2x"
+  memory = "1gb"
+
+[checks]
+  [checks.health]
+    type = "http"
+    port = 8989
+    path = "/api/auth/config"
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "10s"

@@ -39,6 +39,11 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from web.image_gen import _generate_image
 from web.auth import get_auth_config, verify_supabase_token, extract_user_from_token, is_public_path
+from web.stripe_billing import (
+    get_user_tier, get_user_subscription, user_has_feature,
+    create_checkout_session, create_billing_portal_session,
+    handle_webhook_event, TIER_INFO, STRIPE_PUBLISHABLE_KEY,
+)
 from src.memory.types import VALID_SCOPES, VALID_CATEGORIES
 
 # ── Project paths ────────────────────────────────────────────────
@@ -1024,6 +1029,94 @@ async def auth_callback(request: Request):
 </script>
 </body></html>
 """)
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  STRIPE BILLING ROUTES
+# ═══════════════════════════════════════════════════════════════════
+
+@app.get("/api/stripe/config")
+async def api_stripe_config():
+    """Return public Stripe config for frontend."""
+    return JSONResponse({
+        "publishable_key": STRIPE_PUBLISHABLE_KEY,
+        "configured": bool(STRIPE_PUBLISHABLE_KEY),
+        "tiers": TIER_INFO,
+    })
+
+
+@app.get("/api/stripe/subscription")
+async def api_stripe_subscription(request: Request):
+    """Get current user's subscription status."""
+    user = getattr(request.state, "user", None)
+    if not user:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    sub_info = get_user_subscription(user["id"])
+    return JSONResponse(sub_info)
+
+
+@app.post("/api/stripe/checkout")
+async def api_stripe_checkout(request: Request):
+    """Create a Stripe Checkout session for Pro upgrade."""
+    user = getattr(request.state, "user", None)
+    if not user:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+
+    base_url = str(request.base_url).rstrip("/")
+    result = create_checkout_session(
+        user_id=user["id"],
+        user_email=user.get("email", ""),
+        success_url=f"{base_url}/plans?success=1",
+        cancel_url=f"{base_url}/plans?canceled=1",
+    )
+    if "error" in result:
+        return JSONResponse(result, status_code=400)
+    return JSONResponse(result)
+
+
+@app.post("/api/stripe/portal")
+async def api_stripe_portal(request: Request):
+    """Create a Stripe Billing Portal session for subscription management."""
+    user = getattr(request.state, "user", None)
+    if not user:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+
+    base_url = str(request.base_url).rstrip("/")
+    result = create_billing_portal_session(
+        user_id=user["id"],
+        return_url=f"{base_url}/plans",
+    )
+    if "error" in result:
+        return JSONResponse(result, status_code=400)
+    return JSONResponse(result)
+
+
+@app.post("/api/stripe/webhook")
+async def api_stripe_webhook(request: Request):
+    """Handle Stripe webhook events (subscription changes, payments)."""
+    payload = await request.body()
+    sig_header = request.headers.get("stripe-signature", "")
+    result = handle_webhook_event(payload, sig_header)
+    if "error" in result:
+        return JSONResponse(result, status_code=400)
+    return JSONResponse(result)
+
+
+@app.get("/plans", response_class=HTMLResponse)
+async def page_plans(request: Request):
+    """Subscription plans / upgrade page."""
+    user = getattr(request.state, "user", None)
+    sub_info = get_user_subscription(user["id"]) if user else {"tier": "free", "tier_info": TIER_INFO["free"], "subscription": None, "stripe_configured": bool(STRIPE_PUBLISHABLE_KEY)}
+    auth_cfg = get_auth_config()
+    return templates.TemplateResponse("plans.html", {
+        "request": request,
+        "page": "plans",
+        "user": user,
+        "subscription": sub_info,
+        "tiers": TIER_INFO,
+        "stripe_publishable_key": STRIPE_PUBLISHABLE_KEY,
+        "auth_config": auth_cfg,
+    })
 
 
 # ═══════════════════════════════════════════════════════════════════
