@@ -43,6 +43,10 @@ from web.stripe_billing import (
     get_user_tier, get_user_subscription, user_has_feature,
     create_checkout_session, create_billing_portal_session,
     handle_webhook_event, TIER_INFO, STRIPE_PUBLISHABLE_KEY,
+    get_user_credits, add_user_credits, deduct_user_credits,
+    CREDIT_PACKS, TOOL_CREDIT_COSTS, create_credits_checkout_session,
+    STORE_CATALOG, LLM_MARKUP_MULTIPLIER, estimate_llm_credit_cost,
+    get_credit_history,
 )
 from src.memory.types import VALID_SCOPES, VALID_CATEGORIES
 
@@ -91,13 +95,32 @@ _AUTH_FILE = _CONFIG_DIR / "auth.json"
 
 
 # ── Authentication Middleware ────────────────────────────────────
+# Paths that require auth but NOT an active subscription
+SUBSCRIPTION_EXEMPT_PATHS = {
+    "/plans",
+    "/api/stripe/checkout",
+    "/api/stripe/portal",
+    "/api/stripe/subscription",
+    "/api/stripe/config",
+    "/api/credits/balance",
+    "/api/credits/buy",
+    "/api/auth/logout",
+    "/api/auth/session",
+    "/api/auth/user",
+}
+
+def _is_subscription_exempt(path: str) -> bool:
+    for sp in SUBSCRIPTION_EXEMPT_PATHS:
+        if path == sp or path.startswith(sp + "/"):
+            return True
+    return False
+
 class AuthMiddleware(BaseHTTPMiddleware):
-    """Redirect unauthenticated users to /login for protected pages."""
+    """Redirect unauthenticated users to /login, unsubscribed to /plans."""
 
     async def dispatch(self, request: Request, call_next):
         auth_cfg = get_auth_config()
         if not auth_cfg.get("auth_enabled", False):
-            # Auth disabled — pass everything through
             response = await call_next(request)
             return response
 
@@ -111,7 +134,6 @@ class AuthMiddleware(BaseHTTPMiddleware):
         # Check for auth cookie
         token = request.cookies.get("sb_access_token")
         if not token:
-            # API requests get 401, page requests get redirected
             if path.startswith("/api/"):
                 return JSONResponse({"error": "Not authenticated"}, status_code=401)
             return RedirectResponse(url="/login", status_code=302)
@@ -122,8 +144,23 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 return JSONResponse({"error": "Invalid or expired token"}, status_code=401)
             return RedirectResponse(url="/login", status_code=302)
 
-        # Attach user info to request state for use in route handlers
+        # Attach user info to request state
         request.state.user = extract_user_from_token(payload)
+
+        # ── Subscription gate ────────────────────────────────────
+        # Exempt paths (plans page, stripe endpoints) skip this check
+        if not _is_subscription_exempt(path):
+            user_id = request.state.user.get("id", "")
+            tier = get_user_tier(user_id)
+            if tier != "pro":
+                # Non-subscribed users are walled off to /plans
+                if path.startswith("/api/"):
+                    return JSONResponse(
+                        {"error": "Subscription required", "redirect": "/plans"},
+                        status_code=403,
+                    )
+                return RedirectResponse(url="/plans", status_code=302)
+
         response = await call_next(request)
         return response
 
@@ -1015,7 +1052,7 @@ async def auth_callback(request: Request):
       }}),
     }});
     if (resp.ok) {{
-      window.location.href = '/chat';
+      window.location.href = '/plans';
     }} else {{
       document.getElementById('status').textContent = 'Session error. Redirecting…';
       setTimeout(() => window.location.href = '/login', 2000);
@@ -1102,12 +1139,110 @@ async def api_stripe_webhook(request: Request):
     return JSONResponse(result)
 
 
+# ═══════════════════════════════════════════════════════════════════
+#  STORE & CREDITS API
+# ═══════════════════════════════════════════════════════════════════
+
+@app.get("/store", response_class=HTMLResponse)
+async def page_store(request: Request):
+    """Store page — browse tools, buy credit packs."""
+    user = getattr(request.state, "user", None)
+    credits = get_user_credits(user["id"]) if user else 0
+    auth_cfg = get_auth_config()
+    return templates.TemplateResponse("store.html", {
+        "request": request,
+        "page": "store",
+        "user": user,
+        "credits": credits,
+        "catalog": STORE_CATALOG,
+        "credit_packs": CREDIT_PACKS,
+        "tool_costs": TOOL_CREDIT_COSTS,
+        "stripe_publishable_key": STRIPE_PUBLISHABLE_KEY,
+        "auth_config": auth_cfg,
+    })
+
+
+@app.get("/api/credits/balance")
+async def api_credits_balance(request: Request):
+    """Return the current user's credit balance."""
+    user = getattr(request.state, "user", None)
+    if not user:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    balance = get_user_credits(user["id"])
+    return JSONResponse({"credits": balance})
+
+
+@app.post("/api/credits/buy")
+async def api_credits_buy(request: Request):
+    """Create a Stripe checkout session for a credit pack."""
+    user = getattr(request.state, "user", None)
+    if not user:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    body = await request.json()
+    pack_id = body.get("pack_id", "")
+    base_url = str(request.base_url).rstrip("/")
+    result = create_credits_checkout_session(
+        user_id=user["id"],
+        user_email=user.get("email", ""),
+        pack_id=pack_id,
+        success_url=f"{base_url}/store?credits_success=1",
+        cancel_url=f"{base_url}/store?credits_canceled=1",
+    )
+    if "error" in result:
+        return JSONResponse(result, status_code=400)
+    return JSONResponse(result)
+
+
+@app.get("/api/store/catalog")
+async def api_store_catalog(request: Request):
+    """Return the full store catalog and credit packs."""
+    user = getattr(request.state, "user", None)
+    credits = get_user_credits(user["id"]) if user else 0
+    return JSONResponse({
+        "catalog": STORE_CATALOG,
+        "credit_packs": CREDIT_PACKS,
+        "credits": credits,
+    })
+
+
+@app.get("/api/credits/history")
+async def api_credits_history(request: Request):
+    """Return the user's credit transaction history."""
+    user = getattr(request.state, "user", None)
+    if not user:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    history = get_credit_history(user["id"])
+    return JSONResponse({"history": history})
+
+
+@app.post("/api/credits/deduct-tool")
+async def api_credits_deduct_tool(request: Request):
+    """Deduct credits for a tool purchase from the store."""
+    user = getattr(request.state, "user", None)
+    if not user:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    body = await request.json()
+    tool_id = body.get("tool_id", "")
+    cost = TOOL_CREDIT_COSTS.get(tool_id)
+    if cost is None:
+        return JSONResponse({"error": f"Unknown tool: {tool_id}"}, status_code=400)
+    balance = get_user_credits(user["id"])
+    if balance < cost:
+        return JSONResponse({"error": "Insufficient credits", "balance": balance, "cost": cost}, status_code=402)
+    ok = deduct_user_credits(user["id"], cost, f"tool:{tool_id}")
+    if not ok:
+        return JSONResponse({"error": "Deduction failed"}, status_code=500)
+    new_balance = get_user_credits(user["id"])
+    return JSONResponse({"success": True, "tool_id": tool_id, "cost": cost, "balance": new_balance})
+
+
 @app.get("/plans", response_class=HTMLResponse)
 async def page_plans(request: Request):
     """Subscription plans / upgrade page."""
     user = getattr(request.state, "user", None)
     sub_info = get_user_subscription(user["id"]) if user else {"tier": "free", "tier_info": TIER_INFO["free"], "subscription": None, "stripe_configured": bool(STRIPE_PUBLISHABLE_KEY)}
     auth_cfg = get_auth_config()
+    credits = get_user_credits(user["id"]) if user else 0
     return templates.TemplateResponse("plans.html", {
         "request": request,
         "page": "plans",
@@ -1116,6 +1251,8 @@ async def page_plans(request: Request):
         "tiers": TIER_INFO,
         "stripe_publishable_key": STRIPE_PUBLISHABLE_KEY,
         "auth_config": auth_cfg,
+        "credits": credits,
+        "credit_packs": CREDIT_PACKS,
     })
 
 
@@ -2786,7 +2923,8 @@ class FolderCreate(BaseModel):
     name: str
 
 @app.post("/api/chat/send")
-async def api_chat_send(req: ChatRequest):
+async def api_chat_send(req: ChatRequest, request: Request):
+    user = getattr(request.state, "user", None)
     conn = _resolve_connection(req.connection_id, req.agent)
     if not conn:
         return JSONResponse({"error": "No API connection available. Add one in Settings."}, 400)
@@ -2916,6 +3054,24 @@ async def api_chat_send(req: ChatRequest):
             log_cost_event(metering, agent=req.agent, chat_id=chat_data["id"])
         except Exception as exc:
             log.warning("[metering] cost computation failed: %s", exc)
+
+        # ── Credit deduction for platform-hosted LLM keys ──
+        # If the connection is platform-hosted (not user's own key), deduct credits
+        if conn.get("platform_hosted") and user and cost_data.get("total_cost"):
+            try:
+                credit_cost = estimate_llm_credit_cost(cost_data["total_cost"])
+                if credit_cost > 0:
+                    balance = get_user_credits(user["id"])
+                    if balance < credit_cost:
+                        return JSONResponse({
+                            "error": "Insufficient credits for LLM usage",
+                            "credits_needed": credit_cost,
+                            "credits_balance": balance,
+                            "redirect": "/store",
+                        }, status_code=402)
+                    deduct_user_credits(user["id"], credit_cost, f"llm:{model}:{total_usage.get('total_tokens', 0)}tok")
+            except Exception as exc:
+                log.warning("[credits] LLM credit deduction failed: %s", exc)
 
         # ── If the LLM wants to call tools ──
         tool_calls = msg.get("tool_calls")
