@@ -338,15 +338,9 @@ def handle_webhook_event(payload: bytes, sig_header: str) -> dict:
 #  CREDIT SYSTEM — per-tool metered billing
 # ═══════════════════════════════════════════════════════════════════
 
-# Tool credit costs — how many credits each premium tool use costs
-TOOL_CREDIT_COSTS = {
-    "agi_loop":         10,   # per autonomous run
-    "email":             2,   # per email sent
-    "voice_tts":         3,   # per minute (rounded up)
-    "voice_stt":         3,   # per minute (rounded up)
-    "image_generation":  5,   # per image generated
-    "web_search":        1,   # per search query
-}
+# ── Per-use credit costs (only for tools that charge per-use) ────
+# Web Search & Image Generation are FREE and don't appear here.
+TOOL_CREDIT_COSTS = {}
 
 # Credit packs users can purchase ($10, $20, $30)
 CREDIT_PACKS = {
@@ -358,79 +352,245 @@ CREDIT_PACKS = {
 # LLM markup multiplier: users pay 1.5× the actual token cost when using platform keys
 LLM_MARKUP_MULTIPLIER = 1.5
 
-# Store catalog — tools available for individual credit purchase
+# ══════════════════════════════════════════════════════════════════
+#  STORE CATALOG — One-time credit purchases & free tools
+# ══════════════════════════════════════════════════════════════════
+#
+# purchase_type:
+#   "one_time"  → buy once with credits, unlocked forever
+#   "free"      → included for everyone, no purchase needed
+#   "info"      → informational card (e.g. LLM usage), not purchasable
+#
+# AGI Loop purchase includes: agi_loop, continuation_update (all AGI sub-tools)
+# Skins are listed separately with purchase_type="one_time" and category="skin"
+# ──────────────────────────────────────────────────────────────────
+
 STORE_CATALOG = [
+    # ── One-time unlock: AGI Bundle (500 credits / $5) ───────────
     {
-        "id": "agi_loop",
-        "name": "AGI Loop",
-        "description": "Autonomous multi-step reasoning engine. The agent plans, executes, and iterates without manual prompting.",
+        "id": "agi_bundle",
+        "name": "AGI Loop Bundle",
+        "description": "Unlock the autonomous AGI Loop and all AGI sub-tools. The agent plans, executes, and iterates without manual prompting. Includes continuation updates and all future AGI tools.",
         "icon": "∞",
         "category": "premium_tool",
-        "credit_cost": 10,
-        "per_label": "per run",
+        "purchase_type": "one_time",
+        "credit_cost": 500,
+        "unlocks": ["agi_loop", "continuation_update"],
         "tags": ["autonomy", "reasoning", "advanced"],
     },
+    # ── One-time unlock: Email Tool (100 credits / $1) ──────────
     {
         "id": "email",
         "name": "Email Tool",
-        "description": "Send and receive emails through your AI agents. Compose, reply, and manage communications.",
+        "description": "Send and receive emails through your AI agents. Compose, reply, and manage communications. One-time unlock — use unlimited.",
         "icon": "✉",
         "category": "premium_tool",
-        "credit_cost": 2,
-        "per_label": "per email",
+        "purchase_type": "one_time",
+        "credit_cost": 100,
+        "unlocks": ["email"],
         "tags": ["communication", "productivity"],
     },
+    # ── One-time unlock: Voice TTS (150 credits / $1.50) ────────
     {
         "id": "voice_tts",
         "name": "Voice — Text to Speech",
-        "description": "Give your agent a voice. High-quality neural TTS synthesis across multiple voices.",
+        "description": "Give your agent a voice. High-quality neural TTS synthesis across multiple voices. One-time unlock — use unlimited.",
         "icon": "🔊",
         "category": "premium_tool",
-        "credit_cost": 3,
-        "per_label": "per minute",
+        "purchase_type": "one_time",
+        "credit_cost": 150,
+        "unlocks": ["voice_tts"],
         "tags": ["voice", "audio", "accessibility"],
     },
+    # ── One-time unlock: Voice STT (150 credits / $1.50) ────────
     {
         "id": "voice_stt",
         "name": "Voice — Speech to Text",
-        "description": "Talk to your agent. Real-time speech recognition with provider-grade accuracy.",
+        "description": "Talk to your agent. Real-time speech recognition with provider-grade accuracy. One-time unlock — use unlimited.",
         "icon": "🎙",
         "category": "premium_tool",
-        "credit_cost": 3,
-        "per_label": "per minute",
+        "purchase_type": "one_time",
+        "credit_cost": 150,
+        "unlocks": ["voice_stt"],
         "tags": ["voice", "audio", "input"],
+    },
+    # ── One-time unlock: Cost Tracker (200 credits / $2) ────────
+    {
+        "id": "cost_tracker",
+        "name": "Cost Tracker",
+        "description": "Track your LLM spending in real time. Per-model breakdowns, daily/weekly/monthly charts, and budget alerts. One-time unlock.",
+        "icon": "📊",
+        "category": "premium_tool",
+        "purchase_type": "one_time",
+        "credit_cost": 200,
+        "unlocks": ["cost_tracker"],
+        "tags": ["analytics", "spending", "monitoring"],
+    },
+    # ── Free tools (included for everyone) ──────────────────────
+    {
+        "id": "web_search",
+        "name": "Web Search",
+        "description": "Give agents real-time internet access. Search the web, fetch pages, summarize results. Included free for all users.",
+        "icon": "🌐",
+        "category": "free_tool",
+        "purchase_type": "free",
+        "credit_cost": 0,
+        "unlocks": ["web_search"],
+        "tags": ["internet", "research", "real-time"],
     },
     {
         "id": "image_generation",
         "name": "Image Generation",
-        "description": "Generate images from text prompts via DALL·E, Stable Diffusion, or other providers.",
+        "description": "Generate images from text prompts via DALL·E, Stable Diffusion, or other providers. Included free for all users.",
         "icon": "🖼",
-        "category": "premium_tool",
-        "credit_cost": 5,
-        "per_label": "per image",
+        "category": "free_tool",
+        "purchase_type": "free",
+        "credit_cost": 0,
+        "unlocks": ["image_generation"],
         "tags": ["creative", "visual", "generation"],
     },
-    {
-        "id": "web_search",
-        "name": "Web Search",
-        "description": "Give agents real-time internet access. Search the web, fetch pages, summarize results.",
-        "icon": "🌐",
-        "category": "premium_tool",
-        "credit_cost": 1,
-        "per_label": "per search",
-        "tags": ["internet", "research", "real-time"],
-    },
+    # ── Info card: LLM Usage ────────────────────────────────────
     {
         "id": "llm_platform_credits",
         "name": "LLM Usage (Platform Keys)",
         "description": "Use our hosted API keys for OpenAI, Anthropic, DeepSeek, xAI, Google, and more. Charged at 1.5× token cost in credits. Bring your own keys for free!",
         "icon": "🧠",
         "category": "llm_usage",
+        "purchase_type": "info",
         "credit_cost": 0,
-        "per_label": "1.5× token cost",
+        "unlocks": [],
         "tags": ["llm", "tokens", "models"],
     },
 ]
+
+# Skin catalog — individually purchasable (one-time credit unlock)
+# "default" is free; all others cost 75 credits ($0.75)
+SKIN_PRICES = {
+    "default":         0,
+    "cyberpunk_neon":  75,
+    "retro_terminal":  75,
+    "dark_forest":     75,
+    "paper_white":     75,
+    "midnight_ocean":  75,
+    "blood_moon":      75,
+    "aurora_borealis": 75,
+    "solarized_dark":  75,
+    "frost_glass":     75,
+    "synthwave_84":    75,
+    "dracula":         75,
+    "neon_abyss":      75,
+}
+
+
+# ══════════════════════════════════════════════════════════════════
+#  PURCHASED ITEMS — one-time unlock persistence
+# ══════════════════════════════════════════════════════════════════
+
+def get_user_purchases(user_id: str) -> dict:
+    """Return {tools: [...], skins: [...]} of item IDs the user has unlocked."""
+    state = _load_stripe_state()
+    purchases = state.get("purchases", {}).get(user_id, {})
+    return {
+        "tools": purchases.get("tools", []),
+        "skins": purchases.get("skins", ["default"]),  # everyone owns default
+    }
+
+
+def user_owns_item(user_id: str, item_id: str, item_type: str = "tools") -> bool:
+    """Check if a user has purchased a specific tool or skin."""
+    purchases = get_user_purchases(user_id)
+    items = purchases.get(item_type, [])
+    return item_id in items
+
+
+def purchase_tool(user_id: str, tool_id: str) -> dict:
+    """One-time purchase of a tool with credits. Returns {ok, balance} or {error}."""
+    # Find the catalog entry
+    entry = next((e for e in STORE_CATALOG if e["id"] == tool_id), None)
+    if not entry or entry.get("purchase_type") != "one_time":
+        return {"error": f"Item '{tool_id}' is not available for purchase."}
+
+    # Already owned?
+    if user_owns_item(user_id, tool_id, "tools"):
+        return {"error": f"You already own '{entry['name']}'."}
+
+    cost = entry["credit_cost"]
+    result = deduct_user_credits(user_id, cost, f"purchase:{tool_id}")
+    if "error" in result:
+        return result
+
+    # Record the purchase
+    state = _load_stripe_state()
+    if "purchases" not in state:
+        state["purchases"] = {}
+    if user_id not in state["purchases"]:
+        state["purchases"][user_id] = {"tools": [], "skins": ["default"]}
+    if tool_id not in state["purchases"][user_id].get("tools", []):
+        state["purchases"][user_id].setdefault("tools", []).append(tool_id)
+    _save_stripe_state(state)
+
+    log.info("[store] User %s purchased tool '%s' for %d credits", user_id, tool_id, cost)
+    return {"ok": True, "tool_id": tool_id, "cost": cost, "balance": result["balance"]}
+
+
+def purchase_skin(user_id: str, skin_id: str) -> dict:
+    """One-time purchase of a skin with credits. Returns {ok, balance} or {error}."""
+    price = SKIN_PRICES.get(skin_id)
+    if price is None:
+        return {"error": f"Unknown skin: {skin_id}"}
+
+    # Already owned?
+    if user_owns_item(user_id, skin_id, "skins"):
+        return {"error": f"You already own this skin."}
+
+    # Free skins don't deduct
+    if price == 0:
+        balance = get_user_credits(user_id)
+    else:
+        result = deduct_user_credits(user_id, price, f"purchase:skin_{skin_id}")
+        if "error" in result:
+            return result
+        balance = result["balance"]
+
+    # Record the purchase
+    state = _load_stripe_state()
+    if "purchases" not in state:
+        state["purchases"] = {}
+    if user_id not in state["purchases"]:
+        state["purchases"][user_id] = {"tools": [], "skins": ["default"]}
+    if skin_id not in state["purchases"][user_id].get("skins", []):
+        state["purchases"][user_id].setdefault("skins", []).append(skin_id)
+    _save_stripe_state(state)
+
+    log.info("[store] User %s purchased skin '%s' for %d credits", user_id, skin_id, price)
+    return {"ok": True, "skin_id": skin_id, "cost": price, "balance": balance}
+
+
+def user_has_tool_access(user_id: str, tool_name: str) -> bool:
+    """Check if a user has access to a given tool (purchased or free).
+
+    For AGI bundle tools, checks if the user purchased 'agi_bundle'.
+    For free tools (web_search, image_generation), always returns True.
+    """
+    # Free tools — always available
+    free_tools = {"web_search", "image_generation", "echo", "memory", "directives"}
+    if tool_name in free_tools:
+        return True
+
+    purchases = get_user_purchases(user_id)
+    owned_tools = purchases.get("tools", [])
+
+    # Direct ownership check
+    if tool_name in owned_tools:
+        return True
+
+    # Check if any owned bundle unlocks this tool
+    for entry in STORE_CATALOG:
+        if entry["id"] in owned_tools and tool_name in entry.get("unlocks", []):
+            return True
+
+    return False
+
 
 
 def estimate_llm_credit_cost(usd_cost: float) -> int:

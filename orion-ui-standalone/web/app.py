@@ -47,6 +47,8 @@ from web.stripe_billing import (
     CREDIT_PACKS, TOOL_CREDIT_COSTS, create_credits_checkout_session,
     STORE_CATALOG, LLM_MARKUP_MULTIPLIER, estimate_llm_credit_cost,
     get_credit_history, get_trial_status, FREE_TRIAL_DAYS,
+    get_user_purchases, user_owns_item, purchase_tool, purchase_skin,
+    user_has_tool_access, SKIN_PRICES,
 )
 from src.memory.types import VALID_SCOPES, VALID_CATEGORIES
 
@@ -1153,9 +1155,10 @@ async def api_stripe_webhook(request: Request):
 
 @app.get("/store", response_class=HTMLResponse)
 async def page_store(request: Request):
-    """Store page — browse tools, buy credit packs."""
+    """Store page — browse tools, buy credit packs, purchase skins."""
     user = getattr(request.state, "user", None)
     credits = get_user_credits(user["id"]) if user else 0
+    purchases = get_user_purchases(user["id"]) if user else {"tools": [], "skins": ["default"]}
     auth_cfg = get_auth_config()
     packs_list = [{"id": k, **v} for k, v in CREDIT_PACKS.items()]
     return templates.TemplateResponse("store.html", {
@@ -1166,6 +1169,8 @@ async def page_store(request: Request):
         "catalog": STORE_CATALOG,
         "credit_packs": packs_list,
         "tool_costs": TOOL_CREDIT_COSTS,
+        "purchases": purchases,
+        "skin_prices": SKIN_PRICES,
         "stripe_publishable_key": STRIPE_PUBLISHABLE_KEY,
         "auth_config": auth_cfg,
     })
@@ -1226,23 +1231,42 @@ async def api_credits_history(request: Request):
 
 @app.post("/api/credits/deduct-tool")
 async def api_credits_deduct_tool(request: Request):
-    """Deduct credits for a tool purchase from the store."""
+    """One-time purchase of a tool from the store (deducts credits, unlocks forever)."""
     user = getattr(request.state, "user", None)
     if not user:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
     body = await request.json()
     tool_id = body.get("tool_id", "")
-    cost = TOOL_CREDIT_COSTS.get(tool_id)
-    if cost is None:
-        return JSONResponse({"error": f"Unknown tool: {tool_id}"}, status_code=400)
-    balance = get_user_credits(user["id"])
-    if balance < cost:
-        return JSONResponse({"error": "Insufficient credits", "balance": balance, "cost": cost}, status_code=402)
-    ok = deduct_user_credits(user["id"], cost, f"tool:{tool_id}")
-    if not ok:
-        return JSONResponse({"error": "Deduction failed"}, status_code=500)
-    new_balance = get_user_credits(user["id"])
-    return JSONResponse({"success": True, "tool_id": tool_id, "cost": cost, "balance": new_balance})
+    result = purchase_tool(user["id"], tool_id)
+    if "error" in result:
+        status = 402 if "Insufficient" in result["error"] else 400
+        return JSONResponse(result, status_code=status)
+    return JSONResponse({"success": True, "tool_id": tool_id, "cost": result["cost"], "balance": result["balance"]})
+
+
+@app.post("/api/store/purchase-skin")
+async def api_purchase_skin(request: Request):
+    """One-time purchase of a skin (deducts credits, unlocks forever)."""
+    user = getattr(request.state, "user", None)
+    if not user:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    body = await request.json()
+    skin_id = body.get("skin_id", "")
+    result = purchase_skin(user["id"], skin_id)
+    if "error" in result:
+        status = 402 if "Insufficient" in result.get("error", "") else 400
+        return JSONResponse(result, status_code=status)
+    return JSONResponse({"success": True, "skin_id": skin_id, "cost": result["cost"], "balance": result["balance"]})
+
+
+@app.get("/api/store/purchases")
+async def api_store_purchases(request: Request):
+    """Return all items the user has purchased."""
+    user = getattr(request.state, "user", None)
+    if not user:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    purchases = get_user_purchases(user["id"])
+    return JSONResponse(purchases)
 
 
 @app.get("/plans", response_class=HTMLResponse)
@@ -1471,16 +1495,26 @@ async def page_pricing_redirect():
 async def page_skins(request: Request):
     settings = _load_settings()
     active_skin = settings.get("skin", "default")
+    user = getattr(request.state, "user", None)
+    purchases = get_user_purchases(user["id"]) if user else {"tools": [], "skins": ["default"]}
+    credits = get_user_credits(user["id"]) if user else 0
     return templates.TemplateResponse("skins.html", {
         "request": request, "page": "skins",
         "active_skin": active_skin,
+        "owned_skins": purchases.get("skins", ["default"]),
+        "skin_prices": SKIN_PRICES,
+        "credits": credits,
     })
 
 @app.put("/api/skin")
 async def api_set_skin(request: Request):
-    """Save active UI skin to settings.json."""
+    """Save active UI skin to settings.json (only if owned)."""
     body = await request.json()
     skin_id = body.get("skin", "default")
+    user = getattr(request.state, "user", None)
+    if user:
+        if not user_owns_item(user["id"], skin_id, "skins") and skin_id != "default":
+            return JSONResponse({"error": "You don't own this skin. Purchase it in the Store."}, status_code=403)
     settings = _load_settings()
     settings["skin"] = skin_id
     _save_settings(settings)
