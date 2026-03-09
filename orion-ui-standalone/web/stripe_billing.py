@@ -1,16 +1,18 @@
 """Stripe Subscription — Checkout, webhooks, tier gating, credits, and LLM markup.
 
-Implements a Pro-only ($9.99/mo) paywall with credits and token markup:
-  - All users must subscribe to Pro ($9.99/mo) to access the app
+Implements a Pro-only ($9.99/mo) paywall with 15-day free trial:
+  - New users get 15 days of full Pro access for free
+  - After trial, users must subscribe to Pro ($9.99/mo)
   - Premium tools (AGI Loop, Email, Voice) cost credits
   - LLM usage via platform API keys is charged at 1.5× token cost
   - Users who provide their own API keys get free LLM usage
 
 Flow:
-  1. User signs up via Supabase → redirected to /plans (paywall)
-  2. User subscribes to Pro → Stripe Checkout → full app access
-  3. Premium tools deduct credits; buy credit packs via Stripe
-  4. LLM calls bill at 1.5× when using platform-hosted keys
+  1. User signs up via Supabase → 15-day trial starts automatically
+  2. During trial: full access, LLM still costs credits at 1.5×
+  3. After trial: must subscribe to Pro ($9.99/mo) to continue
+  4. Premium tools deduct credits; buy credit packs via Stripe
+  5. LLM calls bill at 1.5× when using platform-hosted keys
 """
 
 import json
@@ -69,6 +71,10 @@ TIER_INFO = {
     },
 }
 
+# ── Free Trial ───────────────────────────────────────────────────
+FREE_TRIAL_DAYS = 15
+_SECONDS_PER_DAY = 86400
+
 
 # ── State persistence ────────────────────────────────────────────
 def _load_stripe_state() -> dict:
@@ -89,27 +95,70 @@ def _save_stripe_state(state: dict):
         json.dump(state, f, indent=2)
 
 
+def _ensure_trial_start(user_id: str) -> float:
+    """Record trial start time for a user if not already set. Returns the start timestamp."""
+    state = _load_stripe_state()
+    trials = state.setdefault("trials", {})
+    if user_id not in trials:
+        trials[user_id] = {"started_at": time.time()}
+        _save_stripe_state(state)
+        log.info("[trial] Started %d-day free trial for user %s", FREE_TRIAL_DAYS, user_id)
+    return trials[user_id]["started_at"]
+
+
+def get_trial_status(user_id: str) -> dict:
+    """Get a user's free trial status.
+
+    Returns:
+        {"active": bool, "days_left": int, "started_at": float, "expires_at": float}
+    """
+    if not user_id:
+        return {"active": False, "days_left": 0, "started_at": 0, "expires_at": 0}
+    started_at = _ensure_trial_start(user_id)
+    expires_at = started_at + (FREE_TRIAL_DAYS * _SECONDS_PER_DAY)
+    remaining = expires_at - time.time()
+    days_left = max(0, int(remaining / _SECONDS_PER_DAY) + (1 if remaining % _SECONDS_PER_DAY > 0 else 0))
+    return {
+        "active": remaining > 0,
+        "days_left": days_left,
+        "started_at": started_at,
+        "expires_at": expires_at,
+    }
+
+
 def get_user_tier(user_id: str) -> str:
-    """Get the subscription tier for a user ('free' or 'pro')."""
+    """Get the subscription tier for a user ('free' or 'pro').
+
+    Pro is granted if the user has an active subscription OR is within
+    the free trial period.
+    """
     if not user_id:
         return "free"
     state = _load_stripe_state()
     sub = state.get("subscriptions", {}).get(user_id, {})
     if sub.get("status") in ("active", "trialing"):
         return "pro"
+    # Check free trial
+    trial = get_trial_status(user_id)
+    if trial["active"]:
+        return "pro"
     return "free"
 
 
 def get_user_subscription(user_id: str) -> dict:
-    """Get full subscription info for a user."""
+    """Get full subscription info for a user (includes trial status)."""
     state = _load_stripe_state()
     sub = state.get("subscriptions", {}).get(user_id, {})
-    tier = "pro" if sub.get("status") in ("active", "trialing") else "free"
+    has_sub = sub.get("status") in ("active", "trialing")
+    trial = get_trial_status(user_id)
+    tier = "pro" if (has_sub or trial["active"]) else "free"
     return {
         "tier": tier,
         "tier_info": TIER_INFO[tier],
         "subscription": sub if sub else None,
         "stripe_configured": bool(STRIPE_SECRET_KEY),
+        "trial": trial,
+        "is_trial": trial["active"] and not has_sub,
     }
 
 

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Subscribe — SoulScript Engine</title>
+  <title>Plans — SoulScript Engine</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -52,6 +52,8 @@
     .plan-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
     .plan-btn.manage { background: #1a1a24; border: 1px solid #2a2a3a; color: #a1a1aa; }
     .plan-btn.manage:hover { border-color: #6366f1; color: #fff; }
+    .plan-btn.secondary { background: transparent; border: 1px solid #2a2a3a; color: #a1a1aa; margin-top: 0.75rem; }
+    .plan-btn.secondary:hover { border-color: #6366f1; color: #fff; }
     .success-banner {
       background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3);
       color: #34d399; padding: 1rem; border-radius: 0.5rem; text-align: center; margin-bottom: 1.5rem;
@@ -59,6 +61,17 @@
     .cancel-banner {
       background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3);
       color: #fbbf24; padding: 1rem; border-radius: 0.5rem; text-align: center; margin-bottom: 1.5rem;
+    }
+    .trial-banner {
+      background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.25);
+      border-radius: 0.75rem; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; text-align: center;
+    }
+    .trial-banner .days { font-size: 1.75rem; font-weight: 800; color: #a5b4fc; }
+    .trial-banner .label { font-size: 0.85rem; color: #a1a1aa; margin-top: 0.25rem; }
+    .trial-expired-banner {
+      background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25);
+      border-radius: 0.75rem; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; text-align: center;
+      color: #fca5a5;
     }
     .already-sub { text-align: center; margin-top: 1.5rem; }
     .already-sub a { color: #818cf8; text-decoration: none; font-weight: 600; font-size: 1rem; }
@@ -76,15 +89,15 @@
       Checkout was canceled. Subscribe anytime to unlock SoulScript.
     </div>
 
-    {% if subscription.tier == 'pro' %}
-    <!-- ═══ Already subscribed ═══ -->
+    {% if subscription.subscription and subscription.subscription.status in ['active', 'trialing'] %}
+    <!-- ═══ Paid subscriber ═══ -->
     <div class="plan-hero">
       <h1 style="font-size:2rem; font-weight:800; color:white;">You're a Pro! ✨</h1>
       <p style="color:#a1a1aa; margin-top:0.75rem; font-size:1rem;">
         Your SoulScript Pro subscription is active. Enjoy full access to everything.
       </p>
       <div class="plan-card" style="border-color:#10b981;">
-        <span class="plan-badge" style="background:#10b981;">✓ ACTIVE</span>
+        <span class="plan-badge" style="background:#10b981;">✓ SUBSCRIBED</span>
         <div style="margin:1.5rem 0;">
           <span style="font-size:2.5rem; font-weight:800; color:white;">$9.99</span>
           <span style="color:#71717a; font-size:0.9rem;">/month</span>
@@ -100,8 +113,55 @@
       </div>
     </div>
 
+    {% elif trial.active %}
+    <!-- ═══ Free trial active ═══ -->
+    <div class="plan-hero">
+      <h1 style="font-size:2rem; font-weight:800; color:white;">🚀 Free Trial Active</h1>
+      <p style="color:#a1a1aa; margin-top:0.75rem; font-size:1rem;">
+        You have full Pro access during your {{ free_trial_days }}-day trial.
+        LLM usage with platform keys costs 1.5× in credits.
+      </p>
+
+      <div class="trial-banner">
+        <div class="days">{{ trial.days_left }} day{{ 's' if trial.days_left != 1 else '' }}</div>
+        <div class="label">remaining in your free trial</div>
+      </div>
+
+      <div class="plan-card" style="border-color:#6366f1;">
+        <span class="plan-badge">TRIAL → PRO</span>
+        <h2 style="font-size:1.25rem; font-weight:700; color:white; margin-top:0.5rem;">SoulScript Pro</h2>
+        <div style="margin:1rem 0;">
+          <span style="font-size:3rem; font-weight:800; color:white;">$9.99</span>
+          <span style="color:#71717a; font-size:0.9rem;">/month after trial</span>
+        </div>
+        <ul class="feature-list">
+          <li><span class="check">✓</span> Unlimited AI agent profiles</li>
+          <li><span class="check">✓</span> Unlimited chat messages</li>
+          <li><span class="check">✓</span> Full memory vault & knowledge base</li>
+          <li><span class="check">✓</span> Model router (smart task routing)</li>
+          <li><span class="check">✓</span> AGI Loop (autonomous reasoning)</li>
+          <li><span class="check">✓</span> Image generation</li>
+          <li><span class="check">✓</span> Voice — Text-to-Speech & Speech-to-Text</li>
+          <li><span class="check">✓</span> Web search & internet tools</li>
+          <li><span class="check">✓</span> Email integration</li>
+          <li><span class="check">✓</span> Custom skins & themes</li>
+          <li><span class="check">✓</span> Store — buy credits & premium tools</li>
+          <li><span class="check">✓</span> Bring Your Own API Keys (free LLM usage)</li>
+        </ul>
+        <button class="plan-btn" onclick="upgradeToPro()" id="upgrade-btn">
+          Subscribe Now — $9.99/mo
+        </button>
+        <button class="plan-btn secondary" onclick="window.location.href='/chat'">
+          Continue Trial →
+        </button>
+        <p style="color:#71717a; font-size:0.8rem; margin-top:1rem;">
+          Subscribe anytime during or after your trial. Powered by <strong style="color:#635bff;">Stripe</strong>.
+        </p>
+      </div>
+    </div>
+
     {% else %}
-    <!-- ═══ Paywall — must subscribe ═══ -->
+    <!-- ═══ Trial expired / must subscribe ═══ -->
     <div class="plan-hero">
       <div style="font-size:2.5rem; margin-bottom:0.5rem;">
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" style="display:inline-block; vertical-align:middle;">
@@ -110,11 +170,16 @@
           <circle cx="12" cy="12" r="1.5" fill="#c7d2fe"/>
         </svg>
       </div>
+
+      <div class="trial-expired-banner">
+        ⏰ Your {{ free_trial_days }}-day free trial has ended. Subscribe to continue using SoulScript.
+      </div>
+
       <h1 style="font-size:2.25rem; font-weight:800; color:white; line-height:1.2;">
         Unlock SoulScript Engine
       </h1>
       <p style="color:#a1a1aa; margin-top:0.75rem; font-size:1.05rem; line-height:1.6;">
-        Subscribe to access the full AI identity platform — create agents, chat, use tools, and more.
+        Subscribe to keep full access — your agents, memories, and data are safe.
       </p>
 
       <div class="plan-card">
@@ -135,7 +200,6 @@
           <li><span class="check">✓</span> Web search & internet tools</li>
           <li><span class="check">✓</span> Email integration</li>
           <li><span class="check">✓</span> Custom skins & themes</li>
-          <li><span class="check">✓</span> Cost tracker & analytics</li>
           <li><span class="check">✓</span> Store — buy credits & premium tools</li>
           <li><span class="check">✓</span> Bring Your Own API Keys (free LLM usage)</li>
         </ul>

@@ -46,7 +46,7 @@ from web.stripe_billing import (
     get_user_credits, add_user_credits, deduct_user_credits,
     CREDIT_PACKS, TOOL_CREDIT_COSTS, create_credits_checkout_session,
     STORE_CATALOG, LLM_MARKUP_MULTIPLIER, estimate_llm_credit_cost,
-    get_credit_history,
+    get_credit_history, get_trial_status, FREE_TRIAL_DAYS,
 )
 from src.memory.types import VALID_SCOPES, VALID_CATEGORIES
 
@@ -147,10 +147,18 @@ class AuthMiddleware(BaseHTTPMiddleware):
         # Attach user info to request state
         request.state.user = extract_user_from_token(payload)
 
+        # Attach trial info for templates
+        user_id = request.state.user.get("id", "")
+        trial = get_trial_status(user_id)
+        sub_info = get_user_subscription(user_id)
+        request.state.trial = trial
+        request.state.is_subscribed = bool(
+            sub_info.get("subscription") and sub_info["subscription"].get("status") in ("active", "trialing")
+        )
+
         # ── Subscription gate ────────────────────────────────────
         # Exempt paths (plans page, stripe endpoints) skip this check
         if not _is_subscription_exempt(path):
-            user_id = request.state.user.get("id", "")
             tier = get_user_tier(user_id)
             if tier != "pro":
                 # Non-subscribed users are walled off to /plans
@@ -1240,9 +1248,10 @@ async def api_credits_deduct_tool(request: Request):
 async def page_plans(request: Request):
     """Subscription plans / upgrade page."""
     user = getattr(request.state, "user", None)
-    sub_info = get_user_subscription(user["id"]) if user else {"tier": "free", "tier_info": TIER_INFO["free"], "subscription": None, "stripe_configured": bool(STRIPE_PUBLISHABLE_KEY)}
+    sub_info = get_user_subscription(user["id"]) if user else {"tier": "free", "tier_info": TIER_INFO["free"], "subscription": None, "stripe_configured": bool(STRIPE_PUBLISHABLE_KEY), "trial": {"active": False, "days_left": 0}, "is_trial": False}
     auth_cfg = get_auth_config()
     credits = get_user_credits(user["id"]) if user else 0
+    trial = get_trial_status(user["id"]) if user else {"active": False, "days_left": 0}
     return templates.TemplateResponse("plans.html", {
         "request": request,
         "page": "plans",
@@ -1253,6 +1262,8 @@ async def page_plans(request: Request):
         "auth_config": auth_cfg,
         "credits": credits,
         "credit_packs": CREDIT_PACKS,
+        "trial": trial,
+        "free_trial_days": FREE_TRIAL_DAYS,
     })
 
 
