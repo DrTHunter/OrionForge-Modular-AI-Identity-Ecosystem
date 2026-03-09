@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login — SoulScript Engine</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
+  <script data-cfasync="false" src="https://cdn.tailwindcss.com"></script>
+  <script data-cfasync="false">
     tailwind.config = {
       darkMode: 'class',
       theme: {
@@ -29,7 +29,7 @@
     }
   </script>
   <link rel="stylesheet" href="/static/style.css">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script data-cfasync="false" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body {
       background: #0f0f14;
@@ -155,6 +155,15 @@
 </head>
 <body class="text-zinc-200">
 
+  <!-- Global error trap - catches ANY JS error and makes it visible -->
+  <script data-cfasync="false">
+    window.onerror = function(msg, src, line, col, err) {
+      var el = document.getElementById('login-error');
+      if (el) { el.textContent = 'JS Error: ' + msg + ' (line ' + line + ')'; el.style.display = 'block'; }
+      return false;
+    };
+  </script>
+
   <div class="login-card">
     <!-- Logo -->
     <div class="login-logo mb-6 text-center">
@@ -171,8 +180,8 @@
     <div id="login-error" class="login-error mb-4"></div>
     <div id="login-success" class="login-success mb-4"></div>
 
-    <!-- Login Form -->
-    <form id="auth-form" onsubmit="handleAuth(event)">
+    <!-- Login Form — NO inline onclick handlers -->
+    <form id="auth-form">
       <div class="mb-4">
         <label class="block text-sm text-zinc-400 mb-1.5">Email</label>
         <input type="email" id="auth-email" class="login-input" placeholder="you@example.com" required autocomplete="email">
@@ -182,7 +191,7 @@
         <label class="block text-sm text-zinc-400 mb-1.5">Password</label>
         <div class="relative">
           <input type="password" id="auth-password" class="login-input pr-10" placeholder="••••••••" required minlength="6" autocomplete="current-password">
-          <button type="button" class="password-toggle" onclick="togglePasswordVisibility()" tabindex="-1">👁</button>
+          <button type="button" class="password-toggle" id="pw-toggle-btn" tabindex="-1">👁</button>
         </div>
       </div>
 
@@ -199,23 +208,23 @@
 
       <p class="text-center text-sm text-zinc-500">
         <span id="toggle-text">Don't have an account?</span>
-        <span class="login-toggle" id="toggle-mode" onclick="toggleAuthMode()">Sign Up</span>
+        <span class="login-toggle" id="toggle-mode">Sign Up</span>
       </p>
     </form>
 
     <div class="divider">or continue with</div>
 
-    <!-- OAuth Buttons -->
+    <!-- OAuth Buttons — NO inline onclick handlers -->
     <div class="oauth-grid">
-      <button type="button" class="oauth-btn" onclick="oauthLogin('google')">
+      <button type="button" class="oauth-btn" id="oauth-google">
         <svg width="18" height="18" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
         Google
       </button>
-      <button type="button" class="oauth-btn" onclick="oauthLogin('github')">
+      <button type="button" class="oauth-btn" id="oauth-github">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="#e4e4e7"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
         GitHub
       </button>
-      <button type="button" class="oauth-btn" onclick="oauthLogin('discord')">
+      <button type="button" class="oauth-btn" id="oauth-discord">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="#5865F2"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
         Discord
       </button>
@@ -226,63 +235,34 @@
     </p>
   </div>
 
-  <script>
+  <script data-cfasync="false">
     // ── Supabase Client Init ──
-    const AUTH_CFG = {{ auth_config | tojson }};
-    let _sb = null;
-    let _initError = null;
+    var AUTH_CFG = {{ auth_config | tojson }};
+    var _sb = null;
+    var _initError = null;
+    var isSignUp = false;
 
     try {
       if (!window.supabase) {
-        throw new Error('Supabase JS library failed to load from CDN. Check your internet connection or ad-blocker.');
+        throw new Error('Supabase JS library failed to load. Check internet or ad-blocker.');
       }
       if (!AUTH_CFG.supabase_url || !AUTH_CFG.supabase_anon_key) {
-        throw new Error('Supabase URL or anon key is missing. Check config/auth.json.');
+        throw new Error('Supabase URL or anon key missing in config.');
       }
       _sb = window.supabase.createClient(AUTH_CFG.supabase_url, AUTH_CFG.supabase_anon_key);
-      console.log('[auth] Supabase client initialized OK');
     } catch (e) {
       _initError = e.message;
-      console.error('[auth] Supabase init failed:', e);
-    }
-    // Alias for the rest of the code
-    const supabase = _sb;
-
-    // Show init error immediately if applicable
-    if (_initError) {
-      document.addEventListener('DOMContentLoaded', () => {
-        const el = document.getElementById('login-error');
-        if (el) { el.textContent = _initError; el.style.display = 'block'; }
-      });
-    }
-
-    let isSignUp = false;
-
-    function toggleAuthMode() {
-      isSignUp = !isSignUp;
-      document.getElementById('confirm-row').style.display = isSignUp ? 'block' : 'none';
-      document.getElementById('auth-btn-text').textContent = isSignUp ? 'Create Account' : 'Sign In';
-      document.getElementById('toggle-text').textContent = isSignUp ? 'Already have an account?' : "Don't have an account?";
-      document.getElementById('toggle-mode').textContent = isSignUp ? 'Sign In' : 'Sign Up';
-      document.getElementById('login-subtitle').textContent = isSignUp ? 'Create your account' : 'Sign in to continue';
-      document.getElementById('auth-password').autocomplete = isSignUp ? 'new-password' : 'current-password';
-      clearMessages();
-    }
-
-    function togglePasswordVisibility() {
-      const pw = document.getElementById('auth-password');
-      pw.type = pw.type === 'password' ? 'text' : 'password';
     }
 
     function showError(msg) {
-      const el = document.getElementById('login-error');
+      var el = document.getElementById('login-error');
       el.textContent = msg;
       el.style.display = 'block';
       document.getElementById('login-success').style.display = 'none';
     }
 
     function showSuccess(msg) {
-      const el = document.getElementById('login-success');
+      var el = document.getElementById('login-success');
       el.textContent = msg;
       el.style.display = 'block';
       document.getElementById('login-error').style.display = 'none';
@@ -299,131 +279,143 @@
       document.getElementById('auth-btn-spinner').style.display = on ? 'inline' : 'none';
     }
 
-    async function handleAuth(e) {
-      e.preventDefault();
-      clearMessages();
+    // ── Wire up ALL event listeners after DOM is ready ──
+    document.addEventListener('DOMContentLoaded', function() {
 
-      if (!supabase) {
-        showError(_initError || 'Supabase client not available. Reload the page or check your connection.');
-        return;
+      // Show init error if Supabase failed to load
+      if (_initError) {
+        showError(_initError);
       }
 
-      const email = document.getElementById('auth-email').value.trim();
-      const password = document.getElementById('auth-password').value;
+      // Toggle auth mode (Sign In <-> Sign Up)
+      document.getElementById('toggle-mode').addEventListener('click', function(e) {
+        e.preventDefault();
+        isSignUp = !isSignUp;
+        document.getElementById('confirm-row').style.display = isSignUp ? 'block' : 'none';
+        document.getElementById('auth-btn-text').textContent = isSignUp ? 'Create Account' : 'Sign In';
+        document.getElementById('toggle-text').textContent = isSignUp ? 'Already have an account?' : "Don't have an account?";
+        document.getElementById('toggle-mode').textContent = isSignUp ? 'Sign In' : 'Sign Up';
+        document.getElementById('login-subtitle').textContent = isSignUp ? 'Create your account' : 'Sign in to continue';
+        document.getElementById('auth-password').autocomplete = isSignUp ? 'new-password' : 'current-password';
+        clearMessages();
+      });
 
-      if (!email || !password) {
-        showError('Please fill in all fields.');
-        return;
-      }
+      // Password visibility toggle
+      document.getElementById('pw-toggle-btn').addEventListener('click', function() {
+        var pw = document.getElementById('auth-password');
+        pw.type = pw.type === 'password' ? 'text' : 'password';
+      });
 
-      if (isSignUp) {
-        const confirm = document.getElementById('auth-confirm').value;
-        if (password !== confirm) {
-          showError('Passwords do not match.');
+      // Form submit (Sign In / Sign Up)
+      document.getElementById('auth-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        clearMessages();
+
+        if (!_sb) {
+          showError(_initError || 'Supabase not available. Reload the page.');
           return;
         }
-      }
 
-      setLoading(true);
+        var email = document.getElementById('auth-email').value.trim();
+        var password = document.getElementById('auth-password').value;
 
-      try {
-        let result;
+        if (!email || !password) {
+          showError('Please fill in all fields.');
+          return;
+        }
+
         if (isSignUp) {
-          result = await supabase.auth.signUp({ email, password });
-        } else {
-          result = await supabase.auth.signInWithPassword({ email, password });
-        }
-
-        if (result.error) {
-          showError(result.error.message);
-          setLoading(false);
-          return;
-        }
-
-        if (isSignUp && result.data?.user && !result.data.session) {
-          // Email confirmation required
-          showSuccess('Account created! Check your email for a confirmation link.');
-          setLoading(false);
-          return;
-        }
-
-        if (result.data?.session) {
-          // Store session token server-side via httpOnly cookie
-          const resp = await fetch('/api/auth/set-session', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              access_token: result.data.session.access_token,
-              refresh_token: result.data.session.refresh_token,
-              expires_at: result.data.session.expires_at,
-            }),
-          });
-
-          if (resp.ok) {
-            window.location.href = '/chat';
-          } else {
-            showError('Failed to establish session. Please try again.');
+          var confirm = document.getElementById('auth-confirm').value;
+          if (password !== confirm) {
+            showError('Passwords do not match.');
+            return;
           }
         }
-      } catch (err) {
-        showError('An unexpected error occurred. Please try again.');
-        console.error('[auth]', err);
-      }
 
-      setLoading(false);
-    }
+        setLoading(true);
 
-    // ── OAuth Login ──
-    async function oauthLogin(provider) {
-      clearMessages();
-      showSuccess('Starting ' + provider + ' login...');
+        var authPromise;
+        if (isSignUp) {
+          authPromise = _sb.auth.signUp({ email: email, password: password });
+        } else {
+          authPromise = _sb.auth.signInWithPassword({ email: email, password: password });
+        }
 
-      if (!supabase) {
-        showError(_initError || 'Supabase client not available. Reload the page or check your connection.');
-        return;
-      }
+        authPromise.then(function(result) {
+          if (result.error) {
+            showError(result.error.message);
+            setLoading(false);
+            return;
+          }
 
-      const redirectUrl = window.location.origin + '/auth/callback';
-      console.log('[oauth] Starting', provider, 'login, redirectTo:', redirectUrl);
+          if (isSignUp && result.data && result.data.user && !result.data.session) {
+            showSuccess('Account created! Check your email for a confirmation link.');
+            setLoading(false);
+            return;
+          }
 
-      try {
-        const { data, error } = await supabase.auth.signInWithOAuth({
-          provider: provider,
-          options: {
-            redirectTo: redirectUrl,
-          },
+          if (result.data && result.data.session) {
+            return fetch('/api/auth/set-session', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                access_token: result.data.session.access_token,
+                refresh_token: result.data.session.refresh_token,
+                expires_at: result.data.session.expires_at,
+              }),
+            }).then(function(resp) {
+              if (resp.ok) {
+                window.location.href = '/chat';
+              } else {
+                showError('Failed to establish session. Please try again.');
+                setLoading(false);
+              }
+            });
+          }
+        }).catch(function(err) {
+          showError('An unexpected error occurred: ' + (err.message || err));
+          setLoading(false);
         });
-        console.log('[oauth] signInWithOAuth result:', JSON.stringify({ data, error }));
-        if (error) {
-          showError(provider + ' login error: ' + error.message);
+      });
+
+      // ── OAuth buttons ──
+      function oauthLogin(provider) {
+        clearMessages();
+        showSuccess('Starting ' + provider + ' login...');
+
+        if (!_sb) {
+          showError(_initError || 'Supabase not available. Reload the page.');
           return;
         }
-        if (data?.url) {
-          console.log('[oauth] Redirecting to:', data.url);
-          window.location.href = data.url;
-        } else {
-          // Supabase JS v2 should auto-redirect; if we get here, show what happened
-          showError('No redirect URL returned. Check Supabase provider config. Data: ' + JSON.stringify(data));
-        }
-      } catch (err) {
-        showError('OAuth login failed: ' + (err.message || 'Unknown error'));
-        console.error('[oauth]', err);
-      }
-    }
 
-    // ── Check if already logged in ──
-    (async function checkSession() {
-      try {
-        const resp = await fetch('/api/auth/session');
-        const data = await resp.json();
-        console.log('[auth] Session check:', data);
-        if (data.authenticated) {
-          window.location.href = '/chat';
-        }
-      } catch (e) {
-        console.warn('[auth] Session check failed:', e);
+        var redirectUrl = window.location.origin + '/auth/callback';
+
+        _sb.auth.signInWithOAuth({
+          provider: provider,
+          options: { redirectTo: redirectUrl },
+        }).then(function(result) {
+          if (result.error) {
+            showError(provider + ' login error: ' + result.error.message);
+            return;
+          }
+          if (result.data && result.data.url) {
+            window.location.href = result.data.url;
+          }
+        }).catch(function(err) {
+          showError('OAuth failed: ' + (err.message || err));
+        });
       }
-    })();
+
+      document.getElementById('oauth-google').addEventListener('click', function() { oauthLogin('google'); });
+      document.getElementById('oauth-github').addEventListener('click', function() { oauthLogin('github'); });
+      document.getElementById('oauth-discord').addEventListener('click', function() { oauthLogin('discord'); });
+
+      // ── Check if already logged in ──
+      fetch('/api/auth/session').then(function(r) { return r.json(); }).then(function(data) {
+        if (data.authenticated) { window.location.href = '/chat'; }
+      }).catch(function() {});
+
+    }); // end DOMContentLoaded
   </script>
 </body>
 </html>
