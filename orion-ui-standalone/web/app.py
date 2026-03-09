@@ -1157,13 +1157,14 @@ async def page_store(request: Request):
     user = getattr(request.state, "user", None)
     credits = get_user_credits(user["id"]) if user else 0
     auth_cfg = get_auth_config()
+    packs_list = [{"id": k, **v} for k, v in CREDIT_PACKS.items()]
     return templates.TemplateResponse("store.html", {
         "request": request,
         "page": "store",
         "user": user,
         "credits": credits,
         "catalog": STORE_CATALOG,
-        "credit_packs": CREDIT_PACKS,
+        "credit_packs": packs_list,
         "tool_costs": TOOL_CREDIT_COSTS,
         "stripe_publishable_key": STRIPE_PUBLISHABLE_KEY,
         "auth_config": auth_cfg,
