@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plans — SoulScript Engine</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            forge: {
+              bg: '#0f0f14', card: '#1a1a24', border: '#2a2a3a',
+              accent: '#6366f1', accent2: '#818cf8', highlight: '#22d3ee',
+              warn: '#f59e0b', danger: '#ef4444', success: '#10b981', muted: '#71717a',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    body { background: #0f0f14; min-height: 100vh; }
+    .pricing-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; max-width: 800px; margin: 0 auto; }
+    @media (max-width: 640px) { .pricing-grid { grid-template-columns: 1fr; } }
+    .plan-card {
+      background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 1rem;
+      padding: 2rem; position: relative; transition: all 0.3s;
+    }
+    .plan-card.pro { border-color: #6366f1; box-shadow: 0 0 40px rgba(99, 102, 241, 0.15); }
+    .plan-card.current { border-color: #10b981; }
+    .badge {
+      position: absolute; top: -12px; right: 20px;
+      padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600;
+    }
+    .badge-pro { background: #6366f1; color: white; }
+    .badge-current { background: #10b981; color: white; }
+    .feature-list { list-style: none; padding: 0; margin: 1.5rem 0; }
+    .feature-list li {
+      padding: 0.4rem 0; font-size: 0.9rem; color: #a1a1aa;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .feature-list li .check { color: #10b981; font-weight: bold; }
+    .feature-list li .cross { color: #3f3f46; }
+    .plan-btn {
+      width: 100%; padding: 0.75rem; border: none; border-radius: 0.5rem;
+      font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+    }
+    .plan-btn.primary { background: #6366f1; color: white; }
+    .plan-btn.primary:hover { background: #818cf8; }
+    .plan-btn.secondary { background: #2a2a3a; color: #a1a1aa; }
+    .plan-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .success-banner {
+      background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34d399; padding: 1rem; border-radius: 0.5rem; text-align: center;
+      margin-bottom: 2rem;
+    }
+    .cancel-banner {
+      background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3);
+      color: #fbbf24; padding: 1rem; border-radius: 0.5rem; text-align: center;
+      margin-bottom: 2rem;
+    }
+    .back-link {
+      color: #818cf8; text-decoration: none; font-size: 0.9rem;
+      display: inline-flex; align-items: center; gap: 0.3rem;
+    }
+    .back-link:hover { color: #a5b4fc; }
+  </style>
+</head>
+<body class="text-zinc-200">
+  <div style="max-width:900px; margin:0 auto; padding:2rem 1.5rem;">
+
+    <!-- Header -->
+    <div style="margin-bottom:2rem;">
+      <a href="/chat" class="back-link">← Back to Chat</a>
+    </div>
+
+    <div style="text-align:center; margin-bottom:3rem;">
+      <h1 style="font-size:2rem; font-weight:800; color:white; margin-bottom:0.5rem;">
+        Choose Your Plan
+      </h1>
+      <p style="color:#71717a; font-size:1rem;">
+        Start free. Upgrade when you need more power.
+      </p>
+    </div>
+
+    <!-- Success / Cancel banners -->
+    <div id="success-banner" class="success-banner" style="display:none;">
+      🎉 Welcome to Pro! Your subscription is now active. Enjoy unlimited access.
+    </div>
+    <div id="cancel-banner" class="cancel-banner" style="display:none;">
+      Checkout was canceled. You can upgrade anytime.
+    </div>
+
+    <!-- Pricing Cards -->
+    <div class="pricing-grid">
+
+      <!-- FREE TIER -->
+      <div class="plan-card {% if subscription.tier == 'free' %}current{% endif %}">
+        {% if subscription.tier == 'free' %}
+          <span class="badge badge-current">Current Plan</span>
+        {% endif %}
+        <h2 style="font-size:1.5rem; font-weight:700; color:white;">Free</h2>
+        <div style="margin:1rem 0;">
+          <span style="font-size:2.5rem; font-weight:800; color:white;">$0</span>
+          <span style="color:#71717a; font-size:0.9rem;">/month</span>
+        </div>
+        <p style="color:#a1a1aa; font-size:0.85rem; margin-bottom:1rem;">
+          Everything you need to get started with AI identity creation.
+        </p>
+        <ul class="feature-list">
+          <li><span class="check">✓</span> Chat with AI agents</li>
+          <li><span class="check">✓</span> 3 agent profiles</li>
+          <li><span class="check">✓</span> Basic memory vault (100 entries)</li>
+          <li><span class="check">✓</span> Knowledge attachment (5 files)</li>
+          <li><span class="check">✓</span> Default skins</li>
+          <li><span class="check">✓</span> 50 messages/day</li>
+          <li><span class="cross">✗</span> <span style="color:#3f3f46;">AGI Loop</span></li>
+          <li><span class="cross">✗</span> <span style="color:#3f3f46;">Image Generation</span></li>
+          <li><span class="cross">✗</span> <span style="color:#3f3f46;">Voice (TTS/STT)</span></li>
+          <li><span class="cross">✗</span> <span style="color:#3f3f46;">Internet Tools</span></li>
+        </ul>
+        {% if subscription.tier == 'free' %}
+          <button class="plan-btn secondary" disabled>Current Plan</button>
+        {% else %}
+          <button class="plan-btn secondary" disabled>Free Tier</button>
+        {% endif %}
+      </div>
+
+      <!-- PRO TIER -->
+      <div class="plan-card pro {% if subscription.tier == 'pro' %}current{% endif %}">
+        <span class="badge badge-pro">
+          {% if subscription.tier == 'pro' %}✓ Active{% else %}Recommended{% endif %}
+        </span>
+        <h2 style="font-size:1.5rem; font-weight:700; color:white;">Pro</h2>
+        <div style="margin:1rem 0;">
+          <span style="font-size:2.5rem; font-weight:800; color:white;">$19</span>
+          <span style="color:#71717a; font-size:0.9rem;">/month</span>
+        </div>
+        <p style="color:#a1a1aa; font-size:0.85rem; margin-bottom:1rem;">
+          Full power. Unlimited agents, memory, tools, and premium features.
+        </p>
+        <ul class="feature-list">
+          <li><span class="check">✓</span> Everything in Free</li>
+          <li><span class="check">✓</span> Unlimited agents & messages</li>
+          <li><span class="check">✓</span> Unlimited memory vault</li>
+          <li><span class="check">✓</span> Unlimited knowledge files</li>
+          <li><span class="check">✓</span> AGI Loop (autonomous reasoning)</li>
+          <li><span class="check">✓</span> Image generation</li>
+          <li><span class="check">✓</span> Voice — TTS & STT</li>
+          <li><span class="check">✓</span> Internet tools & web search</li>
+          <li><span class="check">✓</span> Cost tracker & analytics</li>
+          <li><span class="check">✓</span> Premium skins</li>
+          <li><span class="check">✓</span> Priority model routing</li>
+          <li><span class="check">✓</span> API access</li>
+        </ul>
+        {% if subscription.tier == 'pro' %}
+          <button class="plan-btn primary" onclick="manageBilling()" id="manage-btn">
+            Manage Subscription
+          </button>
+        {% else %}
+          <button class="plan-btn primary" onclick="upgradeToPro()" id="upgrade-btn">
+            Upgrade to Pro
+          </button>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- FAQ -->
+    <div style="max-width:600px; margin:3rem auto 0; text-align:center;">
+      <p style="color:#71717a; font-size:0.85rem;">
+        Payments are processed securely via <strong style="color:#635bff;">Stripe</strong>.
+        Cancel anytime — no lock-in, no hidden fees.
+      </p>
+    </div>
+  </div>
+
+  <script>
+    // Check URL params for success/cancel
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('success') === '1') {
+      document.getElementById('success-banner').style.display = 'block';
+      window.history.replaceState({}, '', '/plans');
+    }
+    if (params.get('canceled') === '1') {
+      document.getElementById('cancel-banner').style.display = 'block';
+      window.history.replaceState({}, '', '/plans');
+    }
+
+    async function upgradeToPro() {
+      const btn = document.getElementById('upgrade-btn');
+      btn.disabled = true;
+      btn.textContent = 'Redirecting to Stripe…';
+
+      try {
+        const resp = await fetch('/api/stripe/checkout', { method: 'POST' });
+        const data = await resp.json();
+
+        if (data.url) {
+          window.location.href = data.url;
+        } else if (data.error) {
+          alert('Error: ' + data.error);
+          btn.disabled = false;
+          btn.textContent = 'Upgrade to Pro';
+        }
+      } catch (err) {
+        alert('Failed to start checkout. Please try again.');
+        btn.disabled = false;
+        btn.textContent = 'Upgrade to Pro';
+      }
+    }
+
+    async function manageBilling() {
+      const btn = document.getElementById('manage-btn');
+      btn.disabled = true;
+      btn.textContent = 'Opening portal…';
+
+      try {
+        const resp = await fetch('/api/stripe/portal', { method: 'POST' });
+        const data = await resp.json();
+
+        if (data.url) {
+          window.location.href = data.url;
+        } else if (data.error) {
+          alert('Error: ' + data.error);
+          btn.disabled = false;
+          btn.textContent = 'Manage Subscription';
+        }
+      } catch (err) {
+        alert('Failed to open billing portal. Please try again.');
+        btn.disabled = false;
+        btn.textContent = 'Manage Subscription';
+      }
+    }
+  </script>
+</body>
+</html>

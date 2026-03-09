@@ -1,0 +1,27 @@
+name: Deploy Engine to Fly.io
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'engine/**'
+      - 'orion-ui-standalone/**'
+      - 'Dockerfile.fly'
+      - 'fly.toml'
+      - 'requirements.txt'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Fly.io CLI
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy to Fly.io
+        run: flyctl deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
