@@ -110,6 +110,8 @@ SUBSCRIPTION_EXEMPT_PATHS = {
     "/api/auth/logout",
     "/api/auth/session",
     "/api/auth/user",
+    "/admin",
+    "/api/admin",
 }
 
 def _is_subscription_exempt(path: str) -> bool:
@@ -285,7 +287,14 @@ def _save_connections(data: dict):
     _write_json(CONNECTIONS_FILE, data)
 
 def _resolve_connection(connection_id: str | None, agent: str) -> dict | None:
-    """Pick the best API connection for a request."""
+    """Pick the best API connection for a request.
+
+    Priority:
+      1. Explicit connection_id (if provided and enabled)
+      2. Agent-mapped connection
+      3. First enabled user connection (type=external, not platform_hosted)
+      4. First enabled platform-hosted connection (fallback)
+    """
     store = _load_connections()
     conns = store.get("connections", [])
     agent_map = store.get("agent_connections", {})
@@ -297,7 +306,12 @@ def _resolve_connection(connection_id: str | None, agent: str) -> dict | None:
         found = next((c for c in conns if c["id"] == mapped_id and c.get("enabled")), None)
         if found:
             return found
-    return next((c for c in conns if c.get("enabled") and c.get("type") == "external"), None)
+    # Prefer user's own keys (non-platform)
+    user_conn = next((c for c in conns if c.get("enabled") and c.get("type") == "external" and not c.get("platform_hosted")), None)
+    if user_conn:
+        return user_conn
+    # Fall back to platform-hosted connection
+    return next((c for c in conns if c.get("enabled") and c.get("platform_hosted")), None)
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -3854,6 +3868,156 @@ async def api_knowledge_delete(note_id: str):
 async def api_knowledge_get(note_id: str):
     note = _load_note(note_id)
     return note if note else JSONResponse({"error": "Not found"}, 404)
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  ADMIN — Platform API Key Management
+# ═══════════════════════════════════════════════════════════════════
+
+# Admin access: set ADMIN_SECRET via `fly secrets set ADMIN_SECRET=your-secret`
+# Access the page at /admin/keys?secret=your-secret
+ADMIN_SECRET = os.environ.get("ADMIN_SECRET", "")
+
+def _check_admin(request: Request) -> bool:
+    """Verify admin access via query param or header."""
+    if not ADMIN_SECRET:
+        return False  # No secret configured — admin panel disabled
+    secret = request.query_params.get("secret", "") or request.headers.get("x-admin-secret", "")
+    return secret == ADMIN_SECRET
+
+
+def _get_platform_connections() -> list[dict]:
+    """Return only platform-hosted connections."""
+    store = _load_connections()
+    return [c for c in store.get("connections", []) if c.get("platform_hosted")]
+
+
+@app.get("/admin/keys", response_class=HTMLResponse)
+async def page_admin_keys(request: Request):
+    """Admin page for managing platform-hosted API keys."""
+    if not _check_admin(request):
+        return JSONResponse({"error": "Unauthorized"}, status_code=403)
+    platform_conns = _get_platform_connections()
+    return templates.TemplateResponse("admin_keys.html", {
+        "request": request,
+        "page": "admin",
+        "platform_connections": platform_conns,
+    })
+
+
+@app.post("/api/admin/platform-keys")
+async def api_admin_save_platform_key(request: Request):
+    """Create or update a platform-hosted connection."""
+    if not _check_admin(request):
+        return JSONResponse({"error": "Unauthorized"}, status_code=403)
+
+    body = await request.json()
+    provider = body.get("provider", "").strip()
+    api_key = body.get("api_key", "").strip()
+    url = body.get("url", "").strip()
+    name = body.get("name", f"Platform — {provider}")
+    models = body.get("models", [])
+
+    if not provider or not api_key:
+        return JSONResponse({"error": "provider and api_key are required"}, 400)
+
+    store = _load_connections()
+    # Upsert: find existing platform connection for this provider
+    existing = None
+    for c in store["connections"]:
+        if c.get("platform_hosted") and c.get("provider") == provider:
+            existing = c
+            break
+
+    if existing:
+        existing["api_key"] = api_key
+        existing["url"] = url or existing["url"]
+        existing["name"] = name
+        existing["models"] = models or existing.get("models", [])
+        existing["enabled"] = True
+        conn = existing
+    else:
+        conn = {
+            "id": f"platform_{provider}",
+            "name": name,
+            "type": "external",
+            "provider": provider,
+            "url": url,
+            "api_key": api_key,
+            "models": models,
+            "enabled": True,
+            "platform_hosted": True,
+        }
+        store["connections"].append(conn)
+
+    _save_connections(store)
+    log.info("[admin] Saved platform key for provider=%s", provider)
+    return JSONResponse({"ok": True, "connection": conn})
+
+
+@app.post("/api/admin/platform-keys/test")
+async def api_admin_test_platform_key(request: Request):
+    """Test a platform API key by calling the /v1/models endpoint."""
+    if not _check_admin(request):
+        return JSONResponse({"error": "Unauthorized"}, status_code=403)
+
+    body = await request.json()
+    provider = body.get("provider", "").strip()
+    url = body.get("url", "").strip().rstrip("/")
+    api_key = body.get("api_key", "").strip()
+
+    if not api_key:
+        return JSONResponse({"ok": False, "error": "No API key provided"})
+
+    # ElevenLabs uses a different endpoint
+    if provider == "elevenlabs":
+        test_url = f"{url}/v1/voices"
+        headers = {"xi-api-key": api_key}
+    elif provider == "google_gemini":
+        # Google Gemini OpenAI-compatible endpoint
+        test_url = f"{url}/models"
+        headers = {"Authorization": f"Bearer {api_key}"}
+    else:
+        # Standard OpenAI-compatible /v1/models
+        test_url = f"{url}/v1/models"
+        headers = {"Authorization": f"Bearer {api_key}"}
+
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.get(test_url, headers=headers)
+            resp.raise_for_status()
+            data = resp.json()
+
+        if provider == "elevenlabs":
+            count = len(data.get("voices", []))
+        else:
+            count = len(data.get("data", data.get("models", [])))
+        return JSONResponse({"ok": True, "models_count": count})
+    except httpx.HTTPStatusError as e:
+        detail = str(e)
+        try:
+            detail = e.response.text[:200]
+        except Exception:
+            pass
+        return JSONResponse({"ok": False, "error": f"HTTP {e.response.status_code}: {detail}"})
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": str(e)})
+
+
+@app.delete("/api/admin/platform-keys/{provider}")
+async def api_admin_remove_platform_key(provider: str, request: Request):
+    """Remove a platform-hosted connection."""
+    if not _check_admin(request):
+        return JSONResponse({"error": "Unauthorized"}, status_code=403)
+
+    store = _load_connections()
+    store["connections"] = [
+        c for c in store["connections"]
+        if not (c.get("platform_hosted") and c.get("provider") == provider)
+    ]
+    _save_connections(store)
+    log.info("[admin] Removed platform key for provider=%s", provider)
+    return JSONResponse({"ok": True})
 
 
 # ═══════════════════════════════════════════════════════════════════
