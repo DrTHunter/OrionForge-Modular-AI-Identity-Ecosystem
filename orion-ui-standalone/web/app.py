@@ -46,6 +46,7 @@ from web.stripe_billing import (
     get_user_credits, add_user_credits, deduct_user_credits,
     CREDIT_PACKS, TOOL_CREDIT_COSTS, create_credits_checkout_session,
     STORE_CATALOG, LLM_MARKUP_MULTIPLIER, estimate_llm_credit_cost,
+    estimate_tts_credit_cost, estimate_stt_credit_cost,
     get_credit_history, get_trial_status, FREE_TRIAL_DAYS,
     get_user_purchases, user_owns_item, purchase_tool, purchase_skin,
     user_has_tool_access, SKIN_PRICES,
@@ -4149,6 +4150,12 @@ async def api_tts_speak(request: Request):
     if not text:
         return JSONResponse({"error": "No text provided"}, 400)
 
+    # ── Ownership check: user must have purchased voice_tts ──
+    user = getattr(request.state, "user", None)
+    if user and not user_owns_item(user["id"], "voice_tts"):
+        return JSONResponse({"error": "Voice TTS not unlocked. Purchase it in the Store first.",
+                             "redirect": "/store"}, 403)
+
     conn_data = _load_connections()
     el_conn = None
     for c in conn_data.get("connections", []):
@@ -4157,6 +4164,22 @@ async def api_tts_speak(request: Request):
             break
     if not el_conn or not el_conn.get("api_key"):
         return JSONResponse({"error": "No ElevenLabs connection configured. Add one in Settings → Connections."}, 400)
+
+    # ── Pre-flight credit check for platform-hosted keys ──
+    is_platform = el_conn.get("platform_hosted", False)
+    char_count_est = len(text)
+    credit_cost = 0
+    if is_platform and user:
+        credit_cost = estimate_tts_credit_cost(char_count_est, provider="elevenlabs")
+        if credit_cost > 0:
+            balance = get_user_credits(user["id"])
+            if balance < credit_cost:
+                return JSONResponse({
+                    "error": "Insufficient credits for TTS usage",
+                    "credits_needed": credit_cost,
+                    "credits_balance": balance,
+                    "redirect": "/store",
+                }, status_code=402)
 
     url = f"{el_conn['url'].rstrip('/')}/v1/text-to-speech/{voice_id}"
     headers = {
@@ -4174,6 +4197,16 @@ async def api_tts_speak(request: Request):
             resp = await client.post(url, headers=headers, json=payload)
             resp.raise_for_status()
         char_count = int(resp.headers.get("x-character-count", len(text)))
+
+        # ── Deduct credits for platform-hosted ElevenLabs ──
+        if is_platform and user and credit_cost > 0:
+            try:
+                # Recalculate with actual char count from response
+                actual_cost = estimate_tts_credit_cost(char_count, provider="elevenlabs")
+                deduct_user_credits(user["id"], actual_cost, f"tts:elevenlabs:{char_count}chars")
+            except Exception as exc:
+                log.warning("[credits] TTS credit deduction failed: %s", exc)
+
         return Response(content=resp.content, media_type="audio/mpeg",
                         headers={"X-TTS-Characters": str(char_count), "X-TTS-Model": model_id})
     except httpx.HTTPStatusError as e:
@@ -4227,9 +4260,33 @@ async def api_tts_edge_speak(request: Request):
     model = body.get("model", "tts-1")
     if not text:
         return JSONResponse({"error": "No text provided"}, 400)
+
+    # ── Ownership check: user must have purchased voice_tts ──
+    user = getattr(request.state, "user", None)
+    if user and not user_owns_item(user["id"], "voice_tts"):
+        return JSONResponse({"error": "Voice TTS not unlocked. Purchase it in the Store first.",
+                             "redirect": "/store"}, 403)
+
     conn = _get_edge_tts_conn()
     if not conn:
         return JSONResponse({"error": "No Edge-TTS connection configured."}, 400)
+
+    # ── Pre-flight credit check for platform-hosted keys ──
+    is_platform = conn.get("platform_hosted", False)
+    char_count = len(text)
+    credit_cost = 0
+    if is_platform and user:
+        credit_cost = estimate_tts_credit_cost(char_count, provider="edge-tts")
+        if credit_cost > 0:
+            balance = get_user_credits(user["id"])
+            if balance < credit_cost:
+                return JSONResponse({
+                    "error": "Insufficient credits for TTS usage",
+                    "credits_needed": credit_cost,
+                    "credits_balance": balance,
+                    "redirect": "/store",
+                }, status_code=402)
+
     url = f"{conn['url'].rstrip('/')}/v1/audio/speech"
     headers = {"Authorization": f"Bearer {conn.get('api_key', '')}", "Content-Type": "application/json"}
     payload = {"input": text, "voice": voice, "model": model}
@@ -4237,8 +4294,16 @@ async def api_tts_edge_speak(request: Request):
         async with httpx.AsyncClient(timeout=60) as client:
             resp = await client.post(url, headers=headers, json=payload)
             resp.raise_for_status()
+
+        # ── Deduct credits for platform-hosted Edge-TTS ──
+        if is_platform and user and credit_cost > 0:
+            try:
+                deduct_user_credits(user["id"], credit_cost, f"tts:edge-tts:{char_count}chars")
+            except Exception as exc:
+                log.warning("[credits] Edge-TTS credit deduction failed: %s", exc)
+
         return Response(content=resp.content, media_type="audio/mpeg",
-                        headers={"X-TTS-Characters": str(len(text)), "X-TTS-Provider": "edge-tts"})
+                        headers={"X-TTS-Characters": str(char_count), "X-TTS-Provider": "edge-tts"})
     except httpx.HTTPStatusError as e:
         detail = str(e)
         try: detail = e.response.text[:300]
@@ -4295,6 +4360,12 @@ def _get_whisper_conn():
 @app.post("/api/stt/whisper")
 async def api_stt_whisper(request: Request):
     """Transcribe uploaded audio via local Whisper container."""
+    # ── Ownership check: user must have purchased voice_stt ──
+    user = getattr(request.state, "user", None)
+    if user and not user_owns_item(user["id"], "voice_stt"):
+        return JSONResponse({"error": "Voice STT not unlocked. Purchase it in the Store first.",
+                             "redirect": "/store"}, 403)
+
     conn = _get_whisper_conn()
     if not conn:
         return JSONResponse({"error": "No Whisper STT connection configured."}, 400)
@@ -4306,6 +4377,24 @@ async def api_stt_whisper(request: Request):
         return JSONResponse({"error": "No audio file provided"}, 400)
     audio_bytes = await audio_file.read()
     filename = getattr(audio_file, 'filename', 'audio.webm') or 'audio.webm'
+
+    # ── Pre-flight credit check for platform-hosted keys ──
+    # Estimate audio duration from file size (~16 KB/s for typical speech WebM)
+    is_platform = conn.get("platform_hosted", False)
+    estimated_seconds = max(len(audio_bytes) / (16 * 1024), 1.0)
+    credit_cost = 0
+    if is_platform and user:
+        credit_cost = estimate_stt_credit_cost(estimated_seconds, provider="whisper")
+        if credit_cost > 0:
+            balance = get_user_credits(user["id"])
+            if balance < credit_cost:
+                return JSONResponse({
+                    "error": "Insufficient credits for STT usage",
+                    "credits_needed": credit_cost,
+                    "credits_balance": balance,
+                    "redirect": "/store",
+                }, status_code=402)
+
     url = f"{conn['url'].rstrip('/')}/v1/audio/transcriptions"
     headers = {}
     if conn.get('api_key'):
@@ -4316,6 +4405,14 @@ async def api_stt_whisper(request: Request):
                                      data={"model": model, "language": language}, headers=headers)
             resp.raise_for_status()
             data = resp.json()
+
+        # ── Deduct credits for platform-hosted Whisper ──
+        if is_platform and user and credit_cost > 0:
+            try:
+                deduct_user_credits(user["id"], credit_cost, f"stt:whisper:{int(estimated_seconds)}s")
+            except Exception as exc:
+                log.warning("[credits] STT credit deduction failed: %s", exc)
+
         return JSONResponse({"text": data.get("text", "").strip(), "provider": "whisper", "model": model})
     except httpx.HTTPStatusError as e:
         detail = str(e)
