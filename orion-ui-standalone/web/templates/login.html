@@ -229,7 +229,32 @@
   <script>
     // ── Supabase Client Init ──
     const AUTH_CFG = {{ auth_config | tojson }};
-    const supabase = window.supabase.createClient(AUTH_CFG.supabase_url, AUTH_CFG.supabase_anon_key);
+    let _sb = null;
+    let _initError = null;
+
+    try {
+      if (!window.supabase) {
+        throw new Error('Supabase JS library failed to load from CDN. Check your internet connection or ad-blocker.');
+      }
+      if (!AUTH_CFG.supabase_url || !AUTH_CFG.supabase_anon_key) {
+        throw new Error('Supabase URL or anon key is missing. Check config/auth.json.');
+      }
+      _sb = window.supabase.createClient(AUTH_CFG.supabase_url, AUTH_CFG.supabase_anon_key);
+      console.log('[auth] Supabase client initialized OK');
+    } catch (e) {
+      _initError = e.message;
+      console.error('[auth] Supabase init failed:', e);
+    }
+    // Alias for the rest of the code
+    const supabase = _sb;
+
+    // Show init error immediately if applicable
+    if (_initError) {
+      document.addEventListener('DOMContentLoaded', () => {
+        const el = document.getElementById('login-error');
+        if (el) { el.textContent = _initError; el.style.display = 'block'; }
+      });
+    }
 
     let isSignUp = false;
 
@@ -277,6 +302,11 @@
     async function handleAuth(e) {
       e.preventDefault();
       clearMessages();
+
+      if (!supabase) {
+        showError(_initError || 'Supabase client not available. Reload the page or check your connection.');
+        return;
+      }
 
       const email = document.getElementById('auth-email').value.trim();
       const password = document.getElementById('auth-password').value;
@@ -346,6 +376,14 @@
     // ── OAuth Login ──
     async function oauthLogin(provider) {
       clearMessages();
+
+      if (!supabase) {
+        showError(_initError || 'Supabase client not available. Reload the page or check your connection.');
+        return;
+      }
+
+      console.log('[oauth] Starting', provider, 'login, redirectTo:', window.location.origin + '/auth/callback');
+
       try {
         const { data, error } = await supabase.auth.signInWithOAuth({
           provider: provider,
@@ -353,12 +391,19 @@
             redirectTo: window.location.origin + '/auth/callback',
           },
         });
+        console.log('[oauth] signInWithOAuth result:', { data, error });
         if (error) {
           showError(error.message);
         }
-        // Supabase will redirect the browser to the provider
+        // For providers that return a URL (when skipBrowserRedirect is true),
+        // Supabase JS v2 auto-redirects by default. If we're still here after
+        // a moment, something went wrong.
+        if (data?.url) {
+          console.log('[oauth] Redirecting to:', data.url);
+          window.location.href = data.url;
+        }
       } catch (err) {
-        showError('OAuth login failed. Please try again.');
+        showError('OAuth login failed: ' + (err.message || 'Unknown error'));
         console.error('[oauth]', err);
       }
     }
@@ -368,10 +413,13 @@
       try {
         const resp = await fetch('/api/auth/session');
         const data = await resp.json();
+        console.log('[auth] Session check:', data);
         if (data.authenticated) {
           window.location.href = '/chat';
         }
-      } catch (e) {}
+      } catch (e) {
+        console.warn('[auth] Session check failed:', e);
+      }
     })();
   </script>
 </body>
