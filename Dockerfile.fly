@@ -2,13 +2,13 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# System deps for FAISS (libgomp for OpenMP)
+# Minimal system deps
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        build-essential libgomp1 curl \
+        curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
-COPY orion-ui-standalone/requirements.txt ./requirements.txt
+# Install Python dependencies (CPU-only torch to keep image small)
+COPY requirements.fly.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy engine source
