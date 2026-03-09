@@ -16,7 +16,7 @@
   .credit-badge .coin { font-size: 1.2rem; }
 
   /* Tabs */
-  .store-tabs { display: flex; gap: 0; border-bottom: 1px solid #2a2a3a; margin-bottom: 2rem; }
+  .store-tabs { display: flex; gap: 0; border-bottom: 1px solid #2a2a3a; margin-bottom: 2rem; flex-wrap: wrap; }
   .store-tab {
     padding: 0.75rem 1.5rem; font-size: 0.875rem; font-weight: 600; color: #71717a;
     background: none; border: none; cursor: pointer; border-bottom: 2px solid transparent;
@@ -56,22 +56,25 @@
   .pack-btn:hover { background: #818cf8; }
   .pack-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-  /* Tool Catalog */
+  /* Tool / Item Cards */
   .catalog-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
   @media (max-width: 768px) { .catalog-grid { grid-template-columns: 1fr; } }
   .catalog-card {
     background: rgba(26,26,36,0.8); border: 1px solid rgba(42,42,58,0.6);
     border-radius: 0.75rem; padding: 1.5rem; transition: all 0.2s;
-    display: flex; flex-direction: column; gap: 0.75rem;
+    display: flex; flex-direction: column; gap: 0.75rem; position: relative;
   }
   .catalog-card:hover { border-color: rgba(99,102,241,0.4); }
+  .catalog-card.owned { border-color: rgba(16,185,129,0.35); }
   .catalog-card-header { display: flex; align-items: center; gap: 0.75rem; }
-  .catalog-icon { font-size: 1.5rem; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: rgba(99,102,241,0.1); border-radius: 0.5rem; }
+  .catalog-icon { font-size: 1.5rem; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: rgba(99,102,241,0.1); border-radius: 0.5rem; flex-shrink: 0; }
   .catalog-name { font-size: 1rem; font-weight: 700; color: #fff; }
   .catalog-category { font-size: 0.7rem; color: #71717a; text-transform: uppercase; letter-spacing: 0.05em; }
   .catalog-desc { font-size: 0.85rem; color: #a1a1aa; line-height: 1.5; flex: 1; }
   .catalog-footer { display: flex; align-items: center; justify-content: space-between; }
   .catalog-price { font-size: 0.9rem; font-weight: 700; color: #a5b4fc; }
+  .catalog-price.free-price { color: #10b981; }
+
   .catalog-buy-btn {
     padding: 0.4rem 1rem; border: 1px solid rgba(99,102,241,0.4); border-radius: 0.4rem;
     font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
@@ -79,6 +82,47 @@
   }
   .catalog-buy-btn:hover { background: rgba(99,102,241,0.15); }
   .catalog-buy-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .catalog-buy-btn.owned-btn { border-color: rgba(16,185,129,0.4); color: #10b981; cursor: default; }
+  .catalog-buy-btn.owned-btn:hover { background: transparent; }
+  .catalog-buy-btn.free-btn { border-color: rgba(16,185,129,0.4); color: #10b981; cursor: default; }
+  .catalog-buy-btn.free-btn:hover { background: transparent; }
+
+  /* Owned badge */
+  .owned-badge {
+    position: absolute; top: 10px; right: 10px;
+    background: rgba(16,185,129,0.15); color: #10b981;
+    font-size: 0.65rem; font-weight: 700; padding: 3px 10px;
+    border-radius: 20px; letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .free-badge {
+    position: absolute; top: 10px; right: 10px;
+    background: rgba(16,185,129,0.12); color: #34d399;
+    font-size: 0.65rem; font-weight: 700; padding: 3px 10px;
+    border-radius: 20px; letter-spacing: 0.04em; text-transform: uppercase;
+  }
+
+  /* Skin cards */
+  .skin-store-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+  @media (max-width: 900px) { .skin-store-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 600px) { .skin-store-grid { grid-template-columns: 1fr; } }
+  .skin-store-card {
+    background: rgba(26,26,36,0.8); border: 1px solid rgba(42,42,58,0.6);
+    border-radius: 0.75rem; padding: 1.25rem; text-align: center;
+    transition: all 0.2s; position: relative;
+  }
+  .skin-store-card:hover { border-color: rgba(99,102,241,0.4); }
+  .skin-store-card.owned { border-color: rgba(16,185,129,0.35); }
+  .skin-store-name { font-size: 0.95rem; font-weight: 700; color: #fff; margin-bottom: 0.5rem; }
+  .skin-store-price { font-size: 0.85rem; color: #a5b4fc; font-weight: 600; margin-bottom: 0.75rem; }
+  .skin-store-price.free { color: #10b981; }
+  .skin-store-btn {
+    width: 100%; padding: 0.5rem; border: 1px solid rgba(99,102,241,0.4); border-radius: 0.4rem;
+    font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+    background: transparent; color: #a5b4fc;
+  }
+  .skin-store-btn:hover { background: rgba(99,102,241,0.15); }
+  .skin-store-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .skin-store-btn.owned-btn { border-color: rgba(16,185,129,0.4); color: #10b981; cursor: default; }
 
   /* LLM Info */
   .llm-info-card {
@@ -126,7 +170,8 @@
   <!-- Tabs -->
   <div class="store-tabs">
     <button class="store-tab active" onclick="switchStoreTab('credits')">💳 Credit Packs</button>
-    <button class="store-tab" onclick="switchStoreTab('tools')">⚒ Tools</button>
+    <button class="store-tab" onclick="switchStoreTab('tools')">⚒ Tools &amp; Upgrades</button>
+    <button class="store-tab" onclick="switchStoreTab('skins')">🎨 Skins</button>
     <button class="store-tab" onclick="switchStoreTab('llm')">🧠 LLM Usage</button>
     <button class="store-tab" onclick="switchStoreTab('history')">📜 History</button>
   </div>
@@ -134,7 +179,7 @@
   <!-- ═══ CREDIT PACKS ═══ -->
   <div id="section-credits" class="store-section active">
     <p style="color:#a1a1aa; margin-bottom:1.5rem; font-size:0.9rem;">
-      Purchase credit packs to use platform-hosted LLMs and premium tools. Credits never expire.
+      Purchase credit packs to unlock premium tools, skins, and platform-hosted LLMs. Credits never expire.
     </p>
     <div class="packs-grid">
       {% for pack in credit_packs %}
@@ -156,31 +201,99 @@
     </div>
   </div>
 
-  <!-- ═══ TOOL CATALOG ═══ -->
+  <!-- ═══ TOOLS & UPGRADES ═══ -->
   <div id="section-tools" class="store-section">
     <p style="color:#a1a1aa; margin-bottom:1.5rem; font-size:0.9rem;">
-      Premium tools that extend your AI agents. Purchase with credits for per-use access.
+      Unlock premium tools with a one-time credit purchase — use them forever. Free tools are included for all users.
     </p>
-    <div class="catalog-grid">
+
+    <!-- One-time purchase tools -->
+    <h3 style="color:#fff; font-size:1.1rem; font-weight:700; margin-bottom:1rem;">🔓 Premium Tools <span style="font-size:0.75rem; color:#71717a; font-weight:400;">— one-time unlock</span></h3>
+    <div class="catalog-grid" style="margin-bottom:2rem;">
       {% for item in catalog %}
-      {% if item.category == 'premium_tool' %}
-      <div class="catalog-card">
+      {% if item.purchase_type == 'one_time' %}
+      {% set owned = item.id in purchases.tools %}
+      <div class="catalog-card {% if owned %}owned{% endif %}">
+        {% if owned %}
+        <span class="owned-badge">✓ Owned</span>
+        {% endif %}
         <div class="catalog-card-header">
           <div class="catalog-icon">{{ item.icon }}</div>
           <div>
             <div class="catalog-name">{{ item.name }}</div>
-            <div class="catalog-category">{{ item.category }}</div>
+            <div class="catalog-category">one-time unlock</div>
           </div>
         </div>
         <div class="catalog-desc">{{ item.description }}</div>
         <div class="catalog-footer">
-          <div class="catalog-price">🪙 {{ item.credit_cost }} credits/use</div>
-          <button class="catalog-buy-btn" onclick="useTool('{{ item.id }}', {{ item.credit_cost }})" id="tool-btn-{{ item.id }}">
-            Use Tool
+          <div class="catalog-price">🪙 {{ item.credit_cost }} credits</div>
+          {% if owned %}
+          <button class="catalog-buy-btn owned-btn" disabled>✓ Unlocked</button>
+          {% else %}
+          <button class="catalog-buy-btn" onclick="purchaseTool('{{ item.id }}', {{ item.credit_cost }}, '{{ item.name }}')" id="tool-btn-{{ item.id }}">
+            Buy &amp; Unlock
           </button>
+          {% endif %}
         </div>
       </div>
       {% endif %}
+      {% endfor %}
+    </div>
+
+    <!-- Free tools -->
+    <h3 style="color:#fff; font-size:1.1rem; font-weight:700; margin-bottom:1rem;">🎁 Free Tools <span style="font-size:0.75rem; color:#71717a; font-weight:400;">— included for everyone</span></h3>
+    <div class="catalog-grid">
+      {% for item in catalog %}
+      {% if item.purchase_type == 'free' %}
+      <div class="catalog-card owned">
+        <span class="free-badge">Free</span>
+        <div class="catalog-card-header">
+          <div class="catalog-icon" style="background:rgba(16,185,129,0.1);">{{ item.icon }}</div>
+          <div>
+            <div class="catalog-name">{{ item.name }}</div>
+            <div class="catalog-category">included</div>
+          </div>
+        </div>
+        <div class="catalog-desc">{{ item.description }}</div>
+        <div class="catalog-footer">
+          <div class="catalog-price free-price">Free</div>
+          <button class="catalog-buy-btn free-btn" disabled>✓ Included</button>
+        </div>
+      </div>
+      {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- ═══ SKINS ═══ -->
+  <div id="section-skins" class="store-section">
+    <p style="color:#a1a1aa; margin-bottom:1.5rem; font-size:0.9rem;">
+      Personalize your SoulScript experience. Purchase skins individually with credits — own them forever.
+      Preview and apply skins on the <a href="/skins" style="color:#818cf8; text-decoration:underline;">Skins page</a>.
+    </p>
+    <div class="skin-store-grid">
+      {% for skin_id, price in skin_prices.items() %}
+      {% set owned = skin_id in purchases.skins %}
+      <div class="skin-store-card {% if owned %}owned{% endif %}" id="skin-card-{{ skin_id }}">
+        {% if owned %}
+        <span class="owned-badge">✓ Owned</span>
+        {% endif %}
+        <div class="skin-store-name">{{ skin_id | replace('_', ' ') | title }}</div>
+        {% if price == 0 %}
+        <div class="skin-store-price free">Free</div>
+        {% else %}
+        <div class="skin-store-price">🪙 {{ price }} credits</div>
+        {% endif %}
+        {% if owned %}
+        <button class="skin-store-btn owned-btn" disabled>✓ Owned</button>
+        {% elif price == 0 %}
+        <button class="skin-store-btn owned-btn" disabled>✓ Included</button>
+        {% else %}
+        <button class="skin-store-btn" onclick="purchaseSkin('{{ skin_id }}', {{ price }})" id="skin-btn-{{ skin_id }}">
+          Buy — 🪙 {{ price }}
+        </button>
+        {% endif %}
+      </div>
       {% endfor %}
     </div>
   </div>
@@ -288,8 +401,8 @@
     });
   }
 
-  // ── Use tool (deduct credits) ──
-  function useTool(toolId, cost) {
+  // ── Purchase tool (one-time unlock) ──
+  function purchaseTool(toolId, cost, toolName) {
     var balance = parseInt(document.getElementById('credit-balance').textContent, 10);
     if (balance < cost) {
       alert('Insufficient credits! You need ' + cost + ' credits but have ' + balance + '. Buy more credits first.');
@@ -297,7 +410,7 @@
       document.querySelectorAll('.store-tab')[0].classList.add('active');
       return;
     }
-    if (!confirm('Use ' + cost + ' credits for ' + toolId + '?')) return;
+    if (!confirm('Unlock "' + toolName + '" for ' + cost + ' credits? This is a one-time purchase — you\'ll have access forever.')) return;
     var btn = document.getElementById('tool-btn-' + toolId);
     if (btn) { btn.disabled = true; btn.textContent = 'Processing…'; }
     fetch('/api/credits/deduct-tool', {
@@ -309,15 +422,51 @@
     .then(function(data) {
       if (data.success) {
         document.getElementById('credit-balance').textContent = data.balance;
-        alert('✓ ' + toolId + ' activated! ' + data.cost + ' credits deducted.');
+        alert('✓ ' + toolName + ' unlocked! ' + data.cost + ' credits deducted. You now have permanent access.');
+        window.location.reload();
       } else if (data.error) {
         alert('Error: ' + data.error);
+        if (btn) { btn.disabled = false; btn.textContent = 'Buy & Unlock'; }
       }
-      if (btn) { btn.disabled = false; btn.textContent = 'Use Tool'; }
     })
     .catch(function(err) {
       alert('Failed to process. Please try again.');
-      if (btn) { btn.disabled = false; btn.textContent = 'Use Tool'; }
+      if (btn) { btn.disabled = false; btn.textContent = 'Buy & Unlock'; }
+    });
+  }
+
+  // ── Purchase skin (one-time unlock) ──
+  function purchaseSkin(skinId, cost) {
+    var balance = parseInt(document.getElementById('credit-balance').textContent, 10);
+    if (balance < cost) {
+      alert('Insufficient credits! You need ' + cost + ' credits but have ' + balance + '. Buy more credits first.');
+      switchStoreTab('credits');
+      document.querySelectorAll('.store-tab')[0].classList.add('active');
+      return;
+    }
+    var skinName = skinId.replace(/_/g, ' ').replace(/\b\w/g, function(l) { return l.toUpperCase(); });
+    if (!confirm('Unlock "' + skinName + '" skin for ' + cost + ' credits?')) return;
+    var btn = document.getElementById('skin-btn-' + skinId);
+    if (btn) { btn.disabled = true; btn.textContent = 'Processing…'; }
+    fetch('/api/store/purchase-skin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ skin_id: skinId })
+    })
+    .then(function(resp) { return resp.json(); })
+    .then(function(data) {
+      if (data.success) {
+        document.getElementById('credit-balance').textContent = data.balance;
+        alert('✓ ' + skinName + ' skin unlocked! Apply it on the Skins page.');
+        window.location.reload();
+      } else if (data.error) {
+        alert('Error: ' + data.error);
+        if (btn) { btn.disabled = false; btn.textContent = 'Buy — 🪙 ' + cost; }
+      }
+    })
+    .catch(function(err) {
+      alert('Failed to process. Please try again.');
+      if (btn) { btn.disabled = false; btn.textContent = 'Buy — 🪙 ' + cost; }
     });
   }
 
@@ -352,10 +501,12 @@
       tbody.innerHTML = '';
       rows.forEach(function(row) {
         var tr = document.createElement('tr');
-        var dateStr = row.date ? new Date(row.date).toLocaleDateString() : '—';
+        var ts = row.date || row.timestamp;
+        var dateStr = ts ? new Date(ts * 1000).toLocaleDateString() : '—';
         var amtClass = row.amount > 0 ? 'credit-add' : 'credit-sub';
         var amtStr = row.amount > 0 ? ('+' + row.amount) : String(row.amount);
-        tr.innerHTML = '<td>' + dateStr + '</td><td>' + (row.description || '—') + '</td><td class="' + amtClass + '">' + amtStr + '</td><td>' + (row.balance || '—') + '</td>';
+        var desc = row.description || row.reason || row.tool || '—';
+        tr.innerHTML = '<td>' + dateStr + '</td><td>' + desc + '</td><td class="' + amtClass + '">' + amtStr + '</td><td>' + (row.balance || '—') + '</td>';
         tbody.appendChild(tr);
       });
     })
