@@ -12,5 +12,19 @@
     "display_name": "user",
     "deleted_at": "2026-03-08T19:28:20.327301+00:00",
     "expires_at": "2026-04-07T19:28:20.330304+00:00"
+  },
+  {
+    "id": "new_agent_a5ec635c",
+    "name": "new_agent",
+    "display_name": "new_agent",
+    "deleted_at": "2026-03-10T18:17:46.049988+00:00",
+    "expires_at": "2026-04-09T18:17:46.051707+00:00"
+  },
+  {
+    "id": "new_agent_2d554d54",
+    "name": "new_agent",
+    "display_name": "new_agent",
+    "deleted_at": "2026-03-10T18:19:48.329296+00:00",
+    "expires_at": "2026-04-09T18:19:48.331256+00:00"
   }
 ]

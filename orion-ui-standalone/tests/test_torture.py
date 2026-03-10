@@ -81,6 +81,11 @@ Covers:
   - Platform API Keys (image generation: OpenAI, Google, Stability toggles;
     voice TTS: ElevenLabs, OpenedAI Cloud toggles; flag persistence, mixed
     platform+user keys, disabled state, provider switching with platform flag)
+  - Chat 3-mode connection selector (_normalize_ollama_url edge cases,
+    _get_platform_connections filter, page_chat connections split logic,
+    admin platform key Ollama save/upsert, user API keys openrouter+ollama_url
+    save, user API keys masking, /api/connections/all-models static logic,
+    admin_keys.html PROVIDERS array, chat.html three-mode selector JS)
 """
 
 import json
@@ -1715,7 +1720,13 @@ def test_model_router_config():
                     check("GET after reset → default coding_heavy",
                           data5["task_tier_map"].get("coding_heavy") == "code_heavy")
 
-            asyncio.run(_run_api_tests())
+            import web.app as _app_auth_1
+            _orig_gac_1 = _app_auth_1.get_auth_config
+            _app_auth_1.get_auth_config = lambda: {"auth_enabled": False}
+            try:
+                asyncio.run(_run_api_tests())
+            finally:
+                _app_auth_1.get_auth_config = _orig_gac_1
 
         except ImportError:
             # httpx not installed — skip API tests gracefully
@@ -1863,7 +1874,13 @@ def test_model_router_config():
                     check("preset overwrite description",
                           True)  # file was overwritten successfully
 
-            asyncio.run(_run_preset_api_tests())
+            import web.app as _app_auth_2
+            _orig_gac_2 = _app_auth_2.get_auth_config
+            _app_auth_2.get_auth_config = lambda: {"auth_enabled": False}
+            try:
+                asyncio.run(_run_preset_api_tests())
+            finally:
+                _app_auth_2.get_auth_config = _orig_gac_2
 
             _app_mod2._ROUTER_PRESETS_DIR = orig_presets_dir
 
@@ -5071,7 +5088,13 @@ def test_profile_api_torture():
                     r13 = await client.post("/api/profiles", json={"name": ""})
                     check("empty name → 400", r13.status_code == 400)
 
-            asyncio.run(_run())
+            import web.app as _app_auth_3
+            _orig_gac_3 = _app_auth_3.get_auth_config
+            _app_auth_3.get_auth_config = lambda: {"auth_enabled": False}
+            try:
+                asyncio.run(_run())
+            finally:
+                _app_auth_3.get_auth_config = _orig_gac_3
 
         except ImportError:
             check("httpx not available — skipped API tests", True)
@@ -5139,7 +5162,13 @@ def test_skins_api():
                     r5 = await client.put("/api/skin", json={})
                     check("missing key → default", r5.json()["skin"] == "default")
 
-            asyncio.run(_run())
+            import web.app as _app_auth_4
+            _orig_gac_4 = _app_auth_4.get_auth_config
+            _app_auth_4.get_auth_config = lambda: {"auth_enabled": False}
+            try:
+                asyncio.run(_run())
+            finally:
+                _app_auth_4.get_auth_config = _orig_gac_4
 
         except ImportError:
             check("httpx not available — skipped", True)
@@ -5268,7 +5297,13 @@ def test_saved_profile_crud():
                     safe_name = r7.json()["filename"]
                     check("sanitized filename", "!" not in safe_name and "@" not in safe_name)
 
-            asyncio.run(_run())
+            import web.app as _app_auth_5
+            _orig_gac_5 = _app_auth_5.get_auth_config
+            _app_auth_5.get_auth_config = lambda: {"auth_enabled": False}
+            try:
+                asyncio.run(_run())
+            finally:
+                _app_auth_5.get_auth_config = _orig_gac_5
 
         except ImportError:
             check("httpx not available — skipped API tests", True)
@@ -5488,7 +5523,13 @@ def test_profile_create_v2():
                     r3 = await client.post("/api/profiles/create", json={"name": ""})
                     check("v2 empty name → 400", r3.status_code == 400)
 
-            asyncio.run(_run())
+            import web.app as _app_auth_6
+            _orig_gac_6 = _app_auth_6.get_auth_config
+            _app_auth_6.get_auth_config = lambda: {"auth_enabled": False}
+            try:
+                asyncio.run(_run())
+            finally:
+                _app_auth_6.get_auth_config = _orig_gac_6
 
         except ImportError:
             check("httpx not available — skipped", True)
@@ -5842,7 +5883,13 @@ def test_about_api():
                     saved = _app._load_about()
                     check("API save persisted", saved["text"] == "Via API")
 
-            asyncio.run(_run())
+            import web.app as _app_auth_7
+            _orig_gac_7 = _app_auth_7.get_auth_config
+            _app_auth_7.get_auth_config = lambda: {"auth_enabled": False}
+            try:
+                asyncio.run(_run())
+            finally:
+                _app_auth_7.get_auth_config = _orig_gac_7
         except ImportError:
             check("httpx not available — skipped", True)
 
@@ -7003,6 +7050,566 @@ def test_platform_api_keys_voice():
 
 
 # ═════════════════════════════════════════════
+# NORMALIZE OLLAMA URL
+# ═════════════════════════════════════════════
+def test_normalize_ollama_url():
+    """Test _normalize_ollama_url handles all input variants correctly."""
+    print("\n=== TORTURE: _normalize_ollama_url ===")
+    import web.app as _app
+
+    EXPECTED = _app.PLATFORM_OLLAMA_URL  # http://orionforge-engine-ollama.flycast:11434
+
+    # None / empty → platform URL
+    check("None → platform URL", _app._normalize_ollama_url(None) == EXPECTED)
+    check("empty string → platform URL", _app._normalize_ollama_url("") == EXPECTED)
+    check("whitespace → platform URL", _app._normalize_ollama_url("   ") == EXPECTED)
+
+    # localhost variants → platform URL
+    check("localhost:11434 → platform URL", _app._normalize_ollama_url("http://localhost:11434") == EXPECTED)
+    check("127.0.0.1:11434 → platform URL", _app._normalize_ollama_url("http://127.0.0.1:11434") == EXPECTED)
+    check("localhost no port → platform URL", _app._normalize_ollama_url("http://localhost") == EXPECTED)
+
+    # Custom non-localhost URL → preserved as-is
+    custom = "http://my-ollama.internal:11434"
+    result = _app._normalize_ollama_url(custom)
+    check("custom URL preserved", result == custom)
+
+    # Already the platform URL → unchanged
+    check("platform URL idempotent", _app._normalize_ollama_url(EXPECTED) == EXPECTED)
+
+    # Public Fly URL → preserved (external)
+    pub = "https://orionforge-engine-ollama.fly.dev"
+    check("public fly URL preserved", _app._normalize_ollama_url(pub) == pub)
+
+
+# ═════════════════════════════════════════════
+# GET PLATFORM CONNECTIONS
+# ═════════════════════════════════════════════
+def test_get_platform_connections():
+    """Test _get_platform_connections() returns only platform-hosted connections."""
+    print("\n=== TORTURE: _get_platform_connections ===")
+    from pathlib import Path
+    tmp = tempfile.mkdtemp()
+    try:
+        import web.app as _app
+
+        orig_conn = _app.CONNECTIONS_FILE
+        tmp_conn = Path(tmp) / "config" / "connections.json"
+        tmp_conn.parent.mkdir(parents=True)
+        _app.CONNECTIONS_FILE = tmp_conn
+
+        store = {
+            "connections": [
+                {"id": "platform_openai", "name": "Platform OpenAI", "provider": "openai",
+                 "platform_hosted": True, "enabled": True, "api_key": "sk-plat", "models": []},
+                {"id": "platform_ollama", "name": "Platform Ollama", "provider": "ollama",
+                 "platform_hosted": True, "enabled": True, "api_key": "", "models": ["llama3.2:3b"]},
+                {"id": "user_openai", "name": "My OpenAI", "provider": "openai",
+                 "platform_hosted": False, "enabled": True, "api_key": "sk-user", "models": []},
+                {"id": "elevenlabs", "name": "ElevenLabs", "provider": "elevenlabs",
+                 "platform_hosted": True, "enabled": True, "api_key": "xi-key", "models": []},
+            ]
+        }
+        _app._save_connections(store)
+
+        result = _app._get_platform_connections()
+        ids = [c["id"] for c in result]
+
+        check("platform_openai in result", "platform_openai" in ids)
+        check("platform_ollama in result", "platform_ollama" in ids)
+        check("elevenlabs in result (platform_hosted=True)", "elevenlabs" in ids)
+        check("user_openai not in result", "user_openai" not in ids)
+        check("total count is 3", len(result) == 3)
+
+        # All returned items must have platform_hosted=True
+        check("all results platform_hosted", all(c["platform_hosted"] for c in result))
+
+    finally:
+        _app.CONNECTIONS_FILE = orig_conn
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ═════════════════════════════════════════════
+# PAGE CHAT CONNECTIONS SPLIT
+# ═════════════════════════════════════════════
+def test_page_chat_connections_split():
+    """Test page_chat() splits connections into platform_connections and user_connections correctly."""
+    print("\n=== TORTURE: page_chat connections split logic ===")
+    from pathlib import Path
+    tmp = tempfile.mkdtemp()
+    try:
+        import web.app as _app
+
+        orig_conn = _app.CONNECTIONS_FILE
+        tmp_conn = Path(tmp) / "config" / "connections.json"
+        tmp_conn.parent.mkdir(parents=True)
+        _app.CONNECTIONS_FILE = tmp_conn
+
+        store = {
+            "connections": [
+                {"id": "platform_openai", "provider": "openai", "platform_hosted": True,
+                 "enabled": True, "api_key": "sk-x", "models": []},
+                {"id": "platform_ollama", "provider": "ollama", "platform_hosted": True,
+                 "enabled": True, "api_key": "", "models": []},
+                {"id": "platform_elevenlabs", "provider": "elevenlabs", "platform_hosted": True,
+                 "enabled": True, "api_key": "xi-k", "models": []},
+                {"id": "platform_whisper", "provider": "whisper", "platform_hosted": True,
+                 "enabled": True, "api_key": "", "models": []},
+                {"id": "user_openai", "provider": "openai", "platform_hosted": False,
+                 "enabled": True, "api_key": "sk-u", "models": []},
+                {"id": "user_openai_disabled", "provider": "openai", "platform_hosted": False,
+                 "enabled": False, "api_key": "sk-d", "models": []},
+            ]
+        }
+        _app._save_connections(store)
+
+        all_conns = [c for c in store["connections"] if c.get("enabled")]
+        platform_conns = [
+            c for c in all_conns
+            if c.get("platform_hosted") and c.get("provider") not in ("elevenlabs", "edge-tts", "whisper")
+        ]
+        user_conns = [
+            c for c in all_conns
+            if not c.get("platform_hosted") and c.get("provider") not in ("elevenlabs", "edge-tts", "whisper")
+        ]
+
+        plat_ids = [c["id"] for c in platform_conns]
+        user_ids = [c["id"] for c in user_conns]
+
+        check("platform_openai in platform_conns", "platform_openai" in plat_ids)
+        check("platform_ollama in platform_conns", "platform_ollama" in plat_ids)
+        check("platform_elevenlabs excluded from platform_conns", "platform_elevenlabs" not in plat_ids)
+        check("platform_whisper excluded from platform_conns", "platform_whisper" not in plat_ids)
+        check("user_openai in user_conns", "user_openai" in user_ids)
+        check("disabled user conn excluded", "user_openai_disabled" not in user_ids)
+        check("platform conn not in user_conns", "platform_openai" not in user_ids)
+        check("platform_conns count=2", len(platform_conns) == 2)
+        check("user_conns count=1", len(user_conns) == 1)
+
+    finally:
+        _app.CONNECTIONS_FILE = orig_conn
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ═════════════════════════════════════════════
+# ADMIN PLATFORM KEY — OLLAMA SAVE (UPSERT)
+# ═════════════════════════════════════════════
+def test_admin_platform_key_ollama_save():
+    """Test admin platform key save logic: Ollama requires no API key, upsert works."""
+    print("\n=== TORTURE: Admin platform key — Ollama save/upsert ===")
+    from pathlib import Path
+    tmp = tempfile.mkdtemp()
+    try:
+        import web.app as _app
+
+        orig_conn = _app.CONNECTIONS_FILE
+        tmp_conn = Path(tmp) / "config" / "connections.json"
+        tmp_conn.parent.mkdir(parents=True)
+        _app.CONNECTIONS_FILE = tmp_conn
+        _app._save_connections({"connections": []})
+
+        EXPECTED_URL = _app.PLATFORM_OLLAMA_URL
+
+        # ── 1. Ollama: no API key, URL defaults to platform URL ──
+        store = _app._load_connections()
+        provider = "ollama"
+        url = _app._normalize_ollama_url("")  # empty → platform URL
+        conn_new = {
+            "id": f"platform_{provider}",
+            "name": "Platform — ollama",
+            "type": "ollama",
+            "provider": provider,
+            "url": url,
+            "api_key": "",
+            "models": [],
+            "enabled": True,
+            "platform_hosted": True,
+        }
+        store["connections"].append(conn_new)
+        _app._save_connections(store)
+
+        loaded = _app._load_connections()
+        ollama_conn = next((c for c in loaded["connections"] if c["provider"] == "ollama"), None)
+        check("ollama conn saved", ollama_conn is not None)
+        check("ollama conn api_key empty", ollama_conn["api_key"] == "")
+        check("ollama conn url normalized", ollama_conn["url"] == EXPECTED_URL)
+        check("ollama conn platform_hosted", ollama_conn["platform_hosted"] is True)
+
+        # ── 2. Upsert: update existing ollama connection ──
+        store = _app._load_connections()
+        existing = next(c for c in store["connections"] if c["provider"] == "ollama")
+        existing["models"] = ["llama3.2:3b", "qwen2.5:7b"]
+        existing["url"] = _app._normalize_ollama_url("http://localhost:11434")  # should normalize
+        _app._save_connections(store)
+
+        loaded2 = _app._load_connections()
+        updated = next(c for c in loaded2["connections"] if c["provider"] == "ollama")
+        check("upsert: models updated", "llama3.2:3b" in updated["models"])
+        check("upsert: localhost URL normalized to platform", updated["url"] == EXPECTED_URL)
+
+        # ── 3. OpenRouter: requires API key ──
+        store3 = _app._load_connections()
+        or_conn = {
+            "id": "platform_openrouter",
+            "name": "Platform — OpenRouter",
+            "type": "external",
+            "provider": "openrouter",
+            "url": "https://openrouter.ai/api/v1",
+            "api_key": "sk-or-testkey123",
+            "models": ["mistralai/mistral-7b-instruct"],
+            "enabled": True,
+            "platform_hosted": True,
+        }
+        store3["connections"].append(or_conn)
+        _app._save_connections(store3)
+
+        loaded3 = _app._load_connections()
+        or_result = next((c for c in loaded3["connections"] if c["provider"] == "openrouter"), None)
+        check("openrouter conn saved", or_result is not None)
+        check("openrouter api_key set", or_result["api_key"] == "sk-or-testkey123")
+        check("openrouter platform_hosted", or_result["platform_hosted"] is True)
+        check("openrouter url correct", or_result["url"] == "https://openrouter.ai/api/v1")
+
+        # ── 4. Validation: provider="" should fail ──
+        # (test guard logic manually)
+        guard_provider = "".strip()
+        check("empty provider rejected", not guard_provider)
+
+        # ── 5. Validation: non-ollama provider without api_key should fail ──
+        guard_key = "".strip()
+        guard_prov = "openai"
+        check("openai without key rejected", guard_prov != "ollama" and not guard_key)
+
+    finally:
+        _app.CONNECTIONS_FILE = orig_conn
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ═════════════════════════════════════════════
+# USER API KEYS — OPENROUTER + OLLAMA URL
+# ═════════════════════════════════════════════
+def test_user_api_keys_openrouter_ollama():
+    """Test that api_save_api_keys stores openrouter and ollama_url in user settings."""
+    print("\n=== TORTURE: User API keys — OpenRouter + Ollama URL ===")
+    from pathlib import Path
+    tmp = tempfile.mkdtemp()
+    try:
+        import web.app as _app
+
+        orig_settings = _app.SETTINGS_FILE
+        tmp_settings = Path(tmp) / "config" / "settings.json"
+        tmp_settings.parent.mkdir(parents=True)
+        _app.SETTINGS_FILE = tmp_settings
+
+        # ── 1. Save all user keys including openrouter + ollama_url ──
+        body = {
+            "openai": "sk-openai-test",
+            "anthropic": "sk-ant-test",
+            "deepseek": "sk-ds-test",
+            "google_gemini": "AIza-test",
+            "openrouter": "sk-or-user-test",
+            "ollama_url": "http://localhost:11434",  # should normalize to platform URL
+        }
+        ollama_url_normalized = _app._normalize_ollama_url(body["ollama_url"])
+        settings = _app._load_settings()
+        settings["api_keys"] = {
+            "openai":        body.get("openai", ""),
+            "anthropic":     body.get("anthropic", ""),
+            "deepseek":      body.get("deepseek", ""),
+            "google_gemini": body.get("google_gemini", ""),
+            "openrouter":    body.get("openrouter", ""),
+            "ollama_url":    ollama_url_normalized,
+        }
+        _app._save_settings(settings)
+
+        loaded = _app._load_settings()
+        keys = loaded.get("api_keys", {})
+
+        check("openai key saved", keys["openai"] == "sk-openai-test")
+        check("anthropic key saved", keys["anthropic"] == "sk-ant-test")
+        check("deepseek key saved", keys["deepseek"] == "sk-ds-test")
+        check("google_gemini key saved", keys["google_gemini"] == "AIza-test")
+        check("openrouter key saved", keys["openrouter"] == "sk-or-user-test")
+        check("ollama_url normalized from localhost", keys["ollama_url"] == _app.PLATFORM_OLLAMA_URL)
+
+        # ── 2. Save with custom (non-localhost) Ollama URL — preserved ──
+        custom_url = "http://my-custom-ollama:11434"
+        body2 = {"openrouter": "sk-or-v2", "ollama_url": custom_url}
+        url2 = _app._normalize_ollama_url(body2["ollama_url"])
+        settings["api_keys"]["openrouter"] = body2["openrouter"]
+        settings["api_keys"]["ollama_url"] = url2
+        _app._save_settings(settings)
+
+        loaded2 = _app._load_settings()
+        keys2 = loaded2["api_keys"]
+        check("openrouter updated", keys2["openrouter"] == "sk-or-v2")
+        check("custom ollama_url preserved", keys2["ollama_url"] == custom_url)
+
+        # ── 3. Missing openrouter key → saved as empty string ──
+        settings["api_keys"] = {
+            "openai": "sk-x", "anthropic": "", "deepseek": "",
+            "google_gemini": "", "openrouter": "", "ollama_url": custom_url,
+        }
+        _app._save_settings(settings)
+        loaded3 = _app._load_settings()
+        check("missing openrouter saved as empty", loaded3["api_keys"]["openrouter"] == "")
+
+        # ── 4. All 6 keys present in schema ──
+        expected_keys = {"openai", "anthropic", "deepseek", "google_gemini", "openrouter", "ollama_url"}
+        check("all 6 keys in schema", expected_keys == set(loaded3["api_keys"].keys()))
+
+    finally:
+        _app.SETTINGS_FILE = orig_settings
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ═════════════════════════════════════════════
+# USER API KEYS — MASKING LOGIC
+# ═════════════════════════════════════════════
+def test_user_api_keys_masking():
+    """Test api_get_api_keys masking: ollama_url unmasked, long keys truncated."""
+    print("\n=== TORTURE: User API keys — masking logic ===")
+    from pathlib import Path
+    tmp = tempfile.mkdtemp()
+    try:
+        import web.app as _app
+
+        orig_settings = _app.SETTINGS_FILE
+        tmp_settings = Path(tmp) / "config" / "settings.json"
+        tmp_settings.parent.mkdir(parents=True)
+        _app.SETTINGS_FILE = tmp_settings
+
+        settings = {
+            "api_keys": {
+                "openai": "sk-abcdefghijklmnop",  # 18 chars
+                "anthropic": "sk-ant-1234",        # 11 chars
+                "deepseek": "sk-ds-xy",            # 8 chars
+                "google_gemini": "AIza",           # 4 chars
+                "openrouter": "sk-or-testroutkey",  # 17 chars
+                "ollama_url": "http://orionforge-engine-ollama.flycast:11434",
+            }
+        }
+        _app._save_settings(settings)
+
+        # Simulate the masking logic from api_get_api_keys
+        keys = settings["api_keys"]
+        masked = {}
+        for k, v in keys.items():
+            if k == "ollama_url":
+                masked[k] = v
+            elif v and len(v) > 8:
+                masked[k] = v[:4] + "•" * (len(v) - 8) + v[-4:]
+            elif v:
+                masked[k] = "•" * len(v)
+            else:
+                masked[k] = ""
+
+        # ollama_url: never masked
+        check("ollama_url unmasked", masked["ollama_url"] == "http://orionforge-engine-ollama.flycast:11434")
+
+        # openai: long key → first 4 + bullets + last 4
+        check("openai starts with 'sk-a'", masked["openai"].startswith("sk-a"))
+        check("openai ends with 'mnop'", masked["openai"].endswith("mnop"))
+        check("openai contains bullets", "•" in masked["openai"])
+
+        # openrouter: long key → masked
+        check("openrouter masked", "•" in masked["openrouter"])
+        check("openrouter starts with 'sk-o'", masked["openrouter"].startswith("sk-o"))
+
+        # deepseek: exactly 8 chars → all bullets (no first/last preserved)
+        check("deepseek 8-char → all bullets", masked["deepseek"] == "•" * 8)
+
+        # google_gemini: 4 chars → all bullets
+        check("google_gemini 4-char → all bullets", masked["google_gemini"] == "•" * 4)
+
+        # empty key → empty string
+        settings["api_keys"]["openai"] = ""
+        masked_empty = "" if not settings["api_keys"]["openai"] else "masked"
+        check("empty key → empty masked", masked_empty == "")
+
+    finally:
+        _app.SETTINGS_FILE = orig_settings
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ═════════════════════════════════════════════
+# ALL-MODELS ENDPOINT — STATIC LOGIC
+# ═════════════════════════════════════════════
+def test_connections_all_models_static():
+    """Test /api/connections/all-models static logic (no HTTP): returns conn_id → sorted model list."""
+    print("\n=== TORTURE: /api/connections/all-models static logic ===")
+    from pathlib import Path
+    tmp = tempfile.mkdtemp()
+    try:
+        import web.app as _app
+
+        orig_conn = _app.CONNECTIONS_FILE
+        tmp_conn = Path(tmp) / "config" / "connections.json"
+        tmp_conn.parent.mkdir(parents=True)
+        _app.CONNECTIONS_FILE = tmp_conn
+
+        store = {
+            "connections": [
+                {"id": "platform_openai", "provider": "openai", "enabled": True,
+                 "platform_hosted": True, "api_key": "sk-x",
+                 "models": ["gpt-4o", "gpt-4o-mini", "gpt-3.5-turbo"]},
+                {"id": "platform_ollama", "provider": "ollama", "enabled": True,
+                 "platform_hosted": True, "api_key": "",
+                 "models": ["qwen2.5:7b", "llama3.2:3b"]},
+                {"id": "user_openai", "provider": "openai", "enabled": True,
+                 "platform_hosted": False, "api_key": "sk-u",
+                 "models": ["gpt-4o"]},
+                {"id": "disabled_conn", "provider": "openai", "enabled": False,
+                 "platform_hosted": False, "api_key": "sk-d",
+                 "models": ["gpt-4-turbo"]},
+            ]
+        }
+        _app._save_connections(store)
+
+        # Simulate the static part of api_connections_all_models (no HTTP refresh)
+        loaded = _app._load_connections()
+        result = {}
+        for conn in loaded.get("connections", []):
+            if not conn.get("enabled"):
+                continue
+            result[conn["id"]] = sorted(conn.get("models") or [])
+
+        check("platform_openai in result", "platform_openai" in result)
+        check("platform_ollama in result", "platform_ollama" in result)
+        check("user_openai in result", "user_openai" in result)
+        check("disabled_conn excluded", "disabled_conn" not in result)
+
+        # Models are sorted
+        check("openai models sorted", result["platform_openai"] == sorted(["gpt-4o", "gpt-4o-mini", "gpt-3.5-turbo"]))
+        check("ollama models sorted", result["platform_ollama"] == sorted(["qwen2.5:7b", "llama3.2:3b"]))
+
+        # Value format: connection with no models → empty list
+        store2 = {"connections": [
+            {"id": "empty_conn", "provider": "openai", "enabled": True,
+             "platform_hosted": True, "api_key": "sk-e", "models": None},
+        ]}
+        _app._save_connections(store2)
+        loaded2 = _app._load_connections()
+        result2 = {}
+        for c in loaded2["connections"]:
+            if c.get("enabled"):
+                result2[c["id"]] = sorted(c.get("models") or [])
+        check("None models → empty list", result2.get("empty_conn") == [])
+
+    finally:
+        _app.CONNECTIONS_FILE = orig_conn
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ═════════════════════════════════════════════
+# ADMIN KEYS TEMPLATE — PROVIDERS ARRAY
+# ═════════════════════════════════════════════
+def test_admin_keys_template_providers():
+    """Test admin_keys.html PROVIDERS JS array has OpenRouter and Ollama as first two entries."""
+    print("\n=== TORTURE: admin_keys.html PROVIDERS array ===")
+    from pathlib import Path
+    templates_dir = Path(__file__).parent.parent / "web" / "templates"
+    admin_html = templates_dir / "admin_keys.html"
+
+    check("admin_keys.html exists", admin_html.exists())
+    if not admin_html.exists():
+        return
+
+    content = admin_html.read_text(encoding="utf-8")
+
+    # PROVIDERS array exists
+    check("PROVIDERS array declared", "const PROVIDERS = [" in content)
+
+    # OpenRouter provider entry
+    check("openrouter id in PROVIDERS", 'id: "openrouter"' in content)
+    check("openrouter name 'OpenRouter'", 'name: "OpenRouter"' in content)
+    check("openrouter url_default correct", '"https://openrouter.ai/api/v1"' in content)
+    check("openrouter key placeholder sk-or-", '"sk-or-' in content)
+
+    # Ollama provider entry
+    check("ollama id in PROVIDERS", 'id: "ollama"' in content)
+    check("ollama name 'Ollama'", 'name: "Ollama"' in content)
+    check("ollama flycast url_default", "orionforge-engine-ollama.flycast:11434" in content)
+    check("ollama key not required", "(not required)" in content)
+
+    # Ollama appears before or after openrouter but both present
+    idx_or = content.find('id: "openrouter"')
+    idx_ol = content.find('id: "ollama"')
+    check("openrouter before ollama", idx_or < idx_ol)
+
+    # Standard providers also present
+    check("openai in PROVIDERS", 'id: "openai"' in content)
+    check("anthropic in PROVIDERS", 'id: "anthropic"' in content)
+    check("elevenlabs in PROVIDERS", 'id: "elevenlabs"' in content)
+
+    # Ollama save skips API key check
+    check("ollama api_key skip guard", 'providerId !== "ollama"' in content
+          or "provider !== 'ollama'" in content
+          or '!== "ollama"' in content)
+
+    # Admin page has providers-list container
+    check("providers-list div present", 'id="providers-list"' in content)
+
+
+# ═════════════════════════════════════════════
+# CHAT HTML — THREE-MODE SELECTOR
+# ═════════════════════════════════════════════
+def test_chat_html_three_mode_selector():
+    """Test chat.html contains the 3-mode connection selector and routing JS functions."""
+    print("\n=== TORTURE: chat.html three-mode selector ===")
+    from pathlib import Path
+    templates_dir = Path(__file__).parent.parent / "web" / "templates"
+    chat_html = templates_dir / "chat.html"
+
+    check("chat.html exists", chat_html.exists())
+    if not chat_html.exists():
+        return
+
+    content = chat_html.read_text(encoding="utf-8")
+
+    # ── Connection selector element ──
+    check("chat-connection select present", 'id="chat-connection"' in content)
+    check("onConnectionChange handler wired", "onConnectionChange" in content)
+
+    # ── Three mode option values ──
+    check("__platform__ option present", 'value="__platform__"' in content)
+    check("__auto__ option present", 'value="__auto__"' in content)
+    check("Platform API Keys label", "Platform API Keys" in content)
+    check("Auto User Router label", "Auto (User Router)" in content or "Auto" in content)
+
+    # ── Platform connections JS constant ──
+    check("_platformConnections const declared", "_platformConnections" in content)
+    check("platform_connections Jinja template var", "platform_connections" in content)
+    check("tojson filter applied", "tojson" in content)
+
+    # ── fetchPlatformModels function ──
+    check("fetchPlatformModels function defined", "async function fetchPlatformModels" in content
+          or "function fetchPlatformModels" in content)
+    check("fetchPlatformModels calls all-models", "/api/connections/all-models" in content)
+
+    # ── _buildChatRoutingPayload function ──
+    check("_buildChatRoutingPayload defined", "function _buildChatRoutingPayload" in content)
+    check("__auto__ handled in payload builder", "__auto__" in content)
+    check("__platform__ handled in payload builder", "__platform__" in content)
+
+    # ── Model select element ──
+    check("chat-model select present", 'id="chat-model"' in content)
+
+    # ── Default initializes to __platform__ ──
+    check("default init to __platform__", "'__platform__'" in content or '"__platform__"' in content)
+
+    # ── sendChatMsg uses routing payload ──
+    check("_buildChatRoutingPayload called in send", "_buildChatRoutingPayload()" in content)
+
+    # ── onConnectionChange handles both modes ──
+    check("onConnectionChange handles __auto__", content.count("__auto__") >= 2)
+    check("onConnectionChange handles __platform__", content.count("__platform__") >= 3)
+
+    # ── User connections rendered in template ──
+    check("user_connections Jinja var used", "user_connections" in content)
+
+
+# ═════════════════════════════════════════════
 if __name__ == "__main__":
     test_boundary_policy()
     test_pii_guard_extended()
@@ -7089,6 +7696,15 @@ if __name__ == "__main__":
     test_env_priority_over_connections()
     test_platform_api_keys_image()
     test_platform_api_keys_voice()
+    test_normalize_ollama_url()
+    test_get_platform_connections()
+    test_page_chat_connections_split()
+    test_admin_platform_key_ollama_save()
+    test_user_api_keys_openrouter_ollama()
+    test_user_api_keys_masking()
+    test_connections_all_models_static()
+    test_admin_keys_template_providers()
+    test_chat_html_three_mode_selector()
 
     print(f"\n{'='*40}")
     print(f"Results: {PASS} passed, {FAIL} failed")

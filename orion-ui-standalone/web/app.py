@@ -293,7 +293,9 @@ def _normalize_ollama_url(url: str | None) -> str:
     if not raw:
         return PLATFORM_OLLAMA_URL
     lowered = raw.lower()
-    if "orionforge-engine-ollama.fly.dev" in lowered or "orionforge-engine-ollama.flycast" in lowered:
+    if "localhost" in lowered or "127.0.0.1" in lowered:
+        return PLATFORM_OLLAMA_URL
+    if "orionforge-engine-ollama.flycast" in lowered:
         return PLATFORM_OLLAMA_URL
     return raw.rstrip("/")
 
