@@ -82,6 +82,10 @@ from contextlib import asynccontextmanager
 async def _lifespan(application: FastAPI):
     """Build NotesFAISS on startup so Soul Script retrieval works immediately."""
     try:
+        _seed_platform_keys_from_env()
+    except Exception as exc:
+        log.warning("[startup] Platform-key seeding failed: %s", exc)
+    try:
         _rebuild_notes_faiss()
         from src.storage.note_collector import invalidate_notes_faiss
         invalidate_notes_faiss()          # force singleton to reload fresh index
@@ -289,6 +293,61 @@ def _save_connections(data: dict):
     _write_json(CONNECTIONS_FILE, data)
 
 PLATFORM_OLLAMA_URL = "http://orionforge-engine-ollama.flycast:11434"
+
+# ── Env-var → provider mapping for platform-hosted keys ──────────
+_ENV_KEY_MAP = {
+    "openai":       ("OPENAI_API_KEY",       "https://api.openai.com/v1"),
+    "anthropic":    ("ANTHROPIC_API_KEY",    "https://api.anthropic.com/v1"),
+    "deepseek":     ("DEEPSEEK_API_KEY",     "https://api.deepseek.com/v1"),
+    "google_gemini":("GOOGLE_API_KEY",       "https://generativelanguage.googleapis.com/v1beta/openai"),
+    "openrouter":   ("OPENROUTER_API_KEY",   "https://openrouter.ai/api/v1"),
+    "elevenlabs":   ("ELEVENLABS_API_KEY",   "https://api.elevenlabs.io/v1"),
+}
+
+def _seed_platform_keys_from_env():
+    """Populate connections.json with platform keys found in env vars.
+
+    Called once at startup so Fly.io secrets automatically create / update
+    the platform-hosted connections without requiring the admin UI.
+    """
+    store = _load_connections()
+    changed = False
+    for provider, (env_var, default_url) in _ENV_KEY_MAP.items():
+        key = os.environ.get(env_var, "").strip()
+        if not key:
+            continue
+        # Find existing platform connection for this provider
+        existing = None
+        for c in store["connections"]:
+            if c.get("provider") == provider and (
+                c.get("platform_hosted") or str(c.get("id", "")).startswith("platform_")
+            ):
+                existing = c
+                break
+        if existing:
+            if existing.get("api_key") != key:
+                existing["api_key"] = key
+                existing["enabled"] = True
+                existing["platform_hosted"] = True
+                changed = True
+        else:
+            store["connections"].append({
+                "id": f"platform_{provider}",
+                "name": f"Platform — {provider.replace('_', ' ').title()}",
+                "type": "external",
+                "provider": provider,
+                "url": default_url,
+                "api_key": key,
+                "models": [],
+                "enabled": True,
+                "platform_hosted": True,
+            })
+            changed = True
+    if changed:
+        _save_connections(store)
+        log.info("[startup] Seeded %d platform keys from environment",
+                 sum(1 for p, (e, _) in _ENV_KEY_MAP.items() if os.environ.get(e, "").strip()))
+
 
 def _normalize_ollama_url(url: str | None) -> str:
     raw = (url or "").strip()
