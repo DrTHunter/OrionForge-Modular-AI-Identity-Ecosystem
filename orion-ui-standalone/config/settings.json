@@ -82,7 +82,8 @@
     "anthropic": "",
     "deepseek": "",
     "google_gemini": "",
-    "ollama_url": "http://localhost:11434"
+    "openrouter": "",
+    "ollama_url": "http://orionforge-engine-ollama.flycast:11434"
   },
   "stt": {
     "provider": "whisper",

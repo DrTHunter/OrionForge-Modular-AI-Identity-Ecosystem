@@ -286,6 +286,17 @@ def _load_connections() -> dict:
 def _save_connections(data: dict):
     _write_json(CONNECTIONS_FILE, data)
 
+PLATFORM_OLLAMA_URL = "http://orionforge-engine-ollama.flycast:11434"
+
+def _normalize_ollama_url(url: str | None) -> str:
+    raw = (url or "").strip()
+    if not raw:
+        return PLATFORM_OLLAMA_URL
+    lowered = raw.lower()
+    if "orionforge-engine-ollama.fly.dev" in lowered or "orionforge-engine-ollama.flycast" in lowered:
+        return PLATFORM_OLLAMA_URL
+    return raw.rstrip("/")
+
 def _resolve_connection(connection_id: str | None, agent: str) -> dict | None:
     """Pick the best API connection for a request.
 
@@ -4046,6 +4057,8 @@ async def api_connections_create(request: Request):
         "models": body.get("models", []),
         "enabled": body.get("enabled", True),
     }
+    if conn.get("provider") == "ollama":
+        conn["url"] = _normalize_ollama_url(conn.get("url"))
     store["connections"].append(conn)
     _save_connections(store)
     return conn
@@ -4059,6 +4072,8 @@ async def api_connections_update(conn_id: str, request: Request):
             for key in ("name", "type", "provider", "url", "api_key", "models", "enabled"):
                 if key in body:
                     c[key] = body[key]
+            if c.get("provider") == "ollama":
+                c["url"] = _normalize_ollama_url(c.get("url"))
             break
     _save_connections(store)
     return {"ok": True}
@@ -4078,7 +4093,7 @@ async def api_connections_fetch_models(conn_id: str):
         return JSONResponse({"error": "Not found"}, 404)
 
     provider = conn.get("provider", "openai")
-    base_url = conn["url"].rstrip("/")
+    base_url = _normalize_ollama_url(conn.get("url")) if provider == "ollama" else conn["url"].rstrip("/")
     headers = {"Authorization": f"Bearer {conn['api_key']}"} if conn.get("api_key") else {}
 
     try:
@@ -4108,6 +4123,8 @@ async def api_connections_probe_models(request: Request):
     body = await request.json()
     provider = body.get("provider", "openai")
     base_url = (body.get("url") or "").rstrip("/")
+    if provider == "ollama":
+        base_url = _normalize_ollama_url(base_url)
     api_key = body.get("api_key", "")
     if not base_url:
         return JSONResponse({"error": "URL is required"}, 400)
@@ -4132,6 +4149,22 @@ async def api_connections_all_models():
     """Return a map of connection_id → sorted model list for every enabled connection.
     Used by the model-router panel to populate model dropdowns."""
     store = _load_connections()
+    updated = False
+    async with httpx.AsyncClient(timeout=10) as client:
+        for conn in store.get("connections", []):
+            if not conn.get("enabled") or conn.get("provider") != "ollama":
+                continue
+            base_url = _normalize_ollama_url(conn.get("url"))
+            conn["url"] = base_url
+            try:
+                resp = await client.get(f"{base_url}/api/tags")
+                resp.raise_for_status()
+                conn["models"] = sorted(m["name"] for m in resp.json().get("models", []))
+                updated = True
+            except Exception:
+                pass
+    if updated:
+        _save_connections(store)
     result: dict[str, list[str]] = {}
     for conn in store.get("connections", []):
         if not conn.get("enabled"):
@@ -4152,6 +4185,9 @@ async def api_connections_refresh_all_models():
                 continue
             provider = conn.get("provider", "openai")
             base_url = (conn.get("url") or "").rstrip("/")
+            if provider == "ollama":
+                base_url = _normalize_ollama_url(base_url)
+                conn["url"] = base_url
             headers = {"Authorization": f"Bearer {conn['api_key']}"} if conn.get("api_key") else {}
             try:
                 if provider == "ollama":
@@ -4413,6 +4449,11 @@ async def api_tts_voices():
 
 def _get_edge_tts_conn():
     """Return the first enabled edge-tts connection or None."""
+    # Fly.io private-network override via env var
+    env_url = os.environ.get("TTS_URL")
+    if env_url:
+        return {"id": "fly-tts", "provider": "edge-tts", "url": env_url,
+                "api_key": "", "enabled": True, "platform_hosted": True}
     for c in _load_connections().get("connections", []):
         if c.get("provider") == "edge-tts" and c.get("enabled", True):
             return c
@@ -4519,6 +4560,11 @@ async def api_tts_edge_voices():
 
 def _get_whisper_conn():
     """Return the first enabled whisper connection or None."""
+    # Fly.io private-network override via env var
+    env_url = os.environ.get("WHISPER_URL")
+    if env_url:
+        return {"id": "fly-whisper", "provider": "whisper", "url": env_url,
+                "api_key": "", "enabled": True, "platform_hosted": True}
     for c in _load_connections().get("connections", []):
         if c.get("provider") == "whisper" and c.get("enabled", True):
             return c
@@ -4716,7 +4762,7 @@ async def api_chat_stop(session_id: str):
 # ═══════════════════════════════════════════════════════════════════
 
 @app.get("/api/ollama/models")
-async def api_ollama_models(url: str = Query("http://localhost:11434")):
+async def api_ollama_models(url: str = Query("http://orionforge-engine-ollama.flycast:11434")):
     """Fetch locally available Ollama models."""
     models = []
     try:
@@ -4820,17 +4866,75 @@ async def api_save_timezone(request: Request):
 
 @app.put("/api/settings/api-keys")
 async def api_save_api_keys(request: Request):
-    """Save API keys for LLM providers (OpenAI, Anthropic, DeepSeek, Google Gemini, Ollama)."""
+    """Save API keys for LLM providers (OpenAI, Anthropic, DeepSeek, Google Gemini, OpenRouter, Ollama)."""
     body = await request.json()
     settings = _load_settings()
+    ollama_url = _normalize_ollama_url(body.get("ollama_url", PLATFORM_OLLAMA_URL))
     settings["api_keys"] = {
         "openai":        body.get("openai", ""),
         "anthropic":     body.get("anthropic", ""),
         "deepseek":      body.get("deepseek", ""),
         "google_gemini": body.get("google_gemini", ""),
-        "ollama_url":    body.get("ollama_url", "http://localhost:11434"),
+        "openrouter":    body.get("openrouter", ""),
+        "ollama_url":    ollama_url,
     }
     _save_settings(settings)
+    # Auto-upsert OpenRouter connection when a key is provided
+    or_key = body.get("openrouter", "").strip()
+    if or_key:
+        store = _load_connections()
+        existing = next((c for c in store["connections"] if c.get("provider") == "openrouter"), None)
+        if existing:
+            existing["api_key"] = or_key
+            existing["enabled"] = True
+        else:
+            store["connections"].append({
+                "id": "openrouter", "name": "OpenRouter (Fallback)",
+                "type": "external", "provider": "openrouter",
+                "url": "https://openrouter.ai/api/v1", "api_key": or_key,
+                "models": ["openai/gpt-4o", "openai/gpt-4o-mini", "anthropic/claude-3.5-sonnet",
+                           "meta-llama/llama-3.3-70b-instruct", "google/gemini-2.0-flash-001"],
+                "enabled": True, "is_fallback": True,
+            })
+        _save_connections(store)
+
+    # Auto-upsert Ollama platform connection from saved URL
+    ollama_url = _normalize_ollama_url(body.get("ollama_url", PLATFORM_OLLAMA_URL))
+    if ollama_url:
+        store = _load_connections()
+        existing_ollama = next((c for c in store["connections"] if c.get("id") == "ollama-fly" or c.get("provider") == "ollama"), None)
+        if existing_ollama:
+            existing_ollama["id"] = existing_ollama.get("id") or "ollama-fly"
+            existing_ollama["name"] = existing_ollama.get("name") or "Ollama (Fly.io)"
+            existing_ollama["type"] = "ollama"
+            existing_ollama["provider"] = "ollama"
+            existing_ollama["url"] = ollama_url
+            existing_ollama["enabled"] = True
+        else:
+            store["connections"].append({
+                "id": "ollama-fly",
+                "name": "Ollama (Fly.io)",
+                "type": "ollama",
+                "provider": "ollama",
+                "url": ollama_url,
+                "api_key": "",
+                "models": ["llama3.2:3b", "qwen2.5:3b", "phi3:mini", "mistral:7b", "codellama:7b"],
+                "enabled": True,
+                "is_fallback": False,
+            })
+
+        try:
+            async with httpx.AsyncClient(timeout=15) as client:
+                resp = await client.get(f"{ollama_url.rstrip('/')}/api/tags")
+                resp.raise_for_status()
+                live_models = sorted(m["name"] for m in resp.json().get("models", []))
+                if existing_ollama:
+                    existing_ollama["models"] = live_models
+                else:
+                    store["connections"][-1]["models"] = live_models
+        except Exception:
+            pass
+        _save_connections(store)
     return JSONResponse({"status": "ok"})
 
 
@@ -4864,8 +4968,11 @@ async def api_save_image_settings(request: Request):
     settings["image"] = {
         "preferred":          body.get("preferred", "none"),
         "openai_api_key":     body.get("openai_api_key", ""),
+        "use_platform_openai": body.get("use_platform_openai", False),
         "google_api_key":     body.get("google_api_key", ""),
+        "use_platform_google": body.get("use_platform_google", False),
         "stability_api_key":  body.get("stability_api_key", ""),
+        "use_platform_stability": body.get("use_platform_stability", False),
         "ideogram_api_key":   body.get("ideogram_api_key", ""),
         "replicate_api_key":  body.get("replicate_api_key", ""),
         "fal_api_key":        body.get("fal_api_key", ""),
@@ -4928,10 +5035,12 @@ async def api_save_voice_settings(request: Request):
     settings["tts"] = {
         "provider":             tts.get("provider", "none"),
         "elevenlabs_api_key":   tts.get("elevenlabs_api_key", ""),
+        "use_platform_elevenlabs": tts.get("use_platform_elevenlabs", False),
         "elevenlabs_voice_id":  tts.get("elevenlabs_voice_id", ""),
         "elevenlabs_voice_name":tts.get("elevenlabs_voice_name", ""),
         "openedai_cloud_url":       tts.get("openedai_cloud_url", ""),
         "openedai_cloud_api_key":   tts.get("openedai_cloud_api_key", ""),
+        "use_platform_openedai_cloud": tts.get("use_platform_openedai_cloud", False),
         "openedai_cloud_voice":     tts.get("openedai_cloud_voice", ""),
         "openedai_cloud_model":     tts.get("openedai_cloud_model", "tts-1"),
     }

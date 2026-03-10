@@ -1,0 +1,25 @@
+app = 'orionforge-engine-searxng'
+primary_region = 'iad'
+
+[build]
+  dockerfile = 'Dockerfile'
+
+[env]
+  SEARXNG_BASE_URL = 'http://localhost:8080'
+  INSTANCE_NAME = 'OrionForge Search'
+
+[http_service]
+  internal_port = 8080
+  force_https = false
+  auto_stop_machines = 'suspend'
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [http_service.concurrency]
+    type = 'requests'
+    hard_limit = 100
+    soft_limit = 80
+
+[[vm]]
+  size = 'shared-cpu-1x'
+  memory = '512mb'

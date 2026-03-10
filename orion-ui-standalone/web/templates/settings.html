@@ -65,6 +65,45 @@
     font-size: 0.75rem; color: #d4d4d8;
   }
   .bg-actions { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+
+  /* ── Toggle switch ── */
+  .toggle-switch {
+    display: inline-block; width: 2.25rem; height: 1.25rem;
+    border-radius: 9999px; background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.15); cursor: pointer; position: relative;
+    transition: all 0.2s; vertical-align: middle; margin-left: 0.5rem;
+  }
+  .toggle-switch.active {
+    background: #10b981; border-color: #059669;
+  }
+  .toggle-switch-knob {
+    position: absolute; top: 1px; left: 1px; width: 1rem; height: 1rem;
+    border-radius: 50%; background: white; transition: left 0.2s;
+  }
+  .toggle-switch.active .toggle-switch-knob { left: 1.125rem; }
+
+  /* ── Platform API Keys disclaimer ── */
+  .platform-keys-disclaimer {
+    border: 1px solid rgba(99,102,241,0.3); background: rgba(99,102,241,0.08);
+    border-radius: 0.75rem; padding: 1rem 1.25rem; margin-bottom: 1.25rem;
+  }
+  .platform-keys-disclaimer-title {
+    font-weight: 600; color: #a5b4fc; font-size: 0.875rem; margin-bottom: 0.5rem;
+  }
+  .platform-keys-disclaimer-text {
+    font-size: 0.8125rem; color: rgba(241,245,249,0.7); line-height: 1.4;
+  }
+  .platform-keys-note {
+    font-size: 0.75rem; color: rgba(241,245,249,0.5); margin-top: 0.5rem;
+  }
+
+  /* ── API key with toggle layout ── */
+  .api-key-row {
+    display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap;
+  }
+  .api-key-row label { flex: 1; min-width: 12rem; }
+  .api-key-row input { flex: 2; min-width: 16rem; }
+  .api-key-row-toggle { display: flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; color: rgba(241,245,249,0.6); }
 </style>
 
 <div>
@@ -131,14 +170,25 @@
       </div>
     </div>
 
+    <!-- OpenRouter -->
+    <div class="settings-section">
+      <div class="settings-section-title">OpenRouter</div>
+      <div class="settings-section-desc">Fallback routing to 60+ models (GPT-4o, Claude, Llama, Gemini, Mistral, Grok) via a single API key. Auto-routes when primary provider keys hit limits.</div>
+      <div class="mb-3">
+        <label class="block text-xs text-forge-muted mb-1">API Key</label>
+        <input id="key-openrouter" type="password" class="search-input w-full" style="max-width:32rem;"
+               placeholder="sk_..." value="{{ settings.get('api_keys', {}).get('openrouter', '') }}">
+      </div>
+    </div>
+
     <!-- Ollama -->
     <div class="settings-section">
       <div class="settings-section-title">Ollama</div>
-      <div class="settings-section-desc">Local inference via Ollama — no API key required, just the server URL</div>
+      <div class="settings-section-desc">Platform-hosted Ollama via Fly.io — no API key required, just the server URL</div>
       <div class="mb-3">
         <label class="block text-xs text-forge-muted mb-1">Ollama Server URL</label>
         <input id="key-ollama_url" type="text" class="search-input w-full" style="max-width:32rem;"
-               placeholder="http://localhost:11434" value="{{ settings.get('api_keys', {}).get('ollama_url', 'http://localhost:11434') }}">
+               placeholder="http://orionforge-engine-ollama.flycast:11434" value="{{ settings.get('api_keys', {}).get('ollama_url', 'http://orionforge-engine-ollama.flycast:11434') }}">
       </div>
     </div>
 
@@ -154,6 +204,15 @@
       Configure image-generation providers below. Only models whose API keys are
       filled in will appear in the <strong>Preferred Image Model</strong> dropdown.
     </p>
+
+    <!-- ── Platform API Keys Disclaimer ── -->
+    <div class="platform-keys-disclaimer">
+      <div class="platform-keys-disclaimer-title">💎 Platform API Keys</div>
+      <div class="platform-keys-disclaimer-text">
+        Use your own Platform API keys from individual services, or toggle to use OrionForge Platform Keys for 1.5x cost. With Platform Keys, you pay for all services in one place through your OrionForge account.
+      </div>
+      <div class="platform-keys-note">Each provider below can be toggled independently.</div>
+    </div>
 
     <!-- ── Preferred default provider (populated dynamically by JS) ── -->
     <div class="settings-section">
@@ -174,8 +233,16 @@
       <div class="settings-section-desc">Supports DALL-E 3, DALL-E 2, and GPT Image (gpt-image-1).</div>
       <div class="mb-3">
         <label class="block text-xs text-forge-muted mb-1">API Key <span class="text-zinc-600">(auto-filled from API Keys tab)</span></label>
-        <input id="img-openai-key" type="password" class="search-input w-full img-key-input" style="max-width:32rem;"
-               placeholder="sk-..." value="{{ settings.get('image', {}).get('openai_api_key') or settings.get('api_keys', {}).get('openai', '') }}">
+        <div style="display:flex; gap:0.75rem; align-items:center;">
+          <input id="img-openai-key" type="password" class="search-input w-full img-key-input" style="max-width:32rem;"
+                 placeholder="sk-..." value="{{ settings.get('image', {}).get('openai_api_key') or settings.get('api_keys', {}).get('openai', '') }}">
+          <div style="display:flex; align-items:center; gap:0.5rem; white-space:nowrap;">
+            <span class="text-xs text-forge-muted">Platform Keys</span>
+            <div id="img-openai-platform-toggle" class="toggle-switch {{ 'active' if settings.get('image', {}).get('use_platform_openai') }}" onclick="toggleImagePlatformKey('openai')">
+              <div class="toggle-switch-knob"></div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -185,8 +252,16 @@
       <div class="settings-section-desc">Uses Google Generative AI / Vertex AI for Imagen 3.</div>
       <div class="mb-3">
         <label class="block text-xs text-forge-muted mb-1">API Key <span class="text-zinc-600">(auto-filled from API Keys tab)</span></label>
-        <input id="img-google-key" type="password" class="search-input w-full img-key-input" style="max-width:32rem;"
-               placeholder="AIza..." value="{{ settings.get('image', {}).get('google_api_key') or settings.get('api_keys', {}).get('google_gemini', '') }}">
+        <div style="display:flex; gap:0.75rem; align-items:center;">
+          <input id="img-google-key" type="password" class="search-input w-full img-key-input" style="max-width:32rem;"
+                 placeholder="AIza..." value="{{ settings.get('image', {}).get('google_api_key') or settings.get('api_keys', {}).get('google_gemini', '') }}">
+          <div style="display:flex; align-items:center; gap:0.5rem; white-space:nowrap;">
+            <span class="text-xs text-forge-muted">Platform Keys</span>
+            <div id="img-google-platform-toggle" class="toggle-switch {{ 'active' if settings.get('image', {}).get('use_platform_google') }}" onclick="toggleImagePlatformKey('google')">
+              <div class="toggle-switch-knob"></div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -196,8 +271,16 @@
       <div class="settings-section-desc">Stable Image Ultra, Core, SD3 Large, SD3 Large Turbo, SD3 Medium via platform.stability.ai.</div>
       <div class="mb-3">
         <label class="block text-xs text-forge-muted mb-1">API Key</label>
-        <input id="img-stability-key" type="password" class="search-input w-full img-key-input" style="max-width:32rem;"
-               placeholder="sk-..." value="{{ settings.get('image', {}).get('stability_api_key', '') }}">
+        <div style="display:flex; gap:0.75rem; align-items:center;">
+          <input id="img-stability-key" type="password" class="search-input w-full img-key-input" style="max-width:32rem;"
+                 placeholder="sk-..." value="{{ settings.get('image', {}).get('stability_api_key', '') }}">
+          <div style="display:flex; align-items:center; gap:0.5rem; white-space:nowrap;">
+            <span class="text-xs text-forge-muted">Platform Keys</span>
+            <div id="img-stability-platform-toggle" class="toggle-switch {{ 'active' if settings.get('image', {}).get('use_platform_stability') }}" onclick="toggleImagePlatformKey('stability')">
+              <div class="toggle-switch-knob"></div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -269,6 +352,15 @@
        ═══════════════════════════════════════════════════════════ -->
   <div class="settings-panel {{ 'active' if tab == 'voice' }}" id="panel-voice">
 
+    <!-- ── Platform API Keys Disclaimer ── -->
+    <div class="platform-keys-disclaimer">
+      <div class="platform-keys-disclaimer-title">💎 Platform API Keys</div>
+      <div class="platform-keys-disclaimer-text">
+        Use your own voice provider keys, or toggle to use OrionForge Platform Keys for 1.5x cost. With Platform Keys, you pay for all services in one place through your OrionForge account.
+      </div>
+      <div class="platform-keys-note">Each provider below can be toggled independently.</div>
+    </div>
+
     <!-- ── STT ─────────────────────────────────────────── -->
     <div class="settings-section">
       <div class="settings-section-title">Speech-to-Text (STT)</div>
@@ -326,8 +418,16 @@
       <div id="tts-elevenlabs-fields" style="display:none;">
         <div class="mb-3">
           <label class="block text-xs text-forge-muted mb-1">ElevenLabs API Key</label>
-          <input id="tts-elevenlabs-api-key" type="password" class="search-input w-full" style="max-width:32rem;"
-                 placeholder="xi-..." value="{{ settings.get('tts', {}).get('elevenlabs_api_key', '') }}">
+          <div style="display:flex; gap:0.75rem; align-items:center;">
+            <input id="tts-elevenlabs-api-key" type="password" class="search-input w-full" style="max-width:32rem;"
+                   placeholder="xi-..." value="{{ settings.get('tts', {}).get('elevenlabs_api_key', '') }}">
+            <div style="display:flex; align-items:center; gap:0.5rem; white-space:nowrap;">
+              <span class="text-xs text-forge-muted">Platform Keys</span>
+              <div id="tts-elevenlabs-platform-toggle" class="toggle-switch {{ 'active' if settings.get('tts', {}).get('use_platform_elevenlabs') }}" onclick="toggleVoicePlatformKey('elevenlabs')">
+                <div class="toggle-switch-knob"></div>
+              </div>
+            </div>
+          </div>
         </div>
         <div class="mb-3">
           <label class="block text-xs text-forge-muted mb-1">Voice</label>
@@ -356,8 +456,16 @@
         </div>
         <div class="mb-3">
           <label class="block text-xs text-forge-muted mb-1">API Key</label>
-          <input id="tts-openedai-cloud-api-key" type="password" class="search-input w-full" style="max-width:32rem;"
-                 placeholder="sk-..." value="{{ settings.get('tts', {}).get('openedai_cloud_api_key', '') }}">
+          <div style="display:flex; gap:0.75rem; align-items:center;">
+            <input id="tts-openedai-cloud-api-key" type="password" class="search-input w-full" style="max-width:32rem;"
+                   placeholder="sk-..." value="{{ settings.get('tts', {}).get('openedai_cloud_api_key', '') }}">
+            <div style="display:flex; align-items:center; gap:0.5rem; white-space:nowrap;">
+              <span class="text-xs text-forge-muted">Platform Keys</span>
+              <div id="tts-openedai-cloud-platform-toggle" class="toggle-switch {{ 'active' if settings.get('tts', {}).get('use_platform_openedai_cloud') }}" onclick="toggleVoicePlatformKey('openedai_cloud')">
+                <div class="toggle-switch-knob"></div>
+              </div>
+            </div>
+          </div>
         </div>
         <div class="mb-3">
           <label class="block text-xs text-forge-muted mb-1">Voice</label>
@@ -506,6 +614,7 @@ async function saveApiKeys() {
     anthropic:    document.getElementById('key-anthropic').value,
     deepseek:     document.getElementById('key-deepseek').value,
     google_gemini:document.getElementById('key-google_gemini').value,
+    openrouter:   document.getElementById('key-openrouter').value,
     ollama_url:   document.getElementById('key-ollama_url').value,
   };
   const resp = await fetch('/api/settings/api-keys', {
@@ -514,6 +623,16 @@ async function saveApiKeys() {
   });
   const data = await resp.json();
   showToast(data.status === 'ok' ? 'API keys saved' : 'Error saving keys', data.status === 'ok' ? 'ok' : 'error');
+}
+
+/* ── Platform API Keys Toggle Handler –––––––––––––––––– */
+function toggleImagePlatformKey(provider) {
+  const toggleEl = document.getElementById(`img-${provider}-platform-toggle`);
+  toggleEl.classList.toggle('active');
+}
+function toggleVoicePlatformKey(provider) {
+  const toggleEl = document.getElementById(`tts-${provider}-platform-toggle`);
+  toggleEl.classList.toggle('active');
 }
 
 /* ── Image Generation — dynamic model population ─────── */
@@ -567,8 +686,11 @@ async function saveImageSettings() {
   const payload = {
     preferred:            document.getElementById('img-preferred').value,
     openai_api_key:       document.getElementById('img-openai-key').value,
+    use_platform_openai:  document.getElementById('img-openai-platform-toggle').classList.contains('active'),
     google_api_key:       document.getElementById('img-google-key').value,
+    use_platform_google:  document.getElementById('img-google-platform-toggle').classList.contains('active'),
     stability_api_key:    document.getElementById('img-stability-key').value,
+    use_platform_stability: document.getElementById('img-stability-platform-toggle').classList.contains('active'),
     ideogram_api_key:     document.getElementById('img-ideogram-key').value,
     replicate_api_key:    document.getElementById('img-replicate-key').value,
     fal_api_key:          document.getElementById('img-fal-key').value,
@@ -609,10 +731,12 @@ async function saveVoiceSettings() {
     tts: {
       provider:                 document.getElementById('tts-provider').value,
       elevenlabs_api_key:       document.getElementById('tts-elevenlabs-api-key').value,
+      use_platform_elevenlabs:  document.getElementById('tts-elevenlabs-platform-toggle').classList.contains('active'),
       elevenlabs_voice_id:      document.getElementById('tts-elevenlabs-voice-id').value,
       elevenlabs_voice_name:    document.getElementById('tts-elevenlabs-voice-id').selectedOptions[0]?.textContent?.trim() || '',
       openedai_cloud_url:       document.getElementById('tts-openedai-cloud-url').value,
       openedai_cloud_api_key:   document.getElementById('tts-openedai-cloud-api-key').value,
+      use_platform_openedai_cloud: document.getElementById('tts-openedai-cloud-platform-toggle').classList.contains('active'),
       openedai_cloud_voice:     document.getElementById('tts-openedai-cloud-voice').value,
       openedai_cloud_model:     document.getElementById('tts-openedai-cloud-model').value,
     },

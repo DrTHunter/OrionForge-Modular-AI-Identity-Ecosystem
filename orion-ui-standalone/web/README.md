@@ -1,6 +1,6 @@
 # web/
 
-Orion Forge — the web dashboard for the agent runtime. A full-featured browser-based control panel built with FastAPI, Jinja2, and vanilla JavaScript.
+Orion Forge — the web dashboard for the agent runtime. A full-featured browser-based control panel built with FastAPI, Jinja2, and vanilla JavaScript. Includes Supabase OAuth authentication, Stripe subscription billing, and a credit-based monetization system.
 
 ## Quick Start
 
@@ -14,16 +14,22 @@ python -m uvicorn web.app:app --host 0.0.0.0 --port 8989 --reload
 
 | File | Purpose |
 |------|---------|
-| `app.py` | FastAPI application — all routes, helpers, and API endpoints (113 routes, ~3,556 lines) |
+| `app.py` | FastAPI application — all routes, helpers, and API endpoints (159 routes, ~4,538 lines) |
+| `auth.py` | Supabase OAuth + JWT verification — JWKS validation, session middleware, path whitelist (121 lines) |
+| `stripe_billing.py` | Stripe subscription system — checkout, webhooks, credits, trial management, tier gating (650 lines) |
 | `image_gen.py` | Image generation helper (9 providers: OpenAI DALL-E/GPT Image, Google Imagen, Stability, Ideogram, Replicate, FAL, Leonardo, Midjourney) |
 | `static/style.css` | Stylesheet for the dashboard |
-| `templates/` | Jinja2 HTML templates (12 pages) |
+| `templates/` | Jinja2 HTML templates (16 files — 15 pages + base layout) |
 
 ## Templates
 
 | Template | Page |
 |----------|------|
-| `base.html` | Shared layout (nav, sidebar, footer, skin theming) |
+| `base.html` | Shared layout (nav, sidebar, footer, skin theming, auth state, trial banner) |
+| `login.html` | Supabase OAuth sign-in (Google, GitHub, email) |
+| `plans.html` | Subscription tier selection — Free vs Pro ($9.99/mo) |
+| `store.html` | Credit packs, one-time tool purchases, usage history |
+| `admin_keys.html` | Admin panel — API key management (secured by email whitelist) |
 | `chat.html` | Real-time chat with agents — streaming, tool execution, folders |
 | `vault.html` | Memory vault browser — sort by 8 fields, metadata display, max memory limits |
 | `profiles.html` | Agent profile viewer/editor, avatar upload, knowledge attachment, create new agents |
@@ -32,17 +38,20 @@ python -m uvicorn web.app:app --host 0.0.0.0 --port 8989 --reload
 | `knowledge.html` | Knowledge notes browser with folders |
 | `knowledge_edit.html` | Rich text knowledge note editor |
 | `pricing.html` | LLM pricing registry — view/edit per-model token costs |
-| `skins.html` | 12 UI themes — marketplace grid with live preview |
+| `skins.html` | 13 UI themes — marketplace grid with live preview |
 | `agi_loop.html` | AGI loop configuration (intervals, budgets, steps) |
-| `about.html` | Editable project about page |
+| `about.html` | Project wiki with auto-generated articles from READMEs + custom notes editor |
 
-## API Endpoints (113 routes)
+## API Endpoints (159 routes)
 
-### Pages (12 routes)
+### Pages (15 routes)
 
 | Route | Description |
 |-------|-------------|
 | `GET /` | Redirect to `/chat` |
+| `GET /login` | OAuth sign-in page |
+| `GET /plans` | Subscription plans |
+| `GET /store` | Credit store |
 | `GET /chat` | Chat interface |
 | `GET /profiles` | Profile manager |
 | `GET /vault` | Memory vault (supports `?sort=`, `?scope=`, `?category=`, `?q=`) |
@@ -53,7 +62,31 @@ python -m uvicorn web.app:app --host 0.0.0.0 --port 8989 --reload
 | `GET /pricing` | Pricing → redirect |
 | `GET /skins` | UI skins marketplace |
 | `GET /agi-loop` | AGI loop config |
-| `GET /about` | About page |
+| `GET /about` | Wiki page |
+| `GET /admin/keys` | Admin panel |
+
+### Auth API (~6 routes)
+
+| Route | Description |
+|-------|-------------|
+| `GET /api/auth/session` | Get current session / user info |
+| `POST /api/auth/login` | Create session from Supabase token |
+| `POST /api/auth/logout` | Clear session |
+| `GET /api/auth/callback` | OAuth callback handler |
+| `GET /api/auth/config` | Public Supabase config (URL, anon key) |
+
+### Stripe Billing API (~8 routes)
+
+| Route | Description |
+|-------|-------------|
+| `POST /api/stripe/checkout` | Create Stripe Checkout session |
+| `POST /api/stripe/webhook` | Stripe webhook handler |
+| `GET /api/stripe/subscription` | Get subscription status |
+| `POST /api/stripe/credits/buy` | Purchase credit pack |
+| `GET /api/stripe/credits/balance` | Get credit balance |
+| `POST /api/stripe/credits/deduct` | Deduct credits (internal) |
+| `GET /api/stripe/trial` | Get trial status |
+| `GET /api/stripe/tier` | Get user tier (free/pro) |
 
 ### Chat API (~15 routes)
 
@@ -201,10 +234,10 @@ On startup, the app rebuilds the NotesFAISS index and initializes a lazy `FAISSM
 
 ## External Service Dependencies
 
-| Service | Purpose | Default URL |
-|---------|---------|-------------|
-| SearXNG | Web search for `web_search` tool | `http://localhost:3000` |
-| openedai-speech | Text-to-speech | `http://localhost:5050` |
-| faster-whisper | Speech-to-text | `http://localhost:8060` |
+| Service | Purpose | Local Default | Production (Fly.io) |
+|---------|---------|---------------|---------------------|
+| SearXNG | Web search for `web_search` tool | `http://localhost:3000` | `SEARXNG_URL` env var → `.flycast` |
+| openedai-speech | Text-to-speech | `http://localhost:5050` | `TTS_URL` env var → `.flycast` |
+| faster-whisper | Speech-to-text | `http://localhost:8060` | `WHISPER_URL` env var → `.flycast` |
 
-These are configured via `config/connections.json` or Dashboard → Settings. See `ui/tools/` for Docker setup.
+Environment variables (`TTS_URL`, `WHISPER_URL`, `SEARXNG_URL`) take priority over `connections.json` entries.

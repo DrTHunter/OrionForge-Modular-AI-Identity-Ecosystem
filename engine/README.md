@@ -9,6 +9,7 @@ The `engine/` directory contains the **frozen, stable core** of the OrionForge S
 | **`engine/`** | Stable core — only updated when features are proven in `orion-ui-standalone/` |
 | `orion-ui-standalone/` | Active development branch — new features land here first |
 | `ui/` | Deployment build — production-ready with external tool services |
+| `services/` | Fly.io sidecar services — SearXNG, TTS, Whisper STT |
 
 ## Module Map
 
@@ -47,4 +48,4 @@ engine/src/
 Code in `engine/` should not be modified for experimental features.  
 New capabilities are developed in `orion-ui-standalone/src/`, tested thoroughly, then promoted here once stable.
 
-Files are synced from `orion-ui-standalone/src/` → `engine/src/` after passing the full test suite (220 functions, ~3,300 assertions).
+Files are synced from `orion-ui-standalone/src/` → `engine/src/` after passing the full test suite (230 functions, ~2,250 assertions).
