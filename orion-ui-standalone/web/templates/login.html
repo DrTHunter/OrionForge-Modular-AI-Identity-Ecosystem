@@ -355,6 +355,7 @@
           }
 
           if (result.data && result.data.session) {
+            var _nextUrl = new URLSearchParams(window.location.search).get('next') || '/chat';
             return fetch('/api/auth/set-session', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -365,7 +366,7 @@
               }),
             }).then(function(resp) {
               if (resp.ok) {
-                window.location.href = '/chat';
+                window.location.href = _nextUrl;
               } else {
                 showError('Failed to establish session. Please try again.');
                 setLoading(false);
@@ -388,7 +389,8 @@
           return;
         }
 
-        var redirectUrl = window.location.origin + '/auth/callback';
+        var _oauthNext = new URLSearchParams(window.location.search).get('next') || '';
+        var redirectUrl = window.location.origin + '/auth/callback' + (_oauthNext ? '?next=' + encodeURIComponent(_oauthNext) : '');
 
         _sb.auth.signInWithOAuth({
           provider: provider,
@@ -411,8 +413,9 @@
       document.getElementById('oauth-discord').addEventListener('click', function() { oauthLogin('discord'); });
 
       // ── Check if already logged in ──
+      var _nextUrl2 = new URLSearchParams(window.location.search).get('next') || '/chat';
       fetch('/api/auth/session').then(function(r) { return r.json(); }).then(function(data) {
-        if (data.authenticated) { window.location.href = '/chat'; }
+        if (data.authenticated) { window.location.href = _nextUrl2; }
       }).catch(function() {});
 
     }); // end DOMContentLoaded
