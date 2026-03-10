@@ -84,16 +84,18 @@ Agents can also **save memories** during conversation using `[MEMORY_SAVE: ...]`
 
 ## Project Structure
 
-OrionForge is organized into three directories — an active development branch, a stable frozen core, and a production deployment build:
+OrionForge is organized into four directories — an active development branch, a stable frozen core, a production deployment build, and cloud sidecar services:
 
 ```
 OrionForge/
 ├── orion-ui-standalone/  # 🔧 Active Development Branch
-│   ├── web/              # FastAPI app (3,728 lines, 131 routes, 12 templates)
+│   ├── web/              # FastAPI app (4,538 lines, 159 routes, 16 templates)
 │   │   ├── app.py        # Main application — all page & API routes
+│   │   ├── auth.py       # Supabase OAuth + JWT verification (121 lines)
+│   │   ├── stripe_billing.py  # Stripe subscriptions, credits, trial (650 lines)
 │   │   ├── image_gen.py  # Image generation (9 providers)
 │   │   ├── static/       # CSS
-│   │   └── templates/    # Jinja2 HTML templates (12 pages)
+│   │   └── templates/    # Jinja2 HTML templates (16 files, 15 pages + base layout)
 │   ├── src/              # Soul Script Engine modules (48 source files)
 │   │   ├── memory/       # FAISS memory, vault, chunker, PII guard, notes FAISS
 │   │   ├── llm_client/   # LLM API clients (OpenAI, Anthropic, Ollama, DeepSeek)
@@ -104,14 +106,14 @@ OrionForge/
 │   │   ├── policy/       # Boundary enforcement & capability gating
 │   │   ├── routing/      # 6-tier model router, budget tracking, escalation chains
 │   │   └── tools/        # 11 tool implementations + registry
-│   ├── config/           # 10 config files (connections, pricing, memory profile, etc.)
+│   ├── config/           # 18 config files (connections, pricing, memory profile, auth, etc.)
 │   ├── data/             # Runtime data (chats, memory vault, FAISS indexes, uploads, trash)
 │   ├── profiles/         # Agent identity YAML files
 │   ├── prompts/          # System prompt markdown (*.system.md)
 │   ├── directives/       # Agent directive markdown files
 │   ├── notes/            # Agent note markdown files
 │   ├── scripts/          # Seed scripts (seed_memories.py, seed_ui_knowledge.py)
-│   └── tests/            # Test suite (11 files, 220 functions, ~3,300 checks)
+│   └── tests/            # Test suite (11 files, 230 functions, ~2,250 checks)
 │
 ├── engine/               # ⚙️  Stable Frozen Core
 │   └── src/              # Synced from orion-ui-standalone after testing
@@ -124,6 +126,19 @@ OrionForge/
 │       ├── policy/       # Boundary enforcement & capability gating
 │       ├── routing/      # 6-tier model router, budget tracking, escalation chains
 │       └── tools/        # Built-in tool implementations
+│
+├── services/             # ☁️  Fly.io Sidecar Services (Flycast private networking)
+│   ├── searxng/          # SearXNG meta-search engine (port 8080)
+│   │   ├── Dockerfile
+│   │   ├── fly.toml      # orionforge-engine-searxng
+│   │   └── settings.yml  # 7 search engines, rate limits
+│   ├── openedai-speech/  # Text-to-speech (Piper + XTTS v2, port 8000)
+│   │   ├── Dockerfile
+│   │   └── fly.toml      # orionforge-engine-tts
+│   └── whisper/          # Speech-to-text (faster-whisper + FastAPI, port 8000)
+│       ├── Dockerfile
+│       ├── fly.toml      # orionforge-engine-whisper
+│       └── server.py     # FastAPI wrapper with /v1/audio/transcriptions
 │
 ├── ui/                   # 🖥️  Production Deployment Build
 │   ├── web/              # FastAPI app, templates, static assets
@@ -147,10 +162,32 @@ OrionForge/
 
 ---
 
+## Authentication & Monetization
+
+OrionForge uses **Supabase OAuth** for authentication and **Stripe** for billing.
+
+| Feature | Details |
+|---|---|
+| **Login** | Supabase OAuth (Google, GitHub, email) via `/login` |
+| **JWT verification** | `auth.py` — JWKS-based token validation, session middleware |
+| **Subscription** | $9.99/month Pro plan via Stripe Checkout (`/plans`) |
+| **15-day trial** | Free trial on first sign-up, auto-expires |
+| **Credit system** | Buy credit packs in the store (`/store`) — spend on tools and LLM usage |
+| **LLM markup** | Platform-hosted LLM calls billed at 1.5× base cost, deducted from credits |
+| **TTS/STT billing** | Per-use billing for platform-hosted voice services (1.5× markup) |
+| **One-time tool purchases** | Buy individual tool access from the store |
+| **Admin panel** | `/admin/keys` — secured by OAuth email whitelist, manage API keys |
+| **Tier gating** | Free tier vs Pro tier access control on all API endpoints |
+
+---
+
 ## Dashboard Pages
 
 | Page | URL | Description |
 |---|---|---|
+| **Login** | `/login` | Supabase OAuth sign-in (Google, GitHub, email) |
+| **Plans** | `/plans` | Subscription tier selection — Free vs Pro ($9.99/mo) |
+| **Store** | `/store` | Credit packs, one-time tool purchases, usage history |
 | **Chat** | `/chat` | Talk to agents — 5-layer identity injection (prompt → soul script → knowledge → memory → history) |
 | **Profiles** | `/profiles` | Create/edit/delete agents, system prompts, attach knowledge, configure models — with 30-day trash retention |
 | **Vault** | `/vault` | Browse & search persistent memory — sort by 8 fields, max memory limits, metadata display |
@@ -158,9 +195,10 @@ OrionForge/
 | **Tools** | `/tools` | Configure tools, memory profiles, email, web search, cost tracking, model router with presets |
 | **Settings** | `/settings` | API connections, chat backgrounds, timezone, voice/image settings |
 | **Pricing** | `/pricing` | LLM pricing registry — view/edit per-model token costs |
-| **Skins** | `/skins` | 12 UI themes with marketplace-style grid and live preview |
+| **Skins** | `/skins` | 13 UI themes with marketplace-style grid and live preview |
 | **AGI Loop** | `/agi-loop` | Autonomous agent loop configuration (intervals, budgets, steps) |
-| **About** | `/about` | Editable project about page |
+| **Wiki** | `/about` | Project wiki with auto-generated articles from READMEs + custom notes editor |
+| **Admin** | `/admin/keys` | Admin panel — API key management, secured by OAuth email whitelist |
 
 ---
 
@@ -195,12 +233,27 @@ The engine connects to any **OpenAI-compatible** endpoint. Native provider suppo
 
 ### Voice
 
-| Service | Purpose |
-|---|---|
-| **ElevenLabs** | Cloud TTS (high quality, API key required) |
-| **Edge-TTS** | Free Microsoft TTS (no API key) |
-| **openedai-speech** | Self-hosted TTS (Piper + XTTS v2, Docker) |
-| **Whisper** | Speech-to-text transcription (Docker) |
+| Service | Purpose | Deployment |
+|---|---|---|
+| **ElevenLabs** | Cloud TTS (high quality, API key required) | External API |
+| **Edge-TTS** | Free Microsoft TTS (no API key) | Built-in |
+| **openedai-speech** | Self-hosted TTS (Piper + XTTS v2) | Fly.io sidecar (`orionforge-engine-tts`) |
+| **Whisper** | Speech-to-text transcription | Fly.io sidecar (`orionforge-engine-whisper`) |
+
+---
+
+## Cloud Infrastructure (Fly.io)
+
+The main app and three sidecar services are deployed on **Fly.io** with **Flycast private IPv6 networking**:
+
+| Service | Fly.io App | Port | Purpose |
+|---|---|---|---|
+| **Main App** | `orionforge-engine` | 8989 | FastAPI web dashboard |
+| **SearXNG** | `orionforge-engine-searxng` | 8080 | Meta-search engine (7 engines: Google, DuckDuckGo, Bing, Wikipedia, GitHub, Arxiv, StackOverflow) |
+| **OpenedAI Speech** | `orionforge-engine-tts` | 8000 | Text-to-speech (Piper + XTTS v2) with persistent volume |
+| **Whisper** | `orionforge-engine-whisper` | 8000 | Speech-to-text (faster-whisper + FastAPI) |
+
+Sidecar services communicate via Flycast private networking (`.flycast` URLs). The main app discovers them via environment variables (`TTS_URL`, `WHISPER_URL`, `SEARXNG_URL`) with fallback to `connections.json` entries.
 
 ---
 
@@ -224,7 +277,7 @@ The engine connects to any **OpenAI-compatible** endpoint. Native provider suppo
 
 ## Test Suite
 
-11 test files with **220** test functions and **~3,300** assertions:
+11 test files with **230** test functions and **~2,250** assertions:
 
 ```powershell
 cd orion-ui-standalone
@@ -233,7 +286,7 @@ python tests/run_all.py
 
 | Test File | Functions | Checks | Coverage Area |
 |---|---|---|---|
-| `test_torture.py` | 73 | 2,253 | Deep torture of all code paths — memory, vault, sort, policy, tools, templates, model router, presets, 6-tier routing |
+| `test_torture.py` | 83 | ~2,235 | Deep torture of all code paths — memory, vault, sort, policy, tools, templates, model router, presets, 6-tier routing, sidecar service wiring, env fallbacks, Fly.io configs |
 | `test_memory.py` | 23 | 155 | VaultStore, MemoryVault, Memory types, PII guard |
 | `test_stress.py` | 29 | 398 | Rapid-fire ops, concurrent access, boundary conditions, router presets, coding tiers |
 | `test_registry_and_tools.py` | 17 | 86 | Tool registry, cost tracker, web search |
@@ -244,7 +297,7 @@ python tests/run_all.py
 | `test_metering.py` | 11 | 92 | Token accounting, cost computation, aggregation |
 | `test_data_paths.py` | 5 | 31 | Data directory layout, auto-creation, isolation |
 | `test_tools.py` | 4 | 38 | EchoTool, ContinuationUpdateTool, EmailTool, RuntimePolicy |
-| **Total** | **220** | **~3,300** | |
+| **Total** | **230** | **~2,250** | |
 
 ---
 
@@ -295,6 +348,23 @@ The engine connects to any **OpenAI-compatible** endpoint — OpenAI, Ollama, LM
 
 ---
 
+## Environment Variables
+
+| Variable | Purpose | Example |
+|---|---|---|
+| `SEARXNG_URL` | SearXNG search endpoint | `http://orionforge-engine-searxng.flycast:8080/search` |
+| `TTS_URL` | OpenedAI Speech endpoint | `http://orionforge-engine-tts.flycast:8000` |
+| `WHISPER_URL` | Whisper STT endpoint | `http://orionforge-engine-whisper.flycast:8000` |
+| `SUPABASE_URL` | Supabase project URL | `https://xxx.supabase.co` |
+| `SUPABASE_ANON_KEY` | Supabase anonymous key | `eyJ...` |
+| `STRIPE_SECRET_KEY` | Stripe secret key | `sk_live_...` |
+| `STRIPE_PUBLISHABLE_KEY` | Stripe publishable key | `pk_live_...` |
+| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret | `whsec_...` |
+| `STRIPE_PRICE_ID` | Stripe Pro plan price ID | `price_...` |
+| `ADMIN_EMAILS` | Comma-separated admin email list | `admin@example.com` |
+
+---
+
 ## Included Agents
 
 | Agent | Description |
@@ -307,9 +377,21 @@ Each agent has its own profile YAML, system prompt, directives, and memory scope
 
 ---
 
-## External Tool Services (Optional)
+## External Tool Services
 
-These run as separate Docker containers via `docker compose` inside their respective `ui/tools/` folders. They are **not required** for the core engine.
+### Cloud Sidecars (Fly.io — Production)
+
+These run as separate Fly.io apps with Flycast private networking. Configured via environment variables on the main app.
+
+| Service | Fly.io App | Port | Purpose |
+|---|---|---|---|
+| **SearXNG** | `orionforge-engine-searxng` | 8080 | Meta-search engine for web search tool |
+| **openedai-speech** | `orionforge-engine-tts` | 8000 | Text-to-speech (Piper + XTTS v2) |
+| **Whisper** | `orionforge-engine-whisper` | 8000 | Speech-to-text transcription (faster-whisper) |
+
+### Local Docker Services (Development)
+
+These run as separate Docker containers via `docker compose` inside their respective `ui/tools/` folders.
 
 | Service | Port | Purpose |
 |---|---|---|
@@ -324,10 +406,13 @@ These run as separate Docker containers via `docker compose` inside their respec
 
 | Technology | Role |
 |---|---|
-| **FastAPI** + **Uvicorn** | Web server & async API (131 routes) |
+| **FastAPI** + **Uvicorn** | Web server & async API (159 routes) |
 | **FAISS** (`faiss-cpu`) | Vector similarity search for memory + soul script retrieval |
 | **sentence-transformers** | Semantic embeddings (`all-mpnet-base-v2`) |
-| **Jinja2** | HTML templates (12 pages) |
+| **Jinja2** | HTML templates (16 files) |
+| **Supabase** | OAuth authentication + JWT verification |
+| **Stripe** | Subscription billing, credit system, webhook handling |
+| **Fly.io** | Cloud hosting with Flycast private networking for sidecar services |
 | **PyYAML** | Agent profile parsing |
 | **httpx** | Async HTTP for model fetching & LLM proxy calls |
 
@@ -345,6 +430,9 @@ These run as separate Docker containers via `docker compose` inside their respec
 | **Slow first start** | The 420 MB embedding model downloads once; subsequent starts are fast |
 | **FAISS import error** | Run `pip install faiss-cpu` (not `faiss`) |
 | **Docker can't reach Ollama** | Use `http://host.docker.internal:11434/v1` as the connection URL |
+| **Sidecar not reachable** | Check Fly.io app status: `flyctl status -a orionforge-engine-searxng` |
+| **Auth not working** | Set `SUPABASE_URL` and `SUPABASE_ANON_KEY` environment variables |
+| **Stripe webhooks failing** | Verify `STRIPE_WEBHOOK_SECRET` matches your Stripe dashboard |
 
 ---
 

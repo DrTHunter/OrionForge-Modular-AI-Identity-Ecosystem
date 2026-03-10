@@ -1,0 +1,39 @@
+app = 'orionforge-engine-tts'
+primary_region = 'iad'
+
+[build]
+  dockerfile = 'Dockerfile'
+
+[env]
+  TTS_HOME = '/app/voices'
+  PYTHONUNBUFFERED = '1'
+
+[mounts]
+  source = 'tts_voices'
+  destination = '/app/voices'
+
+[http_service]
+  internal_port = 8000
+  force_https = false
+  auto_stop_machines = 'suspend'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
+
+  [http_service.concurrency]
+    type = 'requests'
+    hard_limit = 50
+    soft_limit = 30
+
+[checks]
+  [checks.health]
+    port = 8000
+    type = 'http'
+    interval = '30s'
+    timeout = '10s'
+    grace_period = '30s'
+    path = '/v1/models'
+
+[[vm]]
+  size = 'shared-cpu-2x'
+  memory = '1gb'

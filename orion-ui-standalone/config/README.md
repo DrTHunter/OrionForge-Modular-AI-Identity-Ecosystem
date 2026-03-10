@@ -1,6 +1,6 @@
 # config/
 
-Configuration files for the runtime and web dashboard.
+Configuration files for the runtime and web dashboard. 18 config files controlling connections, billing, routing, identity, and UI behavior.
 
 ## Files
 
@@ -8,13 +8,15 @@ Configuration files for the runtime and web dashboard.
 |------|---------|
 | `config.example.yaml` | Example YAML config structure (default profile, data dir, global policy overrides) |
 | `state.example.json` | Example state file format (window size, message array) |
-| `connections.json` | LLM provider connections — API endpoints, keys, enabled models. Managed via Dashboard → Settings. |
-| `settings.json` | UI settings — timezone, chat background, agent avatars, per-agent display/voice/model config. Auto-created on first save. |
-| `about.json` | About page content (editable from the web UI) |
+| `connections.json` | LLM provider connections — API endpoints, keys, enabled models. Also stores sidecar service URLs (SearXNG, TTS, Whisper) as fallback when env vars are not set. Managed via Dashboard → Settings. |
+| `auth.json` | Supabase OAuth config — `supabase_url`, `supabase_anon_key`, `jwt_secret`, `admin_emails` whitelist. Required for authentication. |
+| `settings.json` | UI settings — timezone, chat background, agent avatars, per-agent display/voice/model config. Also persists Stripe subscription state (`stripe_customer_id`, `subscription_status`, `trial_end`). Auto-created on first save. |
+| `about.json` | About wiki custom notes content (editable from the web UI at `/about`) |
 | `agi_loop.json` | AGI loop configuration — interval (30 min default), ticks/loop, steps/tick, budget caps ($20/mo hard, $16 soft, $2/session, $0.10/tick), tiered routing |
 | `identity_profile.json` | FAISS identity indexing profile — chunk size (400 tokens), overlap (80), retrieval top_k, merge strategy for soul script indexing |
 | `memory_profile.json` | Memory vault settings — retention policy (max memories, decay strategy, max pinned), category policy (open/strict mode, suggested categories), safety policy (custom hard rules) |
-| `pricing.yaml` | LLM Pricing Registry — USD per 1M tokens across 4 dimensions (input, cached_input, output, reasoning). ~577 lines covering all major providers. |
+| `model_router.json` | Model router config — 6-tier task→model routing (LOCAL_CHEAP, LOCAL_STRONG, CHEAP_CLOUD, EXPENSIVE_CLOUD, CODE_LIGHT, CODE_HEAVY) |
+| `pricing.yaml` | LLM Pricing Registry — USD per 1M tokens across 4 dimensions (input, cached_input, output, reasoning). ~493 lines covering all major providers. |
 
 ## Saved Profiles
 

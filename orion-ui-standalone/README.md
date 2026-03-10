@@ -22,11 +22,29 @@ Open **http://localhost:8989**.
 
 ```
 orion-ui-standalone/
-├── web/                # FastAPI application (app.py — 3,728 lines, 131 routes, 12 templates)
+├── web/                # FastAPI application (4,538 lines, 159 routes, 16 templates)
 │   ├── app.py          # Main application — all page & API routes
+│   ├── auth.py         # Supabase OAuth + JWT verification (121 lines)
+│   ├── stripe_billing.py  # Stripe subscriptions, credits, trial system (650 lines)
 │   ├── image_gen.py    # Image generation helper (9 providers)
 │   ├── static/         # CSS
-│   └── templates/      # Jinja2 HTML (12 pages)
+│   └── templates/      # Jinja2 HTML (16 files — 15 pages + base layout)
+│       ├── base.html           # Shared layout (nav, sidebar, footer, skin theming, auth state)
+│       ├── login.html          # Supabase OAuth sign-in page
+│       ├── plans.html          # Subscription tier selection (Free vs Pro)
+│       ├── store.html          # Credit packs, one-time tool purchases, usage history
+│       ├── admin_keys.html     # Admin panel — API key management
+│       ├── chat.html           # Real-time agent chat with streaming
+│       ├── profiles.html       # Agent profile manager with avatar upload
+│       ├── vault.html          # Memory vault browser with 8-field sort
+│       ├── knowledge.html      # Knowledge notes browser
+│       ├── knowledge_edit.html # Rich text knowledge editor
+│       ├── tools.html          # Tool config, memory profiles, model router
+│       ├── settings.html       # API connections, voice, image settings
+│       ├── pricing.html        # LLM pricing registry editor
+│       ├── skins.html          # 13 UI themes with live preview
+│       ├── agi_loop.html       # AGI loop configuration
+│       └── about.html          # Project wiki with auto-generated articles
 │
 ├── src/                # Soul Script Engine modules (48 source files)
 │   ├── data_paths.py   # Canonical data directory layout & auto-creation
@@ -41,14 +59,15 @@ orion-ui-standalone/
 │   ├── storage/        # Note collection & user notes loading
 │   └── tools/          # 11 tool implementations + registry (memory, directives, email, web search, inbox, model router, agi loop, runtime info, etc.)
 │
-├── config/             # Runtime configuration (11 files)
+├── config/             # Runtime configuration (18 files)
 │   ├── connections.json       # LLM provider connections
+│   ├── auth.json              # Supabase OAuth config (project URL, anon key)
 │   ├── memory_profile.json    # Memory vault settings (retention, categories, safety)
 │   ├── identity_profile.json  # FAISS identity indexing profile
 │   ├── model_router.json      # Model router config (task-tier mapping, tiers, presets)
-│   ├── pricing.yaml           # LLM pricing registry (577 lines, USD per 1M tokens)
+│   ├── pricing.yaml           # LLM pricing registry (493 lines, USD per 1M tokens)
 │   ├── agi_loop.json          # AGI loop config (intervals, budgets, tiered routing)
-│   ├── settings.json          # UI settings (timezone, avatars, backgrounds)
+│   ├── settings.json          # UI settings (timezone, avatars, backgrounds, Stripe state)
 │   └── saved_profiles/        # Named config profile snapshots
 │       └── router_presets/    # Named model router preset snapshots
 │
@@ -58,8 +77,25 @@ orion-ui-standalone/
 ├── notes/              # Developer notes per agent
 ├── scripts/            # Seed scripts (seed_memories.py, seed_ui_knowledge.py)
 ├── data/               # Runtime data (chats, memory vault, FAISS indexes, uploads, knowledge notes, agent trash)
-└── tests/              # Test suite — 11 files, 220 functions, ~3,300 checks
+└── tests/              # Test suite — 11 files, 230 functions, ~2,250 checks
 ```
+
+---
+
+## Authentication & Monetization
+
+| Feature | Details |
+|---|---|
+| **Login** | Supabase OAuth (Google, GitHub, email) via `/login` |
+| **JWT verification** | `auth.py` — JWKS-based token validation, path whitelist, session middleware |
+| **Subscription** | $9.99/month Pro plan via Stripe Checkout (`/plans`) |
+| **15-day trial** | Free trial on first sign-up, auto-expires to free tier |
+| **Credit system** | Buy credit packs in the store (`/store`), spend on platform-hosted LLM calls and tools |
+| **LLM markup** | Platform-hosted calls billed at 1.5× base cost, deducted from credits |
+| **TTS/STT billing** | Per-use billing for platform-hosted voice services (1.5× markup) |
+| **One-time purchases** | Buy individual tool access from the store |
+| **Admin panel** | `/admin/keys` — API key management, secured by OAuth email whitelist |
+| **Tier gating** | Free tier vs Pro tier access control on all API endpoints |
 
 ---
 
@@ -67,6 +103,9 @@ orion-ui-standalone/
 
 | Page | URL | Description |
 |------|-----|-------------|
+| **Login** | `/login` | Supabase OAuth sign-in (Google, GitHub, email) |
+| **Plans** | `/plans` | Subscription tier selection — Free vs Pro ($9.99/mo) |
+| **Store** | `/store` | Credit packs, one-time tool purchases, usage history |
 | **Chat** | `/chat` | Talk to agents — 5-layer identity injection (prompt → soul script → knowledge → memory → history) |
 | **Profiles** | `/profiles` | Create/edit/delete agents, system prompts, attach knowledge, configure models — with 30-day trash retention |
 | **Vault** | `/vault` | Browse & search persistent memory — sort by 8 fields, max memory limits, metadata display |
@@ -74,18 +113,21 @@ orion-ui-standalone/
 | **Tools** | `/tools` | Configure tools, memory profiles, email, web search, cost tracking, model router with presets |
 | **Settings** | `/settings` | API connections, chat backgrounds, timezone, voice/image settings |
 | **Pricing** | `/pricing` | LLM pricing registry — view/edit per-model token costs |
-| **Skins** | `/skins` | 12 UI themes with marketplace-style grid and live preview |
+| **Skins** | `/skins` | 13 UI themes with marketplace-style grid and live preview |
 | **AGI Loop** | `/agi-loop` | Autonomous agent loop configuration (intervals, budgets, steps) |
-| **About** | `/about` | Editable project about page |
+| **Wiki** | `/about` | Project wiki with auto-generated articles from READMEs + custom notes editor |
+| **Admin** | `/admin/keys` | Admin panel — API key management, secured by OAuth email whitelist |
 
 ---
 
-## API Routes (131 endpoints)
+## API Routes (159 endpoints)
 
-The FastAPI app exposes 131 routes across these domains:
+The FastAPI app exposes 159 routes across these domains:
 
 | Domain | Endpoints | Examples |
 |--------|-----------|---------|
+| Auth | ~6 | session, login, logout, callback, Supabase JWKS |
+| Stripe Billing | ~8 | checkout, webhook, credits, subscription status, trial |
 | Chat | ~15 | send, history, new, run, stop, folders |
 | Profiles | ~14 | CRUD, avatar, knowledge attachment, soft-delete with 30-day trash, restore, permanent delete |
 | Vault | ~5 | add, batch_add, stats, delete, compact |
@@ -99,6 +141,22 @@ The FastAPI app exposes 131 routes across these domains:
 | AGI Loop | ~2 | get/set config |
 | Model Router | ~7 | get/set/reset config, presets CRUD (save/load/delete), 6-tier routing |
 | Image Gen | ~5 | generate, providers, settings |
+| Store | ~4 | credit packs, tool purchases, usage history |
+| Admin | ~3 | API keys CRUD, admin auth |
+
+---
+
+## Cloud Sidecar Services (Fly.io)
+
+Three sidecar services run on Fly.io with Flycast private IPv6 networking:
+
+| Service | Fly.io App | Port | Purpose |
+|---|---|---|---|
+| **SearXNG** | `orionforge-engine-searxng` | 8080 | Meta-search engine (Google, DuckDuckGo, Bing, Wikipedia, GitHub, Arxiv, StackOverflow) |
+| **OpenedAI Speech** | `orionforge-engine-tts` | 8000 | Text-to-speech (Piper + XTTS v2) with persistent volume |
+| **Whisper** | `orionforge-engine-whisper` | 8000 | Speech-to-text (faster-whisper + FastAPI) |
+
+The main app discovers sidecars via environment variables (`TTS_URL`, `WHISPER_URL`, `SEARXNG_URL`) with fallback to `connections.json`.
 
 ---
 
@@ -136,7 +194,7 @@ $env:PYTHONIOENCODING="utf-8"; python tests/test_torture.py
 
 | Test File | Functions | Checks | Coverage |
 |-----------|-----------|--------|----------|
-| `test_torture.py` | 73 | 2,253 | Deep torture of all code paths — memory, vault, sort, policy, tools, templates, model router, presets, 6-tier routing |
+| `test_torture.py` | 83 | ~2,235 | Deep torture of all code paths — memory, vault, sort, policy, tools, templates, model router, presets, 6-tier routing, sidecar service wiring, env fallbacks, Fly.io configs |
 | `test_memory.py` | 23 | 155 | VaultStore, MemoryVault, Memory types, PII guard |
 | `test_stress.py` | 29 | 398 | Rapid-fire ops, concurrent access, boundary conditions, router presets, coding tiers |
 | `test_registry_and_tools.py` | 17 | 86 | Tool registry, cost tracker, web search |
@@ -147,7 +205,7 @@ $env:PYTHONIOENCODING="utf-8"; python tests/test_torture.py
 | `test_metering.py` | 11 | 92 | Token accounting, cost computation, aggregation |
 | `test_data_paths.py` | 5 | 31 | Data directory layout, auto-creation, isolation |
 | `test_tools.py` | 4 | 38 | EchoTool, ContinuationUpdateTool, EmailTool, RuntimePolicy |
-| **Total** | **220** | **~3,300** | |
+| **Total** | **230** | **~2,250** | |
 
 ---
 
@@ -158,6 +216,7 @@ $env:PYTHONIOENCODING="utf-8"; python tests/test_torture.py
 | **`orion-ui-standalone/`** | Active development | Every feature change |
 | `engine/` | Stable frozen core | Features promoted after testing |
 | `ui/` | Production deployment | Includes external Docker tool services |
+| `services/` | Fly.io sidecar services | SearXNG, TTS, Whisper STT |
 
 ---
 
@@ -165,11 +224,12 @@ $env:PYTHONIOENCODING="utf-8"; python tests/test_torture.py
 
 | Technology | Role |
 |------------|------|
-| FastAPI + Uvicorn | Web server & async API (131 routes) |
+| FastAPI + Uvicorn | Web server & async API (159 routes) |
 | FAISS (`faiss-cpu`) | Vector similarity search for memory + soul script retrieval |
 | sentence-transformers | Semantic embeddings (`all-mpnet-base-v2`) |
-| Jinja2 | HTML templates (12 pages) |
-| PyYAML | Agent profile parsing |
-| httpx | Async HTTP for model fetching & LLM proxy calls |
+| Jinja2 | HTML templates (16 files) |
+| Supabase | OAuth authentication + JWT verification |
+| Stripe | Subscription billing, credit system, webhook handling |
+| Fly.io | Cloud hosting + Flycast private networking for sidecar services |
 | PyYAML | Agent profile parsing |
 | httpx | Async HTTP for model fetching & LLM calls |
