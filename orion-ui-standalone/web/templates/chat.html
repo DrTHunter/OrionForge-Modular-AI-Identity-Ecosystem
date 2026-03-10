@@ -910,7 +910,7 @@ function onConnectionChange(sel) {
   if (connType === 'local' || provider === 'ollama') {
     modelSel.style.display = '';
     modelSel.innerHTML = '<option value="">Loading models…</option>';
-    fetchOllamaModels(connUrl || 'http://localhost:11434');
+    fetchOllamaModels(connUrl || 'http://orionforge-engine-ollama.flycast:11434');
   } else if (sel.value && connType === 'external') {
     fetchCloudModels(sel.value);
   } else {
