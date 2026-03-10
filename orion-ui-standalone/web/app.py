@@ -1331,10 +1331,20 @@ async def page_chat(request: Request):
     agents = _list_agents()
     store = _load_connections()
     conns = [c for c in store.get("connections", []) if c.get("enabled")]
+    platform_conns = [
+        c for c in conns
+        if c.get("platform_hosted") and c.get("provider") not in ("elevenlabs", "edge-tts", "whisper")
+    ]
+    user_conns = [
+        c for c in conns
+        if not c.get("platform_hosted") and c.get("provider") not in ("elevenlabs", "edge-tts", "whisper")
+    ]
     settings = _load_settings()
     return templates.TemplateResponse("chat.html", {
         "request": request, "page": "chat",
         "agents": agents, "connections": conns,
+        "platform_connections": platform_conns,
+        "user_connections": user_conns,
         "chat_index": _load_chat_index(),
         "agent_connections": store.get("agent_connections", {}),
         "avatar_map": settings.get("agent_avatars", {}),
@@ -4894,14 +4904,17 @@ async def api_save_timezone(request: Request):
 
 @app.put("/api/settings/api-keys")
 async def api_save_api_keys(request: Request):
-    """Save per-user API keys for LLM providers (OpenAI, Anthropic, DeepSeek, Google Gemini)."""
+    """Save per-user API keys for LLM providers (OpenAI, Anthropic, DeepSeek, Google Gemini, OpenRouter, Ollama URL)."""
     body = await request.json()
     settings = _load_settings()
+    ollama_url = _normalize_ollama_url(body.get("ollama_url", PLATFORM_OLLAMA_URL))
     settings["api_keys"] = {
         "openai":        body.get("openai", ""),
         "anthropic":     body.get("anthropic", ""),
         "deepseek":      body.get("deepseek", ""),
         "google_gemini": body.get("google_gemini", ""),
+        "openrouter":    body.get("openrouter", ""),
+        "ollama_url":    ollama_url,
     }
     _save_settings(settings)
     return JSONResponse({"status": "ok"})
@@ -4914,7 +4927,9 @@ async def api_get_api_keys():
     keys = settings.get("api_keys", {})
     masked = {}
     for k, v in keys.items():
-        if v and len(v) > 8:
+        if k == "ollama_url":
+            masked[k] = v
+        elif v and len(v) > 8:
             masked[k] = v[:4] + "•" * (len(v) - 8) + v[-4:]
         elif v:
             masked[k] = "•" * len(v)
