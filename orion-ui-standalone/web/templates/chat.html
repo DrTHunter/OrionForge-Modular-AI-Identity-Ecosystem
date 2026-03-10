@@ -784,16 +784,16 @@
               <input id="chat-max-steps" type="number" value="3" min="1" max="100" class="tb-num">
             </span>
             <select id="chat-connection" class="tb-sel" title="API Connection" onchange="onConnectionChange(this)">
-              <option value="">Default API</option>
-              <option value="__auto__" data-type="auto" data-provider="router" data-url="" data-models="">🤖 Auto (Router)</option>
-              {% for conn in connections %}
-              {% if conn.enabled and conn.provider not in ('elevenlabs', 'edge-tts', 'whisper') %}
+              <option value="__platform__" data-type="platform" data-provider="platform" data-url="" data-models="">🏢 Platform API Keys</option>
+              <option value="__auto__" data-type="auto" data-provider="router" data-url="" data-models="">🤖 Auto (User Router)</option>
+              {% for conn in user_connections %}
+              {% if conn.enabled %}
               <option value="{{ conn.id }}"
                       data-type="{{ conn.type or 'external' }}"
                       data-provider="{{ conn.provider or '' }}"
                       data-url="{{ conn.url or '' }}"
                       data-models="{{ conn.models | join(',') }}">
-                {{ conn.name }}
+                👤 {{ conn.name }}
               </option>
               {% endif %}
               {% endfor %}
@@ -849,6 +849,7 @@ const _agentConns = {{ agent_connections | tojson }};
 const _userProfile = {{ user_profile | tojson }};
 const _avatarMap = {{ avatar_map | tojson }};
 const _pricing = {{ pricing | tojson }};
+const _platformConnections = {{ platform_connections | tojson }};
 let _sessionCost = 0;
 let _sessionTokens = 0;
 
@@ -858,10 +859,13 @@ let _sessionTokens = 0;
 (function init() {
   renderSidebar();
   document.getElementById('chat-agent').addEventListener('change', function() {
-    document.getElementById('chat-connection').value = _agentConns[this.value] || '';
+    document.getElementById('chat-connection').value = _agentConns[this.value] || '__platform__';
     onConnectionChange(document.getElementById('chat-connection'));
   });
   backfillEmojis();
+  if (!document.getElementById('chat-connection').value) {
+    document.getElementById('chat-connection').value = '__platform__';
+  }
   onConnectionChange(document.getElementById('chat-connection'));
 })();
 
@@ -898,6 +902,13 @@ function onConnectionChange(sel) {
   const connSel = document.getElementById('chat-connection');
 
   connSel.classList.remove('local-conn', 'cloud-conn', 'auto-conn');
+  if (sel.value === '__platform__') {
+    connSel.classList.add('cloud-conn');
+    modelSel.style.display = '';
+    modelSel.innerHTML = '<option value="">Loading platform models…</option>';
+    fetchPlatformModels();
+    return;
+  }
   if (sel.value === '__auto__') {
     connSel.classList.add('auto-conn');
     modelSel.style.display = 'none';
@@ -916,6 +927,68 @@ function onConnectionChange(sel) {
   } else {
     modelSel.style.display = 'none';
   }
+}
+
+async function fetchPlatformModels() {
+  const modelSel = document.getElementById('chat-model');
+  const platformIds = new Set(_platformConnections.map(c => c.id));
+  if (!platformIds.size) {
+    modelSel.innerHTML = '<option value="">No platform connections configured</option>';
+    return;
+  }
+  try {
+    const resp = await fetch('/api/connections/all-models');
+    const allMap = await resp.json();
+    modelSel.innerHTML = '';
+    const defOpt = document.createElement('option');
+    defOpt.value = '';
+    defOpt.textContent = 'Select platform model…';
+    modelSel.appendChild(defOpt);
+
+    let added = 0;
+    _platformConnections.forEach(conn => {
+      const models = (allMap[conn.id] || conn.models || []);
+      if (!models.length) return;
+      const group = document.createElement('optgroup');
+      group.label = `🏢 ${conn.name}`;
+      models.forEach(name => {
+        const o = document.createElement('option');
+        o.value = `${conn.id}::${name}`;
+        o.textContent = name;
+        group.appendChild(o);
+        added += 1;
+      });
+      modelSel.appendChild(group);
+    });
+
+    if (!added) {
+      modelSel.innerHTML = '<option value="">No platform models available</option>';
+    }
+  } catch (e) {
+    modelSel.innerHTML = '<option value="">⚠ Platform models unavailable</option>';
+  }
+}
+
+function _buildChatRoutingPayload() {
+  const connSel = document.getElementById('chat-connection');
+  const modelSel = document.getElementById('chat-model');
+  const selectedConn = connSel.value || null;
+  const selectedModel = modelSel.value || null;
+
+  if (selectedConn === '__auto__') {
+    return { connection_id: null, model_override: null };
+  }
+  if (selectedConn === '__platform__') {
+    if (selectedModel && selectedModel.includes('::')) {
+      const parts = selectedModel.split('::');
+      return { connection_id: parts[0], model_override: parts.slice(1).join('::') || null };
+    }
+    return { connection_id: null, model_override: null };
+  }
+  return {
+    connection_id: selectedConn,
+    model_override: selectedModel,
+  };
 }
 
 async function fetchOllamaModels(url) {
@@ -2067,8 +2140,7 @@ async function sendChatMsg() {
   const payload = {
     agent,
     stimulus: stim,
-    connection_id: document.getElementById('chat-connection').value || null,
-    model_override: document.getElementById('chat-model').value || null,
+    ..._buildChatRoutingPayload(),
     chat_id: _chatId,
   };
 
@@ -2277,8 +2349,7 @@ async function runChat() {
     mode: _mode,
     burst_ticks:   parseInt(document.getElementById('chat-burst-ticks').value) || 4,
     max_steps:     parseInt(document.getElementById('chat-max-steps').value) || 3,
-    connection_id: document.getElementById('chat-connection').value || null,
-    model_override: document.getElementById('chat-model').value || null,
+    ..._buildChatRoutingPayload(),
     chat_id:       _chatId,
   };
 

@@ -148,6 +148,28 @@
       </div>
     </div>
 
+    <!-- OpenRouter -->
+    <div class="settings-section">
+      <div class="settings-section-title">OpenRouter</div>
+      <div class="settings-section-desc">Your own OpenRouter key for user-provided model access.</div>
+      <div class="mb-3">
+        <label class="block text-xs text-forge-muted mb-1">API Key</label>
+        <input id="key-openrouter" type="password" class="search-input w-full" style="max-width:32rem;"
+               placeholder="sk-or-..." value="{{ settings.get('api_keys', {}).get('openrouter', '') }}">
+      </div>
+    </div>
+
+    <!-- Ollama -->
+    <div class="settings-section">
+      <div class="settings-section-title">Ollama</div>
+      <div class="settings-section-desc">Your own Ollama URL for user-provided local/remote Ollama models.</div>
+      <div class="mb-3">
+        <label class="block text-xs text-forge-muted mb-1">Ollama URL</label>
+        <input id="key-ollama_url" type="text" class="search-input w-full" style="max-width:32rem;"
+               placeholder="http://orionforge-engine-ollama.flycast:11434" value="{{ settings.get('api_keys', {}).get('ollama_url', 'http://orionforge-engine-ollama.flycast:11434') }}">
+      </div>
+    </div>
+
     <button class="filter-btn active" onclick="saveApiKeys()" style="cursor:pointer;">Save API Keys</button>
   </div>
 
@@ -571,6 +593,8 @@ async function saveApiKeys() {
     anthropic:    getVal('key-anthropic'),
     deepseek:     getVal('key-deepseek'),
     google_gemini:getVal('key-google_gemini'),
+    openrouter:   getVal('key-openrouter'),
+    ollama_url:   getVal('key-ollama_url'),
   };
   const resp = await fetch('/api/settings/api-keys', {
     method: 'PUT', headers: {'Content-Type': 'application/json'},
