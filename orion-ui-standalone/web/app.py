@@ -141,13 +141,15 @@ class AuthMiddleware(BaseHTTPMiddleware):
         if not token:
             if path.startswith("/api/"):
                 return JSONResponse({"error": "Not authenticated"}, status_code=401)
-            return RedirectResponse(url="/login", status_code=302)
+            from urllib.parse import quote
+            return RedirectResponse(url=f"/login?next={quote(path, safe='/')}", status_code=302)
 
         payload = verify_supabase_token(token)
         if not payload:
             if path.startswith("/api/"):
                 return JSONResponse({"error": "Invalid or expired token"}, status_code=401)
-            return RedirectResponse(url="/login", status_code=302)
+            from urllib.parse import quote
+            return RedirectResponse(url=f"/login?next={quote(path, safe='/')}", status_code=302)
 
         # Attach user info to request state
         request.state.user = extract_user_from_token(payload)
@@ -1090,7 +1092,8 @@ async def auth_callback(request: Request):
       }}),
     }});
     if (resp.ok) {{
-      window.location.href = '/plans';
+      const nextUrl = new URLSearchParams(window.location.search).get('next') || '/chat';
+      window.location.href = nextUrl;
     }} else {{
       document.getElementById('status').textContent = 'Session error. Redirecting…';
       setTimeout(() => window.location.href = '/login', 2000);
