@@ -273,8 +273,12 @@ def _get_faiss_memory():
 def _read_json(path: Path, default=None):
     if not path.exists():
         return default if default is not None else {}
-    with open(path, "r", encoding="utf-8-sig") as f:
-        return json.load(f)
+    try:
+        with open(path, "r", encoding="utf-8-sig") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, ValueError):
+        log.warning("[io] Corrupt JSON in %s — returning default", path)
+        return default if default is not None else {}
 
 def _write_json(path: Path, data):
     path.parent.mkdir(parents=True, exist_ok=True)
