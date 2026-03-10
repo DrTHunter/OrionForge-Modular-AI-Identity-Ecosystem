@@ -3933,37 +3933,60 @@ async def api_admin_save_platform_key(request: Request):
     name = body.get("name", f"Platform — {provider}")
     models = body.get("models", [])
 
-    if not provider or not api_key:
-        return JSONResponse({"error": "provider and api_key are required"}, 400)
+    if not provider:
+        return JSONResponse({"error": "provider is required"}, 400)
+    if provider != "ollama" and not api_key:
+        return JSONResponse({"error": "api_key is required"}, 400)
+
+    if provider == "ollama":
+        url = _normalize_ollama_url(url or PLATFORM_OLLAMA_URL)
 
     store = _load_connections()
     # Upsert: find existing platform connection for this provider
     existing = None
     for c in store["connections"]:
-        if c.get("platform_hosted") and c.get("provider") == provider:
+        if c.get("provider") == provider and (c.get("platform_hosted") or str(c.get("id", "")).startswith("platform_")):
             existing = c
             break
 
     if existing:
-        existing["api_key"] = api_key
-        existing["url"] = url or existing["url"]
+        if provider == "ollama":
+            existing["api_key"] = ""
+            existing["type"] = "ollama"
+            existing["url"] = _normalize_ollama_url(url or existing.get("url") or PLATFORM_OLLAMA_URL)
+        else:
+            existing["api_key"] = api_key
+            existing["url"] = url or existing.get("url", "")
+            existing["type"] = existing.get("type", "external")
         existing["name"] = name
         existing["models"] = models or existing.get("models", [])
         existing["enabled"] = True
+        existing["platform_hosted"] = True
         conn = existing
     else:
         conn = {
             "id": f"platform_{provider}",
             "name": name,
-            "type": "external",
+            "type": "ollama" if provider == "ollama" else "external",
             "provider": provider,
             "url": url,
-            "api_key": api_key,
+            "api_key": "" if provider == "ollama" else api_key,
             "models": models,
             "enabled": True,
             "platform_hosted": True,
         }
+        if provider == "ollama":
+            conn["url"] = _normalize_ollama_url(url)
         store["connections"].append(conn)
+
+    if provider == "ollama":
+        try:
+            async with httpx.AsyncClient(timeout=15) as client:
+                resp = await client.get(f"{conn['url'].rstrip('/')}/api/tags")
+                resp.raise_for_status()
+                conn["models"] = sorted(m["name"] for m in resp.json().get("models", []))
+        except Exception:
+            pass
 
     _save_connections(store)
     log.info("[admin] Saved platform key for provider=%s", provider)
@@ -3981,13 +4004,16 @@ async def api_admin_test_platform_key(request: Request):
     url = body.get("url", "").strip().rstrip("/")
     api_key = body.get("api_key", "").strip()
 
-    if not api_key:
+    if provider != "ollama" and not api_key:
         return JSONResponse({"ok": False, "error": "No API key provided"})
 
     # ElevenLabs uses a different endpoint
     if provider == "elevenlabs":
         test_url = f"{url}/v1/voices"
         headers = {"xi-api-key": api_key}
+    elif provider == "ollama":
+        test_url = f"{_normalize_ollama_url(url)}/api/tags"
+        headers = {}
     elif provider == "google_gemini":
         # Google Gemini OpenAI-compatible endpoint
         test_url = f"{url}/models"
@@ -4005,6 +4031,8 @@ async def api_admin_test_platform_key(request: Request):
 
         if provider == "elevenlabs":
             count = len(data.get("voices", []))
+        elif provider == "ollama":
+            count = len(data.get("models", []))
         else:
             count = len(data.get("data", data.get("models", [])))
         return JSONResponse({"ok": True, "models_count": count})
@@ -4866,75 +4894,16 @@ async def api_save_timezone(request: Request):
 
 @app.put("/api/settings/api-keys")
 async def api_save_api_keys(request: Request):
-    """Save API keys for LLM providers (OpenAI, Anthropic, DeepSeek, Google Gemini, OpenRouter, Ollama)."""
+    """Save per-user API keys for LLM providers (OpenAI, Anthropic, DeepSeek, Google Gemini)."""
     body = await request.json()
     settings = _load_settings()
-    ollama_url = _normalize_ollama_url(body.get("ollama_url", PLATFORM_OLLAMA_URL))
     settings["api_keys"] = {
         "openai":        body.get("openai", ""),
         "anthropic":     body.get("anthropic", ""),
         "deepseek":      body.get("deepseek", ""),
         "google_gemini": body.get("google_gemini", ""),
-        "openrouter":    body.get("openrouter", ""),
-        "ollama_url":    ollama_url,
     }
     _save_settings(settings)
-    # Auto-upsert OpenRouter connection when a key is provided
-    or_key = body.get("openrouter", "").strip()
-    if or_key:
-        store = _load_connections()
-        existing = next((c for c in store["connections"] if c.get("provider") == "openrouter"), None)
-        if existing:
-            existing["api_key"] = or_key
-            existing["enabled"] = True
-        else:
-            store["connections"].append({
-                "id": "openrouter", "name": "OpenRouter (Fallback)",
-                "type": "external", "provider": "openrouter",
-                "url": "https://openrouter.ai/api/v1", "api_key": or_key,
-                "models": ["openai/gpt-4o", "openai/gpt-4o-mini", "anthropic/claude-3.5-sonnet",
-                           "meta-llama/llama-3.3-70b-instruct", "google/gemini-2.0-flash-001"],
-                "enabled": True, "is_fallback": True,
-            })
-        _save_connections(store)
-
-    # Auto-upsert Ollama platform connection from saved URL
-    ollama_url = _normalize_ollama_url(body.get("ollama_url", PLATFORM_OLLAMA_URL))
-    if ollama_url:
-        store = _load_connections()
-        existing_ollama = next((c for c in store["connections"] if c.get("id") == "ollama-fly" or c.get("provider") == "ollama"), None)
-        if existing_ollama:
-            existing_ollama["id"] = existing_ollama.get("id") or "ollama-fly"
-            existing_ollama["name"] = existing_ollama.get("name") or "Ollama (Fly.io)"
-            existing_ollama["type"] = "ollama"
-            existing_ollama["provider"] = "ollama"
-            existing_ollama["url"] = ollama_url
-            existing_ollama["enabled"] = True
-        else:
-            store["connections"].append({
-                "id": "ollama-fly",
-                "name": "Ollama (Fly.io)",
-                "type": "ollama",
-                "provider": "ollama",
-                "url": ollama_url,
-                "api_key": "",
-                "models": ["llama3.2:3b", "qwen2.5:3b", "phi3:mini", "mistral:7b", "codellama:7b"],
-                "enabled": True,
-                "is_fallback": False,
-            })
-
-        try:
-            async with httpx.AsyncClient(timeout=15) as client:
-                resp = await client.get(f"{ollama_url.rstrip('/')}/api/tags")
-                resp.raise_for_status()
-                live_models = sorted(m["name"] for m in resp.json().get("models", []))
-                if existing_ollama:
-                    existing_ollama["models"] = live_models
-                else:
-                    store["connections"][-1]["models"] = live_models
-        except Exception:
-            pass
-        _save_connections(store)
     return JSONResponse({"status": "ok"})
 
 
@@ -4945,9 +4914,7 @@ async def api_get_api_keys():
     keys = settings.get("api_keys", {})
     masked = {}
     for k, v in keys.items():
-        if k == "ollama_url":
-            masked[k] = v
-        elif v and len(v) > 8:
+        if v and len(v) > 8:
             masked[k] = v[:4] + "•" * (len(v) - 8) + v[-4:]
         elif v:
             masked[k] = "•" * len(v)

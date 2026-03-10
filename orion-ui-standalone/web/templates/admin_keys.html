@@ -93,6 +93,24 @@
 <script>
 const PROVIDERS = [
   {
+    id: "openrouter",
+    name: "OpenRouter",
+    icon: "🧩",
+    desc: "Unified model gateway for OpenAI, Anthropic, Google, Llama, Mistral, and more",
+    url_default: "https://openrouter.ai/api/v1",
+    key_placeholder: "sk-or-...",
+    models: ["openai/gpt-4o", "openai/gpt-4o-mini", "anthropic/claude-3.5-sonnet"],
+  },
+  {
+    id: "ollama",
+    name: "Ollama",
+    icon: "🦙",
+    desc: "Platform-hosted Ollama endpoint and model registry",
+    url_default: "http://orionforge-engine-ollama.flycast:11434",
+    key_placeholder: "(not required)",
+    models: [],
+  },
+  {
     id: "openai",
     name: "OpenAI",
     icon: "🤖",
@@ -198,7 +216,7 @@ async function saveProvider(providerId) {
   const url = document.getElementById(`url-${providerId}`).value.trim();
   const apiKey = document.getElementById(`key-${providerId}`).value.trim();
 
-  if (!apiKey) { toast("API key is required", "error"); return; }
+  if (providerId !== "ollama" && !apiKey) { toast("API key is required", "error"); return; }
 
   const body = {
     provider: p.provider_type || providerId,
@@ -230,7 +248,7 @@ async function testProvider(providerId) {
   const url = document.getElementById(`url-${providerId}`).value.trim();
   const apiKey = document.getElementById(`key-${providerId}`).value.trim();
 
-  if (!apiKey) { toast("Enter an API key first", "error"); return; }
+  if (providerId !== "ollama" && !apiKey) { toast("Enter an API key first", "error"); return; }
 
   toast(`Testing ${p.name}...`);
 
