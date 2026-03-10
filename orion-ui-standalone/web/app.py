@@ -1092,7 +1092,16 @@ async def auth_callback(request: Request):
       }}),
     }});
     if (resp.ok) {{
-      const nextUrl = new URLSearchParams(window.location.search).get('next') || '/chat';
+      // Read redirect target: localStorage (survives OAuth) > query param > /chat
+      var nextUrl = '/chat';
+      try {{
+        var stored = localStorage.getItem('orion_auth_next');
+        if (stored) {{ nextUrl = stored; localStorage.removeItem('orion_auth_next'); }}
+      }} catch(e) {{}}
+      if (nextUrl === '/chat') {{
+        var qp = new URLSearchParams(window.location.search).get('next');
+        if (qp) {{ nextUrl = qp; }}
+      }}
       window.location.href = nextUrl;
     }} else {{
       document.getElementById('status').textContent = 'Session error. Redirecting…';

@@ -389,8 +389,12 @@
           return;
         }
 
+        // Persist ?next= target in localStorage so it survives the OAuth redirect chain
         var _oauthNext = new URLSearchParams(window.location.search).get('next') || '';
-        var redirectUrl = window.location.origin + '/auth/callback' + (_oauthNext ? '?next=' + encodeURIComponent(_oauthNext) : '');
+        if (_oauthNext) {
+          try { localStorage.setItem('orion_auth_next', _oauthNext); } catch(e) {}
+        }
+        var redirectUrl = window.location.origin + '/auth/callback';
 
         _sb.auth.signInWithOAuth({
           provider: provider,
