@@ -148,50 +148,6 @@
       </div>
     </div>
 
-    <!-- DeepSeek -->
-    <div class="settings-section">
-      <div class="settings-section-title">DeepSeek</div>
-      <div class="settings-section-desc">API key for DeepSeek models (DeepSeek-V3, DeepSeek-R1, etc.)</div>
-      <div class="mb-3">
-        <label class="block text-xs text-forge-muted mb-1">API Key</label>
-        <input id="key-deepseek" type="password" class="search-input w-full" style="max-width:32rem;"
-               placeholder="sk-..." value="{{ settings.get('api_keys', {}).get('deepseek', '') }}">
-      </div>
-    </div>
-
-    <!-- Google Gemini -->
-    <div class="settings-section">
-      <div class="settings-section-title">Google Gemini</div>
-      <div class="settings-section-desc">API key for Gemini models (Gemini 2.0, 1.5 Pro, etc.)</div>
-      <div class="mb-3">
-        <label class="block text-xs text-forge-muted mb-1">API Key</label>
-        <input id="key-google_gemini" type="password" class="search-input w-full" style="max-width:32rem;"
-               placeholder="AIza..." value="{{ settings.get('api_keys', {}).get('google_gemini', '') }}">
-      </div>
-    </div>
-
-    <!-- OpenRouter -->
-    <div class="settings-section">
-      <div class="settings-section-title">OpenRouter</div>
-      <div class="settings-section-desc">Fallback routing to 60+ models (GPT-4o, Claude, Llama, Gemini, Mistral, Grok) via a single API key. Auto-routes when primary provider keys hit limits.</div>
-      <div class="mb-3">
-        <label class="block text-xs text-forge-muted mb-1">API Key</label>
-        <input id="key-openrouter" type="password" class="search-input w-full" style="max-width:32rem;"
-               placeholder="sk_..." value="{{ settings.get('api_keys', {}).get('openrouter', '') }}">
-      </div>
-    </div>
-
-    <!-- Ollama -->
-    <div class="settings-section">
-      <div class="settings-section-title">Ollama</div>
-      <div class="settings-section-desc">Platform-hosted Ollama via Fly.io — no API key required, just the server URL</div>
-      <div class="mb-3">
-        <label class="block text-xs text-forge-muted mb-1">Ollama Server URL</label>
-        <input id="key-ollama_url" type="text" class="search-input w-full" style="max-width:32rem;"
-               placeholder="http://orionforge-engine-ollama.flycast:11434" value="{{ settings.get('api_keys', {}).get('ollama_url', 'http://orionforge-engine-ollama.flycast:11434') }}">
-      </div>
-    </div>
-
     <button class="filter-btn active" onclick="saveApiKeys()" style="cursor:pointer;">Save API Keys</button>
   </div>
 
@@ -609,13 +565,12 @@ let _tzMode = '{{ settings.get("timezone", "auto") }}';
 
 /* ── API Keys ──────────────────────────────────────────── */
 async function saveApiKeys() {
+  const getVal = (id) => document.getElementById(id)?.value || '';
   const payload = {
-    openai:       document.getElementById('key-openai').value,
-    anthropic:    document.getElementById('key-anthropic').value,
-    deepseek:     document.getElementById('key-deepseek').value,
-    google_gemini:document.getElementById('key-google_gemini').value,
-    openrouter:   document.getElementById('key-openrouter').value,
-    ollama_url:   document.getElementById('key-ollama_url').value,
+    openai:       getVal('key-openai'),
+    anthropic:    getVal('key-anthropic'),
+    deepseek:     getVal('key-deepseek'),
+    google_gemini:getVal('key-google_gemini'),
   };
   const resp = await fetch('/api/settings/api-keys', {
     method: 'PUT', headers: {'Content-Type': 'application/json'},
