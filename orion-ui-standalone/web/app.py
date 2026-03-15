@@ -85,6 +85,12 @@ async def _lifespan(application: FastAPI):
         _seed_platform_keys_from_env()
     except Exception as exc:
         log.warning("[startup] Platform-key seeding failed: %s", exc)
+    # Auto-sync OpenRouter pricing from their live API
+    try:
+        result = await _sync_openrouter_pricing(force=True)
+        log.info("[startup] OpenRouter pricing sync: %s", result)
+    except Exception as exc:
+        log.warning("[startup] OpenRouter pricing sync failed: %s", exc)
     try:
         _rebuild_notes_faiss()
         from src.storage.note_collector import invalidate_notes_faiss
@@ -416,6 +422,100 @@ def _save_pricing(data: dict):
     PRICING_FILE.parent.mkdir(parents=True, exist_ok=True)
     with open(PRICING_FILE, "w", encoding="utf-8") as f:
         yaml.dump(data, f, default_flow_style=False, sort_keys=False)
+
+
+# ── OpenRouter pricing auto-sync ────────────────────────────────
+_OR_PRICING_LAST_SYNC: float = 0.0       # epoch timestamp of last sync
+_OR_PRICING_SYNC_INTERVAL = 6 * 3600     # re-sync every 6 hours
+
+async def _sync_openrouter_pricing(force: bool = False) -> dict:
+    """Fetch live per-model pricing from OpenRouter and merge into pricing.yaml.
+
+    OpenRouter returns per-token rates in `pricing.prompt` / `pricing.completion`.
+    We convert to per-1M-token rates and store under the 'openrouter' provider key.
+    Returns {"synced": N, "total_models": M} on success.
+    """
+    import time
+    global _OR_PRICING_LAST_SYNC
+
+    if not force and (time.time() - _OR_PRICING_LAST_SYNC) < _OR_PRICING_SYNC_INTERVAL:
+        return {"synced": 0, "skipped": True, "reason": "within sync interval"}
+
+    # Get OpenRouter API key from platform connection or env
+    api_key = os.environ.get("OPENROUTER_API_KEY", "").strip()
+    if not api_key:
+        store = _load_connections()
+        for c in store.get("connections", []):
+            if c.get("provider") == "openrouter" and c.get("platform_hosted") and c.get("api_key"):
+                api_key = c["api_key"]
+                break
+    if not api_key:
+        return {"synced": 0, "error": "No OpenRouter API key available"}
+
+    headers = {"Authorization": f"Bearer {api_key}"}
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.get("https://openrouter.ai/api/v1/models", headers=headers)
+            resp.raise_for_status()
+            models_data = resp.json().get("data", [])
+    except Exception as exc:
+        log.warning("[openrouter-sync] Failed to fetch models: %s", exc)
+        return {"synced": 0, "error": str(exc)}
+
+    pricing = _load_pricing()
+    or_section = pricing.get("openrouter", {})
+
+    # Preserve existing _default and other meta keys
+    synced = 0
+    for m in models_data:
+        model_id = m.get("id", "")
+        if not model_id:
+            continue
+        pr = m.get("pricing") or {}
+        prompt_per_tok = pr.get("prompt")
+        completion_per_tok = pr.get("completion")
+        if prompt_per_tok is None and completion_per_tok is None:
+            continue
+        try:
+            input_per_1m = float(prompt_per_tok or 0) * 1_000_000
+            output_per_1m = float(completion_per_tok or 0) * 1_000_000
+        except (ValueError, TypeError):
+            continue
+        # Only store models with non-zero pricing
+        if input_per_1m == 0 and output_per_1m == 0:
+            # Free models — store them too so cost displays $0
+            pass
+        or_section[model_id] = {
+            "input_per_1m": round(input_per_1m, 4),
+            "cached_input_per_1m": round(input_per_1m * 0.5, 4),  # estimate cached at 50%
+            "output_per_1m": round(output_per_1m, 4),
+            "training_per_1m": 0.0,
+        }
+        synced += 1
+
+    # Ensure _default exists
+    if "_default" not in or_section:
+        or_section["_default"] = {
+            "input_per_1m": 2.50,
+            "cached_input_per_1m": 1.25,
+            "output_per_1m": 10.00,
+            "training_per_1m": 0.0,
+        }
+
+    pricing["openrouter"] = or_section
+    _save_pricing(pricing)
+
+    # Clear metering cache so new prices take effect immediately
+    try:
+        from src.observability.metering import reset_pricing_cache
+        reset_pricing_cache()
+    except Exception:
+        pass
+
+    _OR_PRICING_LAST_SYNC = time.time()
+    log.info("[openrouter-sync] Synced pricing for %d models (total %d in catalog)",
+             synced, len(models_data))
+    return {"synced": synced, "total_models": len(models_data)}
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -4171,6 +4271,15 @@ async def api_admin_remove_platform_key(provider: str, request: Request):
     _save_connections(store)
     log.info("[admin] Removed platform key for provider=%s", provider)
     return JSONResponse({"ok": True})
+
+
+@app.post("/api/admin/sync-openrouter-pricing")
+async def api_admin_sync_openrouter_pricing(request: Request):
+    """Manually trigger OpenRouter pricing sync. Admin only."""
+    if not _check_admin(request):
+        return JSONResponse({"error": "Unauthorized"}, status_code=403)
+    result = await _sync_openrouter_pricing(force=True)
+    return JSONResponse(result)
 
 
 # ═══════════════════════════════════════════════════════════════════
