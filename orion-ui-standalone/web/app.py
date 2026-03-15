@@ -299,11 +299,10 @@ def _save_connections(data: dict):
 PLATFORM_OLLAMA_URL = "http://orionforge-engine-ollama.flycast:11434"
 
 # ── Env-var → provider mapping for platform-hosted keys ──────────
+# Only OpenRouter (LLM gateway) and ElevenLabs (TTS) are platform-hosted.
+# All other providers (OpenAI, Anthropic, Google, DeepSeek, Ollama) are
+# user-BYOK only — configurable in Settings → API Keys.
 _ENV_KEY_MAP = {
-    "openai":       ("OPENAI_API_KEY",       "https://api.openai.com/v1"),
-    "anthropic":    ("ANTHROPIC_API_KEY",    "https://api.anthropic.com/v1"),
-    "deepseek":     ("DEEPSEEK_API_KEY",     "https://api.deepseek.com/v1"),
-    "google_gemini":("GOOGLE_API_KEY",       "https://generativelanguage.googleapis.com/v1beta/openai"),
     "openrouter":   ("OPENROUTER_API_KEY",   "https://openrouter.ai/api/v1"),
     "elevenlabs":   ("ELEVENLABS_API_KEY",   "https://api.elevenlabs.io/v1"),
 }
@@ -4348,7 +4347,6 @@ async def api_platform_models(request: Request):
     user = getattr(request.state, "user", None)
     credits = get_user_credits(user["id"]) if user else 0
     store = _load_connections()
-    pricing = _load_pricing()
     providers = []
     for conn in store.get("connections", []):
         if not conn.get("enabled") or not conn.get("platform_hosted"):
@@ -4358,9 +4356,9 @@ async def api_platform_models(request: Request):
         models_with_pricing = []
         prov = conn.get("provider", "openai")
         for m in (conn.get("models") or []):
-            mp = pricing.get(prov, {}).get(m, {})
-            input_rate = mp.get("input_per_1m", 0)
-            output_rate = mp.get("output_per_1m", 0)
+            # Use metering get_price which handles OpenRouter provider/model passthrough
+            from src.observability.metering import get_price as _metering_get_price
+            input_rate, _cached, output_rate, _train = _metering_get_price(prov, m)
             # Estimate credits for a typical 1K token exchange (500 in, 500 out)
             est_usd = (input_rate * 500 / 1_000_000) + (output_rate * 500 / 1_000_000)
             est_credits = estimate_llm_credit_cost(est_usd) if est_usd > 0 else 0

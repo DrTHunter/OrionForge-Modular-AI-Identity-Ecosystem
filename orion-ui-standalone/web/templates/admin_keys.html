@@ -74,14 +74,15 @@
 <div>
   <div class="admin-header">
     <h1>🔐 Platform API Keys</h1>
-    <p>Manage the provider API keys your platform hosts for users. These are charged at 1.5× the actual cost.</p>
+    <p>Manage the platform-hosted provider keys. Charged at 1.5× cost in credits.</p>
   </div>
 
   <div class="info-banner">
     <p>
-      Keys configured here become <strong>platform-hosted connections</strong> available to all users.
-      Users without their own API keys will use these at <strong>1.5× the API cost</strong> in credits.
-      Users who bring their own keys (BYOK) in Settings → API Keys use LLMs and voice for free.
+      <strong>OpenRouter</strong> is the unified LLM gateway — all chat models (OpenAI, Anthropic, Google, DeepSeek, Mistral, Llama, etc.)
+      are routed through one API key. <strong>ElevenLabs</strong> provides neural TTS voices.<br>
+      Users are charged <strong>1.5× the base API cost</strong> in credits.
+      Users who bring their own keys (BYOK) in Settings → API Keys bypass platform credits entirely.
     </p>
   </div>
 
@@ -96,62 +97,17 @@ const PROVIDERS = [
     id: "openrouter",
     name: "OpenRouter",
     icon: "🧩",
-    desc: "Unified model gateway for OpenAI, Anthropic, Google, Llama, Mistral, and more",
+    desc: "Unified model gateway — OpenAI, Anthropic, Google, Llama, Mistral, DeepSeek, and hundreds more",
     url_default: "https://openrouter.ai/api/v1",
     key_placeholder: "sk-or-...",
-    models: ["openai/gpt-4o", "openai/gpt-4o-mini", "anthropic/claude-3.5-sonnet"],
-  },
-  {
-    id: "ollama",
-    name: "Ollama",
-    icon: "🦙",
-    desc: "Platform-hosted Ollama endpoint and model registry",
-    url_default: "http://orionforge-engine-ollama.flycast:11434",
-    key_placeholder: "(not required)",
-    models: [],
-  },
-  {
-    id: "openai",
-    name: "OpenAI",
-    icon: "🤖",
-    desc: "GPT-4o, GPT-4o-mini, o1, o3, DALL-E, Whisper, TTS",
-    url_default: "https://api.openai.com",
-    key_placeholder: "sk-...",
-    models: ["gpt-4o", "gpt-4o-mini", "o1", "o1-mini", "o3-mini"],
-  },
-  {
-    id: "anthropic",
-    name: "Anthropic",
-    icon: "🧠",
-    desc: "Claude Opus, Sonnet, Haiku via OpenAI-compatible proxy",
-    url_default: "https://api.anthropic.com",
-    key_placeholder: "sk-ant-...",
-    models: ["claude-sonnet-4-20250514", "claude-3-5-haiku-20241022"],
-  },
-  {
-    id: "google_gemini",
-    name: "Google Gemini",
-    icon: "💎",
-    desc: "Gemini 2.0 Flash, 1.5 Pro, and other Google models",
-    url_default: "https://generativelanguage.googleapis.com/v1beta/openai",
-    key_placeholder: "AIza...",
-    models: ["gemini-2.0-flash", "gemini-1.5-pro"],
-  },
-  {
-    id: "deepseek",
-    name: "DeepSeek",
-    icon: "🔬",
-    desc: "DeepSeek-V3, DeepSeek-R1, and reasoning models",
-    url_default: "https://api.deepseek.com",
-    key_placeholder: "sk-...",
-    models: ["deepseek-chat", "deepseek-reasoner"],
+    models: ["openai/gpt-4o", "openai/gpt-4o-mini", "anthropic/claude-sonnet-4-20250514", "google/gemini-2.0-flash-001"],
   },
   {
     id: "elevenlabs",
     name: "ElevenLabs",
     icon: "🔊",
-    desc: "Neural text-to-speech voices for agent audio output",
-    url_default: "https://api.elevenlabs.io",
+    desc: "Neural text-to-speech voices for agent audio output (charged at 1.5× cost)",
+    url_default: "https://api.elevenlabs.io/v1",
     key_placeholder: "xi-...",
     models: ["eleven_multilingual_v2"],
     provider_type: "elevenlabs",

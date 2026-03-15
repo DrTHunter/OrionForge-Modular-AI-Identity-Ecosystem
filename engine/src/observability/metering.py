@@ -191,7 +191,10 @@ def get_price(
       1. pricing[provider][model]        (exact match)
       2. pricing[provider][prefix]       (model starts with a known key)
       3. pricing[provider]["_default"]   (provider fallback)
-      4. (0.0, 0.0, 0.0, 0.0)           (unknown provider/model)
+      4. OpenRouter passthrough: if provider is "openrouter" and model
+         contains "/", split into sub_provider/sub_model and re-lookup
+         against the underlying provider's pricing.
+      5. (0.0, 0.0, 0.0, 0.0)           (unknown provider/model)
     """
     pricing = pricing or _get_pricing()
     provider_prices = pricing.get(provider, {})
@@ -211,6 +214,25 @@ def get_price(
     # 3. Provider default
     if not model_prices:
         model_prices = provider_prices.get("_default")
+
+    # 4. OpenRouter passthrough — parse "provider/model" naming convention
+    #    e.g. provider="openrouter", model="openai/gpt-4o" → lookup openai → gpt-4o
+    if not model_prices and provider == "openrouter" and "/" in model:
+        sub_provider, sub_model = model.split("/", 1)
+        # Normalize common OpenRouter provider slugs to our pricing keys
+        _OR_PROVIDER_MAP = {
+            "openai": "openai",
+            "anthropic": "anthropic",
+            "google": "google",
+            "deepseek": "deepseek",
+            "x-ai": "xai",
+            "xai": "xai",
+            "mistralai": "mistral",
+            "mistral": "mistral",
+            "meta-llama": "ollama",  # Meta Llama via OpenRouter
+        }
+        mapped_provider = _OR_PROVIDER_MAP.get(sub_provider, sub_provider)
+        return get_price(mapped_provider, sub_model, pricing)
 
     if not model_prices:
         return (0.0, 0.0, 0.0, 0.0)
