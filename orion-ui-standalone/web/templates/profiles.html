@@ -452,6 +452,43 @@
   .textarea-prompt:focus { border-color: #6366f1; }
   .textarea-prompt::placeholder { color: #3f3f46; }
 
+  /* ── Collapsible Sections ── */
+  .collapsible-header {
+    display: flex; align-items: center; justify-content: space-between;
+    cursor: pointer; user-select: none; gap: 0.5rem;
+  }
+  .collapsible-header:hover .collapse-chevron { color: #a5b4fc; }
+  .collapse-chevron {
+    font-size: 0.65rem; color: #52525b; transition: transform 0.25s ease, color 0.15s;
+    flex-shrink: 0;
+  }
+  .collapse-chevron.open { transform: rotate(180deg); }
+  .collapsible-body {
+    overflow: hidden; transition: max-height 0.3s ease, opacity 0.25s ease;
+    max-height: 0; opacity: 0;
+  }
+  .collapsible-body.open {
+    max-height: 4000px; opacity: 1;
+  }
+  .textarea-prompt.soul-script { min-height: 16rem; }
+  .textarea-notes {
+    width: 100%; min-height: 10rem; background: #13131a;
+    border: 1px solid #2a2a3a; border-radius: 0.5rem;
+    padding: 0.75rem; font-size: 0.8125rem; color: #d4d4d8;
+    line-height: 1.6; outline: none; resize: vertical;
+    transition: border-color 0.15s;
+  }
+  .textarea-notes:focus { border-color: #6366f1; }
+  .textarea-notes::placeholder { color: #3f3f46; }
+  .faiss-badge {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    padding: 2px 8px; border-radius: 50px;
+    font-size: 0.6rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: rgba(16,185,129,0.1); color: #10b981;
+    border: 1px solid rgba(16,185,129,0.2);
+  }
+
   /* ── Notes ── */
   .notes-grid { display: flex; flex-wrap: wrap; gap: 0.5rem; }
   .note-card {
@@ -1019,51 +1056,80 @@
           {% endfor %}
         </div>
 
-        <!-- ── System Prompt ── -->
-        <div class="modal-section-title">✦ System Prompt</div>
-        <textarea class="textarea-prompt" id="prompt-{{ name }}"
-                  placeholder="Write the system prompt for this agent…"
-                  onchange="saveField('{{ name }}', 'system_prompt_text', this.value)"
-        >{{ ad.system_prompt }}</textarea>
-        <div class="field-hint">The foundational instruction set that defines behavior, personality, and role.</div>
+        <!-- ── System Prompt (collapsible) ── -->
+        <div class="modal-section-title collapsible-header" onclick="toggleCollapse('sys-prompt-{{ name }}')">
+          <span>✦ System Prompt</span>
+          <i class="fas fa-chevron-down collapse-chevron" id="chevron-sys-prompt-{{ name }}"></i>
+        </div>
+        <div class="collapsible-body" id="sys-prompt-{{ name }}">
+          <textarea class="textarea-prompt" id="prompt-{{ name }}"
+                    placeholder="Write the system prompt for this agent…"
+                    onchange="saveField('{{ name }}', 'system_prompt_text', this.value)"
+          >{{ ad.system_prompt }}</textarea>
+          <div class="field-hint">The foundational instruction set that defines behavior, personality, and role.</div>
+        </div>
 
-        <!-- ── Soul Script & Knowledge ── -->
-        <div class="modal-section-title">🧬 Soul Script & Knowledge</div>
-        <p class="field-hint" style="margin-bottom:0.75rem;">
-          Attached notes are injected into the agent's context.
-          <span class="mode-label always">Always</span> = every session &nbsp;|&nbsp;
-          <span class="mode-label directive">Directive</span> = on-demand via directive engine.
-        </p>
-        <div class="notes-grid" id="notes-grid-{{ name }}">
-          {% for note_id in cfg.get('attached_notes', []) %}
-          {% set mode = cfg.get('note_modes', {}).get(note_id, 'always') %}
-          <div class="note-card" id="note-user-{{ name }}-{{ note_id }}">
-            <span class="note-name">📝 {{ note_id }}</span>
-            <span class="note-source">user note</span>
-            <div style="display:flex; align-items:center; gap:0.375rem;">
-              <span class="mode-label {{ mode }}"
-                    id="ml-{{ name }}-{{ note_id }}">
-                {{ mode | upper }}
-              </span>
-              <div class="mode-toggle {{ 'active' if mode == 'directive' else '' }}"
-                   id="mt-{{ name }}-{{ note_id }}"
-                   onclick="toggleNoteMode('{{ name }}', '{{ note_id }}', this)">
-                <span class="toggle-knob"></span>
-              </div>
-            </div>
-            <button class="note-remove-btn" title="Detach" onclick="detachUserNote('{{ name }}', '{{ note_id }}')">✕</button>
+        <!-- ── Soul Script (collapsible) ── -->
+        <div class="modal-section-title collapsible-header" onclick="toggleCollapse('soul-script-{{ name }}')">
+          <span>🧬 Soul Script</span>
+          <span style="display:flex; align-items:center; gap:0.5rem;">
+            <span class="faiss-badge"><i class="fas fa-brain" style="font-size:0.5rem;"></i> FAISS Indexed</span>
+            <i class="fas fa-chevron-down collapse-chevron" id="chevron-soul-script-{{ name }}"></i>
+          </span>
+        </div>
+        <div class="collapsible-body" id="soul-script-{{ name }}">
+          <textarea class="textarea-prompt soul-script" id="soul-{{ name }}"
+                    placeholder="Write the soul script / directive for this agent…"
+                    onchange="saveField('{{ name }}', 'soul_script_text', this.value)"
+          >{{ ad.soul_script }}</textarea>
+          <div class="field-hint">
+            The agent's deep identity layer — personality, lore, behavioral modes, and core truths.
+            Automatically indexed into FAISS memory and semantically retrieved during chat for this agent only.
           </div>
-          {% endfor %}
         </div>
 
-        <div class="notes-empty" id="notes-empty-{{ name }}"
-             style="{{ 'display:none;' if cfg.get('attached_notes') else '' }}">
-          No soul scripts attached. Click "Add Notes" to connect knowledge sources.
+        <!-- ── Notes (collapsible) ── -->
+        <div class="modal-section-title collapsible-header" onclick="toggleCollapse('notes-{{ name }}')">
+          <span>📝 Knowledge Notes</span>
+          <i class="fas fa-chevron-down collapse-chevron" id="chevron-notes-{{ name }}"></i>
         </div>
+        <div class="collapsible-body" id="notes-{{ name }}">
+          <p class="field-hint" style="margin-bottom:0.75rem;">
+            Attached notes are injected into the agent's context.
+            <span class="mode-label always">Always</span> = every session &nbsp;|&nbsp;
+            <span class="mode-label directive">Directive</span> = on-demand via FAISS search.
+          </p>
+          <div class="notes-grid" id="notes-grid-{{ name }}">
+            {% for note_id in cfg.get('attached_notes', []) %}
+            {% set mode = cfg.get('note_modes', {}).get(note_id, 'always') %}
+            <div class="note-card" id="note-user-{{ name }}-{{ note_id }}">
+              <span class="note-name">📝 {{ note_id }}</span>
+              <span class="note-source">user note</span>
+              <div style="display:flex; align-items:center; gap:0.375rem;">
+                <span class="mode-label {{ mode }}"
+                      id="ml-{{ name }}-{{ note_id }}">
+                  {{ mode | upper }}
+                </span>
+                <div class="mode-toggle {{ 'active' if mode == 'directive' else '' }}"
+                     id="mt-{{ name }}-{{ note_id }}"
+                     onclick="toggleNoteMode('{{ name }}', '{{ note_id }}', this)">
+                  <span class="toggle-knob"></span>
+                </div>
+              </div>
+              <button class="note-remove-btn" title="Detach" onclick="detachUserNote('{{ name }}', '{{ note_id }}')">✕</button>
+            </div>
+            {% endfor %}
+          </div>
 
-        <button class="add-notes-btn" onclick="openAddNotesModal('{{ name }}')">
-          ＋ Add Notes
-        </button>
+          <div class="notes-empty" id="notes-empty-{{ name }}"
+               style="{{ 'display:none;' if cfg.get('attached_notes') else '' }}">
+            No knowledge notes attached. Click "Add Notes" to connect knowledge sources.
+          </div>
+
+          <button class="add-notes-btn" onclick="openAddNotesModal('{{ name }}')">
+            ＋ Add Notes
+          </button>
+        </div>
       </div>
     </div>
 
@@ -1532,6 +1598,15 @@
     saveField(agent, 'allowed_tools', enabled);
   }
 
+  // ── Collapsible toggle ──
+  function toggleCollapse(id) {
+    const body = document.getElementById(id);
+    const chevron = document.getElementById('chevron-' + id);
+    if (!body) return;
+    body.classList.toggle('open');
+    if (chevron) chevron.classList.toggle('open');
+  }
+
   // ── Save field ──
   async function saveField(agent, field, value) {
     await fetch(`/api/profiles/${agent}/config`, {
@@ -1946,6 +2021,7 @@
       description: document.getElementById('desc-' + agent)?.value || '',
       model: document.getElementById('model-' + agent)?.value || '',
       system_prompt_text: document.getElementById('prompt-' + agent)?.value || '',
+      soul_script_text: document.getElementById('soul-' + agent)?.value || '',
       voice_id: document.getElementById('voice-paid-' + agent)?.value || '',
       edge_voice: document.getElementById('voice-free-' + agent)?.value || 'alloy',
       allowed_tools: enabledTools,

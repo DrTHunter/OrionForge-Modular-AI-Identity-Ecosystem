@@ -169,6 +169,10 @@ def collect_notes(
         )
 
     # ── Directive FAISS search ─────────────────────────────────────
+    # Always include the agent's soul script directive in FAISS search
+    soul_script_doc_id = f"__soul_script__{agent_name}"
+    directive_note_ids.add(soul_script_doc_id)
+
     directive_block = ""
     if (directive_note_ids or directive_builtin_fns) and query and query.strip():
         nf = _get_notes_faiss()
