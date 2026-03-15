@@ -1646,10 +1646,14 @@
     <!-- Section: Model Pricing -->
     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; margin-top:1.5rem;">
       <h3 style="font-size:1.0625rem; font-weight:700; color:#fff; margin:0;">Model Pricing</h3>
+      {% if is_admin %}
       <div style="display:flex; gap:0.5rem;">
         <button class="ct-refresh-btn" onclick="ctRefreshModels()">↻ Refresh Models</button>
         <button class="btn btn-primary btn-sm" onclick="ctSaveAll()">Save All</button>
       </div>
+      {% else %}
+      <span style="font-size:0.75rem; color:rgba(241,245,249,0.4);">🔒 Read-only — managed by admin</span>
+      {% endif %}
     </div>
 
     <!-- Provider Tabs -->
@@ -1670,16 +1674,19 @@
         </thead>
         <tbody id="ct-pricing-tbody"></tbody>
       </table>
+      {% if is_admin %}
       <div class="ct-add-row">
         <select class="ct-add-input" id="ct-add-provider" style="flex:0 0 8rem;">
           <option value="openai">openai</option>
           <option value="anthropic">anthropic</option>
           <option value="deepseek">deepseek</option>
           <option value="ollama">ollama</option>
+          <option value="openrouter">openrouter</option>
         </select>
         <input type="text" class="ct-add-input" id="ct-add-model-name" placeholder="model-name (e.g. gpt-4o-mini)">
         <button class="btn btn-sm btn-primary" onclick="ctAddModel()">+ Add</button>
       </div>
+      {% endif %}
     </div>
 
     <!-- Section: Recent Cost Log -->
@@ -4085,6 +4092,7 @@
   /* ═══ Cost Tracker — Pricing Management ═══════════════════════ */
   const _ctPricing = {{ pricing | tojson }};
   const _ctConnections = {{ connections | tojson }};
+  const _ctIsAdmin = {{ 'true' if is_admin else 'false' }};
   let _ctModels = [];
   let _ctProviders = new Set();
   let _ctActiveProvider = 'all';
@@ -4156,13 +4164,15 @@
       const tag = m.source === 'connection'
         ? `<span style="font-size:0.6rem;color:#52525b;margin-left:0.25rem;">\u26a1 live</span>`
         : `<span style="font-size:0.6rem;color:#3f3f46;margin-left:0.25rem;">\ud83d\udcc4 config</span>`;
+      const ro = _ctIsAdmin ? '' : 'disabled style="opacity:0.6;cursor:not-allowed;"';
+      const delBtn = _ctIsAdmin ? `<button class="ct-row-del" title="Remove" onclick="ctRemoveModel('${_esc(key)}')">✕</button>` : '';
       return `<tr data-key="${_esc(key)}">
         <td><span class="ct-model-name">${_esc(m.model)}</span>${tag}<br><span class="ct-model-provider">${_esc(m.provider)}${m.connection ? ' \u00b7 ' + _esc(m.connection) : ''}</span></td>
-        <td><span class="ct-price-prefix">$</span><input type="number" class="ct-price-input" step="0.001" min="0" value="${m.input_per_1m}" onchange="ctMarkDirty('${_esc(key)}','input_per_1m',this.value)"></td>
-        <td><span class="ct-price-prefix">$</span><input type="number" class="ct-price-input" step="0.001" min="0" value="${m.cached_input_per_1m}" onchange="ctMarkDirty('${_esc(key)}','cached_input_per_1m',this.value)"></td>
-        <td><span class="ct-price-prefix">$</span><input type="number" class="ct-price-input" step="0.001" min="0" value="${m.output_per_1m}" onchange="ctMarkDirty('${_esc(key)}','output_per_1m',this.value)"></td>
-        <td><span class="ct-price-prefix">$</span><input type="number" class="ct-price-input" step="0.001" min="0" value="${m.training_per_1m}" onchange="ctMarkDirty('${_esc(key)}','training_per_1m',this.value)"></td>
-        <td><button class="ct-row-del" title="Remove" onclick="ctRemoveModel('${_esc(key)}')">✕</button></td>
+        <td><span class="ct-price-prefix">$</span><input type="number" class="ct-price-input" step="0.001" min="0" value="${m.input_per_1m}" ${ro} onchange="ctMarkDirty('${_esc(key)}','input_per_1m',this.value)"></td>
+        <td><span class="ct-price-prefix">$</span><input type="number" class="ct-price-input" step="0.001" min="0" value="${m.cached_input_per_1m}" ${ro} onchange="ctMarkDirty('${_esc(key)}','cached_input_per_1m',this.value)"></td>
+        <td><span class="ct-price-prefix">$</span><input type="number" class="ct-price-input" step="0.001" min="0" value="${m.output_per_1m}" ${ro} onchange="ctMarkDirty('${_esc(key)}','output_per_1m',this.value)"></td>
+        <td><span class="ct-price-prefix">$</span><input type="number" class="ct-price-input" step="0.001" min="0" value="${m.training_per_1m}" ${ro} onchange="ctMarkDirty('${_esc(key)}','training_per_1m',this.value)"></td>
+        <td>${delBtn}</td>
       </tr>`;
     }).join('');
   }
