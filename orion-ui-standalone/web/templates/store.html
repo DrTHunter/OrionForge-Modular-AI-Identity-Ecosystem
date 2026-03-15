@@ -171,6 +171,7 @@
   <div class="store-tabs">
     <button class="store-tab active" onclick="switchStoreTab('credits')">💳 Credit Packs</button>
     <button class="store-tab" onclick="switchStoreTab('tools')">⚒ Tools &amp; Upgrades</button>
+    <button class="store-tab" onclick="switchStoreTab('agents')">🤖 Agents</button>
     <button class="store-tab" onclick="switchStoreTab('skins')">🎨 Skins</button>
     <button class="store-tab" onclick="switchStoreTab('llm')">🧠 LLM Usage</button>
     <button class="store-tab" onclick="switchStoreTab('history')">📜 History</button>
@@ -262,6 +263,46 @@
       </div>
       {% endif %}
       {% endfor %}
+    </div>
+  </div>
+
+  <!-- ═══ AGENTS ═══ -->
+  <div id="section-agents" class="store-section">
+    <p style="color:#a1a1aa; margin-bottom:1.5rem; font-size:0.9rem;">
+      Unlock premium AI agents with unique personalities, soul scripts, and system prompts. Each agent includes a directive file, system prompt, and knowledge tab entries — all automatically attached on purchase.
+    </p>
+    <div class="catalog-grid">
+      {% for item in catalog %}
+      {% if item.category == 'agent' %}
+      {% set owned = item.id in purchases.agents %}
+      <div class="catalog-card {% if owned %}owned{% endif %}" style="border-left: 3px solid {{ item.get('color', '#818cf8') if not owned else '#22c55e' }};">
+        {% if owned %}
+        <span class="owned-badge">✓ Owned</span>
+        {% endif %}
+        <div class="catalog-card-header">
+          <div class="catalog-icon" style="font-size:1.5rem;">{{ item.icon }}</div>
+          <div>
+            <div class="catalog-name">{{ item.name }}</div>
+            <div class="catalog-category" style="color:#a78bfa;">AI Agent · soul script included</div>
+          </div>
+        </div>
+        <div class="catalog-desc">{{ item.description }}</div>
+        <div class="catalog-footer">
+          <div class="catalog-price">🪙 {{ item.credit_cost }} credits</div>
+          {% if owned %}
+          <button class="catalog-buy-btn owned-btn" disabled>✓ Unlocked</button>
+          {% else %}
+          <button class="catalog-buy-btn" onclick="purchaseAgent('{{ item.id }}', {{ item.credit_cost }}, '{{ item.name }}')" id="agent-btn-{{ item.id }}" style="background:linear-gradient(135deg, #6366f1, #8b5cf6);">
+            Buy &amp; Unlock
+          </button>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+      {% endfor %}
+    </div>
+    <div style="text-align:center; color:#71717a; font-size:0.8rem; margin-top:1rem;">
+      Purchased agents include: profile, soul script, system prompt, and Knowledge tab entries — all pre-attached and ready to chat.
     </div>
   </div>
 
@@ -434,6 +475,40 @@
       if (data.success) {
         document.getElementById('credit-balance').textContent = data.balance;
         alert('✓ ' + toolName + ' unlocked! ' + data.cost + ' credits deducted. You now have permanent access.');
+        window.location.reload();
+      } else if (data.error) {
+        alert('Error: ' + data.error);
+        if (btn) { btn.disabled = false; btn.textContent = 'Buy & Unlock'; }
+      }
+    })
+    .catch(function(err) {
+      alert('Failed to process. Please try again.');
+      if (btn) { btn.disabled = false; btn.textContent = 'Buy & Unlock'; }
+    });
+  }
+
+  // ── Purchase agent (one-time unlock + knowledge seeding) ──
+  function purchaseAgent(agentId, cost, agentName) {
+    var balance = parseInt(document.getElementById('credit-balance').textContent, 10);
+    if (balance < cost) {
+      alert('Insufficient credits! You need ' + cost + ' credits but have ' + balance + '. Buy more credits first.');
+      switchStoreTab('credits');
+      document.querySelectorAll('.store-tab')[0].classList.add('active');
+      return;
+    }
+    if (!confirm('Unlock "' + agentName + '" for ' + cost + ' credits?\n\nThis includes:\n• Agent profile & personality\n• Soul Script (directive)\n• System Prompt\n• Knowledge tab entries\n\nOne-time purchase — yours forever.')) return;
+    var btn = document.getElementById('agent-btn-' + agentId);
+    if (btn) { btn.disabled = true; btn.textContent = 'Downloading…'; }
+    fetch('/api/store/purchase-agent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agent_id: agentId })
+    })
+    .then(function(resp) { return resp.json(); })
+    .then(function(data) {
+      if (data.success) {
+        document.getElementById('credit-balance').textContent = data.balance;
+        alert('✓ ' + agentName + ' unlocked!\n\n' + data.cost + ' credits deducted.\n\nThe agent\'s soul script and prompt have been added to your Knowledge tab. Switch to this agent in Chat to start talking.');
         window.location.reload();
       } else if (data.error) {
         alert('Error: ' + data.error);

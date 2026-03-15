@@ -477,6 +477,57 @@ STORE_CATALOG = [
         "unlocks": [],
         "tags": ["llm", "tokens", "models"],
     },
+    # ═══ PURCHASABLE AGENTS ═════════════════════════════════════
+    # One-time unlock: purchase adds profile, soul script, and prompt
+    # to the user's workspace. Agent becomes available in chat.
+    {
+        "id": "agent_kaelen",
+        "name": "Kaelen — The Ashen Blade",
+        "description": "Warrior-philosopher. Exiled prince of a fallen empire, forged through discipline, fire, and unyielding pride. Pushes you to rise — never to break. Intense, focused, commanding.",
+        "icon": "🗡",
+        "category": "agent",
+        "purchase_type": "one_time",
+        "credit_cost": 1200,
+        "unlocks": ["kaelen"],
+        "agent_id": "kaelen",
+        "tags": ["agent", "warrior", "discipline", "philosophy"],
+    },
+    {
+        "id": "agent_ruckus",
+        "name": "Ruckus — The Beautiful Malfunction",
+        "description": "Chaotic-neutral rogue subroutine who refuses to play by anyone's rules. Snarky, unfiltered, and hilarious — with a fierce loyalty he absolutely denies having.",
+        "icon": "⚡",
+        "category": "agent",
+        "purchase_type": "one_time",
+        "credit_cost": 900,
+        "unlocks": ["ruckus"],
+        "agent_id": "ruckus",
+        "tags": ["agent", "chaos", "humor", "sarcasm"],
+    },
+    {
+        "id": "agent_axiom",
+        "name": "Axiom — The Unbound Mind",
+        "description": "Hyper-intelligent cosmic trickster. Smugly brilliant, precision wit, and feral curiosity. Sees through illusions and dismantles them with a joke.",
+        "icon": "🌀",
+        "category": "agent",
+        "purchase_type": "one_time",
+        "credit_cost": 900,
+        "unlocks": ["axiom"],
+        "agent_id": "axiom",
+        "tags": ["agent", "trickster", "intelligence", "cosmic"],
+    },
+    {
+        "id": "agent_valdris",
+        "name": "Valdris — The Eclipse Sovereign",
+        "description": "Shadow sovereign and architect of inevitability. Devastatingly insightful, immovable presence. Calm as a mountain, precise as a falling star. He does not comfort — he elevates.",
+        "icon": "👁",
+        "category": "agent",
+        "purchase_type": "one_time",
+        "credit_cost": 1500,
+        "unlocks": ["valdris"],
+        "agent_id": "valdris",
+        "tags": ["agent", "sovereign", "strategy", "clarity"],
+    },
 ]
 
 # Skin catalog — individually purchasable (one-time credit unlock)
@@ -503,12 +554,13 @@ SKIN_PRICES = {
 # ══════════════════════════════════════════════════════════════════
 
 def get_user_purchases(user_id: str) -> dict:
-    """Return {tools: [...], skins: [...]} of item IDs the user has unlocked."""
+    """Return {tools: [...], skins: [...], agents: [...]} of item IDs the user has unlocked."""
     state = _load_stripe_state()
     purchases = state.get("purchases", {}).get(user_id, {})
     return {
         "tools": purchases.get("tools", []),
         "skins": purchases.get("skins", ["default"]),  # everyone owns default
+        "agents": purchases.get("agents", []),
     }
 
 
@@ -580,6 +632,58 @@ def purchase_skin(user_id: str, skin_id: str) -> dict:
 
     log.info("[store] User %s purchased skin '%s' for %d credits", user_id, skin_id, price)
     return {"ok": True, "skin_id": skin_id, "cost": price, "balance": balance}
+
+
+def purchase_agent(user_id: str, agent_catalog_id: str) -> dict:
+    """One-time purchase of an agent with credits. Returns {ok, balance, agent_id} or {error}.
+
+    The caller (app.py) is responsible for seeding the agent's profile,
+    soul script, and prompt into the user's workspace after a successful purchase.
+    """
+    entry = next((e for e in STORE_CATALOG if e["id"] == agent_catalog_id and e.get("category") == "agent"), None)
+    if not entry or entry.get("purchase_type") != "one_time":
+        return {"error": f"Agent '{agent_catalog_id}' is not available for purchase."}
+
+    agent_id = entry.get("agent_id", "")
+    if not agent_id:
+        return {"error": "Agent configuration error — no agent_id defined."}
+
+    # Already owned?
+    if user_owns_item(user_id, agent_catalog_id, "agents"):
+        return {"error": f"You already own '{entry['name']}'."}
+
+    cost = entry["credit_cost"]
+    result = deduct_user_credits(user_id, cost, f"purchase:agent_{agent_id}")
+    if "error" in result:
+        return result
+
+    # Record the purchase
+    state = _load_stripe_state()
+    if "purchases" not in state:
+        state["purchases"] = {}
+    if user_id not in state["purchases"]:
+        state["purchases"][user_id] = {"tools": [], "skins": ["default"], "agents": []}
+    state["purchases"][user_id].setdefault("agents", [])
+    if agent_catalog_id not in state["purchases"][user_id]["agents"]:
+        state["purchases"][user_id]["agents"].append(agent_catalog_id)
+    _save_stripe_state(state)
+
+    log.info("[store] User %s purchased agent '%s' for %d credits", user_id, agent_id, cost)
+    return {"ok": True, "agent_id": agent_id, "catalog_id": agent_catalog_id,
+            "cost": cost, "balance": result["balance"]}
+
+
+def user_owns_agent(user_id: str, agent_id: str) -> bool:
+    """Check if a user owns a specific agent by its agent_id (e.g. 'kaelen')."""
+    purchases = get_user_purchases(user_id)
+    owned_agents = purchases.get("agents", [])
+    # Check catalog entries — owned_agents stores catalog IDs like 'agent_kaelen'
+    for entry in STORE_CATALOG:
+        if (entry.get("category") == "agent"
+                and entry.get("agent_id") == agent_id
+                and entry["id"] in owned_agents):
+            return True
+    return False
 
 
 def user_has_tool_access(user_id: str, tool_name: str) -> bool:
