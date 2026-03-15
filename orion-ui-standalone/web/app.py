@@ -416,13 +416,26 @@ def _save_settings(data: dict):
 def _load_pricing() -> dict:
     if not PRICING_FILE.exists():
         return {}
-    with open(PRICING_FILE, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f) or {}
+    try:
+        with open(PRICING_FILE, "r", encoding="utf-8") as f:
+            return yaml.safe_load(f) or {}
+    except yaml.YAMLError as exc:
+        log.warning("[pricing] Failed to parse %s: %s — returning empty dict", PRICING_FILE, exc)
+        return {}
 
 def _save_pricing(data: dict):
     PRICING_FILE.parent.mkdir(parents=True, exist_ok=True)
+    # Dump to string first, validate round-trip, then write
+    raw = yaml.dump(data, default_flow_style=False, sort_keys=False,
+                    allow_unicode=True)
+    # Validate round-trip before overwriting file
+    try:
+        yaml.safe_load(raw)
+    except yaml.YAMLError as exc:
+        log.error("[pricing] yaml.dump produced invalid YAML — aborting save: %s", exc)
+        return
     with open(PRICING_FILE, "w", encoding="utf-8") as f:
-        yaml.dump(data, f, default_flow_style=False, sort_keys=False)
+        f.write(raw)
 
 
 # ── OpenRouter pricing auto-sync ────────────────────────────────
@@ -464,6 +477,10 @@ async def _sync_openrouter_pricing(force: bool = False) -> dict:
         return {"synced": 0, "error": str(exc)}
 
     pricing = _load_pricing()
+    if not pricing:
+        # File was corrupt or missing — reload from image default
+        log.warning("[openrouter-sync] pricing.yaml returned empty, skipping sync to avoid data loss")
+        return {"synced": 0, "error": "pricing.yaml empty or corrupt — sync skipped"}
     or_section = pricing.get("openrouter", {})
 
     # Preserve existing _default and other meta keys
