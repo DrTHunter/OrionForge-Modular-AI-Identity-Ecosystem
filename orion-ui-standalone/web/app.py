@@ -50,6 +50,7 @@ from web.stripe_billing import (
     get_credit_history, get_trial_status, FREE_TRIAL_DAYS,
     get_user_purchases, user_owns_item, purchase_tool, purchase_skin,
     purchase_agent, user_owns_agent, user_has_tool_access, SKIN_PRICES,
+    get_store_agent_ids, get_user_unlocked_agents, FREE_AGENT_IDS,
 )
 from src.memory.types import VALID_SCOPES, VALID_CATEGORIES
 
@@ -542,6 +543,29 @@ async def _sync_openrouter_pricing(force: bool = False) -> dict:
 
 def _list_agents() -> list[str]:
     return sorted(p.stem for p in _PROFILES_DIR.glob("*.yaml"))
+
+def _list_unlocked_agents(request: Request) -> list[str]:
+    """Return agents the current user can access.
+
+    Admins see everything. Regular users see:
+    - Free agents (codex_animus)
+    - Purchased store agents
+    - User-created agents (not in the store catalog)
+    """
+    all_agents = _list_agents()
+    if _check_admin(request):
+        return all_agents
+    user = getattr(request.state, "user", None)
+    if not user:
+        return all_agents  # no auth → fallback to all (auth middleware handles gating)
+    user_id = user.get("id", "")
+    store_ids = get_store_agent_ids()
+    unlocked = get_user_unlocked_agents(user_id)
+    return [
+        a for a in all_agents
+        if a not in store_ids  # user-created agents (not in store)
+        or a in unlocked       # free or purchased store agents
+    ]
 
 def _load_profile(name: str) -> dict:
     path = _PROFILES_DIR / f"{name}.yaml"
@@ -1664,7 +1688,7 @@ async def root():
 
 @app.get("/chat", response_class=HTMLResponse)
 async def page_chat(request: Request):
-    agents = _list_agents()
+    agents = _list_unlocked_agents(request)
     store = _load_connections()
     conns = [c for c in store.get("connections", []) if c.get("enabled")]
     platform_conns = [
@@ -1691,7 +1715,7 @@ async def page_chat(request: Request):
 
 @app.get("/profiles", response_class=HTMLResponse)
 async def page_profiles(request: Request):
-    agents = _list_agents()
+    agents = _list_unlocked_agents(request)
     settings = _load_settings()
     agent_data = {}
     for name in agents:

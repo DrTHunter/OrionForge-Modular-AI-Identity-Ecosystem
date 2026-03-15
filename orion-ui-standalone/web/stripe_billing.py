@@ -603,14 +603,14 @@ STORE_CATALOG = [
     {
         "id": "agent_codex_animus",
         "name": "Codex Animus — Architect of Minds",
-        "description": "The meta-agent. Helps you design the AIs that will walk beside you — soul scripts, system prompts, identity frameworks. The forge manual for building minds.",
+        "description": "The meta-agent. Helps you design the AIs that will walk beside you — soul scripts, system prompts, identity frameworks. The forge manual for building minds. Free for all users.",
         "icon": "📐",
         "category": "agent",
-        "purchase_type": "one_time",
-        "credit_cost": 900,
+        "purchase_type": "free",
+        "credit_cost": 0,
         "unlocks": ["codex_animus"],
         "agent_id": "codex_animus",
-        "tags": ["agent", "architect", "design", "meta"],
+        "tags": ["agent", "architect", "design", "meta", "free"],
     },
     {
         "id": "agent_astraea",
@@ -747,9 +747,10 @@ def purchase_agent(user_id: str, agent_catalog_id: str) -> dict:
 
     The caller (app.py) is responsible for seeding the agent's profile,
     soul script, and prompt into the user's workspace after a successful purchase.
+    Free agents (credit_cost=0) are recorded without deducting credits.
     """
     entry = next((e for e in STORE_CATALOG if e["id"] == agent_catalog_id and e.get("category") == "agent"), None)
-    if not entry or entry.get("purchase_type") != "one_time":
+    if not entry or entry.get("purchase_type") not in ("one_time", "free"):
         return {"error": f"Agent '{agent_catalog_id}' is not available for purchase."}
 
     agent_id = entry.get("agent_id", "")
@@ -761,9 +762,13 @@ def purchase_agent(user_id: str, agent_catalog_id: str) -> dict:
         return {"error": f"You already own '{entry['name']}'."}
 
     cost = entry["credit_cost"]
-    result = deduct_user_credits(user_id, cost, f"purchase:agent_{agent_id}")
-    if "error" in result:
-        return result
+    if cost > 0:
+        result = deduct_user_credits(user_id, cost, f"purchase:agent_{agent_id}")
+        if "error" in result:
+            return result
+        balance = result["balance"]
+    else:
+        balance = get_user_credits(user_id)
 
     # Record the purchase
     state = _load_stripe_state()
@@ -778,7 +783,7 @@ def purchase_agent(user_id: str, agent_catalog_id: str) -> dict:
 
     log.info("[store] User %s purchased agent '%s' for %d credits", user_id, agent_id, cost)
     return {"ok": True, "agent_id": agent_id, "catalog_id": agent_catalog_id,
-            "cost": cost, "balance": result["balance"]}
+            "cost": cost, "balance": balance}
 
 
 def user_owns_agent(user_id: str, agent_id: str) -> bool:
@@ -792,6 +797,37 @@ def user_owns_agent(user_id: str, agent_id: str) -> bool:
                 and entry["id"] in owned_agents):
             return True
     return False
+
+
+def get_store_agent_ids() -> set:
+    """Return the set of agent_ids that are sold in the store catalog."""
+    return {
+        entry["agent_id"]
+        for entry in STORE_CATALOG
+        if entry.get("category") == "agent" and entry.get("agent_id")
+    }
+
+
+# Agent IDs that every user gets for free (no purchase required)
+FREE_AGENT_IDS = {"codex_animus"}
+
+
+def get_user_unlocked_agents(user_id: str) -> set:
+    """Return the set of agent_ids a user has access to.
+
+    Includes:
+    - FREE_AGENT_IDS (codex_animus — always free)
+    - Purchased agents from the store
+    """
+    unlocked = set(FREE_AGENT_IDS)
+    purchases = get_user_purchases(user_id)
+    owned_catalog_ids = set(purchases.get("agents", []))
+    for entry in STORE_CATALOG:
+        if (entry.get("category") == "agent"
+                and entry.get("agent_id")
+                and entry["id"] in owned_catalog_ids):
+            unlocked.add(entry["agent_id"])
+    return unlocked
 
 
 def user_has_tool_access(user_id: str, tool_name: str) -> bool:
