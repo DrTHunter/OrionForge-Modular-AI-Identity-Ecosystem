@@ -789,7 +789,7 @@
               <input id="chat-max-steps" type="number" value="3" min="1" max="100" class="tb-num">
             </span>
             <select id="chat-connection" class="tb-sel" title="API Connection" onchange="onConnectionChange(this)">
-              <option value="__platform__" data-type="platform" data-provider="platform" data-url="" data-models="">🏢 Platform API Keys</option>
+              <option value="__platform__" data-type="platform" data-provider="openrouter" data-url="" data-models="">🧩 OpenRouter</option>
               <option value="__auto__" data-type="auto" data-provider="router" data-url="" data-models="">🤖 Auto (User Router)</option>
               {% for conn in user_connections %}
               {% if conn.enabled %}
@@ -951,7 +951,7 @@ function onConnectionChange(sel) {
   if (sel.value === '__platform__') {
     connSel.classList.add('cloud-conn');
     modelSel.style.display = '';
-    modelSel.innerHTML = '<option value="">Loading platform models…</option>';
+    modelSel.innerHTML = '<option value="">Loading OpenRouter models…</option>';
     fetchPlatformModels();
     return;
   }
@@ -979,7 +979,7 @@ async function fetchPlatformModels() {
   const modelSel = document.getElementById('chat-model');
   const platformIds = new Set(_platformConnections.map(c => c.id));
   if (!platformIds.size) {
-    modelSel.innerHTML = '<option value="">No platform connections configured</option>';
+    modelSel.innerHTML = '<option value="">OpenRouter not configured</option>';
     return;
   }
   try {
@@ -991,14 +991,14 @@ async function fetchPlatformModels() {
       modelSel.innerHTML = '';
       const defOpt = document.createElement('option');
       defOpt.value = '';
-      defOpt.textContent = 'Select platform model…';
+      defOpt.textContent = 'Select OpenRouter model…';
       modelSel.appendChild(defOpt);
 
       let added = 0;
       (data.providers || []).forEach(prov => {
         if (!prov.models || !prov.models.length) return;
         const group = document.createElement('optgroup');
-        group.label = `🏢 ${prov.name}`;
+        group.label = `🧩 ${prov.name}`;
         prov.models.forEach(m => {
           const o = document.createElement('option');
           o.value = `${prov.connection_id}::${m.model}`;
@@ -1034,7 +1034,7 @@ async function _fetchPlatformModelsFallback() {
     modelSel.innerHTML = '';
     const defOpt = document.createElement('option');
     defOpt.value = '';
-    defOpt.textContent = 'Select platform model…';
+    defOpt.textContent = 'Select OpenRouter model…';
     modelSel.appendChild(defOpt);
 
     let added = 0;
@@ -1042,7 +1042,7 @@ async function _fetchPlatformModelsFallback() {
       const models = (allMap[conn.id] || conn.models || []);
       if (!models.length) return;
       const group = document.createElement('optgroup');
-      group.label = `🏢 ${conn.name}`;
+      group.label = `🧩 ${conn.name}`;
       models.forEach(name => {
         const o = document.createElement('option');
         o.value = `${conn.id}::${name}`;
@@ -1054,10 +1054,10 @@ async function _fetchPlatformModelsFallback() {
     });
 
     if (!added) {
-      modelSel.innerHTML = '<option value="">No platform models available</option>';
+      modelSel.innerHTML = '<option value="">No OpenRouter models available</option>';
     }
   } catch (e) {
-    modelSel.innerHTML = '<option value="">⚠ Platform models unavailable</option>';
+    modelSel.innerHTML = '<option value="">⚠ OpenRouter models unavailable</option>';
   }
 }
 

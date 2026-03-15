@@ -566,6 +566,20 @@ mistral:
     training_per_1m: 0.00
 
 # ═══════════════════════════════════════════════════════════
+#  OpenRouter — unified gateway (passthrough pricing)
+#  Models use "provider/model" naming.  The metering engine
+#  automatically splits e.g. "openai/gpt-4o" and looks up
+#  the underlying provider section above.  This section is
+#  only needed for OpenRouter-native or unmapped models.
+# ═══════════════════════════════════════════════════════════
+openrouter:
+  _default:
+    input_per_1m: 2.50
+    cached_input_per_1m: 1.25
+    output_per_1m: 10.00
+    training_per_1m: 0.00
+
+# ═══════════════════════════════════════════════════════════
 #  Ollama — local inference, always free
 # ═══════════════════════════════════════════════════════════
 ollama:
