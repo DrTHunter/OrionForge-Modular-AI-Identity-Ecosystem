@@ -311,7 +311,7 @@ def test_manifest_generation():
         # Write test directive files
         write_file(os.path.join(tmp, "shared.md"), SAMPLE_SHARED)
         write_file(os.path.join(tmp, "orion.md"), SAMPLE_ORION)
-        write_file(os.path.join(tmp, "elysia.md"), "<!-- empty -->")
+        write_file(os.path.join(tmp, "astraea.md"), "<!-- empty -->")
 
         manifest = generate_manifest(directives_dir=tmp, scopes=("shared", "orion"))
         check("manifest_version is 1", manifest["manifest_version"] == 1)
@@ -327,7 +327,7 @@ def test_manifest_generation():
         first = directives[0]
         check("has id", "id" in first and "." in first["id"])
         check("has name", "name" in first and len(first["name"]) > 0)
-        check("has scope", first["scope"] in ("shared", "orion", "elysia"))
+        check("has scope", first["scope"] in ("shared", "orion", "astraea"))
         check("has risk", first["risk"] in ("low", "medium", "high"))
         check("has version", first["version"] == "1.0.0")
         check("has sha256", len(first["sha256"]) == 64)
@@ -356,7 +356,7 @@ def test_manifest_save_load():
     try:
         write_file(os.path.join(tmp, "shared.md"), SAMPLE_SHARED)
         write_file(os.path.join(tmp, "orion.md"), SAMPLE_ORION)
-        write_file(os.path.join(tmp, "elysia.md"), "<!-- empty -->")
+        write_file(os.path.join(tmp, "astraea.md"), "<!-- empty -->")
 
         manifest = generate_manifest(directives_dir=tmp, scopes=("shared", "orion"))
         manifest_path = os.path.join(tmp, "manifest.json")
@@ -381,7 +381,7 @@ def test_manifest_helpers():
     print("\n=== Manifest Helpers ===")
     check("heading_to_id basic", _heading_to_id("orion", "Humor & Play Mode") == "orion.humor_play_mode")
     check("heading_to_id spaces", _heading_to_id("shared", "Core Identity") == "shared.core_identity")
-    check("heading_to_id special chars", _heading_to_id("elysia", "Elysia's Protocol (v1)") == "elysia.elysias_protocol_v1")
+    check("heading_to_id special chars", _heading_to_id("astraea", "Astraea's Protocol (v1)") == "astraea.astraeas_protocol_v1")
     check("sha256 deterministic", _sha256("hello") == _sha256("hello"))
     check("sha256 different inputs differ", _sha256("hello") != _sha256("world"))
     check("sha256 length", len(_sha256("test")) == 64)
@@ -393,7 +393,7 @@ def test_tool_manifest():
     try:
         write_file(os.path.join(tmp, "shared.md"), SAMPLE_SHARED)
         write_file(os.path.join(tmp, "orion.md"), SAMPLE_ORION)
-        write_file(os.path.join(tmp, "elysia.md"), "<!-- empty -->")
+        write_file(os.path.join(tmp, "astraea.md"), "<!-- empty -->")
 
         # Generate and save a manifest so the tool can load it
         manifest = generate_manifest(directives_dir=tmp, scopes=("shared", "orion"))
@@ -416,7 +416,7 @@ def test_manifest_diff():
     try:
         write_file(os.path.join(tmp, "shared.md"), SAMPLE_SHARED)
         write_file(os.path.join(tmp, "orion.md"), SAMPLE_ORION)
-        write_file(os.path.join(tmp, "elysia.md"), "<!-- empty -->")
+        write_file(os.path.join(tmp, "astraea.md"), "<!-- empty -->")
 
         # Generate baseline and save
         baseline = generate_manifest(directives_dir=tmp, scopes=("shared", "orion"))
@@ -470,7 +470,7 @@ def test_audit_changes():
     try:
         write_file(os.path.join(tmp, "shared.md"), SAMPLE_SHARED)
         write_file(os.path.join(tmp, "orion.md"), SAMPLE_ORION)
-        write_file(os.path.join(tmp, "elysia.md"), "<!-- empty -->")
+        write_file(os.path.join(tmp, "astraea.md"), "<!-- empty -->")
 
         # No persisted manifest — all directives should be "added"
         diff = audit_changes(directives_dir=tmp, manifest_path_override=os.path.join(tmp, "manifest.json"))

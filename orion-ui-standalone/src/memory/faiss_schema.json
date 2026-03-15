@@ -42,7 +42,7 @@
         },
         "scope": {
           "type": "string",
-          "description": "Memory scope (shared, orion, elysia, etc.)"
+          "description": "Memory scope (shared, orion, astraea, etc.)"
         },
         "category": {
           "type": "string",
