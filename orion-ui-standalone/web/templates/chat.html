@@ -739,7 +739,12 @@
           <h1 id="chat-title" class="text-lg font-bold text-white">Agent Chat</h1>
           <span id="session-status" class="badge badge-scope text-xs">idle</span>
         </div>
-        <div id="cost-ticker" style="display:none; font-size:0.75rem; color:#71717a; font-family:ui-monospace,SFMono-Regular,monospace; margin-left:auto; padding:0.25rem 0.75rem; background:rgba(19,19,26,0.6); border:1px solid #2a2a3a; border-radius:0.375rem;"></div>
+        <div style="display:flex; align-items:center; gap:0.5rem; margin-left:auto;">
+          <div id="credit-balance" style="display:none; font-size:0.75rem; color:#a78bfa; font-family:ui-monospace,SFMono-Regular,monospace; padding:0.25rem 0.75rem; background:rgba(99,102,241,0.08); border:1px solid rgba(99,102,241,0.2); border-radius:0.375rem; cursor:pointer;" onclick="window.location='/store'" title="Click to buy more credits">
+            <span id="credit-bal-text">0 credits</span>
+          </div>
+          <div id="cost-ticker" style="display:none; font-size:0.75rem; color:#71717a; font-family:ui-monospace,SFMono-Regular,monospace; padding:0.25rem 0.75rem; background:rgba(19,19,26,0.6); border:1px solid #2a2a3a; border-radius:0.375rem;"></div>
+        </div>
       </div>
 
       <div class="chat-thread" id="chat-thread">
@@ -852,6 +857,8 @@ const _pricing = {{ pricing | tojson }};
 const _platformConnections = {{ platform_connections | tojson }};
 let _sessionCost = 0;
 let _sessionTokens = 0;
+let _sessionCredits = 0;
+let _creditBalance = -1;  // -1 = unknown
 
 // ═══════════════════════════════════════════
 //  INIT
@@ -867,6 +874,7 @@ let _sessionTokens = 0;
     document.getElementById('chat-connection').value = '__platform__';
   }
   onConnectionChange(document.getElementById('chat-connection'));
+  fetchCreditBalance();
 })();
 
 async function backfillEmojis() {
@@ -884,8 +892,46 @@ function updateCostTicker() {
   const el = document.getElementById('cost-ticker');
   if (!el) return;
   const costStr = _sessionCost > 0.01 ? '$' + _sessionCost.toFixed(4) : '$' + _sessionCost.toFixed(6);
-  el.innerHTML = `<span style="opacity:0.5;">Session:</span> ${costStr} <span style="opacity:0.4;">·</span> ${_sessionTokens.toLocaleString()} tok`;
+  let html = `<span style="opacity:0.5;">Session:</span> ${costStr} <span style="opacity:0.4;">·</span> ${_sessionTokens.toLocaleString()} tok`;
+  if (_sessionCredits > 0) {
+    html += ` <span style="opacity:0.4;">·</span> <span style="color:#a78bfa;">${_sessionCredits} credits</span>`;
+  }
+  el.innerHTML = html;
   el.style.display = '';
+}
+
+function updateCreditBalance(balance) {
+  if (balance === undefined || balance === null || balance < 0) return;
+  _creditBalance = balance;
+  const el = document.getElementById('credit-balance');
+  const txt = document.getElementById('credit-bal-text');
+  if (!el || !txt) return;
+  txt.textContent = balance.toLocaleString() + ' credits';
+  el.style.display = '';
+  // Color by balance level
+  if (balance <= 0) {
+    el.style.borderColor = 'rgba(239,68,68,0.4)';
+    el.style.color = '#ef4444';
+    el.style.background = 'rgba(239,68,68,0.08)';
+  } else if (balance < 100) {
+    el.style.borderColor = 'rgba(245,158,11,0.4)';
+    el.style.color = '#f59e0b';
+    el.style.background = 'rgba(245,158,11,0.08)';
+  } else {
+    el.style.borderColor = 'rgba(99,102,241,0.2)';
+    el.style.color = '#a78bfa';
+    el.style.background = 'rgba(99,102,241,0.08)';
+  }
+}
+
+async function fetchCreditBalance() {
+  try {
+    const resp = await fetch('/api/credits/balance');
+    if (resp.ok) {
+      const data = await resp.json();
+      updateCreditBalance(data.credits);
+    }
+  } catch (e) { /* guest user or offline */ }
 }
 
 // ═══════════════════════════════════════════
@@ -936,6 +982,52 @@ async function fetchPlatformModels() {
     modelSel.innerHTML = '<option value="">No platform connections configured</option>';
     return;
   }
+  try {
+    // Use enhanced platform models endpoint (includes pricing + credits)
+    const resp = await fetch('/api/platform/models');
+    if (resp.ok) {
+      const data = await resp.json();
+      updateCreditBalance(data.credits_balance);
+      modelSel.innerHTML = '';
+      const defOpt = document.createElement('option');
+      defOpt.value = '';
+      defOpt.textContent = 'Select platform model…';
+      modelSel.appendChild(defOpt);
+
+      let added = 0;
+      (data.providers || []).forEach(prov => {
+        if (!prov.models || !prov.models.length) return;
+        const group = document.createElement('optgroup');
+        group.label = `🏢 ${prov.name}`;
+        prov.models.forEach(m => {
+          const o = document.createElement('option');
+          o.value = `${prov.connection_id}::${m.model}`;
+          let label = m.model;
+          if (m.est_credits_per_1k_tok > 0) {
+            label += ` (~${m.est_credits_per_1k_tok} cr/1k tok)`;
+          }
+          o.textContent = label;
+          group.appendChild(o);
+          added += 1;
+        });
+        modelSel.appendChild(group);
+      });
+
+      if (!added) {
+        // Fallback: try all-models endpoint
+        await _fetchPlatformModelsFallback();
+      }
+      return;
+    }
+    // Fallback to original endpoint
+    await _fetchPlatformModelsFallback();
+  } catch (e) {
+    await _fetchPlatformModelsFallback();
+  }
+}
+
+async function _fetchPlatformModelsFallback() {
+  const modelSel = document.getElementById('chat-model');
   try {
     const resp = await fetch('/api/connections/all-models');
     const allMap = await resp.json();
@@ -1566,7 +1658,7 @@ function loadChatIntoThread(chat) {
   document.getElementById('chat-title').textContent = chat.title || agentCap;
   document.getElementById('chat-agent').value = chat.agent || 'astraea';
   // Recalculate session cost
-  _sessionCost = 0; _sessionTokens = 0;
+  _sessionCost = 0; _sessionTokens = 0; _sessionCredits = 0;
   _msgs.forEach(m => {
     if (m.data?.cost?.total_cost) _sessionCost += m.data.cost.total_cost;
     if (m.data?.usage) _sessionTokens += (m.data.usage.prompt_tokens||0) + (m.data.usage.completion_tokens||0);
@@ -1583,7 +1675,7 @@ function newChat() {
   _chatId = null;
   _sessionId = null;
   _msgs = [];
-  _sessionCost = 0; _sessionTokens = 0;
+  _sessionCost = 0; _sessionTokens = 0; _sessionCredits = 0;
   const ticker = document.getElementById('cost-ticker');
   if (ticker) ticker.style.display = 'none';
   if (_poll) { clearInterval(_poll); _poll = null; }
@@ -2173,7 +2265,18 @@ async function sendChatMsg() {
     const data = await resp.json();
     typingEl.remove();
 
-    if (data.error) { pushMsg('error', data.error); setBusy(false); return; }
+    if (data.error) {
+      // Handle insufficient credits with a helpful message
+      if (data.redirect === '/store' || resp.status === 402) {
+        const credMsg = `${data.error}\n\nYou need **${data.credits_needed || '?'}** credits but have **${data.credits_balance ?? '?'}**.\n\n[Buy credits in the Store →](/store)`;
+        pushMsg('error', credMsg);
+        updateCreditBalance(data.credits_balance ?? 0);
+      } else {
+        pushMsg('error', data.error);
+      }
+      setBusy(false);
+      return;
+    }
 
     if (!_chatId && data.chat_id) {
       _chatId = data.chat_id;
@@ -2202,6 +2305,17 @@ async function sendChatMsg() {
     // Update session cost
     _sessionCost += (data.cost?.total_cost || 0);
     _sessionTokens += ((data.usage?.prompt_tokens||0) + (data.usage?.completion_tokens||0));
+
+    // Update credit tracking from platform usage
+    if (data.credits) {
+      if (data.credits.credits_deducted > 0) {
+        _sessionCredits += data.credits.credits_deducted;
+      }
+      if (data.credits.credits_balance !== undefined && data.credits.credits_balance >= 0) {
+        updateCreditBalance(data.credits.credits_balance);
+      }
+    }
+
     updateCostTicker();
 
     autoTitle();

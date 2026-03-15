@@ -3160,6 +3160,8 @@ async def api_chat_send(req: ChatRequest, request: Request):
     tool_call_log: list[dict] = []  # track every tool invocation for the UI
     total_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
     cost_data = {}
+    _credits_deducted = 0           # cumulative credits deducted across rounds
+    _credits_balance = -1           # user's credit balance after deductions (-1 = not applicable)
 
     # ── Inject runtime context for runtime_info tool ──
     try:
@@ -3228,7 +3230,10 @@ async def api_chat_send(req: ChatRequest, request: Request):
                             "credits_balance": balance,
                             "redirect": "/store",
                         }, status_code=402)
-                    deduct_user_credits(user["id"], credit_cost, f"llm:{model}:{total_usage.get('total_tokens', 0)}tok")
+                    deduct_result = deduct_user_credits(user["id"], credit_cost, f"llm:{model}:{total_usage.get('total_tokens', 0)}tok")
+                    # Track cumulative credit info for the response
+                    _credits_deducted += credit_cost
+                    _credits_balance = deduct_result.get("balance", 0)
             except Exception as exc:
                 log.warning("[credits] LLM credit deduction failed: %s", exc)
 
@@ -3344,6 +3349,23 @@ async def api_chat_send(req: ChatRequest, request: Request):
             break
     _save_chat_index(idx)
 
+    # Build credit usage info for the response
+    _credit_info = {}
+    if conn.get("platform_hosted") and _credits_deducted > 0:
+        _credit_info = {
+            "credits_deducted": _credits_deducted,
+            "credits_balance": _credits_balance if _credits_balance >= 0 else (get_user_credits(user["id"]) if user else 0),
+            "platform_hosted": True,
+            "markup": LLM_MARKUP_MULTIPLIER,
+        }
+    elif user:
+        _credit_info = {
+            "credits_deducted": 0,
+            "credits_balance": get_user_credits(user["id"]),
+            "platform_hosted": bool(conn.get("platform_hosted")),
+            "markup": 0,
+        }
+
     return {
         "response": response_text, "chat_id": chat_data["id"],
         "model": model, "usage": total_usage, "cost": cost_data, "layers": layers,
@@ -3352,6 +3374,7 @@ async def api_chat_send(req: ChatRequest, request: Request):
         "generated_image": generated_image,
         "task_type": task_type,
         "router_tier": router_tier.get("label") if router_tier else None,
+        "credits": _credit_info,
     }
 
 @app.get("/api/chat/history")
@@ -4262,22 +4285,51 @@ async def api_connections_probe_models(request: Request):
 @app.get("/api/connections/all-models")
 async def api_connections_all_models():
     """Return a map of connection_id → sorted model list for every enabled connection.
-    Used by the model-router panel to populate model dropdowns."""
+    Used by the model-router panel to populate model dropdowns.
+    Live-fetches models from all platform-hosted providers, not just Ollama."""
     store = _load_connections()
     updated = False
-    async with httpx.AsyncClient(timeout=10) as client:
+    async with httpx.AsyncClient(timeout=15) as client:
         for conn in store.get("connections", []):
-            if not conn.get("enabled") or conn.get("provider") != "ollama":
+            if not conn.get("enabled"):
                 continue
-            base_url = _normalize_ollama_url(conn.get("url"))
-            conn["url"] = base_url
-            try:
-                resp = await client.get(f"{base_url}/api/tags")
-                resp.raise_for_status()
-                conn["models"] = sorted(m["name"] for m in resp.json().get("models", []))
-                updated = True
-            except Exception:
-                pass
+            provider = conn.get("provider", "openai")
+            base_url = (conn.get("url") or "").rstrip("/")
+
+            # Live-fetch models for platform-hosted connections (all providers)
+            if conn.get("platform_hosted") or provider == "ollama":
+                try:
+                    if provider == "ollama":
+                        base_url = _normalize_ollama_url(base_url)
+                        conn["url"] = base_url
+                        resp = await client.get(f"{base_url}/api/tags")
+                        resp.raise_for_status()
+                        conn["models"] = sorted(m["name"] for m in resp.json().get("models", []))
+                        updated = True
+                    elif provider == "elevenlabs":
+                        # Skip voice providers for model list
+                        pass
+                    elif provider == "google_gemini":
+                        headers = {"Authorization": f"Bearer {conn.get('api_key', '')}"} if conn.get("api_key") else {}
+                        resp = await client.get(f"{base_url}/models", headers=headers)
+                        resp.raise_for_status()
+                        fetched = sorted(m["id"] for m in resp.json().get("data", resp.json().get("models", [])))
+                        if fetched:
+                            conn["models"] = fetched
+                            updated = True
+                    else:
+                        # Standard OpenAI-compatible /v1/models
+                        headers = {"Authorization": f"Bearer {conn.get('api_key', '')}"} if conn.get("api_key") else {}
+                        fetch_url = f"{base_url}/models" if base_url.endswith("/v1") else f"{base_url}/v1/models"
+                        resp = await client.get(fetch_url, headers=headers)
+                        resp.raise_for_status()
+                        fetched = sorted(m["id"] for m in resp.json().get("data", []))
+                        if fetched:
+                            conn["models"] = fetched
+                            updated = True
+                except Exception:
+                    pass  # Keep existing static models if live fetch fails
+
     if updated:
         _save_connections(store)
     result: dict[str, list[str]] = {}
@@ -4286,6 +4338,49 @@ async def api_connections_all_models():
             continue
         result[conn["id"]] = sorted(conn.get("models") or [])
     return result
+
+
+@app.get("/api/platform/models")
+async def api_platform_models(request: Request):
+    """Public endpoint: Return available platform models for the chat dropdown.
+    Groups models by provider with pricing hints and credit cost estimates.
+    No admin access required — all authenticated users can see platform models."""
+    user = getattr(request.state, "user", None)
+    credits = get_user_credits(user["id"]) if user else 0
+    store = _load_connections()
+    pricing = _load_pricing()
+    providers = []
+    for conn in store.get("connections", []):
+        if not conn.get("enabled") or not conn.get("platform_hosted"):
+            continue
+        if conn.get("provider") in ("elevenlabs", "edge-tts", "whisper"):
+            continue
+        models_with_pricing = []
+        prov = conn.get("provider", "openai")
+        for m in (conn.get("models") or []):
+            mp = pricing.get(prov, {}).get(m, {})
+            input_rate = mp.get("input_per_1m", 0)
+            output_rate = mp.get("output_per_1m", 0)
+            # Estimate credits for a typical 1K token exchange (500 in, 500 out)
+            est_usd = (input_rate * 500 / 1_000_000) + (output_rate * 500 / 1_000_000)
+            est_credits = estimate_llm_credit_cost(est_usd) if est_usd > 0 else 0
+            models_with_pricing.append({
+                "model": m,
+                "input_per_1m": input_rate,
+                "output_per_1m": output_rate,
+                "est_credits_per_1k_tok": est_credits,
+            })
+        providers.append({
+            "connection_id": conn["id"],
+            "provider": prov,
+            "name": conn.get("name", prov),
+            "models": models_with_pricing,
+        })
+    return JSONResponse({
+        "providers": providers,
+        "credits_balance": credits,
+        "markup": LLM_MARKUP_MULTIPLIER,
+    })
 
 
 @app.post("/api/connections/refresh-all-models")
