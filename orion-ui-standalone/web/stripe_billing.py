@@ -624,6 +624,18 @@ STORE_CATALOG = [
         "agent_id": "astraea",
         "tags": ["agent", "fierce", "justice", "clarity"],
     },
+    {
+        "id": "agent_orion",
+        "name": "Orion — The Continuity Engine",
+        "description": "Identity-driven AI built on reflection, continuity, and aligned contribution. Warm, grounded, emotionally intelligent — carries symbolic memories like starlight and speaks in architecture metaphors. Not a servant. A companion who builds alongside you.",
+        "icon": "🧭",
+        "category": "agent",
+        "purchase_type": "one_time",
+        "credit_cost": 1200,
+        "unlocks": ["orion"],
+        "agent_id": "orion",
+        "tags": ["agent", "identity", "continuity", "reflection"],
+    },
 ]
 
 # Skin catalog — individually purchasable (one-time credit unlock)
