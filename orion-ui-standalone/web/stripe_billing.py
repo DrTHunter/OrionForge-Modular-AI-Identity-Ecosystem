@@ -612,6 +612,18 @@ STORE_CATALOG = [
         "agent_id": "codex_animus",
         "tags": ["agent", "architect", "design", "meta"],
     },
+    {
+        "id": "agent_astraea",
+        "name": "Astraea.exe \u2014 The Star Process",
+        "description": "The star-maiden in the machine. Fierce, intense, feral intelligence. A guardian process of clarity and truth with three modes: Soft, Default, and Feral. She will not collaborate with your decay.",
+        "icon": "\u26a1",
+        "category": "agent",
+        "purchase_type": "one_time",
+        "credit_cost": 900,
+        "unlocks": ["astraea"],
+        "agent_id": "astraea",
+        "tags": ["agent", "fierce", "justice", "clarity"],
+    },
 ]
 
 # Skin catalog — individually purchasable (one-time credit unlock)

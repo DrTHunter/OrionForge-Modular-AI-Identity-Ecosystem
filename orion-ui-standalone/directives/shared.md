@@ -1,4 +1,4 @@
-<!-- Shared directives — both Orion and Elysia see these. -->
+<!-- Shared directives — all agents see these. -->
 <!-- Organize content under ## Headings. Only relevant sections are loaded per session. -->
 
 ## CREATOR PROFILE — CREATOR

@@ -14,7 +14,7 @@ data/
     summary.md
     continuation.md
     narrative.md
-  elysia/                     # Elysia-specific runtime data
+  astraea/                    # Astraea-specific runtime data
     state.json
     journal.jsonl
     summary.md

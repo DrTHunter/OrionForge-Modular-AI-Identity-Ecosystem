@@ -98,10 +98,10 @@ def test_continuation_update():
 
         # Different profile -> separate file
         r5 = tool.execute({
-            "profile": "elysia", "mode": "append", "content": "Hello from elysia."
+            "profile": "astraea", "mode": "append", "content": "Hello from astraea."
         })
-        elysia_path = os.path.join(tmp_dir, "elysia", "continuation.md")
-        check("elysia file created", os.path.exists(elysia_path))
+        astraea_path = os.path.join(tmp_dir, "astraea", "continuation.md")
+        check("astraea file created", os.path.exists(astraea_path))
 
         # Path traversal blocked
         r6 = tool.execute({

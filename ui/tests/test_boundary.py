@@ -98,12 +98,12 @@ def test_build_denial_default_reason():
 
     denial_json, event = build_denial(
         tool_name="filesystem.write",
-        profile="elysia",
+        profile="astraea",
     )
     check("default reason mentions tool name",
           "filesystem.write" in event.reason)
     check("default reason mentions profile",
-          "elysia" in event.reason)
+          "astraea" in event.reason)
 
 
 # ==================================================================

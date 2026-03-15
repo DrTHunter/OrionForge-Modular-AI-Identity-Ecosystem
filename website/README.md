@@ -5,7 +5,7 @@ A modern single-page website for the OrionForge Modular AI Identity Ecosystem.
 ## Features
 
 - **Animated particle background** with WebGL-free Canvas 2D network
-- **7 real agent profiles** — Orion, Elysia, Codex Animus, Vageta, Bender, Veilwalker, Carolina
+- **12+ agent profiles** — Orion, Astraea.exe, Codex Animus, Kaelen, Ruckus, Axiom, Valdris, and more
 - **10 runtime tools** from the agent-runtime tool registry
 - **Interactive agent detail modals** with traits, values, tools, and technical specs
 - **Dashboard preview** showing all 9 UI pages with launch link

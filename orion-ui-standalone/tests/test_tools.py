@@ -1,9 +1,9 @@
-﻿"""Offline tests for tools and runtime policy.
+"""Offline tests for tools and runtime policy.
 
 Run from project root:
     python -m tests.test_tools
 
-No LLM connection required â€” exercises everything except the live chat call.
+No LLM connection required — exercises everything except the live chat call.
 """
 
 import json
@@ -12,7 +12,7 @@ import sys
 import tempfile
 import shutil
 
-# â”€â”€ ensure project root is on path â”€â”€
+# ── ensure project root is on path ──
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from src.tools.echo import EchoTool
@@ -34,9 +34,9 @@ def check(label, condition, detail=""):
         print(f"  [FAIL] {label}  {detail}")
 
 
-# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ─────────────────────────────────────────────
 # 1. Echo tool
-# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ─────────────────────────────────────────────
 def test_echo():
     print("\n=== Echo Tool ===")
     tool = EchoTool()
@@ -48,9 +48,9 @@ def test_echo():
     check("echo returns message", result == "hello world", f"got: {result!r}")
 
 
-# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ─────────────────────────────────────────────
 # 2. Continuation Update tool
-# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ─────────────────────────────────────────────
 def test_continuation_update():
     print("\n=== Continuation Update Tool ===")
     import src.data_paths as dp
@@ -99,10 +99,10 @@ def test_continuation_update():
 
         # Different profile -> separate file
         r5 = tool.execute({
-            "profile": "elysia", "mode": "append", "content": "Hello from elysia."
+            "profile": "astraea", "mode": "append", "content": "Hello from astraea."
         })
-        elysia_path = os.path.join(tmp_dir, "elysia", "continuation.md")
-        check("elysia file created", os.path.exists(elysia_path))
+        astraea_path = os.path.join(tmp_dir, "astraea", "continuation.md")
+        check("astraea file created", os.path.exists(astraea_path))
 
         # Path traversal blocked
         r6 = tool.execute({
@@ -121,9 +121,9 @@ def test_continuation_update():
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
-# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ─────────────────────────────────────────────
 # 3. Runtime Policy
-# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ─────────────────────────────────────────────
 def test_policy():
     print("\n=== Runtime Policy ===")
     import time
@@ -143,9 +143,9 @@ def test_policy():
     check("tool_failure_mode=stop", stop_policy.tool_failure_mode == "stop")
 
 
-# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ─────────────────────────────────────────────
 # 4. Email tool
-# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ─────────────────────────────────────────────
 def test_email():
     print("\n=== Email Tool ===")
     tool = EmailTool()
@@ -168,35 +168,35 @@ def test_email():
     r = json.loads(tool.execute({"action": "status"}))
     check("status has accounts_configured", "accounts_configured" in r)
 
-    # Send â€” missing fields
+    # Send — missing fields
     r = json.loads(tool.execute({"action": "send"}))
-    check("send w/o subject â†’ error", "error" in r)
+    check("send w/o subject → error", "error" in r)
 
     r = json.loads(tool.execute({"action": "send", "subject": "test"}))
-    check("send w/o body â†’ error", "error" in r)
+    check("send w/o body → error", "error" in r)
 
     r = json.loads(tool.execute({"action": "send", "subject": "test", "body": "hello"}))
-    check("send w/o recipients â†’ error", "error" in r)
+    check("send w/o recipients → error", "error" in r)
 
-    # Send â€” invalid email address
+    # Send — invalid email address
     r = json.loads(tool.execute({
         "action": "send", "subject": "test", "body": "hello",
         "recipients": ["not-an-email"],
     }))
-    check("send invalid email â†’ error", "error" in r)
+    check("send invalid email → error", "error" in r)
 
     # Unknown action
     r = json.loads(tool.execute({"action": "explode"}))
-    check("unknown action â†’ error", "error" in r)
+    check("unknown action → error", "error" in r)
 
     # Execute with agent_name parameter
     r = json.loads(tool.execute({"action": "accounts"}, agent_name="astraea"))
     check("accounts with agent_name", "accounts" in r)
 
 
-# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ─────────────────────────────────────────────
 # Run all
-# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ─────────────────────────────────────────────
 if __name__ == "__main__":
     test_echo()
     test_continuation_update()
