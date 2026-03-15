@@ -91,8 +91,8 @@ orion-ui-standalone/
 | **Subscription** | $9.99/month Pro plan via Stripe Checkout (`/plans`) |
 | **15-day trial** | Free trial on first sign-up, auto-expires to free tier |
 | **Credit system** | Buy credit packs in the store (`/store`), spend on platform-hosted LLM calls and tools |
-| **LLM markup** | Platform-hosted calls billed at 1.5× base cost, deducted from credits |
-| **TTS/STT billing** | Per-use billing for platform-hosted voice services (1.5× markup) |
+| **LLM markup** | Platform-hosted calls billed at 2× base cost, deducted from credits |
+| **TTS/STT billing** | Per-use billing for platform-hosted voice services (2× markup) |
 | **One-time purchases** | Buy individual tool access from the store |
 | **Admin panel** | `/admin/keys` — API key management, secured by OAuth email whitelist |
 | **Tier gating** | Free tier vs Pro tier access control on all API endpoints |

@@ -173,8 +173,8 @@ OrionForge uses **Supabase OAuth** for authentication and **Stripe** for billing
 | **Subscription** | $9.99/month Pro plan via Stripe Checkout (`/plans`) |
 | **15-day trial** | Free trial on first sign-up, auto-expires |
 | **Credit system** | Buy credit packs in the store (`/store`) — spend on tools and LLM usage |
-| **LLM markup** | Platform-hosted LLM calls billed at 1.5× base cost, deducted from credits |
-| **TTS/STT billing** | Per-use billing for platform-hosted voice services (1.5× markup) |
+| **LLM markup** | Platform-hosted LLM calls billed at 2× base cost, deducted from credits |
+| **TTS/STT billing** | Per-use billing for platform-hosted voice services (2× markup) |
 | **One-time tool purchases** | Buy individual tool access from the store |
 | **Admin panel** | `/admin/keys` — secured by OAuth email whitelist, manage API keys |
 | **Tier gating** | Free tier vs Pro tier access control on all API endpoints |
