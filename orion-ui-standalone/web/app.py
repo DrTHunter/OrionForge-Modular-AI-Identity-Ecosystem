@@ -1906,6 +1906,7 @@ async def page_tools(request: Request):
         "faiss_stats": faiss_stats,
         "router_config": _load_model_router_config(),
         "email_config": email_config,
+        "is_admin": _check_admin(request),
     })
 
 
@@ -4425,7 +4426,9 @@ async def api_pricing_get():
 
 @app.put("/api/pricing")
 async def api_pricing_update(request: Request):
-    """Replace the entire pricing registry."""
+    """Replace the entire pricing registry. Admin only."""
+    if not _check_admin(request):
+        return JSONResponse({"error": "Admin access required"}, 403)
     body = await request.json()
     _save_pricing(body)
     try:
@@ -4437,7 +4440,9 @@ async def api_pricing_update(request: Request):
 
 @app.put("/api/pricing/{provider}/{model:path}")
 async def api_pricing_set_model(provider: str, model: str, request: Request):
-    """Update pricing for a single provider/model."""
+    """Update pricing for a single provider/model. Admin only."""
+    if not _check_admin(request):
+        return JSONResponse({"error": "Admin access required"}, 403)
     body = await request.json()
     pricing = _load_pricing()
     if provider not in pricing:
@@ -4456,8 +4461,10 @@ async def api_pricing_set_model(provider: str, model: str, request: Request):
     return {"ok": True, "pricing": entry}
 
 @app.delete("/api/pricing/{provider}/{model:path}")
-async def api_pricing_delete_model(provider: str, model: str):
-    """Remove pricing for a single model."""
+async def api_pricing_delete_model(provider: str, model: str, request: Request):
+    """Remove pricing for a single model. Admin only."""
+    if not _check_admin(request):
+        return JSONResponse({"error": "Admin access required"}, 403)
     pricing = _load_pricing()
     if provider in pricing:
         pricing[provider].pop(model, None)
