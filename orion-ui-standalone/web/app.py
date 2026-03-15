@@ -49,7 +49,7 @@ from web.stripe_billing import (
     estimate_tts_credit_cost, estimate_stt_credit_cost,
     get_credit_history, get_trial_status, FREE_TRIAL_DAYS,
     get_user_purchases, user_owns_item, purchase_tool, purchase_skin,
-    user_has_tool_access, SKIN_PRICES,
+    purchase_agent, user_owns_agent, user_has_tool_access, SKIN_PRICES,
 )
 from src.memory.types import VALID_SCOPES, VALID_CATEGORIES
 
@@ -1459,6 +1459,131 @@ async def api_purchase_skin(request: Request):
         status = 402 if "Insufficient" in result.get("error", "") else 400
         return JSONResponse(result, status_code=status)
     return JSONResponse({"success": True, "skin_id": skin_id, "cost": result["cost"], "balance": result["balance"]})
+
+
+@app.post("/api/store/purchase-agent")
+async def api_purchase_agent(request: Request):
+    """One-time purchase of an AI agent (deducts credits, seeds profile + knowledge)."""
+    user = getattr(request.state, "user", None)
+    if not user:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    body = await request.json()
+    agent_catalog_id = body.get("agent_id", "")
+
+    result = purchase_agent(user["id"], agent_catalog_id)
+    if "error" in result:
+        status = 402 if "Insufficient" in result.get("error", "") else 400
+        return JSONResponse(result, status_code=status)
+
+    agent_id = result["agent_id"]
+
+    # ── Seed soul script + prompt into Knowledge notes ──
+    try:
+        _seed_agent_knowledge(agent_id)
+    except Exception as exc:
+        log.warning("[store] Agent knowledge seeding failed for '%s': %s", agent_id, exc)
+
+    return JSONResponse({
+        "success": True,
+        "agent_id": agent_id,
+        "catalog_id": agent_catalog_id,
+        "cost": result["cost"],
+        "balance": result["balance"],
+    })
+
+
+def _seed_agent_knowledge(agent_id: str):
+    """Seed an agent's soul script and prompt into the Knowledge tab on purchase.
+
+    Creates notes in the 'Soul Scripts' and 'Prompts' folders, and attaches
+    them to the agent's config so they're injected during conversations.
+    """
+    import uuid
+    from datetime import datetime, timezone
+
+    notes_dir = _DATA_DIR / "user_notes"
+    notes_dir.mkdir(parents=True, exist_ok=True)
+
+    # ── Ensure folders exist ──
+    folders_file = notes_dir / "folders.json"
+    folders = _read_json(folders_file, [])
+    folder_ids = {f["id"] for f in folders}
+
+    if "soul_scripts" not in folder_ids:
+        folders.append({"id": "soul_scripts", "name": "Soul Scripts", "emoji": "🧬", "pinned": True, "color": "#818cf8"})
+    if "prompts" not in folder_ids:
+        folders.append({"id": "prompts", "name": "Prompts", "emoji": "📝", "pinned": True, "color": "#f472b6"})
+    _write_json(folders_file, folders)
+
+    # ── Read the soul script (directive) ──
+    directive_path = _DIRECTIVES_DIR / f"{agent_id}.md"
+    soul_script_text = directive_path.read_text(encoding="utf-8") if directive_path.exists() else ""
+
+    # ── Read the system prompt ──
+    prompt_path = _PROMPTS_DIR / f"{agent_id}.system.md"
+    prompt_text = prompt_path.read_text(encoding="utf-8") if prompt_path.exists() else ""
+
+    # ── Load existing note index ──
+    index_file = notes_dir / "index.json"
+    index = _read_json(index_file, [])
+    now_iso = datetime.now(timezone.utc).isoformat()
+
+    note_ids = []
+
+    # ── Create soul script note ──
+    if soul_script_text:
+        ss_id = uuid.uuid4().hex[:8]
+        ss_title = f"{agent_id.capitalize()} — Soul Script"
+        index.append({
+            "id": ss_id, "title": ss_title, "emoji": "🧬",
+            "preview": "", "section": "soul_scripts",
+            "created": now_iso, "updated": now_iso,
+        })
+        # Convert markdown to simple HTML for the note
+        ss_html = soul_script_text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        ss_html = f"<pre>{ss_html}</pre>"
+        _write_json(notes_dir / f"{ss_id}.json", {
+            "id": ss_id, "title": ss_title, "emoji": "🧬",
+            "content_html": ss_html, "preview": "",
+            "section": "soul_scripts",
+            "created": now_iso, "updated": now_iso,
+        })
+        note_ids.append(ss_id)
+
+    # ── Create prompt note ──
+    if prompt_text:
+        pr_id = uuid.uuid4().hex[:8]
+        pr_title = f"{agent_id.capitalize()} — System Prompt"
+        index.append({
+            "id": pr_id, "title": pr_title, "emoji": "📝",
+            "preview": "", "section": "prompts",
+            "created": now_iso, "updated": now_iso,
+        })
+        pr_html = prompt_text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        pr_html = f"<pre>{pr_html}</pre>"
+        _write_json(notes_dir / f"{pr_id}.json", {
+            "id": pr_id, "title": pr_title, "emoji": "📝",
+            "content_html": pr_html, "preview": "",
+            "section": "prompts",
+            "created": now_iso, "updated": now_iso,
+        })
+        note_ids.append(pr_id)
+
+    _write_json(index_file, index)
+
+    # ── Attach notes to agent config (always-inject mode) ──
+    if note_ids:
+        cfg = _get_agent_config(agent_id)
+        existing = cfg.get("attached_notes", [])
+        cfg["attached_notes"] = list(set(existing + note_ids))
+        # Set mode to "always" so soul script is injected into every session
+        modes = cfg.get("note_modes", {})
+        for nid in note_ids:
+            modes[nid] = "always"
+        cfg["note_modes"] = modes
+        _save_agent_config(agent_id, cfg)
+
+    log.info("[store] Seeded knowledge for agent '%s': %d notes created", agent_id, len(note_ids))
 
 
 @app.get("/api/store/purchases")
