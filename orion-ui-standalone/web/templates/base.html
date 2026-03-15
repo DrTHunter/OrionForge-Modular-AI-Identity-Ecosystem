@@ -91,15 +91,16 @@
 
       <div class="nav-footer">
         <!-- User info (populated by JS if authenticated) -->
-        <div id="nav-user-section" style="display:none; margin-bottom: 0.5rem;">
+        <div id="nav-user-section" style="display:none; margin-bottom: 0.25rem;">
           <div style="display:flex; align-items:center; gap:0.5rem; padding:0.35rem 0.5rem; background:rgba(99,102,241,0.08); border-radius:0.5rem; border:1px solid rgba(99,102,241,0.15);">
             <span style="font-size:1.1rem;">👤</span>
             <span id="nav-user-email" class="nav-label" style="font-size:0.72rem; color:#a1a1aa; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:120px;"></span>
           </div>
-          <button onclick="doLogout()" class="nav-label" style="margin-top:0.35rem; font-size:0.72rem; color:#ef4444; background:none; border:none; cursor:pointer; padding:0.2rem 0.5rem; width:100%; text-align:left;" onmouseover="this.style.color='#f87171'" onmouseout="this.style.color='#ef4444'">
-            ↪ Sign Out
-          </button>
         </div>
+        <!-- Sign Out — always visible -->
+        <button onclick="doLogout()" class="nav-label" style="margin-bottom:0.5rem; font-size:0.72rem; color:#ef4444; background:rgba(239,68,68,0.06); border:1px solid rgba(239,68,68,0.15); border-radius:0.4rem; cursor:pointer; padding:0.35rem 0.5rem; width:100%; text-align:center; transition:all 0.15s;" onmouseover="this.style.background='rgba(239,68,68,0.12)';this.style.color='#f87171'" onmouseout="this.style.background='rgba(239,68,68,0.06)';this.style.color='#ef4444'">
+          ↪ Sign Out
+        </button>
         <!-- Trial countdown (visible when on trial) -->
         {% set trial = request.state.trial if request.state.trial is defined else none %}
         {% set is_subscribed = request.state.is_subscribed if request.state.is_subscribed is defined else false %}
