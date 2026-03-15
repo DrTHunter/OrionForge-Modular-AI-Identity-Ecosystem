@@ -57,9 +57,10 @@ from src.memory.types import VALID_SCOPES, VALID_CATEGORIES
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 _CONFIG_DIR   = _PROJECT_ROOT / "config"
 _DATA_DIR     = _PROJECT_ROOT / "data"
-_PROFILES_DIR = _PROJECT_ROOT / "profiles"
-_PROMPTS_DIR  = _PROJECT_ROOT / "prompts"
-_CHATS_DIR    = _DATA_DIR / "chats"
+_PROFILES_DIR    = _PROJECT_ROOT / "profiles"
+_PROMPTS_DIR     = _PROJECT_ROOT / "prompts"
+_DIRECTIVES_DIR  = _PROJECT_ROOT / "directives"
+_CHATS_DIR       = _DATA_DIR / "chats"
 _NOTES_DIR    = _DATA_DIR / "user_notes"
 _VAULT_PATH   = _DATA_DIR / "memory" / "vault.jsonl"
 _FAISS_DIR    = _DATA_DIR / "memory" / "faiss"
@@ -542,6 +543,23 @@ def _load_system_prompt(name: str) -> str:
 
 def _save_system_prompt(name: str, text: str):
     (_PROMPTS_DIR / f"{name}.system.md").write_text(text, encoding="utf-8")
+
+def _load_soul_script(name: str) -> str:
+    """Load the soul script (directive) text for an agent."""
+    path = _DIRECTIVES_DIR / f"{name}.md"
+    return path.read_text(encoding="utf-8") if path.exists() else ""
+
+def _save_soul_script(name: str, text: str):
+    """Save the soul script (directive) text for an agent."""
+    _DIRECTIVES_DIR.mkdir(parents=True, exist_ok=True)
+    (_DIRECTIVES_DIR / f"{name}.md").write_text(text, encoding="utf-8")
+    # Re-index soul scripts into NotesFAISS so they are searchable at chat time
+    try:
+        _rebuild_notes_faiss()
+        from src.storage.note_collector import invalidate_notes_faiss
+        invalidate_notes_faiss()
+    except Exception as exc:
+        log.warning("[soul_script] FAISS reindex after soul script save failed: %s", exc)
 
 def _get_agent_config(agent: str) -> dict:
     return _load_settings().get("agent_configs", {}).get(agent, {})
@@ -1665,6 +1683,7 @@ async def page_profiles(request: Request):
         agent_data[name] = {
             "profile": profile, "config": cfg,
             "system_prompt": _load_system_prompt(name),
+            "soul_script": _load_soul_script(name),
             "display_name": cfg.get("display_name", name),
             "description": cfg.get("description", ""),
         }
@@ -3854,6 +3873,9 @@ async def api_profile_config(name: str, request: Request):
     # Also persist system_prompt_text if sent
     if "system_prompt_text" in body:
         _save_system_prompt(name, body["system_prompt_text"])
+    # Also persist soul_script_text if sent
+    if "soul_script_text" in body:
+        _save_soul_script(name, body["soul_script_text"])
     _save_agent_config(name, cfg)
     return {"ok": True}
 
@@ -4009,13 +4031,26 @@ def _rebuild_notes_faiss():
                     if text:
                         chunks.extend(_chunk_text(text, nid, note.get("title", "Untitled")))
 
+    # ── Also index soul script directive files for every agent ──
+    soul_script_count = 0
+    for agent_name in _list_agents():
+        ss_path = _DIRECTIVES_DIR / f"{agent_name}.md"
+        if ss_path.exists():
+            ss_text = ss_path.read_text(encoding="utf-8").strip()
+            if ss_text:
+                doc_id = f"__soul_script__{agent_name}"
+                ss_chunks = _chunk_text(ss_text, doc_id, f"Soul Script — {agent_name}")
+                chunks.extend(ss_chunks)
+                soul_script_count += 1
+
     faiss_dir = str(_FAISS_DIR)
     if chunks:
         nf = NotesFAISS(faiss_dir)
         nf.build_index(chunks)
-        log.info("[knowledge] NotesFAISS rebuilt — %d chunks from %d notes", len(chunks), len(seen_note_ids))
+        log.info("[knowledge] NotesFAISS rebuilt — %d chunks from %d notes + %d soul scripts",
+                 len(chunks), len(seen_note_ids), soul_script_count)
     else:
-        log.info("[knowledge] No directive-mode notes found — NotesFAISS empty")
+        log.info("[knowledge] No directive-mode notes or soul scripts found — NotesFAISS empty")
 
 
 # ═══════════════════════════════════════════════════════════════════
