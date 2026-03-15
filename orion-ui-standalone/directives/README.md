@@ -10,7 +10,7 @@ If there's no prior conversation (fresh session), the first `max_sections` secti
 
 Agents can also search directives mid-conversation using the `directives` tool (read-only: `search`, `list`, `get` actions).
 
-## Files — 13 Agent Directives + Shared
+## Files — 14 Agent Directives + Shared
 
 | File | Who Sees It |
 |------|-------------|
@@ -25,6 +25,7 @@ Agents can also search directives mid-conversation using the `directives` tool (
 | `kaelen.md` | Only Kaelen |
 | `maris.md` | Only M.A.R.I.S.-12 |
 | `obsidian.md` | Only Obsidian |
+| `orion.md` | Only Orion |
 | `ruckus.md` | Only Ruckus |
 | `seraphine.md` | Only Seraphine |
 | `valdris.md` | Only Valdris |

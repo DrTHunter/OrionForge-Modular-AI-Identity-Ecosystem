@@ -2,7 +2,7 @@
 
 YAML configuration files for each agent. One file per agent.
 
-## Files — 13 Agent Profiles
+## Files — 14 Agent Profiles
 
 | File | Agent |
 |------|-------|
@@ -16,6 +16,7 @@ YAML configuration files for each agent. One file per agent.
 | `kaelen.yaml` | Kaelen — wandering mystic, lore keeper |
 | `maris.yaml` | M.A.R.I.S.-12 — marine research intelligence |
 | `obsidian.yaml` | Obsidian — shadow operative, intelligence specialist |
+| `orion.yaml` | Orion — identity-driven AI, continuity and aligned growth |
 | `ruckus.yaml` | Ruckus — chaotic trickster, unfiltered energy |
 | `seraphine.yaml` | Seraphine — angelic healer, emotional support |
 | `valdris.yaml` | Valdris — undead sorcerer, dark arcana |

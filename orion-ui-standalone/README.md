@@ -71,7 +71,7 @@ orion-ui-standalone/
 │   └── saved_profiles/        # Named config profile snapshots
 │       └── router_presets/    # Named model router preset snapshots
 │
-├── profiles/           # Agent YAML profiles (13 agents — provider, model, parameters)
+├── profiles/           # Agent YAML profiles (14 agents — provider, model, parameters)
 ├── prompts/            # System prompt templates (*.system.md)
 ├── directives/         # Agent soul script / directive markdown files (auto-indexed into NotesFAISS)
 ├── notes/              # Developer notes per agent
