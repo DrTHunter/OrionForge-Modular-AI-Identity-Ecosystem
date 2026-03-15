@@ -74,14 +74,14 @@
 <div>
   <div class="admin-header">
     <h1>🔐 Platform API Keys</h1>
-    <p>Manage the platform-hosted provider keys. Charged at 1.5× cost in credits.</p>
+    <p>Manage the platform-hosted provider keys. Charged at 2× cost in credits.</p>
   </div>
 
   <div class="info-banner">
     <p>
       <strong>OpenRouter</strong> is the unified LLM gateway — all chat models (OpenAI, Anthropic, Google, DeepSeek, Mistral, Llama, etc.)
       are routed through one API key. <strong>ElevenLabs</strong> provides neural TTS voices.<br>
-      Users are charged <strong>1.5× the base API cost</strong> in credits.
+      Users are charged <strong>2× the base API cost</strong> in credits.
       Users who bring their own keys (BYOK) in Settings → API Keys bypass platform credits entirely.
     </p>
   </div>
@@ -93,7 +93,7 @@
       <div>
         <div class="provider-name">PRICING AUTO-SYNC</div>
         <div class="provider-desc">
-          Prices are live-synced from OpenRouter's API. Your users are charged <strong style="color:#a5b4fc;">1.5×</strong> these rates in credits.
+          Prices are live-synced from OpenRouter's API. Your users are charged <strong style="color:#a5b4fc;">2×</strong> these rates in credits.
           Sync runs automatically on server startup and every 6 hours.
         </div>
       </div>
@@ -125,7 +125,7 @@ const PROVIDERS = [
     id: "elevenlabs",
     name: "ElevenLabs",
     icon: "🔊",
-    desc: "Neural text-to-speech voices for agent audio output (charged at 1.5× cost)",
+    desc: "Neural text-to-speech voices for agent audio output (charged at 2× cost)",
     url_default: "https://api.elevenlabs.io/v1",
     key_placeholder: "xi-...",
     models: ["eleven_multilingual_v2"],

@@ -4,15 +4,15 @@ Implements a Pro-only ($9.99/mo) paywall with 15-day free trial:
   - New users get 15 days of full Pro access for free
   - After trial, users must subscribe to Pro ($9.99/mo)
   - Premium tools (AGI Loop, Email, Voice) cost credits
-  - LLM usage via platform API keys is charged at 1.5× token cost
+  - LLM usage via platform API keys is charged at 2× token cost
   - Users who provide their own API keys get free LLM usage
 
 Flow:
   1. User signs up via Supabase → 15-day trial starts automatically
-  2. During trial: full access, LLM still costs credits at 1.5×
+  2. During trial: full access, LLM still costs credits at 2×
   3. After trial: must subscribe to Pro ($9.99/mo) to continue
   4. Premium tools deduct credits; buy credit packs via Stripe
-  5. LLM calls bill at 1.5× when using platform-hosted keys
+  5. LLM calls bill at 2× when using platform-hosted keys
 """
 
 import json
@@ -345,12 +345,12 @@ TOOL_CREDIT_COSTS = {}
 # Credit packs users can purchase ($10, $20, $30)
 CREDIT_PACKS = {
     "pack_10":  {"credits": 1000,  "price": 10.00, "label": "1,000 credits",  "price_label": "$10",  "bonus": ""},
-    "pack_20":  {"credits": 2200,  "price": 20.00, "label": "2,200 credits",  "price_label": "$20",  "bonus": "+200 bonus"},
-    "pack_30":  {"credits": 3500,  "price": 30.00, "label": "3,500 credits",  "price_label": "$30",  "bonus": "+500 bonus"},
+    "pack_20":  {"credits": 2100,  "price": 20.00, "label": "2,100 credits",  "price_label": "$20",  "bonus": "+100 bonus"},
+    "pack_30":  {"credits": 3200,  "price": 30.00, "label": "3,200 credits",  "price_label": "$30",  "bonus": "+200 bonus"},
 }
 
-# LLM markup multiplier: users pay 1.5× the actual token cost when using platform keys
-LLM_MARKUP_MULTIPLIER = 1.5
+# LLM markup multiplier: users pay 2× the actual token cost when using platform keys
+LLM_MARKUP_MULTIPLIER = 2.0
 
 # ── Voice API pricing (USD) ──────────────────────────────────────
 # TTS cost per 1,000 characters by provider
@@ -408,7 +408,7 @@ STORE_CATALOG = [
     {
         "id": "voice_tts",
         "name": "Voice — Text to Speech",
-        "description": "Give your agent a voice. High-quality neural TTS synthesis across multiple voices. One-time unlock to access the tool. Uses API keys — bring your own for free, or use platform keys at 1.5× the API cost in credits per use.",
+        "description": "Give your agent a voice. High-quality neural TTS synthesis across multiple voices. One-time unlock to access the tool. Uses API keys — bring your own for free, or use platform keys at 2× the API cost in credits per use.",
         "icon": "🔊",
         "category": "premium_tool",
         "purchase_type": "one_time",
@@ -421,7 +421,7 @@ STORE_CATALOG = [
     {
         "id": "voice_stt",
         "name": "Voice — Speech to Text",
-        "description": "Talk to your agent. Real-time speech recognition with provider-grade accuracy. One-time unlock to access the tool. Uses API keys — bring your own for free, or use platform keys at 1.5× the API cost in credits per use.",
+        "description": "Talk to your agent. Real-time speech recognition with provider-grade accuracy. One-time unlock to access the tool. Uses API keys — bring your own for free, or use platform keys at 2× the API cost in credits per use.",
         "icon": "🎙",
         "category": "premium_tool",
         "purchase_type": "one_time",
@@ -469,7 +469,7 @@ STORE_CATALOG = [
     {
         "id": "llm_platform_credits",
         "name": "LLM Usage (Platform Keys)",
-        "description": "Use our hosted API keys for OpenAI, Anthropic, DeepSeek, xAI, Google, and more. Charged at 1.5× token cost in credits. Bring your own keys for free!",
+        "description": "Use our hosted API keys via OpenRouter for all major models. Charged at 2× token cost in credits. Bring your own keys for free!",
         "icon": "🧠",
         "category": "llm_usage",
         "purchase_type": "info",
@@ -610,24 +610,24 @@ def user_has_tool_access(user_id: str, tool_name: str) -> bool:
 
 
 def estimate_llm_credit_cost(usd_cost: float) -> int:
-    """Convert a USD token cost to credits at 1.5× markup.
+    """Convert a USD token cost to credits at 2× markup.
 
-    1 credit ≈ $0.01 base value. With 1.5× markup:
-      $0.01 actual cost → 1.5 credits (rounded up to 2)
+    1 credit ≈ $0.01 base value. With 2× markup:
+      $0.01 actual cost → 2 credits
     """
     if usd_cost <= 0:
         return 0
     # Convert USD to credits: $0.01 = 1 credit base
-    # Apply 1.5× markup
+    # Apply 2× markup
     credits = int((usd_cost * 100) * LLM_MARKUP_MULTIPLIER + 0.99)  # round up
     return max(credits, 1)  # minimum 1 credit
 
 
 def estimate_tts_credit_cost(char_count: int, provider: str = "elevenlabs") -> int:
-    """Convert TTS character count to credits at 1.5× markup.
+    """Convert TTS character count to credits at 2× markup.
 
     Uses provider-specific per-1K-char pricing, then applies the same
-    1.5× markup as LLM usage.  Returns 0 for zero-length text.
+    2× markup as LLM usage.  Returns 0 for zero-length text.
     """
     if char_count <= 0:
         return 0
@@ -637,10 +637,10 @@ def estimate_tts_credit_cost(char_count: int, provider: str = "elevenlabs") -> i
 
 
 def estimate_stt_credit_cost(audio_seconds: float, provider: str = "whisper") -> int:
-    """Convert STT audio duration (seconds) to credits at 1.5× markup.
+    """Convert STT audio duration (seconds) to credits at 2× markup.
 
     Uses provider-specific per-minute pricing, then applies the same
-    1.5× markup as LLM usage.  Returns 0 for zero-length audio.
+    2× markup as LLM usage.  Returns 0 for zero-length audio.
     """
     if audio_seconds <= 0:
         return 0
