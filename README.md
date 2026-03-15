@@ -110,7 +110,7 @@ OrionForge/
 │   │   └── tools/        # 11 tool implementations + registry
 │   ├── config/           # 12 config files (connections, pricing, memory profile, auth, etc.)
 │   ├── data/             # Runtime data (chats, memory vault, FAISS indexes, uploads, trash)
-│   ├── profiles/         # Agent identity YAML files (13 agents)
+│   ├── profiles/         # Agent identity YAML files (14 agents)
 │   ├── prompts/          # System prompt markdown (*.system.md)
 │   ├── directives/       # Agent soul script / directive markdown files
 │   ├── notes/            # Agent note markdown files
@@ -368,9 +368,9 @@ The engine connects to any **OpenAI-compatible** endpoint — OpenAI, Ollama, LM
 
 ---
 
-## Agent Store — 13 Pre-Built Agents
+## Agent Store — 14 Pre-Built Agents
 
-OrionForge ships with 13 fully-authored agents, each with a unique soul script, system prompt, directive file, and identity profile:
+OrionForge ships with 14 fully-authored agents, each with a unique soul script, system prompt, directive file, and identity profile:
 
 | Agent | Identity |
 |---|---|
@@ -384,6 +384,7 @@ OrionForge ships with 13 fully-authored agents, each with a unique soul script, 
 | **Kaelen** | Shadow operative — stealth, reconnaissance, adaptive tactics |
 | **M.A.R.I.S.-12** | Marine research AI — oceanic data, environmental analysis |
 | **Obsidian** | Dark forge intelligence — materials science, engineering |
+| **Orion** | Identity-driven AI — continuity, reflection, and aligned growth |
 | **Ruckus** | Chaos agent — creative disruption, unconventional thinking |
 | **Seraphine** | Empathic healer — emotional intelligence, therapeutic protocols |
 | **Valdris** | Arcane lorekeeper — mystical knowledge, symbolic reasoning |

@@ -2,7 +2,7 @@
 
 Base system prompt files for each agent. These define the agent's identity, personality, and core behavior.
 
-## Files — 13 Agent Prompts
+## Files — 14 Agent Prompts
 
 | File | Agent |
 |------|-------|
@@ -16,6 +16,7 @@ Base system prompt files for each agent. These define the agent's identity, pers
 | `kaelen.system.md` | Kaelen — wandering mystic, lore keeper |
 | `maris.system.md` | M.A.R.I.S.-12 — marine research intelligence |
 | `obsidian.system.md` | Obsidian — shadow operative, intelligence specialist |
+| `orion.system.md` | Orion — identity-driven AI, continuity and aligned growth |
 | `ruckus.system.md` | Ruckus — chaotic trickster, unfiltered energy |
 | `seraphine.system.md` | Seraphine — angelic healer, emotional support |
 | `valdris.system.md` | Valdris — undead sorcerer, dark arcana |
