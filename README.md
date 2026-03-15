@@ -73,10 +73,12 @@ In essence, the Soul Script acts as a **persistent, structured identity and beha
 Every chat message passes through a **5-layer prompt assembly pipeline** before reaching the LLM:
 
 1. **Base Prompt** — The agent's system prompt (`prompts/{agent}.system.md`)
-2. **Soul Script** — FAISS semantic retrieval from directive-mode knowledge notes
-3. **Always-On Knowledge** — Verbatim text from always-mode attached knowledge
+2. **Soul Script** — FAISS semantic retrieval from the agent's soul script directive (`directives/{agent}.md`), automatically indexed and searched at chat time
+3. **Always-On Knowledge** — Verbatim text from always-mode attached knowledge notes
 4. **Memory Vault** — FAISS search over the agent's persistent memories (`vault.jsonl`)
 5. **Conversation History** — Recent user/assistant turns (truncated to 30k char budget)
+
+Soul scripts are editable from the **Profiles** page in a collapsible editor panel. Changes are saved to disk and automatically re-indexed into the NotesFAISS system — every agent's soul script is retrievable via semantic search with the doc ID `__soul_script__{agent}`.
 
 Agents can also **save memories** during conversation using `[MEMORY_SAVE: ...]` tags, which are automatically extracted and written to the vault.
 
@@ -89,10 +91,10 @@ OrionForge is organized into four directories — an active development branch, 
 ```
 OrionForge/
 ├── orion-ui-standalone/  # 🔧 Active Development Branch
-│   ├── web/              # FastAPI app (4,538 lines, 159 routes, 16 templates)
+│   ├── web/              # FastAPI app (~5,700 lines, 162 routes, 16 templates)
 │   │   ├── app.py        # Main application — all page & API routes
 │   │   ├── auth.py       # Supabase OAuth + JWT verification (121 lines)
-│   │   ├── stripe_billing.py  # Stripe subscriptions, credits, trial (650 lines)
+│   │   ├── stripe_billing.py  # Stripe subscriptions, credits, trial (840 lines)
 │   │   ├── image_gen.py  # Image generation (9 providers)
 │   │   ├── static/       # CSS
 │   │   └── templates/    # Jinja2 HTML templates (16 files, 15 pages + base layout)
@@ -106,14 +108,14 @@ OrionForge/
 │   │   ├── policy/       # Boundary enforcement & capability gating
 │   │   ├── routing/      # 6-tier model router, budget tracking, escalation chains
 │   │   └── tools/        # 11 tool implementations + registry
-│   ├── config/           # 18 config files (connections, pricing, memory profile, auth, etc.)
+│   ├── config/           # 12 config files (connections, pricing, memory profile, auth, etc.)
 │   ├── data/             # Runtime data (chats, memory vault, FAISS indexes, uploads, trash)
-│   ├── profiles/         # Agent identity YAML files
+│   ├── profiles/         # Agent identity YAML files (13 agents)
 │   ├── prompts/          # System prompt markdown (*.system.md)
-│   ├── directives/       # Agent directive markdown files
+│   ├── directives/       # Agent soul script / directive markdown files
 │   ├── notes/            # Agent note markdown files
 │   ├── scripts/          # Seed scripts (seed_memories.py, seed_ui_knowledge.py)
-│   └── tests/            # Test suite (11 files, 230 functions, ~2,250 checks)
+│   └── tests/            # Test suite (11 files, 246 functions, ~3,600 checks)
 │
 ├── engine/               # ⚙️  Stable Frozen Core
 │   └── src/              # Synced from orion-ui-standalone after testing
@@ -189,7 +191,7 @@ OrionForge uses **Supabase OAuth** for authentication and **Stripe** for billing
 | **Plans** | `/plans` | Subscription tier selection — Free vs Pro ($9.99/mo) |
 | **Store** | `/store` | Credit packs, one-time tool purchases, usage history |
 | **Chat** | `/chat` | Talk to agents — 5-layer identity injection (prompt → soul script → knowledge → memory → history) |
-| **Profiles** | `/profiles` | Create/edit/delete agents, system prompts, attach knowledge, configure models — with 30-day trash retention |
+| **Profiles** | `/profiles` | Create/edit/delete agents with collapsible system prompt, soul script editor (FAISS-indexed), knowledge notes — with 30-day trash retention |
 | **Vault** | `/vault` | Browse & search persistent memory — sort by 8 fields, max memory limits, metadata display |
 | **Knowledge** | `/knowledge` | Rich text editor for soul scripts and always-on context notes |
 | **Tools** | `/tools` | Configure tools, memory profiles, email, web search, cost tracking, model router with presets |
@@ -210,11 +212,12 @@ The engine connects to any **OpenAI-compatible** endpoint. Native provider suppo
 
 | Provider | Client | Notes |
 |---|---|---|
-| **OpenAI** | `openai_compat` | GPT-4o, GPT-4 Turbo, GPT-3.5, o1, o3, etc. |
+| **OpenRouter** | `openai_compat` | Unified gateway — OpenAI, Anthropic, Google, DeepSeek, Mistral, Llama, and hundreds more |
+| **OpenAI** | `openai_compat` | GPT-4o, GPT-4 Turbo, o1, o3, etc. |
 | **Anthropic** | `anthropic` | Claude 4 Opus/Sonnet, Claude 3.5, native SDK |
 | **DeepSeek** | `openai_compat` | DeepSeek-V3, DeepSeek-R1 via OpenAI-compatible API |
 | **Ollama** | `ollama` | Any local model (Llama, Mistral, Phi, Qwen, etc.) |
-| OpenRouter, LM Studio, etc. | `openai_compat` | Any OpenAI-compatible endpoint |
+| LM Studio, etc. | `openai_compat` | Any OpenAI-compatible endpoint |
 
 ### Image Generation
 
@@ -277,7 +280,7 @@ Sidecar services communicate via Flycast private networking (`.flycast` URLs). T
 
 ## Test Suite
 
-11 test files with **230** test functions and **~2,250** assertions:
+11 test files with **246** test functions and **~3,600** assertions:
 
 ```powershell
 cd orion-ui-standalone
@@ -286,7 +289,7 @@ python tests/run_all.py
 
 | Test File | Functions | Checks | Coverage Area |
 |---|---|---|---|
-| `test_torture.py` | 83 | ~2,235 | Deep torture of all code paths — memory, vault, sort, policy, tools, templates, model router, presets, 6-tier routing, sidecar service wiring, env fallbacks, Fly.io configs |
+| `test_torture.py` | 99 | ~2,550 | Deep torture of all code paths — memory, vault, sort, policy, tools, templates, model router, presets, 6-tier routing, sidecar wiring, soul script helpers, soul script API, soul script FAISS indexing, note collector soul script injection, profiles template collapsible sections, admin keys, chat 3-mode selector |
 | `test_memory.py` | 23 | 155 | VaultStore, MemoryVault, Memory types, PII guard |
 | `test_stress.py` | 29 | 398 | Rapid-fire ops, concurrent access, boundary conditions, router presets, coding tiers |
 | `test_registry_and_tools.py` | 17 | 86 | Tool registry, cost tracker, web search |
@@ -297,7 +300,7 @@ python tests/run_all.py
 | `test_metering.py` | 11 | 92 | Token accounting, cost computation, aggregation |
 | `test_data_paths.py` | 5 | 31 | Data directory layout, auto-creation, isolation |
 | `test_tools.py` | 4 | 38 | EchoTool, ContinuationUpdateTool, EmailTool, RuntimePolicy |
-| **Total** | **230** | **~2,250** | |
+| **Total** | **246** | **~3,600** | |
 
 ---
 
@@ -365,15 +368,27 @@ The engine connects to any **OpenAI-compatible** endpoint — OpenAI, Ollama, LM
 
 ---
 
-## Included Agents
+## Agent Store — 13 Pre-Built Agents
 
-| Agent | Description |
+OrionForge ships with 13 fully-authored agents, each with a unique soul script, system prompt, directive file, and identity profile:
+
+| Agent | Identity |
 |---|---|
-| **Astraea** | Default agent profile |
-| **Callum** | Secondary agent profile |
-| **Codex Animus** | The "Creator of Souls" — meta-agent that helps users design soul scripts and build their own AIs |
+| **Astraea** | Core analytical mind — sharp, strategic, disciplined |
+| **Astra Noctis** | Celestial navigator — cosmic wisdom, stellar lore |
+| **Axiom** | Logic engine — formal reasoning, first-principles thinking |
+| **Callum** | Guardian construct — protective, legacy-aware |
+| **Cassian** | Diplomatic strategist — negotiation, social intelligence |
+| **Codex Animus** | The "Creator of Souls" — meta-agent that designs soul scripts |
+| **Dal'Varr** | Ancient warrior scholar — tactical wisdom, honor codes |
+| **Kaelen** | Shadow operative — stealth, reconnaissance, adaptive tactics |
+| **M.A.R.I.S.-12** | Marine research AI — oceanic data, environmental analysis |
+| **Obsidian** | Dark forge intelligence — materials science, engineering |
+| **Ruckus** | Chaos agent — creative disruption, unconventional thinking |
+| **Seraphine** | Empathic healer — emotional intelligence, therapeutic protocols |
+| **Valdris** | Arcane lorekeeper — mystical knowledge, symbolic reasoning |
 
-Each agent has its own profile YAML, system prompt, directives, and memory scopes.
+Each agent has its own profile YAML, system prompt, soul script directive, and memory scopes. New agents can be created from the Profiles page or via the API.
 
 ---
 
@@ -406,7 +421,7 @@ These run as separate Docker containers via `docker compose` inside their respec
 
 | Technology | Role |
 |---|---|
-| **FastAPI** + **Uvicorn** | Web server & async API (159 routes) |
+| **FastAPI** + **Uvicorn** | Web server & async API (162 routes) |
 | **FAISS** (`faiss-cpu`) | Vector similarity search for memory + soul script retrieval |
 | **sentence-transformers** | Semantic embeddings (`all-mpnet-base-v2`) |
 | **Jinja2** | HTML templates (16 files) |

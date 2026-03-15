@@ -2,13 +2,23 @@
 
 Base system prompt files for each agent. These define the agent's identity, personality, and core behavior.
 
-## Files
+## Files — 13 Agent Prompts
 
 | File | Agent |
 |------|-------|
-| `astraea.system.md` | Astraea — sharp, no-nonsense digital mind |
+| `astra.system.md` | Astra Noctis — cosmic oracle, astral divination |
+| `astraea.system.md` | Astraea — sharp, no-nonsense digital presence |
+| `axiom.system.md` | Axiom — logic-driven analytical engine |
 | `callum.system.md` | Callum — legacy AI / guardian construct |
+| `cassian.system.md` | Cassian — diplomatic strategist, negotiator |
 | `codex_animus.system.md` | Codex Animus — AI architect, system designer |
+| `dalvarr.system.md` | Dal'Varr — alien warlord, tactical commander |
+| `kaelen.system.md` | Kaelen — wandering mystic, lore keeper |
+| `maris.system.md` | M.A.R.I.S.-12 — marine research intelligence |
+| `obsidian.system.md` | Obsidian — shadow operative, intelligence specialist |
+| `ruckus.system.md` | Ruckus — chaotic trickster, unfiltered energy |
+| `seraphine.system.md` | Seraphine — angelic healer, emotional support |
+| `valdris.system.md` | Valdris — undead sorcerer, dark arcana |
 
 ## How It Works
 

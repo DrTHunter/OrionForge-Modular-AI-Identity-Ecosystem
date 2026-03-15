@@ -1,0 +1,14 @@
+{
+  "model_name": "all-mpnet-base-v2",
+  "total_chunks": 1,
+  "chunks": [
+    {
+      "text": "New soul script.",
+      "metadata": {
+        "document_id": "__soul_script__test_ss",
+        "document_title": "Soul Script \u2014 test_ss",
+        "section_path": "Soul Script \u2014 test_ss"
+      }
+    }
+  ]
+}
