@@ -6,7 +6,7 @@ Handles loading, stripping, and injecting user-authored notes into agent context
 
 | File | Lines | Purpose |
 |------|-------|---------|
-| `note_collector.py` | ~204 | Loads per-agent notes respecting always-on vs directive modes. Reads `config/settings.json` for note attachment and mode settings. |
+| `note_collector.py` | ~174 | Loads per-agent notes respecting always-on vs directive modes. Reads `config/settings.json` for note attachment and mode settings. Also auto-injects the active agent's **soul script** as a `__soul_script__{agent}` doc_id into the note collection for FAISS retrieval. |
 | `user_notes_loader.py` | ~97 | Loads JSON user notes from `data/user_notes/`. Strips HTML tags, decodes entities, extracts plain text for prompt injection. |
 
 ## Two Note Systems
@@ -15,7 +15,7 @@ OrionForge maintains two parallel note systems for different purposes:
 
 | System | Backing | Mutability | Use Case |
 |--------|---------|------------|----------|
-| **NotesFAISS** | `data/user_notes/*.json` | Immutable at runtime | Soul scripts, directive notes, knowledge base articles |
+| **NotesFAISS** | `data/user_notes/*.json` + soul scripts | Immutable at runtime | Soul scripts (auto-indexed as `__soul_script__{agent}`), directive notes, knowledge base articles |
 | **FAISSMemory** | `data/memory/vault.jsonl` | Mutable (agent-written) | Working memory, conversation recall, observation logs |
 
 ## Data Flow

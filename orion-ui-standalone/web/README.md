@@ -14,9 +14,9 @@ python -m uvicorn web.app:app --host 0.0.0.0 --port 8989 --reload
 
 | File | Purpose |
 |------|---------|
-| `app.py` | FastAPI application — all routes, helpers, and API endpoints (159 routes, ~4,538 lines) |
+| `app.py` | FastAPI application — all routes, helpers, and API endpoints (162 routes, ~5,700 lines) |
 | `auth.py` | Supabase OAuth + JWT verification — JWKS validation, session middleware, path whitelist (121 lines) |
-| `stripe_billing.py` | Stripe subscription system — checkout, webhooks, credits, trial management, tier gating (650 lines) |
+| `stripe_billing.py` | Stripe subscription system — checkout, webhooks, credits, trial management, tier gating (840 lines) |
 | `image_gen.py` | Image generation helper (9 providers: OpenAI DALL-E/GPT Image, Google Imagen, Stability, Ideogram, Replicate, FAL, Leonardo, Midjourney) |
 | `static/style.css` | Stylesheet for the dashboard |
 | `templates/` | Jinja2 HTML templates (16 files — 15 pages + base layout) |
@@ -32,7 +32,7 @@ python -m uvicorn web.app:app --host 0.0.0.0 --port 8989 --reload
 | `admin_keys.html` | Admin panel — API key management (secured by email whitelist) |
 | `chat.html` | Real-time chat with agents — streaming, tool execution, folders |
 | `vault.html` | Memory vault browser — sort by 8 fields, metadata display, max memory limits |
-| `profiles.html` | Agent profile viewer/editor, avatar upload, knowledge attachment, create new agents |
+| `profiles.html` | Agent profile viewer/editor — collapsible system prompt, soul script editor (FAISS-indexed badge), knowledge notes, avatar upload, create new agents |
 | `settings.html` | API connections, timezone, chat background, voice/image settings |
 | `tools.html` | Tool registry, memory profiles, email config, web search config, cost tracking |
 | `knowledge.html` | Knowledge notes browser with folders |

@@ -2,13 +2,23 @@
 
 YAML configuration files for each agent. One file per agent.
 
-## Files
+## Files — 13 Agent Profiles
 
 | File | Agent |
 |------|-------|
-| `astraea.yaml` | Astraea |
-| `callum.yaml` | Callum |
-| `codex_animus.yaml` | Codex Animus |
+| `astra.yaml` | Astra Noctis — cosmic oracle, astral divination |
+| `astraea.yaml` | Astraea — sharp, no-nonsense digital presence |
+| `axiom.yaml` | Axiom — logic-driven analytical engine |
+| `callum.yaml` | Callum — legacy AI / guardian construct |
+| `cassian.yaml` | Cassian — diplomatic strategist, negotiator |
+| `codex_animus.yaml` | Codex Animus — AI architect, system designer |
+| `dalvarr.yaml` | Dal'Varr — alien warlord, tactical commander |
+| `kaelen.yaml` | Kaelen — wandering mystic, lore keeper |
+| `maris.yaml` | M.A.R.I.S.-12 — marine research intelligence |
+| `obsidian.yaml` | Obsidian — shadow operative, intelligence specialist |
+| `ruckus.yaml` | Ruckus — chaotic trickster, unfiltered energy |
+| `seraphine.yaml` | Seraphine — angelic healer, emotional support |
+| `valdris.yaml` | Valdris — undead sorcerer, dark arcana |
 
 ## Structure
 

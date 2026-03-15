@@ -23,6 +23,8 @@ Rich notes created via the web dashboard's Knowledge page with formatting, secti
 | `callum.md` | Only Callum |
 | `codex_animus.md` | Only Codex Animus |
 
+> **Note:** Agent Store agents (Astra Noctis, Axiom, Cassian, Dal'Varr, Kaelen, M.A.R.I.S.-12, Obsidian, Ruckus, Seraphine, Valdris) use Soul Scripts and Knowledge Notes instead of these markdown files. Create `<agent>.md` here if you want always-on markdown notes for them.
+
 ## How to Use
 
 Open any file and write below the comment header. Everything you write gets appended to the system prompt.

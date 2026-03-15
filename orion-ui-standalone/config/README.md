@@ -1,6 +1,6 @@
 # config/
 
-Configuration files for the runtime and web dashboard. 18 config files controlling connections, billing, routing, identity, and UI behavior.
+Configuration files for the runtime and web dashboard. 17 config files (11 core + saved profiles & router presets) controlling connections, billing, routing, identity, and UI behavior.
 
 ## Files
 
@@ -16,7 +16,7 @@ Configuration files for the runtime and web dashboard. 18 config files controlli
 | `identity_profile.json` | FAISS identity indexing profile — chunk size (400 tokens), overlap (80), retrieval top_k, merge strategy for soul script indexing |
 | `memory_profile.json` | Memory vault settings — retention policy (max memories, decay strategy, max pinned), category policy (open/strict mode, suggested categories), safety policy (custom hard rules) |
 | `model_router.json` | Model router config — 6-tier task→model routing (LOCAL_CHEAP, LOCAL_STRONG, CHEAP_CLOUD, EXPENSIVE_CLOUD, CODE_LIGHT, CODE_HEAVY) |
-| `pricing.yaml` | LLM Pricing Registry — USD per 1M tokens across 4 dimensions (input, cached_input, output, reasoning). ~493 lines covering all major providers. |
+| `pricing.yaml` | LLM Pricing Registry — USD per 1M tokens across 4 dimensions (input, cached_input, output, reasoning). ~506 lines covering all major providers. |
 
 ## Saved Profiles
 

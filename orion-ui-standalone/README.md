@@ -22,10 +22,10 @@ Open **http://localhost:8989**.
 
 ```
 orion-ui-standalone/
-├── web/                # FastAPI application (4,538 lines, 159 routes, 16 templates)
+├── web/                # FastAPI application (~5,700 lines, 162 routes, 16 templates)
 │   ├── app.py          # Main application — all page & API routes
 │   ├── auth.py         # Supabase OAuth + JWT verification (121 lines)
-│   ├── stripe_billing.py  # Stripe subscriptions, credits, trial system (650 lines)
+│   ├── stripe_billing.py  # Stripe subscriptions, credits, trial system (840 lines)
 │   ├── image_gen.py    # Image generation helper (9 providers)
 │   ├── static/         # CSS
 │   └── templates/      # Jinja2 HTML (16 files — 15 pages + base layout)
@@ -35,7 +35,7 @@ orion-ui-standalone/
 │       ├── store.html          # Credit packs, one-time tool purchases, usage history
 │       ├── admin_keys.html     # Admin panel — API key management
 │       ├── chat.html           # Real-time agent chat with streaming
-│       ├── profiles.html       # Agent profile manager with avatar upload
+│       ├── profiles.html       # Agent profile manager — collapsible system prompt, soul script editor (FAISS-indexed), knowledge notes, avatar upload
 │       ├── vault.html          # Memory vault browser with 8-field sort
 │       ├── knowledge.html      # Knowledge notes browser
 │       ├── knowledge_edit.html # Rich text knowledge editor
@@ -71,13 +71,13 @@ orion-ui-standalone/
 │   └── saved_profiles/        # Named config profile snapshots
 │       └── router_presets/    # Named model router preset snapshots
 │
-├── profiles/           # Agent YAML profiles (provider, model, parameters)
+├── profiles/           # Agent YAML profiles (13 agents — provider, model, parameters)
 ├── prompts/            # System prompt templates (*.system.md)
-├── directives/         # Agent directive markdown files
+├── directives/         # Agent soul script / directive markdown files (auto-indexed into NotesFAISS)
 ├── notes/              # Developer notes per agent
 ├── scripts/            # Seed scripts (seed_memories.py, seed_ui_knowledge.py)
 ├── data/               # Runtime data (chats, memory vault, FAISS indexes, uploads, knowledge notes, agent trash)
-└── tests/              # Test suite — 11 files, 230 functions, ~2,250 checks
+└── tests/              # Test suite — 11 files, 246 functions, ~3,600 checks
 ```
 
 ---
@@ -107,7 +107,7 @@ orion-ui-standalone/
 | **Plans** | `/plans` | Subscription tier selection — Free vs Pro ($9.99/mo) |
 | **Store** | `/store` | Credit packs, one-time tool purchases, usage history |
 | **Chat** | `/chat` | Talk to agents — 5-layer identity injection (prompt → soul script → knowledge → memory → history) |
-| **Profiles** | `/profiles` | Create/edit/delete agents, system prompts, attach knowledge, configure models — with 30-day trash retention |
+| **Profiles** | `/profiles` | Create/edit/delete agents — collapsible system prompt, soul script editor with FAISS-indexed badge, knowledge notes, model config, 30-day trash retention |
 | **Vault** | `/vault` | Browse & search persistent memory — sort by 8 fields, max memory limits, metadata display |
 | **Knowledge** | `/knowledge` | Rich text editor for soul scripts and always-on context notes |
 | **Tools** | `/tools` | Configure tools, memory profiles, email, web search, cost tracking, model router with presets |
@@ -120,16 +120,16 @@ orion-ui-standalone/
 
 ---
 
-## API Routes (159 endpoints)
+## API Routes (162 endpoints)
 
-The FastAPI app exposes 159 routes across these domains:
+The FastAPI app exposes 162 routes across these domains:
 
 | Domain | Endpoints | Examples |
 |--------|-----------|---------|
 | Auth | ~6 | session, login, logout, callback, Supabase JWKS |
 | Stripe Billing | ~8 | checkout, webhook, credits, subscription status, trial |
 | Chat | ~15 | send, history, new, run, stop, folders |
-| Profiles | ~14 | CRUD, avatar, knowledge attachment, soft-delete with 30-day trash, restore, permanent delete |
+| Profiles | ~14 | CRUD, avatar, knowledge attachment, soul script save/load, soft-delete with 30-day trash, restore, permanent delete |
 | Vault | ~5 | add, batch_add, stats, delete, compact |
 | Knowledge | ~7 | CRUD, folders |
 | Connections | ~8 | CRUD, model probing, refresh |
@@ -194,7 +194,7 @@ $env:PYTHONIOENCODING="utf-8"; python tests/test_torture.py
 
 | Test File | Functions | Checks | Coverage |
 |-----------|-----------|--------|----------|
-| `test_torture.py` | 83 | ~2,235 | Deep torture of all code paths — memory, vault, sort, policy, tools, templates, model router, presets, 6-tier routing, sidecar service wiring, env fallbacks, Fly.io configs |
+| `test_torture.py` | 99 | ~2,550 | Deep torture of all code paths — memory, vault, sort, policy, tools, templates, model router, presets, 6-tier routing, sidecar wiring, soul script helpers, soul script API, soul script FAISS indexing, note collector soul script injection, profiles template collapsible, admin keys, chat 3-mode selector |
 | `test_memory.py` | 23 | 155 | VaultStore, MemoryVault, Memory types, PII guard |
 | `test_stress.py` | 29 | 398 | Rapid-fire ops, concurrent access, boundary conditions, router presets, coding tiers |
 | `test_registry_and_tools.py` | 17 | 86 | Tool registry, cost tracker, web search |
@@ -205,7 +205,7 @@ $env:PYTHONIOENCODING="utf-8"; python tests/test_torture.py
 | `test_metering.py` | 11 | 92 | Token accounting, cost computation, aggregation |
 | `test_data_paths.py` | 5 | 31 | Data directory layout, auto-creation, isolation |
 | `test_tools.py` | 4 | 38 | EchoTool, ContinuationUpdateTool, EmailTool, RuntimePolicy |
-| **Total** | **230** | **~2,250** | |
+| **Total** | **246** | **~3,600** | |
 
 ---
 
@@ -224,7 +224,7 @@ $env:PYTHONIOENCODING="utf-8"; python tests/test_torture.py
 
 | Technology | Role |
 |------------|------|
-| FastAPI + Uvicorn | Web server & async API (159 routes) |
+| FastAPI + Uvicorn | Web server & async API (162 routes) |
 | FAISS (`faiss-cpu`) | Vector similarity search for memory + soul script retrieval |
 | sentence-transformers | Semantic embeddings (`all-mpnet-base-v2`) |
 | Jinja2 | HTML templates (16 files) |

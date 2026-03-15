@@ -40,5 +40,40 @@
     "display_name": "new_agent",
     "deleted_at": "2026-03-10T20:28:18.686483+00:00",
     "expires_at": "2026-04-09T20:28:18.688486+00:00"
+  },
+  {
+    "id": "new_agent_600f7602",
+    "name": "new_agent",
+    "display_name": "new_agent",
+    "deleted_at": "2026-03-15T17:26:17.565241+00:00",
+    "expires_at": "2026-04-14T17:26:17.567243+00:00"
+  },
+  {
+    "id": "new_agent_d16c7931",
+    "name": "new_agent",
+    "display_name": "new_agent",
+    "deleted_at": "2026-03-15T17:27:01.478170+00:00",
+    "expires_at": "2026-04-14T17:27:01.504682+00:00"
+  },
+  {
+    "id": "new_agent_09ff0ac9",
+    "name": "new_agent",
+    "display_name": "new_agent",
+    "deleted_at": "2026-03-15T17:27:19.484670+00:00",
+    "expires_at": "2026-04-14T17:27:19.509673+00:00"
+  },
+  {
+    "id": "new_agent_8b4933b1",
+    "name": "new_agent",
+    "display_name": "new_agent",
+    "deleted_at": "2026-03-15T17:29:04.021213+00:00",
+    "expires_at": "2026-04-14T17:29:04.042213+00:00"
+  },
+  {
+    "id": "new_agent_b34f75bb",
+    "name": "new_agent",
+    "display_name": "new_agent",
+    "deleted_at": "2026-03-15T17:29:49.539032+00:00",
+    "expires_at": "2026-04-14T17:29:49.541034+00:00"
   }
 ]
