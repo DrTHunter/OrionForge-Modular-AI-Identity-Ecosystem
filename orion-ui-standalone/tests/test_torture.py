@@ -7590,8 +7590,10 @@ def test_chat_html_three_mode_selector():
     # ── Three mode option values ──
     check("__platform__ option present", 'value="__platform__"' in content)
     check("__auto__ option present", 'value="__auto__"' in content)
-    check("OpenRouter platform option label", "OpenRouter" in content)
-    check("Auto User Router label", "Auto (User Router)" in content or "Auto" in content)
+    check("__user__ option present", 'value="__user__"' in content)
+    check("Platform Models label", "Platform Models" in content)
+    check("Auto User Router label", "Auto (User Router)" in content)
+    check("User Models label", "User Models" in content)
 
     # ── Platform connections JS constant ──
     check("_platformConnections const declared", "_platformConnections" in content)
@@ -7603,10 +7605,16 @@ def test_chat_html_three_mode_selector():
           or "function fetchPlatformModels" in content)
     check("fetchPlatformModels calls all-models", "/api/connections/all-models" in content)
 
+    # ── fetchUserModels function ──
+    check("fetchUserModels function defined", "async function fetchUserModels" in content
+          or "function fetchUserModels" in content)
+    check("fetchUserModels calls /api/user/models", "/api/user/models" in content)
+
     # ── _buildChatRoutingPayload function ──
     check("_buildChatRoutingPayload defined", "function _buildChatRoutingPayload" in content)
     check("__auto__ handled in payload builder", "__auto__" in content)
     check("__platform__ handled in payload builder", "__platform__" in content)
+    check("__user__ handled in payload builder", "__user__" in content)
 
     # ── Model select element ──
     check("chat-model select present", 'id="chat-model"' in content)
@@ -7617,12 +7625,16 @@ def test_chat_html_three_mode_selector():
     # ── sendChatMsg uses routing payload ──
     check("_buildChatRoutingPayload called in send", "_buildChatRoutingPayload()" in content)
 
-    # ── onConnectionChange handles both modes ──
+    # ── onConnectionChange handles all three modes ──
     check("onConnectionChange handles __auto__", content.count("__auto__") >= 2)
     check("onConnectionChange handles __platform__", content.count("__platform__") >= 3)
+    check("onConnectionChange handles __user__", content.count("__user__") >= 2)
 
-    # ── User connections rendered in template ──
-    check("user_connections Jinja var used", "user_connections" in content)
+    # ── No old user_connections Jinja loop (static dropdown now) ──
+    check("no user_connections Jinja loop", "user_connections" not in content)
+
+    # ── __userkey_ format in fetchUserModels ──
+    check("__userkey_ prefix in fetchUserModels", "__userkey_" in content)
 
 
 # ═════════════════════════════════════════════
@@ -7977,6 +7989,301 @@ def test_profiles_template_collapsible():
 
 
 # ═════════════════════════════════════════════
+# RESOLVE CONNECTION — __userkey_ DYNAMIC CONNECTIONS
+# ═════════════════════════════════════════════
+def test_resolve_connection_userkey():
+    """Test _resolve_connection handles __userkey_<provider> dynamic connections from user API keys."""
+    print("\n=== TORTURE: _resolve_connection — __userkey_ dynamic connections ===")
+    from pathlib import Path
+    tmp = tempfile.mkdtemp()
+    try:
+        import web.app as _app
+
+        orig_settings = _app.SETTINGS_FILE
+        orig_conn = _app.CONNECTIONS_FILE
+        tmp_settings = Path(tmp) / "config" / "settings.json"
+        tmp_conn = Path(tmp) / "config" / "connections.json"
+        tmp_settings.parent.mkdir(parents=True)
+        _app.SETTINGS_FILE = tmp_settings
+        _app.CONNECTIONS_FILE = tmp_conn
+
+        # Set up user API keys
+        settings = {
+            "api_keys": {
+                "openai": "sk-test-openai-key",
+                "anthropic": "sk-ant-test-key",
+                "deepseek": "sk-ds-test-key",
+                "google_gemini": "AIza-test-key",
+                "openrouter": "sk-or-test-key",
+                "ollama_url": "http://localhost:11434",
+            }
+        }
+        _app._save_settings(settings)
+        _app._save_connections({"connections": [], "agent_connections": {}})
+
+        # ── 1. __userkey_openai resolves correctly ──
+        conn = _app._resolve_connection("__userkey_openai", "test_agent")
+        check("userkey_openai resolves", conn is not None)
+        check("userkey_openai provider", conn["provider"] == "openai")
+        check("userkey_openai api_key", conn["api_key"] == "sk-test-openai-key")
+        check("userkey_openai url", "api.openai.com" in conn["url"])
+        check("userkey_openai has models", len(conn["models"]) > 0)
+        check("userkey_openai enabled", conn["enabled"] is True)
+
+        # ── 2. __userkey_anthropic resolves ──
+        conn2 = _app._resolve_connection("__userkey_anthropic", "test_agent")
+        check("userkey_anthropic resolves", conn2 is not None)
+        check("userkey_anthropic provider", conn2["provider"] == "anthropic")
+        check("userkey_anthropic api_key", conn2["api_key"] == "sk-ant-test-key")
+
+        # ── 3. __userkey_deepseek resolves ──
+        conn3 = _app._resolve_connection("__userkey_deepseek", "test_agent")
+        check("userkey_deepseek resolves", conn3 is not None)
+        check("userkey_deepseek url", "deepseek.com" in conn3["url"])
+
+        # ── 4. __userkey_openrouter resolves ──
+        conn4 = _app._resolve_connection("__userkey_openrouter", "test_agent")
+        check("userkey_openrouter resolves", conn4 is not None)
+        check("userkey_openrouter url", "openrouter.ai" in conn4["url"])
+
+        # ── 5. __userkey_google_gemini resolves ──
+        conn5 = _app._resolve_connection("__userkey_google_gemini", "test_agent")
+        check("userkey_google_gemini resolves", conn5 is not None)
+        check("userkey_google_gemini url", "generativelanguage.googleapis.com" in conn5["url"])
+
+        # ── 6. Unknown provider → None ──
+        conn6 = _app._resolve_connection("__userkey_unknown_provider", "test_agent")
+        check("unknown userkey provider returns None", conn6 is None)
+
+        # ── 7. Provider with empty API key → None ──
+        settings["api_keys"]["openai"] = ""
+        _app._save_settings(settings)
+        conn7 = _app._resolve_connection("__userkey_openai", "test_agent")
+        check("empty api_key returns None", conn7 is None)
+
+        # ── 8. Non-userkey connection_id falls through normally ──
+        conn8 = _app._resolve_connection("nonexistent_id", "test_agent")
+        check("nonexistent conn_id returns None", conn8 is None)
+
+        # ── 9. None connection_id with empty connections → None ──
+        conn9 = _app._resolve_connection(None, "test_agent")
+        check("None conn_id with no connections returns None", conn9 is None)
+
+    finally:
+        _app.SETTINGS_FILE = orig_settings
+        _app.CONNECTIONS_FILE = orig_conn
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ═════════════════════════════════════════════
+# /api/user/models — USER MODEL CATALOG
+# ═════════════════════════════════════════════
+def test_api_user_models():
+    """Test /api/user/models returns providers only for configured API keys."""
+    print("\n=== TORTURE: /api/user/models — user model catalog ===")
+    from pathlib import Path
+    tmp = tempfile.mkdtemp()
+    try:
+        import web.app as _app
+
+        orig_settings = _app.SETTINGS_FILE
+        tmp_settings = Path(tmp) / "config" / "settings.json"
+        tmp_settings.parent.mkdir(parents=True)
+        _app.SETTINGS_FILE = tmp_settings
+
+        # ── 1. All keys set → all providers returned ──
+        settings = {
+            "api_keys": {
+                "openai": "sk-test-openai-key",
+                "anthropic": "sk-ant-test-key",
+                "deepseek": "sk-ds-test-key",
+                "google_gemini": "AIza-test-key",
+                "openrouter": "sk-or-test-key",
+                "ollama_url": "http://localhost:11434",
+            }
+        }
+        _app._save_settings(settings)
+
+        # Simulate the endpoint logic
+        loaded = _app._load_settings()
+        keys = loaded.get("api_keys", {})
+        providers = []
+        for provider_key, (display_name, models) in _app._USER_MODEL_CATALOG.items():
+            api_val = keys.get(provider_key, "")
+            if api_val and len(api_val) >= 4:
+                providers.append({
+                    "provider": provider_key,
+                    "name": display_name,
+                    "models": models,
+                })
+
+        provider_keys = [p["provider"] for p in providers]
+        check("openai in providers", "openai" in provider_keys)
+        check("anthropic in providers", "anthropic" in provider_keys)
+        check("deepseek in providers", "deepseek" in provider_keys)
+        check("google_gemini in providers", "google_gemini" in provider_keys)
+        check("openrouter in providers", "openrouter" in provider_keys)
+        check("ollama_url NOT in providers (not in catalog)", "ollama_url" not in provider_keys)
+        check("all providers have models", all(len(p["models"]) > 0 for p in providers))
+        check("all providers have name", all(p["name"] for p in providers))
+
+        # ── 2. Only openai key → only openai returned ──
+        settings2 = {
+            "api_keys": {
+                "openai": "sk-test-key",
+                "anthropic": "",
+                "deepseek": "",
+                "google_gemini": "",
+                "openrouter": "",
+                "ollama_url": "",
+            }
+        }
+        _app._save_settings(settings2)
+        loaded2 = _app._load_settings()
+        keys2 = loaded2.get("api_keys", {})
+        providers2 = []
+        for pk, (dn, ms) in _app._USER_MODEL_CATALOG.items():
+            av = keys2.get(pk, "")
+            if av and len(av) >= 4:
+                providers2.append({"provider": pk})
+        pkeys2 = [p["provider"] for p in providers2]
+        check("only openai when others empty", pkeys2 == ["openai"])
+
+        # ── 3. No keys set → empty providers ──
+        settings3 = {"api_keys": {}}
+        _app._save_settings(settings3)
+        loaded3 = _app._load_settings()
+        keys3 = loaded3.get("api_keys", {})
+        providers3 = []
+        for pk, (dn, ms) in _app._USER_MODEL_CATALOG.items():
+            av = keys3.get(pk, "")
+            if av and len(av) >= 4:
+                providers3.append({"provider": pk})
+        check("no keys → empty providers", len(providers3) == 0)
+
+        # ── 4. Short key (< 4 chars) excluded ──
+        settings4 = {"api_keys": {"openai": "sk"}}
+        _app._save_settings(settings4)
+        loaded4 = _app._load_settings()
+        keys4 = loaded4.get("api_keys", {})
+        providers4 = []
+        for pk, (dn, ms) in _app._USER_MODEL_CATALOG.items():
+            av = keys4.get(pk, "")
+            if av and len(av) >= 4:
+                providers4.append({"provider": pk})
+        check("short key excluded", len(providers4) == 0)
+
+        # ── 5. Catalog structure check ──
+        check("catalog has openai", "openai" in _app._USER_MODEL_CATALOG)
+        check("catalog has anthropic", "anthropic" in _app._USER_MODEL_CATALOG)
+        check("catalog has deepseek", "deepseek" in _app._USER_MODEL_CATALOG)
+        check("catalog has openrouter", "openrouter" in _app._USER_MODEL_CATALOG)
+        check("catalog has google_gemini", "google_gemini" in _app._USER_MODEL_CATALOG)
+        check("catalog entries are (name, models) tuples",
+              all(isinstance(v, tuple) and len(v) == 2 for v in _app._USER_MODEL_CATALOG.values()))
+
+        # ── 6. Provider URLs check ──
+        check("URL map has openai", "openai" in _app._USER_PROVIDER_URLS)
+        check("URL map has anthropic", "anthropic" in _app._USER_PROVIDER_URLS)
+        check("URL map has deepseek", "deepseek" in _app._USER_PROVIDER_URLS)
+        check("URL map has openrouter", "openrouter" in _app._USER_PROVIDER_URLS)
+        check("URL map has google_gemini", "google_gemini" in _app._USER_PROVIDER_URLS)
+        check("all URLs start with https",
+              all(u.startswith("https://") for u in _app._USER_PROVIDER_URLS.values()))
+
+    finally:
+        _app.SETTINGS_FILE = orig_settings
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ═════════════════════════════════════════════
+# STRIPE STATE — PERSISTENT VOLUME PATH
+# ═════════════════════════════════════════════
+def test_stripe_state_persist_path():
+    """Test stripe_billing selects /persist dir when available, config/ otherwise."""
+    print("\n=== TORTURE: stripe_state.json persistence path ===")
+    from pathlib import Path
+    import web.stripe_billing as billing
+
+    # ── 1. _STRIPE_STATE_FILE exists and is a Path ──
+    check("_STRIPE_STATE_FILE is a Path", isinstance(billing._STRIPE_STATE_FILE, Path))
+
+    # ── 2. Check path logic: if /persist exists → uses it, otherwise config/ ──
+    persist_dir = Path("/persist")
+    if persist_dir.is_dir():
+        check("uses /persist when available",
+              str(billing._STRIPE_STATE_FILE).startswith("/persist"))
+    else:
+        check("falls back to config/ when no /persist",
+              "config" in str(billing._STRIPE_STATE_FILE))
+
+    # ── 3. _load_stripe_state returns dict ──
+    state = billing._load_stripe_state()
+    check("_load_stripe_state returns dict", isinstance(state, dict))
+    check("state has subscriptions key", "subscriptions" in state)
+
+    # ── 4. _save and _load round-trip in temp dir ──
+    tmp = tempfile.mkdtemp()
+    try:
+        orig = billing._STRIPE_STATE_FILE
+        tmp_file = Path(tmp) / "stripe_state.json"
+        billing._STRIPE_STATE_FILE = tmp_file
+
+        test_state = {
+            "subscriptions": {},
+            "trials": {"user_123": {"started_at": 1700000000}},
+            "credits": {"user_123": {"balance": 500, "history": []}},
+        }
+        billing._save_stripe_state(test_state)
+        check("stripe_state file created", tmp_file.exists())
+
+        loaded = billing._load_stripe_state()
+        check("round-trip: trials preserved",
+              loaded["trials"]["user_123"]["started_at"] == 1700000000)
+        check("round-trip: credits preserved",
+              loaded["credits"]["user_123"]["balance"] == 500)
+
+        # ── 5. Corrupt file → returns default ──
+        tmp_file.write_text("{bad json", encoding="utf-8")
+        fallback = billing._load_stripe_state()
+        check("corrupt file → returns default dict", fallback == {"subscriptions": {}})
+
+        # ── 6. Missing file → returns default ──
+        tmp_file.unlink()
+        missing = billing._load_stripe_state()
+        check("missing file → returns default dict", missing == {"subscriptions": {}})
+
+    finally:
+        billing._STRIPE_STATE_FILE = orig
+        shutil.rmtree(tmp, ignore_errors=True)
+
+    # ── 7. FREE_TRIAL_DAYS constant ──
+    check("FREE_TRIAL_DAYS is 15", billing.FREE_TRIAL_DAYS == 15)
+
+
+# ═════════════════════════════════════════════
+# CONNECTIONS.JSON — CLEAN STATE (no legacy entries)
+# ═════════════════════════════════════════════
+def test_connections_json_clean():
+    """Test connections.json has no legacy ollama-fly or fallback openrouter entries."""
+    print("\n=== TORTURE: connections.json — clean state ===")
+    from pathlib import Path
+    import web.app as _app
+
+    # Read connections via app's own loader (respects CONNECTIONS_FILE after prior test swaps)
+    data = _app._load_connections()
+    check("connections key in data", "connections" in data)
+    conns = data.get("connections", [])
+    conn_ids = [c.get("id", "") for c in conns if isinstance(c, dict)]
+
+    check("no ollama-fly entry", "ollama-fly" not in conn_ids)
+    check("no legacy openrouter fallback",
+          not any(c.get("is_fallback") for c in conns if isinstance(c, dict)))
+    check("connections is list", isinstance(conns, list))
+    check("agent_connections key exists", "agent_connections" in data)
+
+
+# ═════════════════════════════════════════════
 if __name__ == "__main__":
     test_boundary_policy()
     test_pii_guard_extended()
@@ -8072,6 +8379,10 @@ if __name__ == "__main__":
     test_connections_all_models_static()
     test_admin_keys_template_providers()
     test_chat_html_three_mode_selector()
+    test_resolve_connection_userkey()
+    test_api_user_models()
+    test_stripe_state_persist_path()
+    test_connections_json_clean()
     test_soul_script_helpers()
     test_soul_script_api()
     test_soul_script_faiss_indexing()

@@ -91,10 +91,10 @@ OrionForge is organized into four directories — an active development branch, 
 ```
 OrionForge/
 ├── orion-ui-standalone/  # 🔧 Active Development Branch
-│   ├── web/              # FastAPI app (~5,700 lines, 162 routes, 16 templates)
+│   ├── web/              # FastAPI app (~5,800 lines, 163 routes, 16 templates)
 │   │   ├── app.py        # Main application — all page & API routes
 │   │   ├── auth.py       # Supabase OAuth + JWT verification (121 lines)
-│   │   ├── stripe_billing.py  # Stripe subscriptions, credits, trial (840 lines)
+│   │   ├── stripe_billing.py  # Stripe subscriptions, credits, trial (1,016 lines)
 │   │   ├── image_gen.py  # Image generation (9 providers)
 │   │   ├── static/       # CSS
 │   │   └── templates/    # Jinja2 HTML templates (16 files, 15 pages + base layout)
@@ -115,7 +115,7 @@ OrionForge/
 │   ├── directives/       # Agent soul script / directive markdown files
 │   ├── notes/            # Agent note markdown files
 │   ├── scripts/          # Seed scripts (seed_memories.py, seed_ui_knowledge.py)
-│   └── tests/            # Test suite (11 files, 246 functions, ~3,600 checks)
+│   └── tests/            # Test suite (11 files, 250 functions, ~3,700 checks)
 │
 ├── engine/               # ⚙️  Stable Frozen Core
 │   └── src/              # Synced from orion-ui-standalone after testing
@@ -173,7 +173,7 @@ OrionForge uses **Supabase OAuth** for authentication and **Stripe** for billing
 | **Login** | Supabase OAuth (Google, GitHub, email) via `/login` |
 | **JWT verification** | `auth.py` — JWKS-based token validation, session middleware |
 | **Subscription** | $9.99/month Pro plan via Stripe Checkout (`/plans`) |
-| **15-day trial** | Free trial on first sign-up, auto-expires |
+| **15-day trial** | Free trial on first sign-up, auto-expires. Trial state persisted across deploys via Fly.io volume |
 | **Credit system** | Buy credit packs in the store (`/store`) — spend on tools and LLM usage |
 | **LLM markup** | Platform-hosted LLM calls billed at 2× base cost, deducted from credits |
 | **TTS/STT billing** | Per-use billing for platform-hosted voice services (2× markup) |
@@ -206,16 +206,31 @@ OrionForge uses **Supabase OAuth** for authentication and **Stripe** for billing
 
 ## LLM & Image Providers
 
-### Chat / Completion
+### Chat / Completion — 3-Mode Connection System
 
-The engine connects to any **OpenAI-compatible** endpoint. Native provider support:
+The chat dropdown offers three connection modes:
+
+| Mode | Description |
+|---|---|
+| **🧩 Platform Models** | OpenRouter gateway — access hundreds of models via platform-hosted API key |
+| **🤖 Auto (User Router)** | 6-tier model router selects the best model per task (budget-aware, escalation chains) |
+| **👤 User Models** | Bring your own API keys — direct access to 5 providers without platform markup |
+
+**User Model Providers** (configured via Settings → API Keys):
+
+| Provider | Client | Models |
+|---|---|---|
+| **OpenAI** | `openai_compat` | GPT-4o, GPT-4o Mini, o1, o3-mini, GPT-4 Turbo |
+| **Anthropic** | `anthropic` | Claude Sonnet 4, Claude 3.5 Sonnet, Claude 3 Haiku |
+| **DeepSeek** | `openai_compat` | DeepSeek Chat, DeepSeek Reasoner |
+| **OpenRouter** | `openai_compat` | Unified gateway — GPT-4o, Claude, Gemini, Llama, DeepSeek, Grok, and more |
+| **Google Gemini** | `openai_compat` | Gemini 2.0 Flash, Gemini 1.5 Pro, Gemini 1.5 Flash |
+
+**Platform & Local Providers** (managed by admin):
 
 | Provider | Client | Notes |
 |---|---|---|
-| **OpenRouter** | `openai_compat` | Unified gateway — OpenAI, Anthropic, Google, DeepSeek, Mistral, Llama, and hundreds more |
-| **OpenAI** | `openai_compat` | GPT-4o, GPT-4 Turbo, o1, o3, etc. |
-| **Anthropic** | `anthropic` | Claude 4 Opus/Sonnet, Claude 3.5, native SDK |
-| **DeepSeek** | `openai_compat` | DeepSeek-V3, DeepSeek-R1 via OpenAI-compatible API |
+| **OpenRouter** | `openai_compat` | Platform-hosted unified gateway — all providers, no user key needed |
 | **Ollama** | `ollama` | Any local model (Llama, Mistral, Phi, Qwen, etc.) |
 | LM Studio, etc. | `openai_compat` | Any OpenAI-compatible endpoint |
 
@@ -251,7 +266,7 @@ The main app and three sidecar services are deployed on **Fly.io** with **Flycas
 
 | Service | Fly.io App | Port | Purpose |
 |---|---|---|---|
-| **Main App** | `orionforge-engine` | 8989 | FastAPI web dashboard |
+| **Main App** | `orionforge-engine` | 8989 | FastAPI web dashboard (1 GB persistent volume at `/persist` for billing state) |
 | **SearXNG** | `orionforge-engine-searxng` | 8080 | Meta-search engine (7 engines: Google, DuckDuckGo, Bing, Wikipedia, GitHub, Arxiv, StackOverflow) |
 | **OpenedAI Speech** | `orionforge-engine-tts` | 8000 | Text-to-speech (Piper + XTTS v2) with persistent volume |
 | **Whisper** | `orionforge-engine-whisper` | 8000 | Speech-to-text (faster-whisper + FastAPI) |
@@ -280,7 +295,7 @@ Sidecar services communicate via Flycast private networking (`.flycast` URLs). T
 
 ## Test Suite
 
-11 test files with **246** test functions and **~3,600** assertions:
+11 test files with **250** test functions and **~3,700** assertions:
 
 ```powershell
 cd orion-ui-standalone
@@ -289,7 +304,7 @@ python tests/run_all.py
 
 | Test File | Functions | Checks | Coverage Area |
 |---|---|---|---|
-| `test_torture.py` | 99 | ~2,550 | Deep torture of all code paths — memory, vault, sort, policy, tools, templates, model router, presets, 6-tier routing, sidecar wiring, soul script helpers, soul script API, soul script FAISS indexing, note collector soul script injection, profiles template collapsible sections, admin keys, chat 3-mode selector |
+| `test_torture.py` | 103 | ~2,600 | Deep torture of all code paths — memory, vault, sort, policy, tools, templates, model router, presets, 6-tier routing, sidecar wiring, soul script helpers, soul script API, soul script FAISS indexing, note collector soul script injection, profiles template collapsible sections, admin keys, chat 3-mode selector, user model catalog, `__userkey_` dynamic connections, Stripe state persistence |
 | `test_memory.py` | 23 | 155 | VaultStore, MemoryVault, Memory types, PII guard |
 | `test_stress.py` | 29 | 398 | Rapid-fire ops, concurrent access, boundary conditions, router presets, coding tiers |
 | `test_registry_and_tools.py` | 17 | 86 | Tool registry, cost tracker, web search |
@@ -300,7 +315,7 @@ python tests/run_all.py
 | `test_metering.py` | 11 | 92 | Token accounting, cost computation, aggregation |
 | `test_data_paths.py` | 5 | 31 | Data directory layout, auto-creation, isolation |
 | `test_tools.py` | 4 | 38 | EchoTool, ContinuationUpdateTool, EmailTool, RuntimePolicy |
-| **Total** | **246** | **~3,600** | |
+| **Total** | **250** | **~3,700** | |
 
 ---
 
@@ -422,10 +437,11 @@ These run as separate Docker containers via `docker compose` inside their respec
 
 | Technology | Role |
 |---|---|
-| **FastAPI** + **Uvicorn** | Web server & async API (162 routes) |
+| **FastAPI** + **Uvicorn** | Web server & async API (163 routes) |
 | **FAISS** (`faiss-cpu`) | Vector similarity search for memory + soul script retrieval |
 | **sentence-transformers** | Semantic embeddings (`all-mpnet-base-v2`) |
 | **Jinja2** | HTML templates (16 files) |
+| **Fly.io Volumes** | 1 GB persistent volume (`/persist`) for billing & trial state across deploys |
 | **Supabase** | OAuth authentication + JWT verification |
 | **Stripe** | Subscription billing, credit system, webhook handling |
 | **Fly.io** | Cloud hosting with Flycast private networking for sidecar services |
