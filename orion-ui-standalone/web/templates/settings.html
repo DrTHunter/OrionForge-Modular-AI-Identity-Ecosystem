@@ -148,6 +148,28 @@
       </div>
     </div>
 
+    <!-- DeepSeek -->
+    <div class="settings-section">
+      <div class="settings-section-title">DeepSeek</div>
+      <div class="settings-section-desc">API key for DeepSeek-Chat, DeepSeek-Reasoner, and other DeepSeek models</div>
+      <div class="mb-3">
+        <label class="block text-xs text-forge-muted mb-1">API Key</label>
+        <input id="key-deepseek" type="password" class="search-input w-full" style="max-width:32rem;"
+               placeholder="sk-..." value="{{ settings.get('api_keys', {}).get('deepseek', '') }}">
+      </div>
+    </div>
+
+    <!-- Google Gemini -->
+    <div class="settings-section">
+      <div class="settings-section-title">Google Gemini</div>
+      <div class="settings-section-desc">API key for Gemini 2.0 Flash, Gemini 1.5 Pro, and other Google models</div>
+      <div class="mb-3">
+        <label class="block text-xs text-forge-muted mb-1">API Key</label>
+        <input id="key-google_gemini" type="password" class="search-input w-full" style="max-width:32rem;"
+               placeholder="AIza..." value="{{ settings.get('api_keys', {}).get('google_gemini', '') }}">
+      </div>
+    </div>
+
     <!-- OpenRouter -->
     <div class="settings-section">
       <div class="settings-section-title">OpenRouter</div>
