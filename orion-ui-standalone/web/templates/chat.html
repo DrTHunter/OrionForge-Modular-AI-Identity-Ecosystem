@@ -789,19 +789,9 @@
               <input id="chat-max-steps" type="number" value="3" min="1" max="100" class="tb-num">
             </span>
             <select id="chat-connection" class="tb-sel" title="API Connection" onchange="onConnectionChange(this)">
-              <option value="__platform__" data-type="platform" data-provider="openrouter" data-url="" data-models="">🧩 OpenRouter</option>
+              <option value="__platform__" data-type="platform" data-provider="openrouter" data-url="" data-models="">🧩 Platform Models</option>
               <option value="__auto__" data-type="auto" data-provider="router" data-url="" data-models="">🤖 Auto (User Router)</option>
-              {% for conn in user_connections %}
-              {% if conn.enabled %}
-              <option value="{{ conn.id }}"
-                      data-type="{{ conn.type or 'external' }}"
-                      data-provider="{{ conn.provider or '' }}"
-                      data-url="{{ conn.url or '' }}"
-                      data-models="{{ conn.models | join(',') }}">
-                👤 {{ conn.name }}
-              </option>
-              {% endif %}
-              {% endfor %}
+              <option value="__user__" data-type="user" data-provider="user" data-url="" data-models="">👤 User Models</option>
             </select>
             <select id="chat-model" class="tb-sel" title="Model" style="display:none;">
               <option value="">Loading…</option>
@@ -960,6 +950,13 @@ function onConnectionChange(sel) {
     modelSel.style.display = 'none';
     return;
   }
+  if (sel.value === '__user__') {
+    connSel.classList.add('cloud-conn');
+    modelSel.style.display = '';
+    modelSel.innerHTML = '<option value="">Loading user models…</option>';
+    fetchUserModels();
+    return;
+  }
   if (sel.value) {
     connSel.classList.add(connType === 'local' ? 'local-conn' : 'cloud-conn');
   }
@@ -1061,6 +1058,40 @@ async function _fetchPlatformModelsFallback() {
   }
 }
 
+async function fetchUserModels() {
+  const modelSel = document.getElementById('chat-model');
+  try {
+    const resp = await fetch('/api/user/models');
+    const data = await resp.json();
+    modelSel.innerHTML = '';
+    const defOpt = document.createElement('option');
+    defOpt.value = '';
+    defOpt.textContent = 'Select model…';
+    modelSel.appendChild(defOpt);
+
+    let added = 0;
+    (data.providers || []).forEach(prov => {
+      if (!prov.models || !prov.models.length) return;
+      const group = document.createElement('optgroup');
+      group.label = `👤 ${prov.name}`;
+      prov.models.forEach(m => {
+        const o = document.createElement('option');
+        o.value = `__userkey_${prov.provider}::${m}`;
+        o.textContent = m;
+        group.appendChild(o);
+        added += 1;
+      });
+      modelSel.appendChild(group);
+    });
+
+    if (!added) {
+      modelSel.innerHTML = '<option value="">No API keys configured — add them in Settings</option>';
+    }
+  } catch (e) {
+    modelSel.innerHTML = '<option value="">⚠ Failed to load user models</option>';
+  }
+}
+
 function _buildChatRoutingPayload() {
   const connSel = document.getElementById('chat-connection');
   const modelSel = document.getElementById('chat-model');
@@ -1071,6 +1102,13 @@ function _buildChatRoutingPayload() {
     return { connection_id: null, model_override: null };
   }
   if (selectedConn === '__platform__') {
+    if (selectedModel && selectedModel.includes('::')) {
+      const parts = selectedModel.split('::');
+      return { connection_id: parts[0], model_override: parts.slice(1).join('::') || null };
+    }
+    return { connection_id: null, model_override: null };
+  }
+  if (selectedConn === '__user__') {
     if (selectedModel && selectedModel.includes('::')) {
       const parts = selectedModel.split('::');
       return { connection_id: parts[0], model_override: parts.slice(1).join('::') || null };
