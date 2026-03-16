@@ -375,11 +375,32 @@ def _resolve_connection(connection_id: str | None, agent: str) -> dict | None:
     """Pick the best API connection for a request.
 
     Priority:
-      1. Explicit connection_id (if provided and enabled)
-      2. Agent-mapped connection
-      3. First enabled user connection (type=external, not platform_hosted)
-      4. First enabled platform-hosted connection (fallback)
+      1. __userkey_<provider> — dynamic connection built from user's API keys in settings
+      2. Explicit connection_id (if provided and enabled)
+      3. Agent-mapped connection
+      4. First enabled user connection (type=external, not platform_hosted)
+      5. First enabled platform-hosted connection (fallback)
     """
+    # Handle dynamic user-key connections (e.g. __userkey_openai, __userkey_deepseek)
+    if connection_id and connection_id.startswith("__userkey_"):
+        provider = connection_id[len("__userkey_"):]
+        settings = _load_settings()
+        api_key = settings.get("api_keys", {}).get(provider, "")
+        base_url = _USER_PROVIDER_URLS.get(provider, "")
+        if api_key and base_url:
+            catalog_entry = _USER_MODEL_CATALOG.get(provider, (provider.title(), []))
+            return {
+                "id": connection_id,
+                "name": f"User — {catalog_entry[0]}",
+                "type": "external",
+                "provider": provider,
+                "url": base_url,
+                "api_key": api_key,
+                "models": catalog_entry[1],
+                "enabled": True,
+            }
+        return None
+
     store = _load_connections()
     conns = store.get("connections", [])
     agent_map = store.get("agent_connections", {})
@@ -5423,6 +5444,56 @@ async def api_get_api_keys():
         else:
             masked[k] = ""
     return JSONResponse(masked)
+
+
+# User models catalog: provider → (display name, default models)
+_USER_MODEL_CATALOG: dict[str, tuple[str, list[str]]] = {
+    "openai": ("OpenAI", [
+        "gpt-4o", "gpt-4o-mini", "o1", "o3-mini", "gpt-4-turbo",
+    ]),
+    "deepseek": ("DeepSeek", [
+        "deepseek-chat", "deepseek-reasoner",
+    ]),
+    "openrouter": ("OpenRouter", [
+        "openai/gpt-4o", "openai/gpt-4o-mini", "openai/o1", "openai/o3-mini",
+        "anthropic/claude-3.5-sonnet", "anthropic/claude-3-haiku",
+        "google/gemini-2.0-flash-001", "google/gemini-flash-1.5",
+        "meta-llama/llama-3.3-70b-instruct", "deepseek/deepseek-chat",
+        "deepseek/deepseek-r1", "x-ai/grok-3", "x-ai/grok-3-mini",
+    ]),
+    "google_gemini": ("Google Gemini", [
+        "gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash",
+    ]),
+    "anthropic": ("Anthropic", [
+        "claude-sonnet-4-20250514", "claude-3-5-sonnet-20241022", "claude-3-haiku-20240307",
+    ]),
+}
+
+# Provider → (base URL, API key env var) for building dynamic connections
+_USER_PROVIDER_URLS: dict[str, str] = {
+    "openai": "https://api.openai.com/v1",
+    "deepseek": "https://api.deepseek.com/v1",
+    "openrouter": "https://openrouter.ai/api/v1",
+    "google_gemini": "https://generativelanguage.googleapis.com/v1beta/openai",
+    "anthropic": "https://api.anthropic.com/v1",
+}
+
+
+@app.get("/api/user/models")
+async def api_user_models():
+    """Return available LLM models based on which API keys the user has configured."""
+    settings = _load_settings()
+    keys = settings.get("api_keys", {})
+    providers = []
+    for provider_key, (display_name, models) in _USER_MODEL_CATALOG.items():
+        api_val = keys.get(provider_key, "")
+        if api_val and len(api_val) >= 4:
+            providers.append({
+                "provider": provider_key,
+                "name": display_name,
+                "models": models,
+            })
+    return JSONResponse({"providers": providers})
 
 
 # ═══════════════════════════════════════════════════════════════════
