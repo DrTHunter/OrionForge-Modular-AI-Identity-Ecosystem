@@ -75,5 +75,68 @@
     "display_name": "new_agent",
     "deleted_at": "2026-03-15T17:29:49.539032+00:00",
     "expires_at": "2026-04-14T17:29:49.541034+00:00"
+  },
+  {
+    "id": "new_agent_b8ae1452",
+    "name": "new_agent",
+    "display_name": "new_agent",
+    "deleted_at": "2026-03-16T17:36:40.374624+00:00",
+    "expires_at": "2026-04-15T17:36:40.376624+00:00"
+  },
+  {
+    "id": "new_agent_47ab0094",
+    "name": "new_agent",
+    "display_name": "new_agent",
+    "deleted_at": "2026-03-16T17:37:29.258359+00:00",
+    "expires_at": "2026-04-15T17:37:29.281632+00:00"
+  },
+  {
+    "id": "new_agent_e60d7ee4",
+    "name": "new_agent",
+    "display_name": "new_agent",
+    "deleted_at": "2026-03-16T17:42:32.659019+00:00",
+    "expires_at": "2026-04-15T17:42:32.661361+00:00"
+  },
+  {
+    "id": "new_agent_078c3bae",
+    "name": "new_agent",
+    "display_name": "new_agent",
+    "deleted_at": "2026-03-16T17:43:10.296942+00:00",
+    "expires_at": "2026-04-15T17:43:10.299066+00:00"
+  },
+  {
+    "id": "new_agent_a97e424b",
+    "name": "new_agent",
+    "display_name": "new_agent",
+    "deleted_at": "2026-03-16T17:50:19.665364+00:00",
+    "expires_at": "2026-04-15T17:50:19.667375+00:00"
+  },
+  {
+    "id": "new_agent_25b22b19",
+    "name": "new_agent",
+    "display_name": "new_agent",
+    "deleted_at": "2026-03-16T17:54:04.543973+00:00",
+    "expires_at": "2026-04-15T17:54:04.544973+00:00"
+  },
+  {
+    "id": "new_agent_3a0979b8",
+    "name": "new_agent",
+    "display_name": "new_agent",
+    "deleted_at": "2026-03-16T17:54:49.388175+00:00",
+    "expires_at": "2026-04-15T17:54:49.390175+00:00"
+  },
+  {
+    "id": "new_agent_d9c8dcfe",
+    "name": "new_agent",
+    "display_name": "new_agent",
+    "deleted_at": "2026-03-16T17:56:02.311653+00:00",
+    "expires_at": "2026-04-15T17:56:02.313650+00:00"
+  },
+  {
+    "id": "new_agent_d8deb95f",
+    "name": "new_agent",
+    "display_name": "new_agent",
+    "deleted_at": "2026-03-16T17:56:21.238158+00:00",
+    "expires_at": "2026-04-15T17:56:21.240159+00:00"
   }
 ]

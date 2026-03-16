@@ -48,4 +48,4 @@ engine/src/
 Code in `engine/` should not be modified for experimental features.  
 New capabilities are developed in `orion-ui-standalone/src/`, tested thoroughly, then promoted here once stable.
 
-Files are synced from `orion-ui-standalone/src/` → `engine/src/` after passing the full test suite (246 functions, ~3,600 assertions).
+Files are synced from `orion-ui-standalone/src/` → `engine/src/` after passing the full test suite (250 functions, ~3,700 assertions).
