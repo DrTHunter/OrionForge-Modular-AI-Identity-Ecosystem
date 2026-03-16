@@ -25,7 +25,14 @@ from typing import Optional
 log = logging.getLogger("soulscript.stripe")
 
 _CONFIG_DIR = Path(__file__).resolve().parent.parent / "config"
-_STRIPE_STATE_FILE = _CONFIG_DIR / "stripe_state.json"
+
+# Use persistent volume on Fly.io if available, otherwise fall back to config/
+_PERSIST_DIR = Path("/persist")
+_STRIPE_STATE_FILE = (
+    _PERSIST_DIR / "stripe_state.json"
+    if _PERSIST_DIR.is_dir()
+    else _CONFIG_DIR / "stripe_state.json"
+)
 
 # ── Stripe keys from environment (never hardcode) ────────────────
 STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")

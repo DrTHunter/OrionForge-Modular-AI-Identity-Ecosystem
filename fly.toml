@@ -35,6 +35,10 @@ primary_region = 'iad'
     grace_period = '10s'
     path = '/api/auth/config'
 
+[mounts]
+  source = 'orion_data'
+  destination = '/persist'
+
 [[vm]]
   size = 'shared-cpu-2x'
   memory = '1gb'
