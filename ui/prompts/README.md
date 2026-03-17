@@ -7,7 +7,6 @@ Base system prompt files for each agent. These define the agent's identity, pers
 | File | Agent |
 |------|-------|
 | `astraea.system.md` | Astraea — sharp, no-nonsense digital mind |
-| `callum.system.md` | Callum — legacy AI / guardian construct |
 | `codex_animus.system.md` | Codex Animus — AI architect, system designer |
 
 ## How It Works

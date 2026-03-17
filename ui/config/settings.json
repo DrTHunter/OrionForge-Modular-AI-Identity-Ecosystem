@@ -1,1 +1,93 @@
-﻿{"timezone":"auto","timezone_offset_hours":null,"chat_background":null,"agent_avatars":{},"agent_configs":{}}
+{
+  "timezone": "auto",
+  "timezone_offset_hours": null,
+  "chat_background": "/uploads/chat_bg.jpg",
+  "agent_avatars": {
+    "astraea": {
+      "image": "/uploads/avatar_astraea_777d919e.png",
+      "photo_zoom": 1,
+      "photo_x": 0,
+      "photo_y": 41.96
+    },
+    "codex_animus": {
+      "image": "/uploads/avatar_codex_animus_c01bd646.jpg",
+      "photo_zoom": 1,
+      "photo_x": 100,
+      "photo_y": 23.53
+    }
+  },
+  "agent_configs": {
+    "astraea": {
+      "attached_notes": [
+        "5ccf5b26",
+        "5b3b207f"
+      ],
+      "note_modes": {
+        "5ccf5b26": "always",
+        "5b3b207f": "always"
+      },
+      "display_name": "astraea",
+      "description": "",
+      "model": "",
+      "allowed_tools": [
+        "continuation_update",
+        "cost_tracker",
+        "directives",
+        "echo",
+        "email",
+        "memory",
+        "web_search"
+      ],
+      "identity_faiss_profile": "__default__",
+      "memory_vault_profile": "__default__"
+    }
+  },
+  "tool_config": {
+    "web_search": {
+      "require_justification": true,
+      "searxng_url": "http://localhost:3000/search",
+      "modes": {
+        "fast": {
+          "pages": 2,
+          "return_count": 2,
+          "word_limit": 800
+        },
+        "deep": {
+          "pages": 8,
+          "return_count": 5,
+          "word_limit": 3000
+        },
+        "normal": {
+          "pages": 4,
+          "return_count": 3,
+          "word_limit": 1500
+        }
+      }
+    }
+  },
+  "timezone_name": null,
+  "api_keys": {
+    "openai": "",
+    "anthropic": "",
+    "deepseek": "",
+    "google_gemini": "",
+    "openrouter": "",
+    "ollama_url": "http://orionforge-engine-ollama.flycast:11434"
+  },
+  "stt": {
+    "provider": "whisper",
+    "whisper_api_key": "",
+    "whisper_model": "base"
+  },
+  "tts": {
+    "provider": "edge_tts",
+    "elevenlabs_api_key": "",
+    "elevenlabs_voice_id": "",
+    "edge_tts_voice": "en-US-AriaNeural"
+  },
+  "skin": "cyberpunk_neon",
+  "user_profile": {
+    "name": "",
+    "color": "#10b981"
+  }
+}

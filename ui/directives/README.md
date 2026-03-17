@@ -16,7 +16,6 @@ Agents can also search directives mid-conversation using the `directives` tool (
 |------|-------------|
 | `shared.md` | All agents |
 | `astraea.md` | Only Astraea |
-| `callum.md` | Only Callum |
 | `codex_animus.md` | Only Codex Animus |
 | `manifest.json` | Auto-generated index of all directive sections |
 
