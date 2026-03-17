@@ -1,1 +1,23 @@
-﻿[]
+[
+  {
+    "id": "new_agent_643da777",
+    "name": "new_agent",
+    "display_name": "new_agent",
+    "deleted_at": "2026-03-16T19:22:29.348967+00:00",
+    "expires_at": "2026-04-15T19:22:29.350563+00:00"
+  },
+  {
+    "id": "new_agent_c099b421",
+    "name": "new_agent",
+    "display_name": "new_agent",
+    "deleted_at": "2026-03-17T12:32:50.804453+00:00",
+    "expires_at": "2026-04-16T12:32:50.829321+00:00"
+  },
+  {
+    "id": "new_agent_ca82ee2a",
+    "name": "new_agent",
+    "display_name": "new_agent",
+    "deleted_at": "2026-03-17T12:38:07.206724+00:00",
+    "expires_at": "2026-04-16T12:38:07.209004+00:00"
+  }
+]

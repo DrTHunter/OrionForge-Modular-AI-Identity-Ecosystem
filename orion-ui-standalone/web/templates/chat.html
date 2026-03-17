@@ -224,12 +224,52 @@
   }
 
   /* Typing animation */
-  .typing-indicator .msg-body {
+  .typing-indicator .msg-body,
+  .streaming-body {
     animation: pulse 1.5s ease-in-out infinite;
   }
   @keyframes pulse {
     0%, 100% { opacity: 0.5; }
     50% { opacity: 1; }
+  }
+
+  /* ── Collapsible thinking panel (streaming) ── */
+  .thinking-panel {
+    margin-left: 3.5rem; margin-top: 0.25rem; margin-bottom: 0.25rem;
+    border-left: 2px solid #6366f1;
+    border-radius: 0 0.375rem 0.375rem 0;
+    background: rgba(99,102,241,0.04);
+    overflow: hidden;
+    transition: background 0.2s;
+  }
+  .thinking-panel-header {
+    display: flex; align-items: center; gap: 0.375rem;
+    padding: 0.375rem 0.625rem;
+    cursor: pointer; user-select: none;
+    font-size: 0.8125rem; color: #a5b4fc;
+  }
+  .thinking-panel-header:hover { background: rgba(99,102,241,0.08); }
+  .thinking-panel-header .chevron {
+    font-size: 0.5rem; transition: transform 0.15s;
+  }
+  .thinking-panel.collapsed .chevron { transform: rotate(-90deg); }
+  .thinking-panel-body {
+    padding: 0.25rem 0.625rem 0.375rem;
+    font-size: 0.8125rem; line-height: 1.5;
+    color: #94a3b8; white-space: pre-wrap; word-break: break-word;
+    max-height: 20rem; overflow-y: auto;
+  }
+  .thinking-panel.collapsed .thinking-panel-body { display: none; }
+  .thinking-panel.streaming .thinking-panel-header {
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  /* Inline tool note during streaming */
+  .stream-tool-note {
+    margin-left: 3.5rem; margin-top: 0.25rem;
+    padding: 0.25rem 0.625rem;
+    font-size: 0.8125rem; color: #f59e0b;
+    border-left: 2px solid rgba(245,158,11,0.4);
   }
 
   /* ── Tick section (collapsible) ── */
@@ -1484,7 +1524,7 @@ function _toggleMicWhisper() {
 //  SIDEBAR RENDERING
 // ═══════════════════════════════════════════
 function _agentAvatarColor(name) {
-  const colors = { codex_animus:'#6366f1', astraea:'#ec4899', callum:'#10b981' };
+  const colors = { codex_animus:'#6366f1', astraea:'#ec4899' };
   return colors[(name || '').toLowerCase()] || '#6366f1';
 }
 
@@ -2281,85 +2321,328 @@ async function sendChatMsg() {
   const agentCap = agent.charAt(0).toUpperCase() + agent.slice(1);
   setBusy(true);
 
-  // Typing indicator
   const thread = document.getElementById('chat-thread');
-  const typingEl = document.createElement('div');
   const _tav = _avatarMap[agent] || {};
   const _typColor = _tav.color || _agentAvatarColor(agent);
-  const _typAvHtml = _tav.image
+  const avatarHtml = _tav.image
     ? `<div class="msg-avatar"><img src="${_tav.image}" alt="${agentCap}"></div>`
     : `<div class="msg-avatar" style="background:${_typColor};">${agent.charAt(0).toUpperCase()}</div>`;
-  typingEl.className = 'chat-entry assistant-entry typing-indicator';
-  typingEl.innerHTML = `<div class="msg-header">${_typAvHtml}<span class="msg-name">${agentCap}</span></div>
-    <div class="msg-body-wrap"><div class="msg-body" style="color:#71717a;">Thinking…</div></div>`;
-  thread.appendChild(typingEl);
+
+  // Build the assistant entry container (streaming fills it incrementally)
+  const el = document.createElement('div');
+  el.className = 'chat-entry assistant-entry';
+  el.innerHTML = `<div class="msg-header">${avatarHtml}<span class="msg-name">${agentCap}</span><span class="msg-time">${new Date().toLocaleTimeString()}</span></div>
+    <div class="msg-body-wrap"><div class="msg-body streaming-body" style="color:#71717a;">Thinking…</div></div>`;
+  thread.appendChild(el);
   thread.scrollTop = thread.scrollHeight;
 
+  const bodyEl = el.querySelector('.msg-body');
+  let accText = '';          // accumulated response text (for markdown re-render)
+  let thinkPanel = null;     // current thinking panel element
+  let thinkBodyEl = null;    // inner body of the thinking panel
+  let thinkStart = null;     // timestamp for "Thought for X s"
+  let _renderTimer = null;   // debounce timer for markdown re-render
+  let _streamDone = false;
+
+  function _scheduleRender() {
+    if (_renderTimer) return;
+    _renderTimer = setTimeout(() => {
+      _renderTimer = null;
+      bodyEl.innerHTML = formatAssistantText(accText);
+      if (!_streamDone) thread.scrollTop = thread.scrollHeight;
+    }, 60);
+  }
+
+  function _openThinkPanel() {
+    thinkPanel = document.createElement('div');
+    thinkPanel.className = 'thinking-panel streaming';
+    thinkPanel.innerHTML = `<div class="thinking-panel-header" onclick="this.parentElement.classList.toggle('collapsed')">
+        <span class="chevron">▼</span> <span class="thinking-label">Thinking…</span></div>
+      <div class="thinking-panel-body"></div>`;
+    // Insert before the msg-body-wrap
+    const wrap = el.querySelector('.msg-body-wrap');
+    wrap.parentElement.insertBefore(thinkPanel, wrap);
+    thinkBodyEl = thinkPanel.querySelector('.thinking-panel-body');
+    thinkStart = Date.now();
+    thread.scrollTop = thread.scrollHeight;
+  }
+
+  function _closeThinkPanel() {
+    if (!thinkPanel) return;
+    thinkPanel.classList.remove('streaming');
+    thinkPanel.classList.add('collapsed');
+    const secs = ((Date.now() - (thinkStart || Date.now())) / 1000).toFixed(1);
+    thinkPanel.querySelector('.thinking-label').textContent = `Thought for ${secs}s`;
+    thinkPanel = null; thinkBodyEl = null; thinkStart = null;
+  }
+
   try {
-    const resp = await fetch('/api/chat/send', {
+    const resp = await fetch('/api/chat/stream', {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify(payload),
     });
-    const data = await resp.json();
-    typingEl.remove();
 
-    if (data.error) {
-      // Handle insufficient credits with a helpful message
-      if (data.redirect === '/store' || resp.status === 402) {
-        const credMsg = `${data.error}\n\nYou need **${data.credits_needed || '?'}** credits but have **${data.credits_balance ?? '?'}**.\n\n[Buy credits in the Store →](/store)`;
-        pushMsg('error', credMsg);
-        updateCreditBalance(data.credits_balance ?? 0);
-      } else {
-        pushMsg('error', data.error);
-      }
+    if (!resp.ok) {
+      let errText = 'API error ' + resp.status;
+      try { const ej = await resp.json(); errText = ej.error || errText; } catch(_){}
+      el.remove();
+      pushMsg('error', errText);
       setBusy(false);
       return;
     }
 
-    if (!_chatId && data.chat_id) {
-      _chatId = data.chat_id;
+    // Remove placeholder text
+    bodyEl.style.color = '';
+    bodyEl.textContent = '';
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let sseBuffer = '';
+    let finalData = null;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      sseBuffer += decoder.decode(value, { stream: true });
+
+      // Process complete SSE lines
+      const lines = sseBuffer.split('\n');
+      sseBuffer = lines.pop(); // keep incomplete line in buffer
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        let evt;
+        try { evt = JSON.parse(line.slice(6)); } catch(_){ continue; }
+
+        switch (evt.type) {
+          case 'thinking_start':
+            _openThinkPanel();
+            // hide main body while only thinking
+            if (!accText) bodyEl.style.display = 'none';
+            break;
+
+          case 'thinking':
+            if (thinkBodyEl) {
+              thinkBodyEl.textContent += evt.content;
+              thread.scrollTop = thread.scrollHeight;
+            }
+            break;
+
+          case 'thinking_done':
+            _closeThinkPanel();
+            break;
+
+          case 'text':
+            if (bodyEl.style.display === 'none') bodyEl.style.display = '';
+            accText += evt.content;
+            _scheduleRender();
+            break;
+
+          case 'tool_start': {
+            const toolNote = document.createElement('div');
+            toolNote.className = 'stream-tool-note';
+            toolNote.innerHTML = `⚡ Calling <strong>${esc(evt.tool)}</strong>…`;
+            el.appendChild(toolNote);
+            thread.scrollTop = thread.scrollHeight;
+            break;
+          }
+
+          case 'tool_result': {
+            const notes = el.querySelectorAll('.stream-tool-note');
+            const last = notes[notes.length - 1];
+            if (last) last.innerHTML = `⚡ <strong>${esc(evt.tool)}</strong> → ${esc((evt.result||'').substring(0, 120))}`;
+            break;
+          }
+
+          case 'error':
+            _streamDone = true;
+            el.remove();
+            pushMsg('error', evt.message || 'Stream error');
+            setBusy(false);
+            return;
+
+          case 'done':
+            finalData = evt;
+            break;
+        }
+      }
+    }
+
+    // Close any still-open thinking panel
+    _closeThinkPanel();
+    _streamDone = true;
+
+    // Final markdown render
+    if (_renderTimer) { clearTimeout(_renderTimer); _renderTimer = null; }
+    const responseText = finalData?.response || accText;
+    accText = responseText;
+    bodyEl.style.display = '';
+    bodyEl.innerHTML = formatAssistantText(responseText);
+    bodyEl.classList.remove('streaming-body');
+
+    // Remove inline tool notes (final tool calls panel replaces them)
+    el.querySelectorAll('.stream-tool-note').forEach(n => n.remove());
+
+    if (!finalData) { setBusy(false); return; }
+
+    // Update chat ID
+    if (!_chatId && finalData.chat_id) {
+      _chatId = finalData.chat_id;
       _index.chats.unshift({
-        id: data.chat_id, title: 'New Chat', folder_id: null,
+        id: finalData.chat_id, title: 'New Chat', folder_id: null,
         agent, mode: 'chat', created: new Date().toISOString(),
         updated: new Date().toISOString(),
       });
       renderSidebar();
     }
-
     document.getElementById('chat-title').textContent = agentCap;
 
-    const msgData = {agent, model: data.model||'', usage: data.usage||{}, cost: data.cost||{}, tool_calls: data.tool_calls||[], generated_image: data.generated_image||null, _live: true};
-    pushMsg('assistant', data.response, msgData, data.layers);
+    // Add metadata (model, usage, cost)
+    const d = finalData;
+    if (d.usage || d.model) {
+      const parts = [];
+      if (d.model) parts.push(d.model);
+      if (d.usage) {
+        if (d.usage.prompt_tokens) parts.push(`In: ${d.usage.prompt_tokens.toLocaleString()}`);
+        if (d.usage.completion_tokens) parts.push(`Out: ${d.usage.completion_tokens.toLocaleString()}`);
+      }
+      const cost = d.cost?.total_cost || null;
+      let apiCostStr = null;
+      if (cost !== null) {
+        apiCostStr = typeof cost === 'number' ? cost.toFixed(6) : cost;
+        parts.push(`<span class="meta-cost">API $${apiCostStr}</span>`);
+      }
+      const metaDiv = document.createElement('div');
+      metaDiv.className = 'msg-meta';
+      metaDiv.innerHTML = parts.join(' · ');
+      el.appendChild(metaDiv);
+    }
+
+    // Generated image
+    if (d.generated_image && d.generated_image.url) {
+      const gi = d.generated_image;
+      const imgDiv = document.createElement('div');
+      imgDiv.className = 'msg-generated-image';
+      imgDiv.style.cssText = 'margin:0.75rem 0 0.5rem; max-width:512px;';
+      imgDiv.innerHTML = `<img src="${gi.url}" alt="${esc((gi.prompt||'').substring(0,120))}"
+          style="width:100%; border-radius:0.5rem; cursor:pointer; border:1px solid rgba(255,255,255,0.08);"
+          onclick="window.open(this.src,'_blank')" title="Click to open full size">
+        <div style="display:flex; align-items:center; gap:0.375rem; margin-top:0.375rem; font-size:0.7rem; color:#71717a;">
+          <span>🎨</span><span>${esc(gi.provider||'')}</span></div>`;
+      el.appendChild(imgDiv);
+    }
+
+    // Tool calls panel
+    if (d.tool_calls && d.tool_calls.length > 0) {
+      const tcId = 'tc-' + Date.now() + Math.random().toString(36).slice(2,6);
+      const tcEl = document.createElement('div');
+      tcEl.style.cssText = 'margin-left:3.5rem;margin-top:0.25rem;';
+      let entriesHtml = d.tool_calls.map(tc =>
+        `<div class="tool-call-entry"><span class="tool-call-name">⚡ ${esc(tc.tool)}</span><span class="tool-call-round">round ${tc.round}</span>
+        <div class="tool-call-args">${esc(JSON.stringify(tc.arguments))}</div>
+        <div class="tool-call-result">${esc(tc.result)}</div></div>`
+      ).join('');
+      tcEl.innerHTML = `<button class="tool-calls-badge" onclick="let p=document.getElementById('${tcId}');p.classList.toggle('open');this.classList.toggle('open');">⚡ ${d.tool_calls.length} tool call${d.tool_calls.length===1?'':'s'}</button>
+        <div class="tool-calls-panel" id="${tcId}">${entriesHtml}</div>`;
+      el.appendChild(tcEl);
+    }
+
+    // Prompt layers
+    if (d.layers) {
+      const layerId = 'layers-' + Date.now() + Math.random().toString(36).slice(2,6);
+      const layers = d.layers;
+      const total = (layers.base_prompt?.chars||0) + (layers.soul_script?.chars||0)
+                  + (layers.always_on?.chars||0) + (layers.vault?.chars||0) + (layers.conversation?.chars||0);
+      const pct = (c) => total > 0 ? Math.max(2, Math.round(c / total * 100)) : 0;
+      const lDiv = document.createElement('div');
+      lDiv.innerHTML = `<button class="layers-toggle" onclick="toggleLayers('${layerId}', this)">◇ Prompt Layers</button>
+        <div class="layer-bar" id="bar-${layerId}">
+          <div class="layer-bar-seg layer-bar-1" style="width:${pct(layers.base_prompt?.chars||0)}%"></div>
+          <div class="layer-bar-seg layer-bar-2" style="width:${pct(layers.soul_script?.chars||0)}%"></div>
+          <div class="layer-bar-seg layer-bar-3" style="width:${pct(layers.always_on?.chars||0)}%"></div>
+          <div class="layer-bar-seg layer-bar-4" style="width:${pct(layers.vault?.chars||0)}%"></div>
+          <div class="layer-bar-seg layer-bar-5" style="width:${pct(layers.conversation?.chars||0)}%"></div>
+        </div>
+        <div class="layers-panel" id="${layerId}">
+          ${renderLayerRow(1, 'Base Prompt', layers.base_prompt?.chars + ' chars', layers.base_prompt?.preview)}
+          ${renderLayerRow(2, 'Soul Script', layers.soul_script?.chunks + ' chunks · ' + layers.soul_script?.chars + ' chars', layers.soul_script?.preview)}
+          ${renderLayerRow(3, 'Always-On Knowledge', layers.always_on?.chunks + ' notes · ' + layers.always_on?.chars + ' chars', layers.always_on?.preview)}
+          ${renderLayerRow(4, 'Memory Vault', layers.vault?.memories + ' memories · ' + layers.vault?.chars + ' chars', (layers.vault?.snippets||[]).join('\\n---\\n'))}
+          ${renderLayerRow(5, 'Conversation', layers.conversation?.turns + ' turns · ' + layers.conversation?.chars + ' chars', '')}
+        </div>`;
+      el.appendChild(lDiv);
+    }
+
+    // Action bar (Copy, Read Aloud, Continue, Regenerate)
+    const actionsBar = document.createElement('div');
+    actionsBar.className = 'msg-actions';
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'msg-action-btn'; copyBtn.innerHTML = '📋 Copy';
+    copyBtn.onclick = () => {
+      navigator.clipboard.writeText(responseText).then(() => {
+        copyBtn.classList.add('copied'); copyBtn.innerHTML = '✓ Copied';
+        setTimeout(() => { copyBtn.classList.remove('copied'); copyBtn.innerHTML = '📋 Copy'; }, 1800);
+      });
+    };
+    actionsBar.appendChild(copyBtn);
+    const speakBtn = document.createElement('button');
+    speakBtn.className = 'msg-action-btn'; speakBtn.innerHTML = '🔊 Read Aloud';
+    speakBtn.onclick = () => {
+      if (speakBtn.classList.contains('active')) { stopTtsGlobal(); speakBtn.classList.remove('active'); speakBtn.innerHTML = '🔊 Read Aloud'; return; }
+      _unlockAudio();
+      const prov = _ttsProvider !== 'off' ? _ttsProvider : 'edge';
+      const savedProv = _ttsProvider; _ttsProvider = prov;
+      const metaTarget = el.querySelector('.msg-meta');
+      speakBtn.classList.add('active'); speakBtn.innerHTML = '⏹ Stop';
+      speakText(responseText, metaTarget).then(r => {
+        _ttsProvider = savedProv; speakBtn.classList.remove('active'); speakBtn.innerHTML = '🔊 Read Aloud';
+      });
+    };
+    actionsBar.appendChild(speakBtn);
+    const contBtn = document.createElement('button');
+    contBtn.className = 'msg-action-btn'; contBtn.innerHTML = '▶ Continue';
+    contBtn.onclick = () => continueResponse();
+    actionsBar.appendChild(contBtn);
+    const regenBtn = document.createElement('button');
+    regenBtn.className = 'msg-action-btn'; regenBtn.innerHTML = '🔄 Regenerate';
+    regenBtn.onclick = () => regenerateResponse(_msgs.length);
+    actionsBar.appendChild(regenBtn);
+    el.appendChild(actionsBar);
+
+    // Save to _msgs for history
+    const msgData = {agent, model: d.model||'', usage: d.usage||{}, cost: d.cost||{}, tool_calls: d.tool_calls||[], generated_image: d.generated_image||null, _live: true};
+    const m = { role: 'assistant', text: responseText, time: new Date().toISOString(), data: msgData, layers: d.layers };
+    _msgs.push(m);
 
     // Memory save indicator
-    if (data.saved_memories && data.saved_memories.length > 0) {
+    if (d.saved_memories && d.saved_memories.length > 0) {
       const memEl = document.createElement('div');
       memEl.style.cssText = 'padding:0.375rem 0.75rem;margin:0.25rem 0 0.5rem;border-radius:0.375rem;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.25);color:#6ee7b7;font-size:0.75rem;display:flex;align-items:center;gap:0.375rem;';
-      const count = data.saved_memories.length;
+      const count = d.saved_memories.length;
       memEl.innerHTML = `<span style="font-size:0.875rem;">💾</span> ${count} memor${count===1?'y':'ies'} saved to vault`;
-      document.getElementById('chat-thread').appendChild(memEl);
+      thread.appendChild(memEl);
     }
 
     // Update session cost
-    _sessionCost += (data.cost?.total_cost || 0);
-    _sessionTokens += ((data.usage?.prompt_tokens||0) + (data.usage?.completion_tokens||0));
-
-    // Update credit tracking from platform usage
-    if (data.credits) {
-      if (data.credits.credits_deducted > 0) {
-        _sessionCredits += data.credits.credits_deducted;
-      }
-      if (data.credits.credits_balance !== undefined && data.credits.credits_balance >= 0) {
-        updateCreditBalance(data.credits.credits_balance);
-      }
+    _sessionCost += (d.cost?.total_cost || 0);
+    _sessionTokens += ((d.usage?.prompt_tokens||0) + (d.usage?.completion_tokens||0));
+    if (d.credits) {
+      if (d.credits.credits_deducted > 0) _sessionCredits += d.credits.credits_deducted;
+      if (d.credits.credits_balance !== undefined && d.credits.credits_balance >= 0) updateCreditBalance(d.credits.credits_balance);
     }
-
     updateCostTicker();
 
+    // Auto-play TTS if enabled
+    if (_ttsProvider !== 'off') {
+      speakText(responseText, el.querySelector('.msg-meta'));
+    }
+
+    generateSuggestions(responseText, agent);
     autoTitle();
     setBusy(false);
+
   } catch (e) {
-    typingEl.remove();
+    el.remove();
     pushMsg('error', 'Chat error: ' + e);
     setBusy(false);
   }

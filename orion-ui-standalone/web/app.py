@@ -27,10 +27,17 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 
+# Load .env before any module reads os.environ
+from dotenv import load_dotenv
+_env_path = Path(__file__).resolve().parent.parent / ".env"
+if _env_path.exists():
+    load_dotenv(_env_path)
+
 import httpx
 import yaml
 from fastapi import FastAPI, File, Query, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
+from starlette.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
@@ -51,6 +58,8 @@ from web.stripe_billing import (
     get_user_purchases, user_owns_item, purchase_tool, purchase_skin,
     purchase_agent, user_owns_agent, user_has_tool_access, SKIN_PRICES,
     get_store_agent_ids, get_user_unlocked_agents, FREE_AGENT_IDS,
+    touch_user_activity, wipe_user_data, wipe_user_by_email,
+    purge_inactive_users, list_all_users, INACTIVE_ACCOUNT_DAYS,
 )
 from src.memory.types import VALID_SCOPES, VALID_CATEGORIES
 
@@ -99,6 +108,13 @@ async def _lifespan(application: FastAPI):
         invalidate_notes_faiss()          # force singleton to reload fresh index
     except Exception as exc:
         log.warning("[startup] NotesFAISS build skipped: %s", exc)
+    # Auto-purge inactive accounts (>90 days)
+    try:
+        result = purge_inactive_users()
+        if result.get("purged_count", 0) > 0:
+            log.info("[startup] Inactive account cleanup: purged %d user(s)", result["purged_count"])
+    except Exception as exc:
+        log.warning("[startup] Inactive account purge failed: %s", exc)
     yield
 
 app = FastAPI(title="SoulScript Engine", version="0.2.0", lifespan=_lifespan)
@@ -166,8 +182,11 @@ class AuthMiddleware(BaseHTTPMiddleware):
         # Attach user info to request state
         request.state.user = extract_user_from_token(payload)
 
-        # Attach trial info for templates
+        # Record user activity for inactive-account cleanup
         user_id = request.state.user.get("id", "")
+        touch_user_activity(user_id)
+
+        # Attach trial info for templates
         trial = get_trial_status(user_id)
         sub_info = get_user_subscription(user_id)
         request.state.trial = trial
@@ -572,21 +591,31 @@ def _list_unlocked_agents(request: Request) -> list[str]:
     - Free agents (codex_animus)
     - Purchased store agents
     - User-created agents (not in the store catalog)
+
+    codex_animus is always placed first so it's the default selection.
     """
     all_agents = _list_agents()
     if _check_admin(request):
-        return all_agents
+        return _prioritize_default_agent(all_agents)
     user = getattr(request.state, "user", None)
     if not user:
-        return all_agents  # no auth → fallback to all (auth middleware handles gating)
+        return _prioritize_default_agent(all_agents)
     user_id = user.get("id", "")
     store_ids = get_store_agent_ids()
     unlocked = get_user_unlocked_agents(user_id)
-    return [
+    agents = [
         a for a in all_agents
         if a not in store_ids  # user-created agents (not in store)
         or a in unlocked       # free or purchased store agents
     ]
+    return _prioritize_default_agent(agents)
+
+
+def _prioritize_default_agent(agents: list[str]) -> list[str]:
+    """Move codex_animus to the front of the list so it's the default selection."""
+    if "codex_animus" in agents:
+        return ["codex_animus"] + [a for a in agents if a != "codex_animus"]
+    return agents
 
 def _load_profile(name: str) -> dict:
     path = _PROFILES_DIR / f"{name}.yaml"
@@ -3625,12 +3654,13 @@ async def api_chat_send(req: ChatRequest, request: Request):
             response_text += f"\n\n*Image generation failed: {exc}*"
 
     # Add tool layer to metadata
+    _tier_label = getattr(_router_decision, "tier_name", None) if _router_decision else None
     layers["tools"]["calls"] = tool_call_log
     layers["router"] = {
         "task_type": task_type,
         "routed_model": routed_model,
         "routed_provider": routed_provider,
-        "tier": router_tier.get("label") if router_tier else None,
+        "tier": _tier_label,
     }
 
     chat_data["messages"].append({
@@ -3642,7 +3672,7 @@ async def api_chat_send(req: ChatRequest, request: Request):
             "tool_calls": tool_call_log,
             "generated_image": generated_image,
             "task_type": task_type,
-            "router_tier": router_tier.get("label") if router_tier else None,
+            "router_tier": _tier_label,
         },
         "layers": layers,
     })
@@ -3679,9 +3709,421 @@ async def api_chat_send(req: ChatRequest, request: Request):
         "tool_calls": tool_call_log,
         "generated_image": generated_image,
         "task_type": task_type,
-        "router_tier": router_tier.get("label") if router_tier else None,
+        "router_tier": _tier_label,
         "credits": _credit_info,
     }
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  STREAMING CHAT — SSE endpoint with real-time thinking display
+# ═══════════════════════════════════════════════════════════════════
+
+class _ThinkTagParser:
+    """State machine that detects <think>...</think> tags in a stream.
+    Handles tags split across chunks via an internal buffer.
+    Returns a list of (event_type, text) tuples per feed() call.
+    """
+    def __init__(self):
+        self.in_think = False
+        self._buf = ""
+
+    def feed(self, text: str) -> list[tuple[str, str]]:
+        self._buf += text
+        events: list[tuple[str, str]] = []
+        while self._buf:
+            if self.in_think:
+                idx = self._buf.find("</think>")
+                if idx == -1:
+                    # Hold back last 8 chars in case of partial tag
+                    safe = self._buf[: max(0, len(self._buf) - 8)]
+                    if safe:
+                        events.append(("thinking", safe))
+                        self._buf = self._buf[len(safe):]
+                    break
+                if idx > 0:
+                    events.append(("thinking", self._buf[:idx]))
+                events.append(("thinking_done", ""))
+                self.in_think = False
+                self._buf = self._buf[idx + 8:]
+            else:
+                idx = self._buf.find("<think>")
+                if idx == -1:
+                    safe = self._buf[: max(0, len(self._buf) - 7)]
+                    if safe:
+                        events.append(("text", safe))
+                        self._buf = self._buf[len(safe):]
+                    break
+                if idx > 0:
+                    events.append(("text", self._buf[:idx]))
+                events.append(("thinking_start", ""))
+                self.in_think = True
+                self._buf = self._buf[idx + 7:]
+        return events
+
+    def flush(self) -> list[tuple[str, str]]:
+        events: list[tuple[str, str]] = []
+        if self._buf:
+            events.append(("thinking" if self.in_think else "text", self._buf))
+            self._buf = ""
+        if self.in_think:
+            events.append(("thinking_done", ""))
+            self.in_think = False
+        return events
+
+
+def _sse(data: dict) -> str:
+    """Format a dict as an SSE data line."""
+    return f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+
+@app.post("/api/chat/stream")
+async def api_chat_stream(req: ChatRequest, request: Request):
+    """Streaming chat endpoint — returns Server-Sent Events with real-time
+    thinking display and incremental text."""
+    user = getattr(request.state, "user", None)
+    conn = _resolve_connection(req.connection_id, req.agent)
+    if not conn:
+        return JSONResponse({"error": "No API connection available. Add one in Settings."}, 400)
+
+    chat_data = _load_chat(req.chat_id) if req.chat_id else None
+    if req.chat_id and not chat_data:
+        return JSONResponse({"error": "Chat not found"}, 404)
+    if not chat_data:
+        chat_data = _create_new_chat(req.agent)
+
+    return StreamingResponse(
+        _stream_chat_generator(req, request, user, conn, chat_data),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+async def _stream_chat_generator(req: ChatRequest, request: Request, user, conn, chat_data):
+    """Async generator that yields SSE events for a streaming chat."""
+    now = datetime.now(timezone.utc).isoformat()
+    chat_data["messages"].append({"role": "user", "text": req.stimulus, "time": now})
+    chat_data["updated"] = now
+
+    llm_messages, layers, tool_defs = _build_chat_messages(req.agent, chat_data["messages"])
+
+    profile = _load_profile(req.agent)
+    agent_cfg = _get_agent_config(req.agent)
+
+    # ── Model router: classify task → resolve tier/model ──
+    routed_model = None
+    routed_provider = None
+    task_type = "general"
+    _router_decision = None
+    try:
+        from src.routing.model_router import ModelRouter
+        router = ModelRouter.from_config()
+        if router.enabled and not req.model_override:
+            decision = router.route(req.stimulus)
+            task_type = decision.task_type
+            _router_decision = decision
+            if decision.is_direct_model:
+                routed_model = decision.model
+            elif not decision.fallback:
+                routed_model = decision.model
+                routed_provider = decision.provider
+    except Exception as exc:
+        log.warning("[router] Model router failed: %s", exc)
+
+    model = (
+        req.model_override
+        or routed_model
+        or agent_cfg.get("model")
+        or profile.get("model", "")
+        or (conn["models"][0] if conn.get("models") else "gpt-4o-mini")
+    )
+
+    # If router chose a specific connection, switch to it
+    if _router_decision:
+        if getattr(_router_decision, "direct_conn_id", None) and not req.model_override:
+            direct_conn = _resolve_connection(_router_decision.direct_conn_id, req.agent)
+            if direct_conn:
+                conn = direct_conn
+        elif getattr(_router_decision, "connection_id", None) and not req.model_override:
+            tier_conn = _resolve_connection(_router_decision.connection_id, req.agent)
+            if tier_conn:
+                conn = tier_conn
+
+    url = conn["url"].rstrip("/")
+    if not url.endswith("/chat/completions"):
+        url += "/chat/completions"
+    headers = {"Content-Type": "application/json"}
+    if conn.get("api_key"):
+        headers["Authorization"] = f"Bearer {conn['api_key']}"
+
+    MAX_TOOL_ROUNDS = 10
+    tool_call_log: list[dict] = []
+    total_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+    cost_data = {}
+    _credits_deducted = 0
+    _credits_balance = -1
+
+    # Inject runtime context
+    try:
+        from src.tools.runtime_info import RuntimeInfoTool
+        from src.runtime_policy import RuntimePolicy
+        policy_cfg = profile.get("policy", {})
+        policy = RuntimePolicy(
+            max_iterations=policy_cfg.get("max_iterations", 25),
+            stasis_mode=policy_cfg.get("stasis_mode", False),
+            tool_failure_mode=policy_cfg.get("tool_failure_mode", "continue"),
+        )
+        RuntimeInfoTool.set_context(profile=profile, policy=policy, execution_mode="interactive")
+    except Exception:
+        pass
+
+    running_messages = list(llm_messages)
+    full_response = ""   # accumulate final response text (for saving to chat)
+
+    for _round in range(MAX_TOOL_ROUNDS + 1):
+        payload = {
+            "model": model,
+            "messages": running_messages,
+            "temperature": profile.get("temperature", 0.7),
+            "stream": True,
+        }
+        if tool_defs:
+            payload["tools"] = tool_defs
+
+        try:
+            async with httpx.AsyncClient(timeout=180) as client:
+                async with client.stream("POST", url, json=payload, headers=headers) as resp:
+                    if resp.status_code != 200:
+                        body = await resp.aread()
+                        yield _sse({"type": "error", "message": f"API {resp.status_code}: {body.decode()[:300]}"})
+                        return
+
+                    think_parser = _ThinkTagParser()
+                    round_content = ""
+                    tool_calls_acc: dict[int, dict] = {}
+                    finish_reason = None
+
+                    async for line in resp.aiter_lines():
+                        if not line.startswith("data: "):
+                            continue
+                        data_str = line[6:].strip()
+                        if data_str == "[DONE]":
+                            break
+                        try:
+                            chunk = json.loads(data_str)
+                        except json.JSONDecodeError:
+                            continue
+                        choice = chunk.get("choices", [{}])[0]
+                        delta = choice.get("delta", {})
+                        finish_reason = choice.get("finish_reason") or finish_reason
+
+                        # ── Accumulate streamed tool call chunks ──
+                        if "tool_calls" in delta:
+                            for tc_chunk in delta["tool_calls"]:
+                                idx = tc_chunk.get("index", 0)
+                                if idx not in tool_calls_acc:
+                                    tool_calls_acc[idx] = {
+                                        "id": tc_chunk.get("id", ""),
+                                        "name": tc_chunk.get("function", {}).get("name", ""),
+                                        "arguments": "",
+                                    }
+                                if tc_chunk.get("id"):
+                                    tool_calls_acc[idx]["id"] = tc_chunk["id"]
+                                fn = tc_chunk.get("function", {})
+                                if fn.get("name"):
+                                    tool_calls_acc[idx]["name"] = fn["name"]
+                                if fn.get("arguments"):
+                                    tool_calls_acc[idx]["arguments"] += fn["arguments"]
+                            continue
+
+                        # ── Stream text content with think-tag detection ──
+                        content = delta.get("content", "")
+                        if not content:
+                            continue
+                        round_content += content
+
+                        for ev_type, ev_text in think_parser.feed(content):
+                            yield _sse({"type": ev_type, "content": ev_text})
+
+                    # Flush any remaining buffered text
+                    for ev_type, ev_text in think_parser.flush():
+                        yield _sse({"type": ev_type, "content": ev_text})
+
+                    # ── Accumulate usage from the final chunk ──
+                    # (Some providers include usage in the last chunk)
+                    try:
+                        usage = chunk.get("usage", {}) or {}
+                        for k in total_usage:
+                            total_usage[k] += usage.get(k, 0)
+                    except Exception:
+                        pass
+
+                    full_response += round_content
+
+        except Exception as exc:
+            yield _sse({"type": "error", "message": f"Request failed: {exc}"})
+            return
+
+        # ── Cost metering ──
+        provider = conn.get("provider", "openai")
+        try:
+            from src.observability.metering import meter_from_raw_usage, log_cost_event
+            metering = meter_from_raw_usage(total_usage, provider=provider, model=model)
+            cost_data = metering.cost.to_dict()
+            log_cost_event(metering, agent=req.agent, chat_id=chat_data["id"])
+        except Exception:
+            pass
+
+        # ── Credit deduction for platform-hosted keys ──
+        if conn.get("platform_hosted") and user and cost_data.get("total_cost"):
+            try:
+                credit_cost = estimate_llm_credit_cost(cost_data["total_cost"])
+                if credit_cost > 0:
+                    balance = get_user_credits(user["id"])
+                    if balance < credit_cost:
+                        yield _sse({"type": "error", "message": "Insufficient credits for LLM usage"})
+                        return
+                    deduct_result = deduct_user_credits(user["id"], credit_cost, f"llm:{model}:{total_usage.get('total_tokens', 0)}tok")
+                    _credits_deducted += credit_cost
+                    _credits_balance = deduct_result.get("balance", 0)
+            except Exception:
+                pass
+
+        # ── Handle tool calls ──
+        if tool_calls_acc:
+            # Build the assistant message with tool_calls for context
+            tc_list = []
+            for idx in sorted(tool_calls_acc):
+                tc = tool_calls_acc[idx]
+                tc_list.append({
+                    "id": tc["id"],
+                    "type": "function",
+                    "function": {"name": tc["name"], "arguments": tc["arguments"]},
+                })
+            running_messages.append({"role": "assistant", "content": round_content or None, "tool_calls": tc_list})
+
+            from src.tools.registry import execute_tool
+
+            for idx in sorted(tool_calls_acc):
+                tc = tool_calls_acc[idx]
+                fn_name = tc["name"]
+                try:
+                    fn_args = json.loads(tc["arguments"]) if tc["arguments"] else {}
+                except json.JSONDecodeError:
+                    fn_args = {}
+
+                yield _sse({"type": "tool_start", "tool": fn_name, "arguments": fn_args})
+
+                try:
+                    result = execute_tool(fn_name, fn_args, agent_name=req.agent)
+                except PermissionError as exc:
+                    result = f"BLOCKED: {exc}"
+                except Exception as exc:
+                    result = f"Error: {exc}"
+
+                tool_call_log.append({
+                    "round": _round + 1,
+                    "tool": fn_name,
+                    "arguments": fn_args,
+                    "result": result[:500] if isinstance(result, str) else str(result)[:500],
+                })
+
+                yield _sse({"type": "tool_result", "tool": fn_name, "result": result[:500] if isinstance(result, str) else str(result)[:500]})
+
+                running_messages.append({
+                    "role": "tool",
+                    "tool_call_id": tc["id"],
+                    "content": result if isinstance(result, str) else str(result),
+                })
+            continue
+
+        # No tool calls — we're done
+        break
+
+    # ── Post-stream processing ──
+    saved_memories = _extract_and_save_memories(req.agent, full_response)
+    response_text = _strip_memory_tags(full_response)
+
+    # Image generation
+    generated_image = None
+    img_match = re.search(r'\[IMAGE_GEN:\s*(.+?)\]', response_text, re.DOTALL)
+    if img_match:
+        img_prompt = img_match.group(1).strip()
+        response_text = response_text[:img_match.start()] + response_text[img_match.end():]
+        response_text = response_text.strip()
+        try:
+            settings = _load_settings()
+            img_cfg = settings.get("image", {})
+            img_provider = img_cfg.get("preferred", "none")
+            if img_provider and img_provider != "none":
+                result = await _generate_image(img_provider, img_prompt, img_cfg, settings)
+                if "error" not in result:
+                    generated_image = {**result, "prompt": img_prompt}
+        except Exception:
+            pass
+
+    # Build layers metadata
+    layers["tools"]["calls"] = tool_call_log
+    _tier_label = getattr(_router_decision, "tier_name", None) if _router_decision else None
+    layers["router"] = {
+        "task_type": task_type,
+        "routed_model": routed_model,
+        "routed_provider": routed_provider,
+        "tier": _tier_label,
+    }
+
+    # Save to chat history
+    chat_data["messages"].append({
+        "role": "assistant", "text": response_text, "time": now,
+        "usage": total_usage,
+        "data": {
+            "agent": req.agent, "model": model,
+            "usage": total_usage, "cost": cost_data,
+            "tool_calls": tool_call_log,
+            "generated_image": generated_image,
+            "task_type": task_type,
+        },
+        "layers": layers,
+    })
+    _save_chat(chat_data["id"], chat_data)
+
+    idx_data = _load_chat_index()
+    for c in idx_data["chats"]:
+        if c["id"] == chat_data["id"]:
+            c["updated"] = now
+            break
+    _save_chat_index(idx_data)
+
+    # Build credit info
+    _credit_info = {}
+    if conn.get("platform_hosted") and _credits_deducted > 0:
+        _credit_info = {
+            "credits_deducted": _credits_deducted,
+            "credits_balance": _credits_balance if _credits_balance >= 0 else (get_user_credits(user["id"]) if user else 0),
+            "platform_hosted": True, "markup": LLM_MARKUP_MULTIPLIER,
+        }
+    elif user:
+        _credit_info = {
+            "credits_deducted": 0,
+            "credits_balance": get_user_credits(user["id"]),
+            "platform_hosted": bool(conn.get("platform_hosted")), "markup": 0,
+        }
+
+    # ── Final "done" event with all metadata ──
+    yield _sse({
+        "type": "done",
+        "response": response_text,
+        "chat_id": chat_data["id"],
+        "model": model,
+        "usage": total_usage,
+        "cost": cost_data,
+        "layers": layers,
+        "saved_memories": saved_memories,
+        "tool_calls": tool_call_log,
+        "generated_image": generated_image,
+        "task_type": task_type,
+        "credits": _credit_info,
+    })
+
 
 @app.get("/api/chat/history")
 async def api_chat_history():
@@ -4501,6 +4943,54 @@ async def api_admin_sync_openrouter_pricing(request: Request):
     if not _check_admin(request):
         return JSONResponse({"error": "Unauthorized"}, status_code=403)
     result = await _sync_openrouter_pricing(force=True)
+    return JSONResponse(result)
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  ADMIN — USER ACCOUNT MANAGEMENT
+# ═══════════════════════════════════════════════════════════════════
+
+@app.get("/api/admin/users")
+async def api_admin_list_users(request: Request):
+    """List all known users and their billing/activity summary. Admin only."""
+    if not _check_admin(request):
+        return JSONResponse({"error": "Unauthorized"}, status_code=403)
+    return JSONResponse({"users": list_all_users()})
+
+
+@app.delete("/api/admin/users/{user_id}")
+async def api_admin_wipe_user(user_id: str, request: Request):
+    """Wipe all billing/state data for a specific user (by UUID). Admin only."""
+    if not _check_admin(request):
+        return JSONResponse({"error": "Unauthorized"}, status_code=403)
+    result = wipe_user_data(user_id)
+    return JSONResponse(result)
+
+
+@app.post("/api/admin/users/wipe-by-email")
+async def api_admin_wipe_user_by_email(request: Request):
+    """Wipe all billing/state data for a user by email. Admin only."""
+    if not _check_admin(request):
+        return JSONResponse({"error": "Unauthorized"}, status_code=403)
+    body = await request.json()
+    email = body.get("email", "").strip()
+    if not email:
+        return JSONResponse({"error": "email is required"}, status_code=400)
+    result = wipe_user_by_email(email)
+    return JSONResponse(result)
+
+
+@app.post("/api/admin/users/purge-inactive")
+async def api_admin_purge_inactive(request: Request):
+    """Purge all users inactive for more than N days. Admin only.
+
+    Body: {"days": 90}  (optional, defaults to INACTIVE_ACCOUNT_DAYS)
+    """
+    if not _check_admin(request):
+        return JSONResponse({"error": "Unauthorized"}, status_code=403)
+    body = await request.json() if request.headers.get("content-type", "").startswith("application/json") else {}
+    days = body.get("days", INACTIVE_ACCOUNT_DAYS)
+    result = purge_inactive_users(days=days)
     return JSONResponse(result)
 
 

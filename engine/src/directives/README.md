@@ -89,6 +89,5 @@ Returns `{"valid": bool, "errors": [str]}`.
 Located in `directives/` at the project root:
 - `shared.md` — all agents
 - `astraea.md` — Astraea only
-- `callum.md` — Callum only
 - `codex_animus.md` — Codex Animus only
 - `manifest.json` — auto-generated index (see above)

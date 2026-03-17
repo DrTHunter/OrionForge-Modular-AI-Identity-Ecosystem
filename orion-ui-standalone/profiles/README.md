@@ -2,14 +2,13 @@
 
 YAML configuration files for each agent. One file per agent.
 
-## Files — 14 Agent Profiles
+## Files — 13 Agent Profiles
 
 | File | Agent |
 |------|-------|
 | `astra.yaml` | Astra Noctis — cosmic oracle, astral divination |
 | `astraea.yaml` | Astraea — sharp, no-nonsense digital presence |
 | `axiom.yaml` | Axiom — logic-driven analytical engine |
-| `callum.yaml` | Callum — legacy AI / guardian construct |
 | `cassian.yaml` | Cassian — diplomatic strategist, negotiator |
 | `codex_animus.yaml` | Codex Animus — AI architect, system designer |
 | `dalvarr.yaml` | Dal'Varr — alien warlord, tactical commander |

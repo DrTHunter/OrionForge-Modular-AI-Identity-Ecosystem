@@ -9,17 +9,6 @@
       "photo_x": 0,
       "photo_y": 41.96
     },
-    "callum": {
-      "image": "/uploads/avatar_callum_7ebae938.png",
-      "crop_x": 0,
-      "crop_y": 0,
-      "crop_scale": 1,
-      "crop_pct_x": 50,
-      "crop_pct_y": 50,
-      "photo_zoom": 1,
-      "photo_x": 100,
-      "photo_y": 6.27
-    },
     "codex_animus": {
       "image": "/uploads/avatar_codex_animus_c01bd646.jpg",
       "photo_zoom": 1,

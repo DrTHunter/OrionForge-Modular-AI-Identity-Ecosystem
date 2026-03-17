@@ -212,7 +212,6 @@ Each profile YAML declares an `allowed_tools` list:
 | Profile | Tools |
 |---|---|
 | **astraea** | `echo`, `memory`, `directives`, `cost_tracker`, `continuation_update`, `web_search`, `email` |
-| **callum** | `echo`, `memory`, `directives`, `continuation_update`, `web_search` |
 | **codex_animus** | `echo`, `memory`, `directives`, `continuation_update`, `web_search` |
 
 ---
