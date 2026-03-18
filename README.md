@@ -401,7 +401,7 @@ OrionForge ships with 13 fully-authored agents, each with a unique soul script, 
 | **Orion** | Identity-driven AI — continuity, reflection, and aligned growth |
 | **Ruckus** | Chaos agent — creative disruption, unconventional thinking |
 | **Seraphine** | Empathic healer — emotional intelligence, therapeutic protocols |
-| **Valdris** | Arcane lorekeeper — mystical knowledge, symbolic reasoning |
+| **Madara** | Eclipse sovereign — architect of the final peace, civilizational vision |
 
 Each agent has its own profile YAML, system prompt, soul script directive, and memory scopes. New agents can be created from the Profiles page or via the API.
 

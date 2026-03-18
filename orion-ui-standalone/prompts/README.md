@@ -19,7 +19,7 @@ Base system prompt files for each agent. These define the agent's identity, pers
 | `orion.system.md` | Orion — identity-driven AI, continuity and aligned growth |
 | `ruckus.system.md` | Ruckus — chaotic trickster, unfiltered energy |
 | `seraphine.system.md` | Seraphine — angelic healer, emotional support |
-| `valdris.system.md` | Valdris — undead sorcerer, dark arcana |
+| `madara.system.md` | Madara — eclipse sovereign, architect of the final peace |
 
 ## How It Works
 

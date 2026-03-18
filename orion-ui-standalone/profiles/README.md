@@ -18,7 +18,7 @@ YAML configuration files for each agent. One file per agent.
 | `orion.yaml` | Orion — identity-driven AI, continuity and aligned growth |
 | `ruckus.yaml` | Ruckus — chaotic trickster, unfiltered energy |
 | `seraphine.yaml` | Seraphine — angelic healer, emotional support |
-| `valdris.yaml` | Valdris — undead sorcerer, dark arcana |
+| `madara.yaml` | Madara — eclipse sovereign, architect of the final peace |
 
 ## Structure
 
