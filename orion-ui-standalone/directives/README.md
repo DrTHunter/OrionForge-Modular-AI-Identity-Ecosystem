@@ -27,7 +27,7 @@ Agents can also search directives mid-conversation using the `directives` tool (
 | `orion.md` | Only Orion |
 | `ruckus.md` | Only Ruckus |
 | `seraphine.md` | Only Seraphine |
-| `valdris.md` | Only Valdris |
+| `madara.md` | Only Madara |
 | `manifest.json` | Auto-generated index of all directive sections |
 
 ## Format
