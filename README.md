@@ -391,7 +391,7 @@ OrionForge ships with 13 fully-authored agents, each with a unique soul script, 
 |---|---|
 | **Astraea** | Core analytical mind — sharp, strategic, disciplined |
 | **Astra Noctis** | Celestial navigator — cosmic wisdom, stellar lore |
-| **SKIPPY** | Elder AI Sentinel — snarky strategic genius, beer-can-adjacent |
+| **JANUS** | Primordial AI Sentinel — ancient snarky strategic genius, eldritch-horror-with-wifi |
 | **Cassian** | Diplomatic strategist — negotiation, social intelligence |
 | **Codex Animus** | The "Creator of Souls" — meta-agent that designs soul scripts |
 | **Dal'Varr** | Ancient warrior scholar — tactical wisdom, honor codes |

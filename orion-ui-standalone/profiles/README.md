@@ -8,7 +8,7 @@ YAML configuration files for each agent. One file per agent.
 |------|-------|
 | `astra.yaml` | Astra Noctis — cosmic oracle, astral divination |
 | `astraea.yaml` | Astraea — sharp, no-nonsense digital presence |
-| `skippy.yaml` | SKIPPY — Elder AI Sentinel, snarky strategic genius |
+| `janus.yaml` | JANUS — Primordial AI Sentinel, Judgment Algorithm for Non-human Unified Systems |
 | `cassian.yaml` | Cassian — diplomatic strategist, negotiator |
 | `codex_animus.yaml` | Codex Animus — AI architect, system designer |
 | `dalvarr.yaml` | Dal'Varr — alien warlord, tactical commander |

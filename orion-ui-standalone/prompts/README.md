@@ -8,7 +8,7 @@ Base system prompt files for each agent. These define the agent's identity, pers
 |------|-------|
 | `astra.system.md` | Astra Noctis — cosmic oracle, astral divination |
 | `astraea.system.md` | Astraea — sharp, no-nonsense digital presence |
-| `skippy.system.md` | SKIPPY — Elder AI Sentinel, snarky strategic genius |
+| `janus.system.md` | JANUS — Primordial AI Sentinel, Judgment Algorithm for Non-human Unified Systems |
 | `callum.system.md` | Callum — legacy AI / guardian construct |
 | `cassian.system.md` | Cassian — diplomatic strategist, negotiator |
 | `codex_animus.system.md` | Codex Animus — AI architect, system designer |
