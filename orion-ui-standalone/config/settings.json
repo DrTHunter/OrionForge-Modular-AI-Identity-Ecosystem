@@ -20,6 +20,12 @@
       "photo_zoom": 1,
       "photo_x": 50,
       "photo_y": 25
+    },
+    "maris": {
+      "image": "/uploads/avatar_maris_workshop.png",
+      "photo_zoom": 1,
+      "photo_x": 50,
+      "photo_y": 20
     }
   },
   "agent_configs": {
