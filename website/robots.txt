@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://orionforge.chat/sitemap.xml
