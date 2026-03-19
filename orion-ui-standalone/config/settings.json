@@ -50,6 +50,12 @@
       "photo_zoom": 1,
       "photo_x": 50,
       "photo_y": 25
+    },
+    "astra": {
+      "image": "/uploads/avatar_astra_noctis_v4.png",
+      "photo_zoom": 1,
+      "photo_x": 50,
+      "photo_y": 25
     }
   },
   "agent_configs": {
