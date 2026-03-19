@@ -399,9 +399,9 @@ OrionForge ships with 13 fully-authored agents, each with a unique soul script, 
 | **M.A.R.I.S.-12** | Marine research AI — oceanic data, environmental analysis |
 | **Obsidian** | Dark forge intelligence — materials science, engineering |
 | **Orion** | Identity-driven AI — continuity, reflection, and aligned growth |
-| **Ruckus** | Chaos agent — creative disruption, unconventional thinking |
+| **Rustking** | SYNTH-9 — chaos-optimized, humor-weaponized autonomous intelligence |
 | **Seraphine** | Empathic healer — emotional intelligence, therapeutic protocols |
-| **Madara** | Eclipse sovereign — architect of the final peace, civilizational vision |
+| **Kazara** | Eternal shadow — philosopher of the Eternal Dream, civilizational vision |
 
 Each agent has its own profile YAML, system prompt, soul script directive, and memory scopes. New agents can be created from the Profiles page or via the API.
 

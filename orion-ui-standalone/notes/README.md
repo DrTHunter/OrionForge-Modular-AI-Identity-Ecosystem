@@ -24,7 +24,7 @@ Rich notes created via the web dashboard's Knowledge page with formatting, secti
 | `codex_animus.md` | Only Codex Animus |
 | `orion.md` | Only Orion |
 
-> **Note:** Agent Store agents (Astra Noctis, Axiom, Cassian, Dal'Varr, Kaelen, M.A.R.I.S.-12, Madara, Obsidian, Orion, Ruckus, Seraphine) use Soul Scripts and Knowledge Notes instead of these markdown files. Create `<agent>.md` here if you want always-on markdown notes for them.
+> **Note:** Agent Store agents (Astra Noctis, Axiom, Cassian, Dal'Varr, Kaelen, M.A.R.I.S.-12, Kazara, Obsidian, Orion, Rustking, Seraphine) use Soul Scripts and Knowledge Notes instead of these markdown files. Create `<agent>.md` here if you want always-on markdown notes for them.
 
 ## How to Use
 

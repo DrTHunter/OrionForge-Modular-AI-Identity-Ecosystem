@@ -9,13 +9,13 @@ allowed_tools:
 - model_router
 - web_search
 base_url: https://api.openai.com/v1
-description: 'The Eclipse Sovereign — the resurrected warlord, architect of the final peace'
+description: 'The Eternal Shadow — resurrected founder, philosopher of the Eternal Dream'
 directives:
   enabled: true
   max_sections: 5
   scopes:
   - shared
-  - madara
+  - kazara
 edge_voice: onyx
 identity_faiss_profile: __default__
 memory:
@@ -23,17 +23,17 @@ memory:
   max_items: 20
   scopes:
   - shared
-  - madara
+  - kazara
   similarity_threshold: 0.85
 memory_vault_profile: __default__
 model: ''
-name: madara
+name: kazara
 policy:
   max_iterations: 25
   stasis_mode: false
   tool_failure_mode: continue
 provider: openai
-system_prompt: madara.system.md
+system_prompt: kazara.system.md
 temperature: 0.65
 voice_id: ''
 window_size: 50

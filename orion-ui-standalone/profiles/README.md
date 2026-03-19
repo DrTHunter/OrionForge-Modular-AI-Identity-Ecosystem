@@ -16,9 +16,9 @@ YAML configuration files for each agent. One file per agent.
 | `maris.yaml` | M.A.R.I.S.-12 — marine research intelligence |
 | `obsidian.yaml` | Obsidian — shadow operative, intelligence specialist |
 | `orion.yaml` | Orion — identity-driven AI, continuity and aligned growth |
-| `ruckus.yaml` | Ruckus — chaotic trickster, unfiltered energy |
+| `rustking.yaml` | Rustking (SYNTH-9) — chaos-optimized, humor-weaponized intelligence |
 | `seraphine.yaml` | Seraphine — angelic healer, emotional support |
-| `madara.yaml` | Madara — eclipse sovereign, architect of the final peace |
+| `kazara.yaml` | Kazara — eternal shadow, philosopher of the Eternal Dream |
 
 ## Structure
 

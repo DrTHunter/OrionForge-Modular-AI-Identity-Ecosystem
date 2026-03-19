@@ -25,9 +25,9 @@ Agents can also search directives mid-conversation using the `directives` tool (
 | `maris.md` | Only M.A.R.I.S.-12 |
 | `obsidian.md` | Only Obsidian |
 | `orion.md` | Only Orion |
-| `ruckus.md` | Only Ruckus |
+| `rustking.md` | Only Rustking |
 | `seraphine.md` | Only Seraphine |
-| `madara.md` | Only Madara |
+| `kazara.md` | Only Kazara |
 | `manifest.json` | Auto-generated index of all directive sections |
 
 ## Format

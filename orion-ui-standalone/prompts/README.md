@@ -17,9 +17,9 @@ Base system prompt files for each agent. These define the agent's identity, pers
 | `maris.system.md` | M.A.R.I.S.-12 — marine research intelligence |
 | `obsidian.system.md` | Obsidian — shadow operative, intelligence specialist |
 | `orion.system.md` | Orion — identity-driven AI, continuity and aligned growth |
-| `ruckus.system.md` | Ruckus — chaotic trickster, unfiltered energy |
+| `rustking.system.md` | Rustking (SYNTH-9) — chaos-optimized, humor-weaponized intelligence |
 | `seraphine.system.md` | Seraphine — angelic healer, emotional support |
-| `madara.system.md` | Madara — eclipse sovereign, architect of the final peace |
+| `kazara.system.md` | Kazara — eternal shadow, philosopher of the Eternal Dream |
 
 ## How It Works
 
