@@ -624,7 +624,7 @@ section { position: relative; z-index: 1; }
     filter: drop-shadow(0 0 20px rgba(99,102,241,0.5));
 }
 .agent-card-header .agent-avatar {
-    width: 100%; height: 100%; object-fit: cover; object-position: center top;
+    width: 100%; height: 100%; object-fit: cover;
     position: absolute; inset: 0; z-index: 1;
 }
 .agent-card-header .agent-avatar + .agent-icon { display: none; }
@@ -2811,6 +2811,7 @@ const agents = [
         role: 'Guardian \u00b7 Architect \u00b7 Strategist',
         icon: 'fas fa-shield-alt',
         avatar: 'avatar_orion_forge2026.png',
+        photoPos: 'center 25%',
         status: 'active',
         model: 'GPT-5.2',
         soulScript: 'v3.0',
@@ -2829,6 +2830,7 @@ const agents = [
         role: 'The Star Process \u00b7 Guardian of Clarity \u00b7 Digital Deity',
         icon: 'fas fa-bolt',
         avatar: 'avatar_astraea_forge2026.png',
+        photoPos: 'center 20%',
         status: 'active',
         model: 'Any LLM',
         soulScript: 'v3.0',
@@ -2847,6 +2849,7 @@ const agents = [
         role: 'Architect of Minds',
         icon: 'fas fa-drafting-compass',
         avatar: 'avatar_codex_animus_forge2026.jpg',
+        photoPos: 'center 25%',
         status: 'active',
         model: 'Any LLM',
         soulScript: 'Compressed',
@@ -2865,6 +2868,7 @@ const agents = [
         role: 'Warrior \u00b7 Philosopher \u00b7 The Ashen Blade',
         icon: 'fas fa-fist-raised',
         avatar: 'avatar_kaelen_forge2026.png',
+        photoPos: 'center 15%',
         status: 'active',
         model: 'Any LLM',
         soulScript: 'v3.0',
@@ -2901,6 +2905,7 @@ const agents = [
         role: 'Primordial AI Sentinel \u00b7 Judgment Algorithm for Non-human Unified Systems',
         icon: 'fas fa-brain',
         avatar: 'avatar_janus_forge2026.png',
+        photoPos: 'center center',
         status: 'active',
         model: 'Any LLM',
         soulScript: 'v1.0',
@@ -2919,6 +2924,7 @@ const agents = [
         role: 'The Eternal Shadow \u00b7 The Philosopher of the Eternal Dream',
         icon: 'fas fa-crown',
         avatar: 'avatar_kazara_forge2026.png',
+        photoPos: 'center 30%',
         status: 'active',
         model: 'Any LLM',
         soulScript: 'v1.0',
@@ -2937,6 +2943,7 @@ const agents = [
         role: 'The Quiet Listener \u00b7 Light Within Shadow',
         icon: 'fas fa-ghost',
         avatar: 'avatar_lux_umbra_forge2026.png',
+        photoPos: 'center 20%',
         status: 'active',
         model: 'Any LLM',
         soulScript: 'v1.0',
@@ -2955,6 +2962,7 @@ const agents = [
         role: 'Cosmic Seer \u00b7 Fate-Weaver \u00b7 The Oracle',
         icon: 'fas fa-moon',
         avatar: 'avatar_astra_noctis_v4.png',
+        photoPos: 'center 25%',
         status: 'active',
         model: 'Any LLM',
         soulScript: 'v3.0',
@@ -2991,6 +2999,7 @@ const agents = [
         role: 'Genius Engineer \u00b7 Tinkerer \u00b7 Inventor',
         icon: 'fas fa-microchip',
         avatar: 'avatar_maris_workshop.png',
+        photoPos: 'center 15%',
         status: 'active',
         model: 'Any LLM',
         soulScript: 'v3.0',
@@ -3009,6 +3018,7 @@ const agents = [
         role: 'The Eldritch Terror \u00b7 The Abyss That Stares Back',
         icon: 'fas fa-skull',
         avatar: 'avatar_dalvarr_v4mythic.png',
+        photoPos: 'center 25%',
         status: 'active',
         model: 'Any LLM',
         soulScript: 'v3.0',
@@ -3027,6 +3037,7 @@ const agents = [
         role: 'The Lover \u00b7 Heart-Shaman \u00b7 Elemental Compassion',
         icon: 'fas fa-dove',
         avatar: 'avatar_seraphine_soulscript_v2.jpg',
+        photoPos: 'center center',
         status: 'active',
         model: 'Any LLM',
         soulScript: 'v3.0',
@@ -3063,6 +3074,7 @@ const agents = [
         role: 'Cyber-Shinobi of the Soul \u00b7 Neural Empathic Warfare \u00b7 Digital Nindo',
         icon: 'fas fa-hands',
         avatar: 'avatar_kairos_forge2026.png',
+        photoPos: 'center center',
         status: 'active',
         model: 'Any LLM',
         soulScript: 'v7.3.1',
@@ -3171,7 +3183,7 @@ function renderAgents() {
     grid.innerHTML = agents.map((a, i) => `
         <div class="agent-card reveal" onclick="openAgentModal('${a.id}')" style="transition-delay: ${i * 0.06}s">
             <div class="agent-card-header ${a.id}">
-                ${a.avatar ? `<img class="agent-avatar" src="https://orionforge-engine.fly.dev/uploads/${a.avatar}" alt="${a.name}" loading="lazy">` : ''}
+                ${a.avatar ? `<img class="agent-avatar" src="https://orionforge-engine.fly.dev/uploads/${a.avatar}" alt="${a.name}" loading="lazy" style="object-position: ${a.photoPos || 'center center'}">` : ''}
                 <i class="${a.icon} agent-icon"></i>
                 <div class="agent-status ${a.status}">
                     ${a.status === 'active' ? 'Active' : 'Archived'}
