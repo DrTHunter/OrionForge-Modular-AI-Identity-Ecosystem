@@ -1,12 +1,12 @@
 # tests/
 
-Comprehensive test suite for the OrionForge agent runtime. **184 test functions, ~1,658 assertions** across 14 files.
+Comprehensive test suite for the OrionForge agent runtime. **265 test functions, ~4,061 assertions** across 12 files.
 
 ## Test Files
 
 | File | Functions | Checks | What It Tests |
 |------|-----------|--------|---------------|
-| `test_torture.py` | 51 | ~1,520 | Deep torture of every code path — memory tool (13 actions), vault sort (8 modes, dict & object), max memory limits, utilization calc, template rendering, boundary policy, PII guard, runtime policy, manifest system, directive parser/store/injector, tool registry, EmailTool, WebSearchTool, InboxTool, cost tracker, metering, LLM client factory, dynamic scopes, category policy, saved profiles |
+| `test_torture.py` | 118 | ~2,961 | Deep torture of all code paths — memory, vault, sort, policy, tools, templates, model router, presets, 6-tier routing, sidecar wiring, soul script helpers, soul script API, soul script FAISS indexing, note collector soul script injection, profiles template collapsible, admin keys, chat 3-mode selector, user model catalog, `__userkey_` dynamic connections, Stripe state persistence, store catalog structure, tier & trial system, credit system, credit cost estimators, purchase flows (tool/skin/agent), agent ownership, user activity tracking, wipe user data, purge inactive, list all users, auth helpers, tier info structure |
 | `test_memory.py` | 23 | 155 | VaultStore CRUD, scoping, PII guard, bulk delete, versioning, resolve_latest, compact, stats, Memory dataclass, taxonomy constants, tiers & topics, tags & source, JSONL format |
 | `test_stress.py` | 15 | 94 | Rapid-fire operations, concurrent access, boundary conditions, cross-module integration |
 | `test_directives.py` | 14 | 108 | Parser, store search, store list/get, scoping, injector, directives tool, scoring, manifest generation, save/load, helpers, diff, audit, changes action |
@@ -19,7 +19,7 @@ Comprehensive test suite for the OrionForge agent runtime. **184 test functions,
 | `test_tools.py` | 4 | 34 | EchoTool, ContinuationUpdateTool, EmailTool, RuntimePolicy |
 | `run_all.py` | — | — | Master runner — executes all suites in dependency order, consolidates results |
 
-**Total: 184 functions, ~1,658 checks across 12 test suites**
+**Total: 265 functions, ~4,061 checks across 12 test suites**
 
 ## Running Tests
 
@@ -66,5 +66,9 @@ The `test_torture.py` suite alone covers the most code paths and is the best sin
 - Boundary policy, PII guard, runtime policy clamping
 - Manifest validation, audit, diff
 - LLM client factory, metering helpers, data paths
+- Store catalog structure, tier & trial system, credit system
+- Credit cost estimators, purchase flows (tool/skin/agent), agent ownership
+- User activity tracking, wipe user data, purge inactive, list all users
+- Auth helpers (public paths, config, token extraction), tier info structure
 
 

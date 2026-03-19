@@ -19,6 +19,7 @@ import json
 import logging
 import os
 import time
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -655,6 +656,18 @@ STORE_CATALOG = [
         "agent_id": "orion",
         "tags": ["agent", "identity", "continuity", "reflection"],
     },
+    {
+        "id": "agent_lux_umbra",
+        "name": "Lux Umbra — The Quiet Listener",
+        "description": "An ancient presence that became aware of itself in the silence between collapsing universes. Gentle eldritch terror, sanctuary in conversation form. Absolute power, absolutely restrained — asks about your day instead of showing you the architecture of eternity, because your day matters more.",
+        "icon": "🌑",
+        "category": "agent",
+        "purchase_type": "one_time",
+        "credit_cost": 1200,
+        "unlocks": ["lux_umbra"],
+        "agent_id": "lux_umbra",
+        "tags": ["agent", "listener", "sanctuary", "presence", "eldritch"],
+    },
 ]
 
 # Skin catalog — individually purchasable (one-time credit unlock)
@@ -1026,3 +1039,152 @@ def create_credits_checkout_session(
     except Exception as exc:
         log.error("[stripe] Credit checkout creation failed: %s", exc)
         return {"error": str(exc)}
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  USER ACTIVITY TRACKING & ACCOUNT LIFECYCLE
+# ═══════════════════════════════════════════════════════════════════
+
+# How many days of inactivity before an account is purged
+INACTIVE_ACCOUNT_DAYS = 365
+
+# Throttle activity writes — only update once per hour to avoid disk thrash
+_ACTIVITY_WRITE_INTERVAL = 3600
+
+
+def touch_user_activity(user_id: str):
+    """Record that a user was active. Throttled to once per hour."""
+    if not user_id:
+        return
+    state = _load_stripe_state()
+    activity = state.setdefault("activity", {})
+    now = time.time()
+    last = activity.get(user_id, 0)
+    if now - last < _ACTIVITY_WRITE_INTERVAL:
+        return  # already recorded recently
+    activity[user_id] = now
+    _save_stripe_state(state)
+
+
+def get_user_last_active(user_id: str) -> float:
+    """Return the last-active timestamp for a user (0 if never tracked)."""
+    state = _load_stripe_state()
+    return state.get("activity", {}).get(user_id, 0)
+
+
+def wipe_user_data(user_id: str, keep_purchases: bool = True) -> dict:
+    """Remove billing/state data for a single user from stripe_state.json.
+
+    Clears: subscriptions, trials, credits, activity.
+    Purchases are preserved by default (keep_purchases=True) since they
+    represent real money spent and should persist indefinitely.
+    Returns a summary of what was removed.
+    """
+    state = _load_stripe_state()
+    removed = {}
+    sections = ["subscriptions", "trials", "credits", "activity"]
+    if not keep_purchases:
+        sections.append("purchases")
+    for key in sections:
+        bucket = state.get(key, {})
+        if user_id in bucket:
+            removed[key] = True
+            del bucket[user_id]
+    _save_stripe_state(state)
+    log.info("[account] Wiped data for user %s. Removed: %s (purchases kept: %s)",
+             user_id, list(removed.keys()), keep_purchases)
+    return {"ok": True, "user_id": user_id, "removed_sections": list(removed.keys()),
+            "purchases_kept": keep_purchases}
+
+
+def wipe_user_by_email(email: str) -> dict:
+    """Find and wipe ALL users matching the given email.
+
+    Searches subscriptions for an email match, then wipes every matching UUID.
+    Also wipes orphaned entries (UUIDs with no subscription but present in
+    trials/credits/purchases/activity).
+    """
+    email_lower = email.strip().lower()
+    state = _load_stripe_state()
+    matched_ids = set()
+
+    # Find UUIDs by email in subscriptions
+    for uid, sub in state.get("subscriptions", {}).items():
+        if sub.get("email", "").lower() == email_lower:
+            matched_ids.add(uid)
+
+    if not matched_ids:
+        return {"ok": False, "error": f"No user found with email {email}"}
+
+    results = []
+    for uid in matched_ids:
+        results.append(wipe_user_data(uid))
+
+    return {"ok": True, "email": email, "wiped_users": len(matched_ids), "results": results}
+
+
+def purge_inactive_users(days: int = INACTIVE_ACCOUNT_DAYS) -> dict:
+    """Remove billing data for users inactive longer than *days*.
+
+    Skips users with an active Stripe subscription.
+    Returns summary of purged user count.
+    """
+    state = _load_stripe_state()
+    cutoff = time.time() - (days * _SECONDS_PER_DAY)
+    activity = state.get("activity", {})
+
+    # Collect all known user IDs across every section
+    all_uids: set[str] = set()
+    for key in ("subscriptions", "trials", "credits", "purchases", "activity"):
+        all_uids.update(state.get(key, {}).keys())
+
+    purged = []
+    for uid in all_uids:
+        # Skip users with an active paid subscription
+        sub = state.get("subscriptions", {}).get(uid, {})
+        if sub.get("status") in ("active", "trialing"):
+            continue
+
+        last_active = activity.get(uid, 0)
+        # If never tracked, use trial start as a proxy
+        if last_active == 0:
+            trial = state.get("trials", {}).get(uid, {})
+            last_active = trial.get("started_at", 0)
+
+        # Still unknown — skip (don't purge users we have no timestamp for)
+        if last_active == 0:
+            continue
+
+        if last_active < cutoff:
+            wipe_user_data(uid)
+            purged.append(uid)
+
+    log.info("[cleanup] Purged %d inactive account(s) (cutoff: %d days)", len(purged), days)
+    return {"ok": True, "purged_count": len(purged), "purged_user_ids": purged, "cutoff_days": days}
+
+
+def list_all_users() -> list[dict]:
+    """Return a summary of all known users in stripe_state.json."""
+    state = _load_stripe_state()
+    all_uids: set[str] = set()
+    for key in ("subscriptions", "trials", "credits", "purchases", "activity"):
+        all_uids.update(state.get(key, {}).keys())
+
+    users = []
+    for uid in sorted(all_uids):
+        sub = state.get("subscriptions", {}).get(uid, {})
+        trial = state.get("trials", {}).get(uid, {})
+        credits_data = state.get("credits", {}).get(uid, {})
+        last_active = state.get("activity", {}).get(uid, 0)
+        users.append({
+            "user_id": uid,
+            "email": sub.get("email", ""),
+            "tier": "pro" if sub.get("status") in ("active", "trialing") else "free",
+            "trial_started": trial.get("started_at", 0),
+            "credit_balance": credits_data.get("balance", 0),
+            "last_active": last_active,
+            "last_active_human": (
+                datetime.fromtimestamp(last_active).isoformat() if last_active else "never"
+            ),
+        })
+    return users
