@@ -32,6 +32,12 @@
       "photo_zoom": 1,
       "photo_x": 50,
       "photo_y": 25
+    },
+    "seraphine": {
+      "image": "/uploads/avatar_seraphine_soulscript_v2.jpg",
+      "photo_zoom": 1,
+      "photo_x": 50,
+      "photo_y": 25
     }
   },
   "agent_configs": {
