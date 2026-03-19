@@ -56,6 +56,12 @@
       "photo_zoom": 1,
       "photo_x": 50,
       "photo_y": 25
+    },
+    "kairos": {
+      "image": "/uploads/avatar_kairos_forge2026.png",
+      "photo_zoom": 1,
+      "photo_x": 50,
+      "photo_y": 30
     }
   },
   "agent_configs": {
