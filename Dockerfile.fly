@@ -21,6 +21,10 @@ COPY orion-ui-standalone/ ./app/
 # Symlink engine src into app so imports work: from src.xxx import yyy
 RUN ln -sf /app/engine/src /app/app/src
 
+# Copy boot script
+COPY boot.sh /app/boot.sh
+RUN chmod +x /app/boot.sh
+
 WORKDIR /app/app
 
 # Expose the port
@@ -30,5 +34,5 @@ EXPOSE 8989
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
     CMD curl -f http://localhost:8989/api/auth/config || exit 1
 
-# Run with uvicorn
-CMD ["python", "-m", "uvicorn", "web.app:app", "--host", "0.0.0.0", "--port", "8989", "--workers", "2"]
+# Run via boot script (sets up persistent uploads, then starts uvicorn)
+CMD ["/app/boot.sh"]
