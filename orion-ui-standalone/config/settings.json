@@ -46,6 +46,9 @@
       ],
       "identity_faiss_profile": "__default__",
       "memory_vault_profile": "__default__"
+    },
+    "maris": {
+      "display_name": "M.A.R.I.S.-12"
     }
   },
   "tool_config": {
