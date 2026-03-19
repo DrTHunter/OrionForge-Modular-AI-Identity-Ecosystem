@@ -68,6 +68,12 @@
       "photo_zoom": 1,
       "photo_x": 50,
       "photo_y": 50
+    },
+    "lux_umbra": {
+      "image": "/uploads/avatar_lux_umbra_forge2026.png",
+      "photo_zoom": 1,
+      "photo_x": 50,
+      "photo_y": 35
     }
   },
   "agent_configs": {
