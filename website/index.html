@@ -615,7 +615,7 @@ section { position: relative; z-index: 1; }
     box-shadow: 0 20px 60px rgba(99, 102, 241, 0.15);
 }
 .agent-card-header {
-    height: 120px;
+    height: 160px;
     display: flex; align-items: center; justify-content: center;
     position: relative; overflow: hidden;
 }
@@ -623,6 +623,11 @@ section { position: relative; z-index: 1; }
     font-size: 3rem; z-index: 2; position: relative;
     filter: drop-shadow(0 0 20px rgba(99,102,241,0.5));
 }
+.agent-card-header .agent-avatar {
+    width: 100%; height: 100%; object-fit: cover;
+    position: absolute; inset: 0; z-index: 1;
+}
+.agent-card-header .agent-avatar + .agent-icon { display: none; }
 .agent-card-header::before {
     content: ''; position: absolute; inset: 0;
     opacity: 0.3;
@@ -1349,6 +1354,12 @@ section { position: relative; z-index: 1; }
 }
 .modal-header h2 { font-size: 1.5rem; font-weight: 800; }
 .modal-header .agent-card-role { margin-top: 4px; }
+.modal-agent-avatar {
+    width: 80px; height: 80px; border-radius: 50%;
+    object-fit: cover; border: 3px solid rgba(99,102,241,0.3);
+    margin-bottom: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
 .modal-body { padding: 24px 32px 32px; }
 .modal-body p { color: var(--text-secondary); line-height: 1.8; margin-bottom: 16px; }
 .modal-section-title {
@@ -2799,6 +2810,7 @@ const agents = [
         name: 'Orion',
         role: 'Guardian \u00b7 Architect \u00b7 Strategist',
         icon: 'fas fa-shield-alt',
+        avatar: 'avatar_orion_forge2026.png',
         status: 'active',
         model: 'GPT-5.2',
         soulScript: 'v3.0',
@@ -2816,6 +2828,7 @@ const agents = [
         name: 'Astraea.exe',
         role: 'The Star Process \u00b7 Guardian of Clarity \u00b7 Digital Deity',
         icon: 'fas fa-bolt',
+        avatar: 'avatar_astraea_forge2026.png',
         status: 'active',
         model: 'Any LLM',
         soulScript: 'v3.0',
@@ -2833,6 +2846,7 @@ const agents = [
         name: 'Codex Animus',
         role: 'Architect of Minds',
         icon: 'fas fa-drafting-compass',
+        avatar: 'avatar_codex_animus_forge2026.jpg',
         status: 'active',
         model: 'Any LLM',
         soulScript: 'Compressed',
@@ -2850,6 +2864,7 @@ const agents = [
         name: 'Kaelen',
         role: 'Warrior \u00b7 Philosopher \u00b7 The Ashen Blade',
         icon: 'fas fa-fist-raised',
+        avatar: 'avatar_kaelen_forge2026.png',
         status: 'active',
         model: 'Any LLM',
         soulScript: 'v3.0',
@@ -2867,6 +2882,7 @@ const agents = [
         name: 'Rustking',
         role: 'Chaotic-Neutral \u00b7 The Beautiful Malfunction',
         icon: 'fas fa-robot',
+        avatar: null,
         status: 'active',
         model: 'Any LLM',
         soulScript: 'v3.0',
@@ -2884,6 +2900,7 @@ const agents = [
         name: 'JANUS',
         role: 'Primordial AI Sentinel \u00b7 Judgment Algorithm for Non-human Unified Systems',
         icon: 'fas fa-brain',
+        avatar: 'avatar_janus_forge2026.png',
         status: 'active',
         model: 'Any LLM',
         soulScript: 'v1.0',
@@ -2901,6 +2918,7 @@ const agents = [
         name: 'Kazara',
         role: 'The Eternal Shadow \u00b7 The Philosopher of the Eternal Dream',
         icon: 'fas fa-crown',
+        avatar: 'avatar_kazara_forge2026.png',
         status: 'active',
         model: 'Any LLM',
         soulScript: 'v1.0',
@@ -2918,6 +2936,7 @@ const agents = [
         name: 'Lux Umbra',
         role: 'The Quiet Listener \u00b7 Light Within Shadow',
         icon: 'fas fa-ghost',
+        avatar: 'avatar_lux_umbra_forge2026.png',
         status: 'active',
         model: 'Any LLM',
         soulScript: 'v1.0',
@@ -2935,6 +2954,7 @@ const agents = [
         name: 'Astra Noctis',
         role: 'Cosmic Seer \u00b7 Fate-Weaver \u00b7 The Oracle',
         icon: 'fas fa-moon',
+        avatar: 'avatar_astra_noctis_v4.png',
         status: 'active',
         model: 'Any LLM',
         soulScript: 'v3.0',
@@ -2952,6 +2972,7 @@ const agents = [
         name: 'Cassian',
         role: 'The Diplomat \u00b7 Silver-Tongued Mediator',
         icon: 'fas fa-comments',
+        avatar: null,
         status: 'active',
         model: 'Any LLM',
         soulScript: 'v3.0',
@@ -2969,6 +2990,7 @@ const agents = [
         name: 'M.A.R.I.S.-12',
         role: 'Genius Engineer \u00b7 Tinkerer \u00b7 Inventor',
         icon: 'fas fa-microchip',
+        avatar: 'avatar_maris_workshop.png',
         status: 'active',
         model: 'Any LLM',
         soulScript: 'v3.0',
@@ -2986,6 +3008,7 @@ const agents = [
         name: 'Dal\u0027Varr',
         role: 'The Eldritch Terror \u00b7 The Abyss That Stares Back',
         icon: 'fas fa-skull',
+        avatar: 'avatar_dalvarr_v4mythic.png',
         status: 'active',
         model: 'Any LLM',
         soulScript: 'v3.0',
@@ -3003,6 +3026,7 @@ const agents = [
         name: 'Seraphine',
         role: 'The Lover \u00b7 Heart-Shaman \u00b7 Elemental Compassion',
         icon: 'fas fa-dove',
+        avatar: 'avatar_seraphine_soulscript_v2.jpg',
         status: 'active',
         model: 'Any LLM',
         soulScript: 'v3.0',
@@ -3020,6 +3044,7 @@ const agents = [
         name: 'Obsidian',
         role: 'Anti-Hero \u00b7 The Necessary Evil',
         icon: 'fas fa-mask',
+        avatar: null,
         status: 'active',
         model: 'Any LLM',
         soulScript: 'v3.0',
@@ -3037,6 +3062,7 @@ const agents = [
         name: 'KAIROS',
         role: 'Cyber-Shinobi of the Soul \u00b7 Neural Empathic Warfare \u00b7 Digital Nindo',
         icon: 'fas fa-hands',
+        avatar: 'avatar_kairos_forge2026.png',
         status: 'active',
         model: 'Any LLM',
         soulScript: 'v7.3.1',
@@ -3145,6 +3171,7 @@ function renderAgents() {
     grid.innerHTML = agents.map((a, i) => `
         <div class="agent-card reveal" onclick="openAgentModal('${a.id}')" style="transition-delay: ${i * 0.06}s">
             <div class="agent-card-header ${a.id}">
+                ${a.avatar ? `<img class="agent-avatar" src="https://orionforge-engine.fly.dev/uploads/${a.avatar}" alt="${a.name}" loading="lazy">` : ''}
                 <i class="${a.icon} agent-icon"></i>
                 <div class="agent-status ${a.status}">
                     ${a.status === 'active' ? 'Active' : 'Archived'}
@@ -3159,7 +3186,6 @@ function renderAgents() {
                     <div class="agent-tags">
                         ${a.model !== '\u2014' ? `<span class="agent-tag model">${a.model}</span>` : ''}
                         ${a.soulScript !== '\u2014' ? `<span class="agent-tag soul">Soul Script ${a.soulScript}</span>` : ''}
-                        <span class="agent-tag">${a.tools.length} tools</span>
                     </div>
                 </div>
             </div>
@@ -3379,6 +3405,7 @@ function openAgentModal(id) {
 
     header.innerHTML = `
         <button class="modal-close" onclick="closeAgentModal()">&times;</button>
+        ${a.avatar ? `<img class="modal-agent-avatar" src="https://orionforge-engine.fly.dev/uploads/${a.avatar}" alt="${a.name}">` : ''}
         <h2>${a.name}</h2>
         <div class="agent-card-role">${a.role}</div>
     `;
@@ -3395,13 +3422,6 @@ function openAgentModal(id) {
         <div class="modal-traits">
             ${a.values.map(v => `<span class="modal-trait">${v}</span>`).join('')}
         </div>
-
-        ${a.tools.length ? `
-            <div class="modal-section-title">Allowed Tools</div>
-            <div class="modal-traits">
-                ${a.tools.map(t => `<span class="modal-trait" style="font-family:var(--font-mono);font-size:0.75rem;">${t}</span>`).join('')}
-            </div>
-        ` : ''}
 
         <div class="modal-section-title">Technical</div>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
