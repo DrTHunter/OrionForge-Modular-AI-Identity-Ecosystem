@@ -1,8 +1,8 @@
 #!/bin/bash
-# ── OrionForge Fly.io Boot Script ──────────────────────────────
+# â”€â”€ OrionForge Fly.io Boot Script â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 # Ensures the uploads directory is on the persistent volume so
 # avatars and user-uploaded files survive across deploys.
-# ─────────────────────────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 set -e
 
@@ -19,7 +19,7 @@ if [ -d "$APP_UPLOADS" ] && [ ! -L "$APP_UPLOADS" ]; then
     rm -rf "$APP_UPLOADS"
 fi
 
-# 3. Symlink app uploads → persistent volume
+# 3. Symlink app uploads â†’ persistent volume
 ln -sfn "$PERSIST_UPLOADS" "$APP_UPLOADS"
 
 echo "[boot] Uploads directory linked to persistent volume."
