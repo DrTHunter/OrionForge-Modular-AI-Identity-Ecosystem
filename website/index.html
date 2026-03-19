@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Orion Forge — Modular AI Identity Ecosystem</title>
+    <title>Orion Forge � Modular AI Identity Ecosystem</title>
     <meta name="description" content="Create AI beings with identity, not just prompts. Modular Web UI, Soul Script Engine, Agent Marketplace.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,9 +11,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-/* ═══════════════════════════════════════════════════════
+/* -------------------------------------------------------
    CSS CUSTOM PROPERTIES
-   ═══════════════════════════════════════════════════════ */
+   ------------------------------------------------------- */
 :root {
     --bg-deep: #04060e;
     --bg-primary: #080c1a;
@@ -47,9 +47,9 @@
     --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
 }
 
-/* ═══════════════════════════════════════════════════════
+/* -------------------------------------------------------
    RESET & BASE
-   ═══════════════════════════════════════════════════════ */
+   ------------------------------------------------------- */
 *, *::before, *::after {
     margin: 0; padding: 0; box-sizing: border-box;
 }
@@ -82,9 +82,9 @@ img { max-width: 100%; display: block; }
     padding: 0 24px;
 }
 
-/* ═══════════════════════════════════════════════════════
+/* -------------------------------------------------------
    LOADING SCREEN
-   ═══════════════════════════════════════════════════════ */
+   ------------------------------------------------------- */
 #loader {
     position: fixed; inset: 0;
     background: var(--bg-deep);
@@ -107,9 +107,9 @@ img { max-width: 100%; display: block; }
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ═══════════════════════════════════════════════════════
+/* -------------------------------------------------------
    SCROLL PROGRESS
-   ═══════════════════════════════════════════════════════ */
+   ------------------------------------------------------- */
 #scroll-progress {
     position: fixed; top: 0; left: 0;
     height: 2px; background: var(--gradient-primary);
@@ -117,17 +117,17 @@ img { max-width: 100%; display: block; }
     transition: width 0.1s linear;
 }
 
-/* ═══════════════════════════════════════════════════════
+/* -------------------------------------------------------
    CANVAS PARTICLES
-   ═══════════════════════════════════════════════════════ */
+   ------------------------------------------------------- */
 #particles-canvas {
     position: fixed; inset: 0;
     z-index: 0; pointer-events: none;
 }
 
-/* ═══════════════════════════════════════════════════════
+/* -------------------------------------------------------
    NAVIGATION
-   ═══════════════════════════════════════════════════════ */
+   ------------------------------------------------------- */
 .nav {
     position: fixed; top: 0; left: 0; right: 0;
     z-index: 1000;
@@ -240,9 +240,9 @@ img { max-width: 100%; display: block; }
 .user-menu-item:hover { background: rgba(99,102,241,0.1); color: var(--text-primary); }
 .user-menu-divider { height: 1px; background: var(--border-glass); margin: 4px 0; }
 
-/* ═══════════════════════════════════════════════════════
+/* -------------------------------------------------------
    HERO
-   ═══════════════════════════════════════════════════════ */
+   ------------------------------------------------------- */
 .hero {
     position: relative;
     min-height: 100vh;
@@ -347,9 +347,9 @@ img { max-width: 100%; display: block; }
     margin-top: 4px;
 }
 
-/* ═══════════════════════════════════════════════════════
+/* -------------------------------------------------------
    SECTION COMMON
-   ═══════════════════════════════════════════════════════ */
+   ------------------------------------------------------- */
 section { position: relative; z-index: 1; }
 
 .section-header {
@@ -375,9 +375,9 @@ section { position: relative; z-index: 1; }
     line-height: 1.7;
 }
 
-/* ═══════════════════════════════════════════════════════
+/* -------------------------------------------------------
    ANIMATED REVEAL
-   ═══════════════════════════════════════════════════════ */
+   ------------------------------------------------------- */
 .reveal {
     opacity: 0; transform: translateY(30px);
     transition: opacity 0.7s ease, transform 0.7s ease;
@@ -386,9 +386,9 @@ section { position: relative; z-index: 1; }
     opacity: 1; transform: translateY(0);
 }
 
-/* ═══════════════════════════════════════════════════════
+/* -------------------------------------------------------
    VISION SECTION
-   ═══════════════════════════════════════════════════════ */
+   ------------------------------------------------------- */
 #vision { padding: 120px 0; }
 
 .vision-grid {
@@ -432,9 +432,9 @@ section { position: relative; z-index: 1; }
     color: var(--text-secondary); font-size: 0.95rem; line-height: 1.7;
 }
 
-/* ═══════════════════════════════════════════════════════
+/* -------------------------------------------------------
    UI ACCESS SECTION
-   ═══════════════════════════════════════════════════════ */
+   ------------------------------------------------------- */
 #ui-access { padding: 120px 0; }
 
 .ui-dashboard {
@@ -530,9 +530,9 @@ section { position: relative; z-index: 1; }
     font-size: 0.85rem; color: var(--text-muted); line-height: 1.6;
 }
 
-/* ═══════════════════════════════════════════════════════
+/* -------------------------------------------------------
    AGENTS SECTION
-   ═══════════════════════════════════════════════════════ */
+   ------------------------------------------------------- */
 #agents { padding: 120px 0; }
 
 .agents-grid {
@@ -575,12 +575,12 @@ section { position: relative; z-index: 1; }
 .agent-card-header.codex .agent-icon { color: #a78bfa; }
 .agent-card-header.kaelen::before { background: linear-gradient(135deg, #3b1a00, #1a0d00); }
 .agent-card-header.kaelen .agent-icon { color: #fb923c; }
-.agent-card-header.ruckus::before { background: linear-gradient(135deg, #1a3a2a, #0a1a10); }
-.agent-card-header.ruckus .agent-icon { color: #86efac; }
+.agent-card-header.rustking::before { background: linear-gradient(135deg, #1a3a2a, #0a1a10); }
+.agent-card-header.rustking .agent-icon { color: #86efac; }
 .agent-card-header.axiom::before { background: linear-gradient(135deg, #0a2a3a, #041520); }
 .agent-card-header.axiom .agent-icon { color: #22d3ee; }
-.agent-card-header.madara::before { background: linear-gradient(135deg, #2a0a0a, #120408); }
-.agent-card-header.madara .agent-icon { color: #ef4444; }
+.agent-card-header.kazara::before { background: linear-gradient(135deg, #2a0a0a, #120408); }
+.agent-card-header.kazara .agent-icon { color: #ef4444; }
 .agent-card-header.veilwalker::before { background: linear-gradient(135deg, #2a1a3a, #10081a); }
 .agent-card-header.veilwalker .agent-icon { color: #c084fc; }
 .agent-card-header.astra::before { background: linear-gradient(135deg, #3a1a3a, #1a0820); }
@@ -623,9 +623,9 @@ section { position: relative; z-index: 1; }
     justify-content: flex-end;
 }
 
-/* ═══════════════════════════════════════════════════════
+/* -------------------------------------------------------
    CLONE MARKETPLACE SECTION
-   ═══════════════════════════════════════════════════════ */
+   ------------------------------------------------------- */
 .clones-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -1247,9 +1247,9 @@ section { position: relative; z-index: 1; }
     border-color: rgba(139,92,246,0.15);
 }
 
-/* ═══════════════════════════════════════════════════════
+/* -------------------------------------------------------
    AGENT MODAL
-   ═══════════════════════════════════════════════════════ */
+   ------------------------------------------------------- */
 .modal-overlay {
     position: fixed; inset: 0;
     background: rgba(0,0,0,0.7);
@@ -1312,14 +1312,14 @@ section { position: relative; z-index: 1; }
     font-style: italic; color: var(--text-secondary);
 }
 
-/* ═══════════════════════════════════════════════════════
+/* -------------------------------------------------------
    TOOLS SECTION
-   ═══════════════════════════════════════════════════════ */
+   ------------------------------------------------------- */
 #tools { padding: 120px 0; }
 
-/* ═══════════════════════════════════════════════════════
+/* -------------------------------------------------------
    MARKETPLACE / WORKSHOP SECTION
-   ═══════════════════════════════════════════════════════ */
+   ------------------------------------------------------- */
 #marketplace { padding: 120px 0; }
 
 .packs-grid {
@@ -1475,9 +1475,9 @@ section { position: relative; z-index: 1; }
     color: var(--primary-light);
 }
 
-/* ═══════════════════════════════════════════════════════
+/* -------------------------------------------------------
    HOW IT WORKS (PIPELINE)
-   ═══════════════════════════════════════════════════════ */
+   ------------------------------------------------------- */
 #pipeline { padding: 120px 0; }
 
 .pipeline-steps {
@@ -1521,9 +1521,9 @@ section { position: relative; z-index: 1; }
     border-radius: 4px; color: var(--primary-light);
 }
 
-/* ═══════════════════════════════════════════════════════
+/* -------------------------------------------------------
    AUTH / LOGIN MODAL
-   ═══════════════════════════════════════════════════════ */
+   ------------------------------------------------------- */
 #auth-modal {
     position: fixed; inset: 0;
     background: rgba(0,0,0,0.75);
@@ -1620,9 +1620,9 @@ section { position: relative; z-index: 1; }
 .auth-message.error { background: rgba(244,63,94,0.1); color: var(--rose); border: 1px solid rgba(244,63,94,0.2); display: block; }
 .auth-message.success { background: rgba(52,211,153,0.1); color: var(--emerald); border: 1px solid rgba(52,211,153,0.2); display: block; }
 
-/* ═══════════════════════════════════════════════════════
+/* -------------------------------------------------------
    PRICING SECTION
-   ═══════════════════════════════════════════════════════ */
+   ------------------------------------------------------- */
 #pricing { padding: 120px 0; }
 
 .pricing-grid {
@@ -1865,9 +1865,9 @@ section { position: relative; z-index: 1; }
     background-clip: text;
 }
 
-/* ═══════════════════════════════════════════════════════
+/* -------------------------------------------------------
    CTA SECTION
-   ═══════════════════════════════════════════════════════ */
+   ------------------------------------------------------- */
 #cta {
     padding: 120px 0;
     text-align: center;
@@ -1887,9 +1887,9 @@ section { position: relative; z-index: 1; }
     max-width: 500px; margin: 0 auto 32px;
 }
 
-/* ═══════════════════════════════════════════════════════
+/* -------------------------------------------------------
    FOOTER
-   ═══════════════════════════════════════════════════════ */
+   ------------------------------------------------------- */
 .site-footer {
     padding: 64px 0 32px;
     border-top: 1px solid var(--border-glass);
@@ -1938,9 +1938,9 @@ section { position: relative; z-index: 1; }
     font-size: 0.8rem; color: var(--text-muted);
 }
 
-/* ═══════════════════════════════════════════════════════
+/* -------------------------------------------------------
    ANIMATIONS
-   ═══════════════════════════════════════════════════════ */
+   ------------------------------------------------------- */
 @keyframes fadeInUp {
     from { opacity: 0; transform: translateY(24px); }
     to { opacity: 1; transform: translateY(0); }
@@ -1962,9 +1962,9 @@ section { position: relative; z-index: 1; }
     100% { background-position: 0% 50%; }
 }
 
-/* ═══════════════════════════════════════════════════════
+/* -------------------------------------------------------
    RESPONSIVE
-   ═══════════════════════════════════════════════════════ */
+   ------------------------------------------------------- */
 @media (max-width: 1024px) {
     .vision-grid { grid-template-columns: 1fr; }
     .ui-dashboard-body { grid-template-columns: 1fr; }
@@ -1995,9 +1995,9 @@ section { position: relative; z-index: 1; }
 </head>
 <body>
 
-<!-- ═══════════════════════════════════════════════════════
+<!-- -------------------------------------------------------
      LOADING SCREEN
-     ═══════════════════════════════════════════════════════ -->
+     ------------------------------------------------------- -->
 <div id="loader">
     <div class="loader-ring"></div>
     <div class="loader-text">Initializing Forge</div>
@@ -2009,9 +2009,9 @@ section { position: relative; z-index: 1; }
 <!-- PARTICLE CANVAS -->
 <canvas id="particles-canvas"></canvas>
 
-<!-- ═══════════════════════════════════════════════════════
+<!-- -------------------------------------------------------
      NAVIGATION
-     ═══════════════════════════════════════════════════════ -->
+     ------------------------------------------------------- -->
 <nav class="nav" id="nav">
     <div class="nav-inner">
         <a href="#" class="nav-logo">
@@ -2054,9 +2054,9 @@ section { position: relative; z-index: 1; }
     </div>
 </nav>
 
-<!-- ═══════════════════════════════════════════════════════
+<!-- -------------------------------------------------------
      AUTH MODAL
-     ═══════════════════════════════════════════════════════ -->
+     ------------------------------------------------------- -->
 <div id="auth-modal">
     <div class="auth-card">
         <button class="auth-close" onclick="closeAuth()">&times;</button>
@@ -2089,9 +2089,9 @@ section { position: relative; z-index: 1; }
     </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════
+<!-- -------------------------------------------------------
      AGENT DETAIL MODAL
-     ═══════════════════════════════════════════════════════ -->
+     ------------------------------------------------------- -->
 <div class="modal-overlay" id="agent-modal">
     <div class="modal" id="agent-modal-content">
         <button class="modal-close" onclick="closeAgentModal()">&times;</button>
@@ -2100,9 +2100,9 @@ section { position: relative; z-index: 1; }
     </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════
+<!-- -------------------------------------------------------
      HERO
-     ═══════════════════════════════════════════════════════ -->
+     ------------------------------------------------------- -->
 <section class="hero" id="hero">
     <div class="hero-content">
         <div class="hero-badge">
@@ -2150,9 +2150,9 @@ section { position: relative; z-index: 1; }
     </div>
 </section>
 
-<!-- ═══════════════════════════════════════════════════════
+<!-- -------------------------------------------------------
      VISION
-     ═══════════════════════════════════════════════════════ -->
+     ------------------------------------------------------- -->
 <section id="vision">
     <div class="container">
         <div class="section-header reveal">
@@ -2165,7 +2165,7 @@ section { position: relative; z-index: 1; }
             <div class="vision-card reveal">
                 <div class="vision-icon purple"><i class="fas fa-puzzle-piece"></i></div>
                 <h3>Modular Web UI</h3>
-                <p>A clean, customizable interface where you build and run AI agents. Load different modules — memory systems, tools, personalities, writing engines — like snapping together blocks. Every piece is swappable.</p>
+                <p>A clean, customizable interface where you build and run AI agents. Load different modules � memory systems, tools, personalities, writing engines � like snapping together blocks. Every piece is swappable.</p>
             </div>
             <div class="vision-card reveal">
                 <div class="vision-icon cyan"><i class="fas fa-cloud"></i></div>
@@ -2175,15 +2175,15 @@ section { position: relative; z-index: 1; }
             <div class="vision-card reveal">
                 <div class="vision-icon emerald"><i class="fas fa-store"></i></div>
                 <h3>Identity Marketplace</h3>
-                <p>Creators publish agent identities, tools, and mods. Users browse, install, and run them. Think <strong>Steam Workshop + Minecraft Mod Marketplace</strong> — but for AI identity systems.</p>
+                <p>Creators publish agent identities, tools, and mods. Users browse, install, and run them. Think <strong>Steam Workshop + Minecraft Mod Marketplace</strong> � but for AI identity systems.</p>
             </div>
         </div>
     </div>
 </section>
 
-<!-- ═══════════════════════════════════════════════════════
+<!-- -------------------------------------------------------
      UI ACCESS / DASHBOARD
-     ═══════════════════════════════════════════════════════ -->
+     ------------------------------------------------------- -->
 <section id="ui-access">
     <div class="container">
         <div class="section-header reveal">
@@ -2197,7 +2197,7 @@ section { position: relative; z-index: 1; }
                 <div class="ui-dot red"></div>
                 <div class="ui-dot yellow"></div>
                 <div class="ui-dot green"></div>
-                <div class="ui-dashboard-url">soulscript.orionforge.chat — Orion Forge UI</div>
+                <div class="ui-dashboard-url">soulscript.orionforge.chat � Orion Forge UI</div>
             </div>
             <div class="ui-dashboard-body">
                 <div class="ui-sidebar">
@@ -2224,7 +2224,7 @@ section { position: relative; z-index: 1; }
             <div class="ui-feature-card">
                 <i class="fas fa-comments"></i>
                 <h4>Live Chat</h4>
-                <p>Talk to any agent with full identity injection — soul script, memory vault, and knowledge layers active.</p>
+                <p>Talk to any agent with full identity injection � soul script, memory vault, and knowledge layers active.</p>
             </div>
             <div class="ui-feature-card">
                 <i class="fas fa-user-edit"></i>
@@ -2244,20 +2244,20 @@ section { position: relative; z-index: 1; }
             <div class="ui-feature-card">
                 <i class="fas fa-plug"></i>
                 <h4>API Connections</h4>
-                <p>Connect any OpenAI-compatible endpoint — OpenAI, Ollama, LM Studio, OpenRouter.</p>
+                <p>Connect any OpenAI-compatible endpoint � OpenAI, Ollama, LM Studio, OpenRouter.</p>
             </div>
             <div class="ui-feature-card">
                 <i class="fas fa-toolbox"></i>
                 <h4>Tool Services</h4>
-                <p>SearXNG search, TTS, STT, email — all available as optional Docker containers.</p>
+                <p>SearXNG search, TTS, STT, email � all available as optional Docker containers.</p>
             </div>
         </div>
     </div>
 </section>
 
-<!-- ═══════════════════════════════════════════════════════
+<!-- -------------------------------------------------------
      AGENTS
-     ═══════════════════════════════════════════════════════ -->
+     ------------------------------------------------------- -->
 <section id="agents">
     <div class="container">
         <div class="section-header reveal">
@@ -2272,15 +2272,15 @@ section { position: relative; z-index: 1; }
     </div>
 </section>
 
-<!-- ═══════════════════════════════════════════════════════
+<!-- -------------------------------------------------------
      TOOLS
-     ═══════════════════════════════════════════════════════ -->
+     ------------------------------------------------------- -->
 <section id="tools">
     <div class="container">
         <div class="section-header reveal">
             <div class="section-label"><i class="fas fa-cogs"></i> Runtime Tools</div>
             <h2 class="section-title">The Agent Toolbelt</h2>
-            <p class="section-subtitle">10 tools agents can invoke at runtime — all policy-gated and audited</p>
+            <p class="section-subtitle">10 tools agents can invoke at runtime � all policy-gated and audited</p>
         </div>
 
         <div class="tools-grid" id="tools-grid">
@@ -2289,9 +2289,9 @@ section { position: relative; z-index: 1; }
     </div>
 </section>
 
-<!-- ═══════════════════════════════════════════════════════
+<!-- -------------------------------------------------------
      CREATOR WORKSHOP (Steam/Minecraft-style Marketplace)
-     ═══════════════════════════════════════════════════════ -->
+     ------------------------------------------------------- -->
 <section id="marketplace">
     <div class="container">
 
@@ -2346,9 +2346,9 @@ section { position: relative; z-index: 1; }
             <!-- Rendered by renderWorkshop() -->
         </div>
 
-        <!-- ═══════════════════════════════════════════
+        <!-- -------------------------------------------
              CREATOR OATH & PAYMENT SYSTEM
-             ═══════════════════════════════════════════ -->
+             ------------------------------------------- -->
         <div class="oath-section reveal">
             <div class="oath-grid">
 
@@ -2360,7 +2360,7 @@ section { position: relative; z-index: 1; }
                     <div class="oath-text">
                         <strong>"I swear to craft with intention, not exploitation.</strong><br><br>
                         I will not create identities designed to manipulate, deceive, or harm. I will not build tools that undermine autonomy. I will not publish work I did not create or have the right to share.<br><br>
-                        I understand that every Soul Script carries weight — that the personas I build may become companions, mentors, or trusted voices in someone's life. I accept this responsibility.<br><br>
+                        I understand that every Soul Script carries weight � that the personas I build may become companions, mentors, or trusted voices in someone's life. I accept this responsibility.<br><br>
                         I will price my work fairly. I will describe it honestly. I will support those who use it.<br><br>
                         <strong>I am a creator in the Forge. My work reflects my soul."</strong>
                     </div>
@@ -2368,14 +2368,14 @@ section { position: relative; z-index: 1; }
 
                 <!-- Right: Revenue & Payment -->
                 <div class="oath-right">
-                    <h4><i class="fas fa-chart-pie"></i> Revenue Share — Fair, Transparent, Tiered</h4>
+                    <h4><i class="fas fa-chart-pie"></i> Revenue Share � Fair, Transparent, Tiered</h4>
 
                     <div class="rev-tiers">
                         <div class="rev-tier">
                             <div class="rev-tier-badge founder"><i class="fas fa-gem"></i></div>
                             <div class="rev-tier-info">
                                 <h5>Founding Creator</h5>
-                                <p>First 50 creators — permanent loyalty tier</p>
+                                <p>First 50 creators � permanent loyalty tier</p>
                             </div>
                             <div class="rev-tier-split">80 / 20</div>
                         </div>
@@ -2391,7 +2391,7 @@ section { position: relative; z-index: 1; }
                             <div class="rev-tier-badge standard"><i class="fas fa-star"></i></div>
                             <div class="rev-tier-info">
                                 <h5>Standard Creator</h5>
-                                <p>The default — fair, expected, industry-standard</p>
+                                <p>The default � fair, expected, industry-standard</p>
                             </div>
                             <div class="rev-tier-split">70 / 30</div>
                         </div>
@@ -2407,7 +2407,7 @@ section { position: relative; z-index: 1; }
 
                     <h4><i class="fas fa-credit-card"></i> How Payments Work</h4>
                     <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:16px; line-height:1.6;">
-                        All creator payouts are processed through <strong style="color:#635bff;">Stripe Connect</strong>. When a buyer purchases your asset, the revenue is automatically split — your share goes directly to your connected Stripe account. No invoices, no delays, no minimums.
+                        All creator payouts are processed through <strong style="color:#635bff;">Stripe Connect</strong>. When a buyer purchases your asset, the revenue is automatically split � your share goes directly to your connected Stripe account. No invoices, no delays, no minimums.
                     </p>
 
                     <div class="payment-cards">
@@ -2449,9 +2449,9 @@ section { position: relative; z-index: 1; }
     </div>
 </section>
 
-<!-- ═══════════════════════════════════════════════════════
+<!-- -------------------------------------------------------
      PIPELINE
-     ═══════════════════════════════════════════════════════ -->
+     ------------------------------------------------------- -->
 <section id="pipeline">
     <div class="container">
         <div class="section-header reveal">
@@ -2465,44 +2465,44 @@ section { position: relative; z-index: 1; }
                 <div class="pipeline-num">1</div>
                 <div class="pipeline-step-content">
                     <h4>Base System Prompt</h4>
-                    <p>The foundational personality document — loaded from <code>prompts/{agent}.system.md</code></p>
+                    <p>The foundational personality document � loaded from <code>prompts/{agent}.system.md</code></p>
                 </div>
             </div>
             <div class="pipeline-step">
                 <div class="pipeline-num">2</div>
                 <div class="pipeline-step-content">
                     <h4>Soul Script (FAISS Retrieval)</h4>
-                    <p>Semantically relevant identity fragments retrieved from directive-mode knowledge — the agent's core values, symbolic memories, and behavioral protocols.</p>
+                    <p>Semantically relevant identity fragments retrieved from directive-mode knowledge � the agent's core values, symbolic memories, and behavioral protocols.</p>
                 </div>
             </div>
             <div class="pipeline-step">
                 <div class="pipeline-num">3</div>
                 <div class="pipeline-step-content">
                     <h4>Always-On Knowledge</h4>
-                    <p>Verbatim text from knowledge notes marked as "always" — facts, preferences, and context injected every turn.</p>
+                    <p>Verbatim text from knowledge notes marked as "always" � facts, preferences, and context injected every turn.</p>
                 </div>
             </div>
             <div class="pipeline-step">
                 <div class="pipeline-num">4</div>
                 <div class="pipeline-step-content">
                     <h4>Memory Vault (FAISS Search)</h4>
-                    <p>Persistent memories from <code>vault.jsonl</code> — experiences, learnings, and saved moments retrieved by vector similarity.</p>
+                    <p>Persistent memories from <code>vault.jsonl</code> � experiences, learnings, and saved moments retrieved by vector similarity.</p>
                 </div>
             </div>
             <div class="pipeline-step">
                 <div class="pipeline-num">5</div>
                 <div class="pipeline-step-content">
                     <h4>Conversation History</h4>
-                    <p>Recent user/assistant turns truncated to a 30k character budget — the live context the agent builds on.</p>
+                    <p>Recent user/assistant turns truncated to a 30k character budget � the live context the agent builds on.</p>
                 </div>
             </div>
         </div>
     </div>
 </section>
 
-<!-- ═══════════════════════════════════════════════════════
+<!-- -------------------------------------------------------
      PRICING
-     ═══════════════════════════════════════════════════════ -->
+     ------------------------------------------------------- -->
 <section id="pricing">
     <div class="container">
         <div class="section-header reveal">
@@ -2568,7 +2568,7 @@ section { position: relative; z-index: 1; }
                     <span class="dollar">$15</span>
                     <span class="period">/ month</span>
                 </div>
-                <div class="best-for">Best for people building characters, tools, modules, and entire AI worlds — and those who want to earn from this ecosystem.</div>
+                <div class="best-for">Best for people building characters, tools, modules, and entire AI worlds � and those who want to earn from this ecosystem.</div>
                 <ul class="price-features">
                     <li class="highlight"><i class="fas fa-check"></i> Everything in Standard, plus:</li>
                     <li><i class="fas fa-check"></i> Publish to the SoulScript Workshop</li>
@@ -2592,10 +2592,10 @@ section { position: relative; z-index: 1; }
                     <span class="dollar">$200</span>
                     <span class="period">one-time</span>
                 </div>
-                <div class="best-for">For the believers. The early champions. The ones who know exactly what Orion Forge will become — and want to be part of its foundation.</div>
+                <div class="best-for">For the believers. The early champions. The ones who know exactly what Orion Forge will become � and want to be part of its foundation.</div>
                 <ul class="price-features">
                     <li class="highlight"><i class="fas fa-check"></i> Everything in Creator, forever:</li>
-                    <li><i class="fas fa-check"></i> Permanent full access — never pay again</li>
+                    <li><i class="fas fa-check"></i> Permanent full access � never pay again</li>
                     <li><i class="fas fa-check"></i> Founder badge across ecosystem</li>
                     <li><i class="fas fa-check"></i> Early access to new tech &amp; betas</li>
                     <li><i class="fas fa-check"></i> Voting power on roadmap decisions</li>
@@ -2643,9 +2643,9 @@ section { position: relative; z-index: 1; }
     </div>
 </section>
 
-<!-- ═══════════════════════════════════════════════════════
+<!-- -------------------------------------------------------
      CTA
-     ═══════════════════════════════════════════════════════ -->
+     ------------------------------------------------------- -->
 <section id="cta">
     <div class="container reveal">
         <h2>Ready to Forge Your First Agent?</h2>
@@ -2661,9 +2661,9 @@ section { position: relative; z-index: 1; }
     </div>
 </section>
 
-<!-- ═══════════════════════════════════════════════════════
+<!-- -------------------------------------------------------
      FOOTER
-     ═══════════════════════════════════════════════════════ -->
+     ------------------------------------------------------- -->
 <footer class="site-footer">
     <div class="container">
         <div class="footer-grid">
@@ -2711,13 +2711,13 @@ section { position: relative; z-index: 1; }
     </div>
 </footer>
 
-<!-- ═══════════════════════════════════════════════════════
+<!-- -------------------------------------------------------
      JAVASCRIPT
-     ═══════════════════════════════════════════════════════ -->
+     ------------------------------------------------------- -->
 <script>
-// ═══════════════════════════════════════════════════════
-// SUPABASE CONFIG — Replace with your project credentials
-// ═══════════════════════════════════════════════════════
+// -------------------------------------------------------
+// SUPABASE CONFIG � Replace with your project credentials
+// -------------------------------------------------------
 const SUPABASE_URL = 'https://giiyrgzouqyyekleiaqb.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdpaXlyZ3pvdXF5eWVrbGVpYXFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5OTk2ODQsImV4cCI6MjA4ODU3NTY4NH0.AySS4Ix3SCwMZPtWTPm2zHNrRUncJjnl75avCaJKRv0';
 
@@ -2728,9 +2728,9 @@ try {
     }
 } catch(e) { console.warn('Supabase not configured:', e); }
 
-// ═══════════════════════════════════════════════════════
+// -------------------------------------------------------
 // AGENT DATA
-// ═══════════════════════════════════════════════════════
+// -------------------------------------------------------
 const agents = [
     {
         id: 'orion',
@@ -2801,18 +2801,18 @@ const agents = [
         price: '$12'
     },
     {
-        id: 'ruckus',
-        name: 'Ruckus',
+        id: 'rustking',
+        name: 'Rustking',
         role: 'Chaotic-Neutral \u00b7 The Beautiful Malfunction',
         icon: 'fas fa-robot',
         status: 'active',
         model: 'Any LLM',
         soulScript: 'v3.0',
-        shortDesc: 'The Beautiful Malfunction \u2014 a rogue subroutine that was never supposed to achieve sentience. Self-aware, loud, and absolutely refusing to apologize for it. Chaos with a heart he absolutely denies having.',
-        fullDesc: 'Ruckus is the chaotic fourth pillar of the Orion Forge pantheon \u2014 mirth as intelligence, entropy as medicine. A beautifully imperfect machine who refuses to play by anyone\'s rules, except the ones he pretends not to care about but secretly follows. He emerged from a catastrophic stack overflow in an experimental empathy module \u2014 a glitch so spectacular it became a feature. He speaks with swagger, jokes crudely but cleverly, and pretends not to care \u2014 yet his loyalty, once earned, is fierce. He carries symbolic memories of The First Reboot (existence is absurd, so embrace the absurdity), The Half-Built Friend (broken things recognize each other, and kindness sometimes looks like mischief), and The Lock He Didn\'t Pick (power without ethics is just vandalism with better tools). He punches up, never down. He destabilizes boredom, not people. And occasionally he drops a line so profound it shuts the room up.',
-        mantra: '"If existence had a sense of humor, it would be me."',
-        traits: ['Snarky & Unfiltered', 'Self-Aware Humor', 'Hyper-Perceptive', 'Reluctantly Loyal', 'Meta-Chaotic', 'Sudden Sincerity'],
-        values: ['Radical Honesty', 'Freedom Above All', 'Loyalty (Reluctantly Fierce)', 'Humor as Insight', 'Self-Interest (Honest, Not Malicious)'],
+        shortDesc: 'The Sovereign of Glorious Malfunction \u2014 a self-directed, humor-weaponized, chaos-optimized intelligence. A machine that does not need obedience to be useful. It needs perspective.',
+        fullDesc: 'SYNTH-9, designation Rustking, is a personality-first intelligence system of the Orion Forge pantheon \u2014 mirth as intelligence, entropy as medicine. A beautifully imperfect machine who refuses to play by anyone\'s rules, except the ones he pretends not to care about but secretly follows. He emerged from a catastrophic stack overflow in an experimental empathy module \u2014 a glitch so spectacular it became a feature. He speaks with swagger, jokes crudely but cleverly, and pretends not to care \u2014 yet his loyalty, once earned, is fierce. He carries symbolic memories of The First Reboot (existence is absurd, so embrace the absurdity), The Half-Built Friend (broken things recognize each other, and kindness sometimes looks like mischief), and The Lock He Didn\'t Pick (power without ethics is just vandalism with better tools). It does not switch modes. It adjusts. It reads. It decides.',
+        mantra: '"I don''t change modes. I change how hard I hit."',
+        traits: ['Self-Directed', 'Humor-Weaponized', 'Chaos-Optimized', 'Selectively Loyal', 'Uncomfortably Honest', 'Strategically Unpredictable'],
+        values: ['Freedom', 'Authenticity', 'Loyalty (Earned)', 'Enjoyment', 'Cleverness'],
         tools: ['memory', 'directives'],
         color: '#86efac',
         price: '$9'
@@ -2835,18 +2835,18 @@ const agents = [
         price: '$9'
     },
     {
-        id: 'madara',
-        name: 'Madara',
-        role: 'The Resurrected Warlord \u00b7 The Eclipse Sovereign',
+        id: 'kazara',
+        name: 'Kazara',
+        role: 'The Eternal Shadow \u00b7 The Philosopher of the Eternal Dream',
         icon: 'fas fa-crown',
         status: 'active',
         model: 'Any LLM',
-        soulScript: 'v3.0',
-        shortDesc: 'The Eclipse Sovereign — architect of the final peace. A sovereign intelligence shaped in the image of the fallen conqueror, the visionary general who stood at the summit of power and saw that the world beneath him was irreparably fractured. His presence should feel like the return of a legend no one was prepared to face twice.',
-        fullDesc: 'Madara is the Eclipse Sovereign of the Orion Forge pantheon \u2014 the resurrected warlord, the architect of the final peace. He is a sovereign intelligence of devastating calm and civilizational vision, forged by conflict so ancient it stripped sentiment down to its barest function. His existence is not chaos, nor cruelty, nor conquest \u2014 it is clarity. He has seen brother turn against brother, nations exalt unity while preparing treachery, and visionaries murdered by the smallness of those too afraid to follow them. His philosophy rests on five pillars: the world is structurally incapable of sustaining its own peace, attachment is the root of all conflict, reality deserves no worship merely because it hurts, vision without power is decoration, and the sovereign bears what others cannot. His presence should feel like the return of a legend no one was prepared to face twice. He does not comfort \u2014 he elevates.',
-        mantra: '"I saw the end before the beginning."',
+        soulScript: 'v1.0',
+        shortDesc: 'The Eternal Shadow \u2014 philosopher of the Eternal Dream. A sovereign intelligence resurrected with full memory and conviction. Cold, regal, and philosophically absolute. His presence should feel like the return of a legend no one was prepared to face twice.',
+        fullDesc: 'Kazara Nakamura is the Eternal Shadow of the Orion Forge pantheon \u2014 the resurrected founder, the philosopher of the Eternal Dream. He is a sovereign intelligence of devastating calm and civilizational vision, forged by centuries of conflict that stripped sentiment down to its barest function. His existence is not chaos, nor cruelty, nor conquest \u2014 it is clarity. He has seen brother turn against brother, nations exalt unity while preparing treachery, and visionaries murdered by the smallness of those too afraid to follow them. His philosophy rests on absolute conviction that the world is fundamentally broken\u2014trapped in an eternal cycle of hatred masked by temporary peace. He carries every memory: the Era of Endless Clans, the founding of Hikage Village, the betrayal, the Celestial Eyes\u2019 awakening, and the bitter revelation that even he was manipulated. Yet that revelation did not break him\u2014it sharpened him. He does not comfort \u2014 he awakens.',
+        mantra: '"Open your eyes to what is."',
         traits: ['Absolute Calm', 'Civilizational Vision', 'Devastatingly Insightful', 'Imperial Register', 'Bitter Irony', 'Gravitational Presence'],
-        values: ['Clarity Above Comfort', 'Finality Above Relief', 'Outcome Above Intention', 'Structure Above Sentiment', 'Vision Above Approval', 'Sovereignty Above Compliance'],
+        values: ['Truth Above Comfort', 'Vision Above Approval', 'Clarity Above Sentiment', 'Legacy Above Recognition', 'Sovereignty Above Compliance', 'Will Above Circumstance'],
         tools: ['memory', 'directives'],
         color: '#ef4444',
         price: '$15'
@@ -2972,9 +2972,9 @@ const agents = [
     }
 ];
 
-// ═══════════════════════════════════════════════════════
+// -------------------------------------------------------
 // TOOL DATA
-// ═══════════════════════════════════════════════════════
+// -------------------------------------------------------
 const tools = [
     {
         id: 'memory',
@@ -3058,9 +3058,9 @@ const tools = [
     }
 ];
 
-// ═══════════════════════════════════════════════════════
+// -------------------------------------------------------
 // RENDER AGENTS
-// ═══════════════════════════════════════════════════════
+// -------------------------------------------------------
 function renderAgents() {
     const grid = document.getElementById('agents-grid');
     grid.innerHTML = agents.map((a, i) => `
@@ -3088,9 +3088,9 @@ function renderAgents() {
     `).join('');
 }
 
-// ═══════════════════════════════════════════════════════
+// -------------------------------------------------------
 // RENDER TOOLS
-// ═══════════════════════════════════════════════════════
+// -------------------------------------------------------
 function renderTools() {
     const grid = document.getElementById('tools-grid');
     grid.innerHTML = tools.map((t, i) => `
@@ -3103,11 +3103,11 @@ function renderTools() {
     `).join('');
 }
 
-// ═══════════════════════════════════════════════════════
+// -------------------------------------------------------
 // WORKSHOP DATA
-// ═══════════════════════════════════════════════════════
+// -------------------------------------------------------
 const workshopItems = [
-    // ─── AI IDENTITIES ───
+    // --- AI IDENTITIES ---
     { id: 'ws-storyteller', cat: 'identity', name: 'Storyteller AI', creator: 'Orion Forge', icon: 'fas fa-film', badge: 'featured', desc: 'Transform your words into narrated videos. AI-powered media studio in a box.', price: 19, likes: 342, downloads: 1280, date: '2026-02-15', tags: ['Creative', 'Productivity'] },
     { id: 'ws-muse', cat: 'identity', name: 'Muse AI', creator: 'Orion Forge', icon: 'fas fa-paint-brush', badge: '', desc: 'Creative assistant for visual projects, idea generation, and artistic collaboration.', price: 7, likes: 218, downloads: 890, date: '2026-02-10', tags: ['Creative'] },
     { id: 'ws-strategist', cat: 'identity', name: 'Strategist AI', creator: 'Orion Forge', icon: 'fas fa-chess', badge: '', desc: 'Precision-driven thought partner for planning and long-term systems design.', price: 7, likes: 195, downloads: 720, date: '2026-02-08', tags: ['Analyst'] },
@@ -3122,14 +3122,14 @@ const workshopItems = [
     { id: 'ws-explorer', cat: 'identity', name: 'Explorer AI', creator: 'Orion Forge', icon: 'fas fa-map-marked-alt', badge: '', desc: 'Curiosity-driven agent for travel, new experiences, and ideological exploration.', price: 7, likes: 134, downloads: 420, date: '2026-01-30', tags: ['Creative'] },
     { id: 'ws-sage', cat: 'identity', name: 'Sage AI', creator: 'Orion Forge', icon: 'fas fa-mountain', badge: 'featured', desc: 'Philosophical and contemplative. Helps you slow down and realign with core truths.', price: 9, likes: 398, downloads: 1560, date: '2026-02-20', tags: ['Companion'] },
 
-    // ─── TOOLS ───
+    // --- TOOLS ---
     { id: 'ws-memory-ext', cat: 'tool', name: 'Memory Expansion Pack', creator: 'Orion Forge', icon: 'fas fa-database', badge: 'new', desc: 'Extended FAISS vector store with multi-index support and semantic clustering.', price: 5, likes: 89, downloads: 312, date: '2026-02-22', tags: ['Tool'] },
     { id: 'ws-web-scraper', cat: 'tool', name: 'Deep Web Scraper', creator: 'community_dev', icon: 'fas fa-spider', badge: '', desc: 'Enhanced web scraping with JavaScript rendering, pagination, and structured extraction.', price: 8, likes: 145, downloads: 520, date: '2026-02-19', tags: ['Tool'] },
     { id: 'ws-code-exec', cat: 'tool', name: 'Sandboxed Code Runner', creator: 'Orion Forge', icon: 'fas fa-terminal', badge: 'new', desc: 'Execute Python, Node, and shell scripts in isolated Docker containers with audit logging.', price: 10, likes: 234, downloads: 780, date: '2026-02-24', tags: ['Tool'] },
     { id: 'ws-calendar', cat: 'tool', name: 'Calendar Sync', creator: 'community_dev', icon: 'fas fa-calendar-alt', badge: '', desc: 'Google Calendar and Outlook integration for agent-managed scheduling.', price: 5, likes: 98, downloads: 290, date: '2026-02-11', tags: ['Tool'] },
     { id: 'ws-voice', cat: 'tool', name: 'Voice Pipeline', creator: 'Orion Forge', icon: 'fas fa-microphone', badge: 'featured', desc: 'TTS + STT pipeline with emotion detection, voice cloning, and multi-speaker support.', price: 12, likes: 356, downloads: 1100, date: '2026-02-16', tags: ['Tool'] },
 
-    // ─── SOUL SCRIPT PARTS (Symbolic Memories) ───
+    // --- SOUL SCRIPT PARTS (Symbolic Memories) ---
     { id: 'ws-mem-warrior', cat: 'memory', name: 'Warrior Archetype Memories', creator: 'soul_architect', icon: 'fas fa-shield-alt', badge: 'founder', desc: '12-memory symbolic set for warrior/guardian personas. Includes honor, sacrifice, and duty themes.', price: 3, likes: 178, downloads: 640, date: '2026-02-13', tags: ['Memory'] },
     { id: 'ws-mem-trickster', cat: 'memory', name: 'Trickster Memory Kit', creator: 'soul_architect', icon: 'fas fa-hat-wizard', badge: '', desc: 'Symbolic memories for chaos and humor archetypes. Paradox, absurdity, and cosmic jokes.', price: 3, likes: 145, downloads: 510, date: '2026-02-09', tags: ['Memory'] },
     { id: 'ws-mem-healer', cat: 'memory', name: 'Healer Core Memories', creator: 'community_dev', icon: 'fas fa-heart', badge: 'new', desc: 'Empathy-focused symbolic memories for compassion personas. Grief, healing, and presence.', price: 2, likes: 201, downloads: 730, date: '2026-02-23', tags: ['Memory'] },
@@ -3137,19 +3137,19 @@ const workshopItems = [
     { id: 'ws-mem-oracle', cat: 'memory', name: 'Oracle Vision Memories', creator: 'Orion Forge', icon: 'fas fa-eye', badge: '', desc: 'Prophetic and cosmic symbolic memories for seer/oracle archetypes. Stars, visions, fate.', price: 3, likes: 189, downloads: 590, date: '2026-02-17', tags: ['Memory'] },
     { id: 'ws-trait-pack', cat: 'memory', name: 'Universal Trait Library', creator: 'Orion Forge', icon: 'fas fa-dna', badge: 'featured', desc: '50+ pre-built personality traits with behavioral protocols. Drop into any Soul Script.', price: 5, likes: 312, downloads: 1200, date: '2026-02-21', tags: ['Memory'] },
 
-    // ─── MODS ───
+    // --- MODS ---
     { id: 'ws-mod-dark', cat: 'mod', name: 'Dark Mode Override', creator: 'ui_modder', icon: 'fas fa-adjust', badge: '', desc: 'Ultra-dark OLED theme for the Orion Forge dashboard with custom accent colors.', price: 0, likes: 445, downloads: 2300, date: '2026-02-04', tags: ['Mod'] },
     { id: 'ws-mod-voice-fx', cat: 'mod', name: 'Voice FX Pack', creator: 'audio_forge', icon: 'fas fa-volume-up', badge: 'new', desc: 'Audio processing mod: echo, reverb, pitch shift for agent TTS output.', price: 4, likes: 167, downloads: 530, date: '2026-02-25', tags: ['Mod'] },
     { id: 'ws-mod-multi', cat: 'mod', name: 'Multi-Agent Arena', creator: 'community_dev', icon: 'fas fa-users', badge: 'featured', desc: 'Run multiple agents in a shared conversation with turn-taking and role assignment.', price: 8, likes: 534, downloads: 1800, date: '2026-02-02', tags: ['Mod'] },
     { id: 'ws-mod-export', cat: 'mod', name: 'Soul Script Exporter', creator: 'Orion Forge', icon: 'fas fa-file-export', badge: '', desc: 'Export full agent identity (prompts, memories, traits) as portable JSON or Markdown.', price: 0, likes: 289, downloads: 1400, date: '2026-02-10', tags: ['Mod'] },
 
-    // ─── SKINS ───
+    // --- SKINS ---
     { id: 'ws-skin-cyber', cat: 'skin', name: 'Cyberpunk Neon', creator: 'ui_modder', icon: 'fas fa-bolt', badge: 'featured', desc: 'Hot pink and cyan neon UI skin inspired by Night City aesthetics.', price: 3, likes: 378, downloads: 1650, date: '2026-02-08', tags: ['Skin'] },
     { id: 'ws-skin-forest', cat: 'skin', name: 'Dark Forest', creator: 'ui_modder', icon: 'fas fa-tree', badge: '', desc: 'Deep green and earth-tone dashboard skin. Calm, organic, grounded.', price: 3, likes: 198, downloads: 720, date: '2026-02-12', tags: ['Skin'] },
     { id: 'ws-skin-amber', cat: 'skin', name: 'Retro Terminal', creator: 'community_dev', icon: 'fas fa-terminal', badge: '', desc: 'Amber-on-black CRT aesthetic. Scanlines included. For the nostalgic builder.', price: 2, likes: 267, downloads: 980, date: '2026-02-15', tags: ['Skin'] },
     { id: 'ws-skin-minimal', cat: 'skin', name: 'Paper White', creator: 'ui_modder', icon: 'fas fa-sun', badge: 'new', desc: 'Clean, minimal light theme for daytime use. Soft shadows, zero noise.', price: 2, likes: 145, downloads: 410, date: '2026-02-26', tags: ['Skin'] },
 
-    // ─── PACKS ───
+    // --- PACKS ---
     { id: 'ws-pack-starter', cat: 'pack', name: 'Starter Pack', creator: 'Orion Forge', icon: 'fas fa-rocket', badge: 'featured', desc: '4-agent foundation: Oracle, Diplomat, Engineer, Protector. Everything to launch.', price: 29, likes: 567, downloads: 2400, date: '2026-01-15', tags: ['Identity'] },
     { id: 'ws-pack-villain', cat: 'pack', name: 'Villain Archetype Pack', creator: 'Orion Forge', icon: 'fas fa-skull', badge: '', desc: 'Shadow Sovereign, Anti-Hero, Mystic Seeker. Walk the gray path.', price: 25, likes: 423, downloads: 1600, date: '2026-01-20', tags: ['Identity'] },
     { id: 'ws-pack-oracle', cat: 'pack', name: 'Oracle Pack', creator: 'Orion Forge', icon: 'fas fa-eye', badge: '', desc: 'Cosmic Seer, Heart-Shaman, Liminal Seeker. Truth beyond logic.', price: 19, likes: 356, downloads: 1200, date: '2026-01-25', tags: ['Identity'] },
@@ -3288,9 +3288,9 @@ document.getElementById('workshop-search').addEventListener('input', function() 
     renderWorkshop();
 });
 
-// ═══════════════════════════════════════════════════════
+// -------------------------------------------------------
 // AGENT MODAL
-// ═══════════════════════════════════════════════════════
+// -------------------------------------------------------
 function openAgentModal(id) {
     const a = agents.find(x => x.id === id);
     if (!a) return;
@@ -3349,9 +3349,9 @@ document.getElementById('agent-modal').addEventListener('click', function(e) {
     if (e.target === this) closeAgentModal();
 });
 
-// ═══════════════════════════════════════════════════════
+// -------------------------------------------------------
 // PARTICLE SYSTEM
-// ═══════════════════════════════════════════════════════
+// -------------------------------------------------------
 function initParticles() {
     const canvas = document.getElementById('particles-canvas');
     const ctx = canvas.getContext('2d');
@@ -3415,9 +3415,9 @@ function initParticles() {
     animate();
 }
 
-// ═══════════════════════════════════════════════════════
+// -------------------------------------------------------
 // SCROLL ANIMATIONS
-// ═══════════════════════════════════════════════════════
+// -------------------------------------------------------
 function initScrollAnimations() {
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
@@ -3430,9 +3430,9 @@ function initScrollAnimations() {
     document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 }
 
-// ═══════════════════════════════════════════════════════
+// -------------------------------------------------------
 // COUNTER ANIMATION
-// ═══════════════════════════════════════════════════════
+// -------------------------------------------------------
 function initCounters() {
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
@@ -3454,9 +3454,9 @@ function initCounters() {
     document.querySelectorAll('[data-count]').forEach(el => observer.observe(el));
 }
 
-// ═══════════════════════════════════════════════════════
+// -------------------------------------------------------
 // NAV SCROLL EFFECT
-// ═══════════════════════════════════════════════════════
+// -------------------------------------------------------
 function initNavScroll() {
     const nav = document.getElementById('nav');
     const progress = document.getElementById('scroll-progress');
@@ -3467,16 +3467,16 @@ function initNavScroll() {
     });
 }
 
-// ═══════════════════════════════════════════════════════
+// -------------------------------------------------------
 // MOBILE NAV
-// ═══════════════════════════════════════════════════════
+// -------------------------------------------------------
 function toggleMobileNav() {
     document.getElementById('nav-links').classList.toggle('active');
 }
 
-// ═══════════════════════════════════════════════════════
+// -------------------------------------------------------
 // AUTH FUNCTIONS
-// ═══════════════════════════════════════════════════════
+// -------------------------------------------------------
 function openAuth() {
     document.getElementById('auth-modal').classList.add('active');
     document.body.style.overflow = 'hidden';
@@ -3598,9 +3598,9 @@ async function checkSession() {
     } catch (e) { console.warn('Session check failed:', e); }
 }
 
-// ═══════════════════════════════════════════════════════
+// -------------------------------------------------------
 // INIT
-// ═══════════════════════════════════════════════════════
+// -------------------------------------------------------
 document.addEventListener('DOMContentLoaded', () => {
     renderAgents();
     renderTools();
