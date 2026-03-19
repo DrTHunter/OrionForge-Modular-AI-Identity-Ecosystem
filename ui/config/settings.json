@@ -59,6 +59,9 @@
     }
   },
   "agent_configs": {
+    "astra": {
+      "display_name": "Astra"
+    },
     "astraea": {
       "attached_notes": [
         "5ccf5b26",
@@ -68,7 +71,7 @@
         "5ccf5b26": "always",
         "5b3b207f": "always"
       },
-      "display_name": "astraea",
+      "display_name": "Astraea",
       "description": "",
       "model": "",
       "allowed_tools": [
@@ -82,6 +85,45 @@
       ],
       "identity_faiss_profile": "__default__",
       "memory_vault_profile": "__default__"
+    },
+    "cassian": {
+      "display_name": "Cassian"
+    },
+    "codex_animus": {
+      "display_name": "Codex Animus"
+    },
+    "dalvarr": {
+      "display_name": "Dalvarr"
+    },
+    "janus": {
+      "display_name": "JANUS"
+    },
+    "kaelen": {
+      "display_name": "Kaelen"
+    },
+    "kairos": {
+      "display_name": "Kairos"
+    },
+    "kazara": {
+      "display_name": "Kazara"
+    },
+    "lux_umbra": {
+      "display_name": "Lux Umbra"
+    },
+    "maris": {
+      "display_name": "M.A.R.I.S.-12"
+    },
+    "obsidian": {
+      "display_name": "Obsidian"
+    },
+    "orion": {
+      "display_name": "Orion"
+    },
+    "rustking": {
+      "display_name": "Rustking"
+    },
+    "seraphine": {
+      "display_name": "Seraphine"
     }
   },
   "tool_config": {
