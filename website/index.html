@@ -624,13 +624,13 @@ section { position: relative; z-index: 1; }
     filter: drop-shadow(0 0 20px rgba(99,102,241,0.5));
 }
 .agent-card-header .agent-avatar {
-    width: 100%; height: 100%; object-fit: cover; object-position: top;
+    width: 100%; height: 100%; object-fit: cover; object-position: center top;
     position: absolute; inset: 0; z-index: 1;
 }
 .agent-card-header .agent-avatar + .agent-icon { display: none; }
 .agent-card-header::before {
     content: ''; position: absolute; inset: 0;
-    opacity: 0.3;
+    opacity: 0.3; z-index: 0;
 }
 .agent-card-header.orion::before { background: linear-gradient(135deg, #1e3a5f, #0d1b2a); }
 .agent-card-header.orion .agent-icon { color: #60a5fa; }
