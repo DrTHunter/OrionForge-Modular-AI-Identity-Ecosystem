@@ -50,6 +50,12 @@
       "photo_zoom": 1,
       "photo_x": 50,
       "photo_y": 30
+    },
+    "janus": {
+      "image": "/uploads/avatar_janus_forge2026.png",
+      "photo_zoom": 1,
+      "photo_x": 50,
+      "photo_y": 50
     }
   },
   "agent_configs": {
