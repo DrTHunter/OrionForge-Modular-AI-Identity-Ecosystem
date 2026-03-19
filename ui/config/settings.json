@@ -15,6 +15,18 @@
       "photo_x": 50,
       "photo_y": 30
     },
+    "dalvarr": {
+      "image": "/uploads/avatar_dalvarr_v4mythic.png",
+      "photo_zoom": 1,
+      "photo_x": 50,
+      "photo_y": 25
+    },
+    "maris": {
+      "image": "/uploads/avatar_maris_workshop.png",
+      "photo_zoom": 1,
+      "photo_x": 50,
+      "photo_y": 20
+    },
     "orion": {
       "image": "/uploads/avatar_orion_forge2026.png",
       "photo_zoom": 1,
@@ -92,8 +104,8 @@
       "identity_faiss_profile": "__default__",
       "memory_vault_profile": "__default__"
     },
-    "cassian": {
-      "display_name": "Cassian"
+    "marcus": {
+      "display_name": "Marcus Aurelius"
     },
     "codex_animus": {
       "display_name": "Codex Animus"
