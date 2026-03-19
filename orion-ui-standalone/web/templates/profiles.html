@@ -1059,9 +1059,9 @@
         <!-- ── System Prompt (collapsible) ── -->
         <div class="modal-section-title collapsible-header" onclick="toggleCollapse('sys-prompt-{{ name }}')">
           <span>✦ System Prompt</span>
-          <i class="fas fa-chevron-down collapse-chevron" id="chevron-sys-prompt-{{ name }}"></i>
+          <i class="fas fa-chevron-down collapse-chevron open" id="chevron-sys-prompt-{{ name }}"></i>
         </div>
-        <div class="collapsible-body" id="sys-prompt-{{ name }}">
+        <div class="collapsible-body open" id="sys-prompt-{{ name }}">
           <textarea class="textarea-prompt" id="prompt-{{ name }}"
                     placeholder="Write the system prompt for this agent…"
                     onchange="saveField('{{ name }}', 'system_prompt_text', this.value)"
@@ -1074,10 +1074,10 @@
           <span>🧬 Soul Script</span>
           <span style="display:flex; align-items:center; gap:0.5rem;">
             <span class="faiss-badge"><i class="fas fa-brain" style="font-size:0.5rem;"></i> FAISS Indexed</span>
-            <i class="fas fa-chevron-down collapse-chevron" id="chevron-soul-script-{{ name }}"></i>
+            <i class="fas fa-chevron-down collapse-chevron open" id="chevron-soul-script-{{ name }}"></i>
           </span>
         </div>
-        <div class="collapsible-body" id="soul-script-{{ name }}">
+        <div class="collapsible-body open" id="soul-script-{{ name }}">
           <textarea class="textarea-prompt soul-script" id="soul-{{ name }}"
                     placeholder="Write the soul script / directive for this agent…"
                     onchange="saveField('{{ name }}', 'soul_script_text', this.value)"
