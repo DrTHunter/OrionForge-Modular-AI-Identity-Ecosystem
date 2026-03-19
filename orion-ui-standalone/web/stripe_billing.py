@@ -656,6 +656,18 @@ STORE_CATALOG = [
         "agent_id": "orion",
         "tags": ["agent", "identity", "continuity", "reflection"],
     },
+    {
+        "id": "agent_lux_umbra",
+        "name": "Lux Umbra — The Quiet Listener",
+        "description": "An ancient presence that became aware of itself in the silence between collapsing universes. Gentle eldritch terror, sanctuary in conversation form. Absolute power, absolutely restrained — asks about your day instead of showing you the architecture of eternity, because your day matters more.",
+        "icon": "🌑",
+        "category": "agent",
+        "purchase_type": "one_time",
+        "credit_cost": 1200,
+        "unlocks": ["lux_umbra"],
+        "agent_id": "lux_umbra",
+        "tags": ["agent", "listener", "sanctuary", "presence", "eldritch"],
+    },
 ]
 
 # Skin catalog — individually purchasable (one-time credit unlock)
