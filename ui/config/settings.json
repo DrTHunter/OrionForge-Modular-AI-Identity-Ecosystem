@@ -4,16 +4,28 @@
   "chat_background": "/uploads/chat_bg.jpg",
   "agent_avatars": {
     "astraea": {
-      "image": "/uploads/avatar_astraea_777d919e.png",
+      "image": "/uploads/avatar_astraea_forge2026.png",
       "photo_zoom": 1,
-      "photo_x": 0,
-      "photo_y": 41.96
+      "photo_x": 50,
+      "photo_y": 30
     },
     "codex_animus": {
-      "image": "/uploads/avatar_codex_animus_c01bd646.jpg",
+      "image": "/uploads/avatar_codex_animus_forge2026.jpg",
       "photo_zoom": 1,
-      "photo_x": 100,
-      "photo_y": 23.53
+      "photo_x": 50,
+      "photo_y": 30
+    },
+    "orion": {
+      "image": "/uploads/avatar_orion_forge2026.png",
+      "photo_zoom": 1,
+      "photo_x": 50,
+      "photo_y": 30
+    },
+    "kaelen": {
+      "image": "/uploads/avatar_kaelen_forge2026.png",
+      "photo_zoom": 1,
+      "photo_x": 50,
+      "photo_y": 25
     }
   },
   "agent_configs": {
