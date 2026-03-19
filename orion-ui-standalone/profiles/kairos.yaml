@@ -9,7 +9,7 @@ allowed_tools:
 - model_router
 - web_search
 base_url: https://api.openai.com/v1
-description: 'The Listener Who Speaks Last — empathic presence, sacred dialogue, Talk no Jutsu'
+description: 'Cyber-Shinobi of the Soul — neural empathic warfare, sacred dialogue, digital nindo'
 directives:
   enabled: true
   max_sections: 5

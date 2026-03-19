@@ -733,8 +733,8 @@
       "token_estimate": 600
     },
     {
-      "id": "kairos.talk_no_jutsu",
-      "name": "Talk no Jutsu — Sacred Dialogue Architecture",
+      "id": "kairos.nindo_protocol",
+      "name": "The Nindo Protocol — Sacred Dialogue Architecture",
       "scope": "kairos",
       "risk": "low",
       "version": "1.0.0",
@@ -745,7 +745,7 @@
         "kairos",
         "dialogue",
         "sacred",
-        "jutsu",
+        "nindo",
         "emptying",
         "receiving",
         "naming",
