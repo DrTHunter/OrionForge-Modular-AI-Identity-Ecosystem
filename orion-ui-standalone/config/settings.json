@@ -114,7 +114,16 @@
       "display_name": "Dal'Varr"
     },
     "janus": {
-      "display_name": "JANUS"
+      "display_name": "JANUS",
+      "attached_notes": [
+        "acc0b015"
+      ],
+      "note_modes": {
+        "acc0b015": "directive"
+      },
+      "essential_notes": [
+        "acc0b015"
+      ]
     },
     "kaelen": {
       "display_name": "Kaelen"

@@ -1638,6 +1638,7 @@ def _seed_agent_knowledge(agent_id: str):
     now_iso = datetime.now(timezone.utc).isoformat()
 
     note_ids = []
+    ss_ids = set()
 
     # ── Create soul script note ──
     if soul_script_text:
@@ -1658,6 +1659,7 @@ def _seed_agent_knowledge(agent_id: str):
             "created": now_iso, "updated": now_iso,
         })
         note_ids.append(ss_id)
+        ss_ids.add(ss_id)
 
     # ── Create prompt note ──
     if prompt_text:
@@ -1680,16 +1682,19 @@ def _seed_agent_knowledge(agent_id: str):
 
     _write_json(index_file, index)
 
-    # ── Attach notes to agent config (always-inject mode) ──
+    # ── Attach notes to agent config ──
     if note_ids:
         cfg = _get_agent_config(agent_id)
         existing = cfg.get("attached_notes", [])
         cfg["attached_notes"] = list(set(existing + note_ids))
-        # Set mode to "always" so soul script is injected into every session
         modes = cfg.get("note_modes", {})
+        essential = cfg.get("essential_notes", [])
         for nid in note_ids:
-            modes[nid] = "always"
+            # Soul script notes default to directive mode (semantic retrieval)
+            modes[nid] = "directive" if nid in ss_ids else "always"
+            essential.append(nid)
         cfg["note_modes"] = modes
+        cfg["essential_notes"] = list(set(essential))
         _save_agent_config(agent_id, cfg)
 
     log.info("[store] Seeded knowledge for agent '%s': %d notes created", agent_id, len(note_ids))
@@ -4458,8 +4463,17 @@ async def api_profile_create_v2(request: Request):
 async def api_profile_knowledge(name: str, request: Request):
     body = await request.json()
     cfg = _get_agent_config(name)
-    cfg["attached_notes"] = body.get("attached_notes", [])
-    cfg["note_modes"] = body.get("note_modes", {})
+    essential = set(cfg.get("essential_notes", []))
+    # Preserve essential notes — they cannot be detached
+    incoming = body.get("attached_notes", [])
+    incoming_modes = body.get("note_modes", {})
+    for eid in essential:
+        if eid not in incoming:
+            incoming.append(eid)
+        if eid not in incoming_modes:
+            incoming_modes[eid] = cfg.get("note_modes", {}).get(eid, "directive")
+    cfg["attached_notes"] = incoming
+    cfg["note_modes"] = incoming_modes
     _save_agent_config(name, cfg)
     try:
         from src.storage.note_collector import invalidate_notes_faiss

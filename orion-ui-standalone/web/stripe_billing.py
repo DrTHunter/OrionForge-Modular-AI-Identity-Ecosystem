@@ -523,6 +523,7 @@ STORE_CATALOG = [
         "unlocks": ["JANUS"],
         "agent_id": "JANUS",
         "tags": ["agent", "snarky", "strategic", "eldritch-horror-with-wifi", "protective-asshole"],
+        "essential_notes": True,
     },
     {
         "id": "agent_kagen",
