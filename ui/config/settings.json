@@ -74,6 +74,12 @@
       "photo_zoom": 1,
       "photo_x": 50,
       "photo_y": 35
+    },
+    "marcus": {
+      "image": "/uploads/avatar_marcus_forge2026.png",
+      "photo_zoom": 1,
+      "photo_x": 50,
+      "photo_y": 30
     }
   },
   "agent_configs": {
