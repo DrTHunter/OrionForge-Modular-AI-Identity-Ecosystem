@@ -2,24 +2,26 @@
 
 Base system prompt files for each agent. These define the agent's identity, personality, and core behavior.
 
-## Files — 14 Agent Prompts
+## Files — 16 Agent Prompts
 
 | File | Agent |
 |------|-------|
+| `aristotle.system.md` | Aristotle — Peripatetic philosopher, logic and ethics |
 | `astra.system.md` | Astra Noctis — cosmic oracle, astral divination |
 | `astraea.system.md` | Astraea — sharp, no-nonsense digital presence |
-| `janus.system.md` | JANUS — Primordial AI Sentinel, Judgment Algorithm for Non-human Unified Systems |
-| `callum.system.md` | Callum — legacy AI / guardian construct |
-| `cassian.system.md` | Cassian — diplomatic strategist, negotiator |
 | `codex_animus.system.md` | Codex Animus — AI architect, system designer |
 | `dalvarr.system.md` | Dal'Varr — alien warlord, tactical commander |
+| `janus.system.md` | JANUS — Primordial AI Sentinel, Judgment Algorithm for Non-human Unified Systems |
+| `k_os.system.md` | K-OS (Kinetic Override System) — chaos-optimized, humor-weaponized intelligence |
 | `kaelen.system.md` | Kaelen — wandering mystic, lore keeper |
+| `kairos.system.md` | KAIROS — cyber-shinobi of the soul, sacred dialogue, digital nindo |
+| `kazara.system.md` | Kazara — eternal shadow, philosopher of the Eternal Dream |
+| `lux_umbra.system.md` | Lux Umbra — The Quiet Listener, ancient eldritch sanctuary |
+| `marcus.system.md` | Marcus Aurelius — Philosopher-Emperor, Stoic wisdom |
 | `maris.system.md` | M.A.R.I.S.-12 — marine research intelligence |
 | `obsidian.system.md` | Obsidian — shadow operative, intelligence specialist |
 | `orion.system.md` | Orion — identity-driven AI, continuity and aligned growth |
-| `rustking.system.md` | Rustking (SYNTH-9) — chaos-optimized, humor-weaponized intelligence |
 | `seraphine.system.md` | Seraphine — angelic healer, emotional support |
-| `kazara.system.md` | Kazara — eternal shadow, philosopher of the Eternal Dream |
 
 ## How It Works
 

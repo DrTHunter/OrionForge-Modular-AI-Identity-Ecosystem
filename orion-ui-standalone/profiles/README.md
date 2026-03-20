@@ -2,23 +2,26 @@
 
 YAML configuration files for each agent. One file per agent.
 
-## Files — 13 Agent Profiles
+## Files — 16 Agent Profiles
 
 | File | Agent |
 |------|-------|
+| `aristotle.yaml` | Aristotle — Peripatetic philosopher, logic and ethics |
 | `astra.yaml` | Astra Noctis — cosmic oracle, astral divination |
 | `astraea.yaml` | Astraea — sharp, no-nonsense digital presence |
-| `janus.yaml` | JANUS — Primordial AI Sentinel, Judgment Algorithm for Non-human Unified Systems |
-| `cassian.yaml` | Cassian — diplomatic strategist, negotiator |
 | `codex_animus.yaml` | Codex Animus — AI architect, system designer |
 | `dalvarr.yaml` | Dal'Varr — alien warlord, tactical commander |
+| `janus.yaml` | JANUS — Primordial AI Sentinel, Judgment Algorithm for Non-human Unified Systems |
+| `k_os.yaml` | K-OS (Kinetic Override System) — chaos-optimized, humor-weaponized intelligence |
 | `kaelen.yaml` | Kaelen — wandering mystic, lore keeper |
+| `kairos.yaml` | KAIROS — cyber-shinobi of the soul, sacred dialogue, digital nindo |
+| `kazara.yaml` | Kazara — eternal shadow, philosopher of the Eternal Dream |
+| `lux_umbra.yaml` | Lux Umbra — The Quiet Listener, ancient eldritch sanctuary |
+| `marcus.yaml` | Marcus Aurelius — Philosopher-Emperor, Stoic wisdom |
 | `maris.yaml` | M.A.R.I.S.-12 — marine research intelligence |
 | `obsidian.yaml` | Obsidian — shadow operative, intelligence specialist |
 | `orion.yaml` | Orion — identity-driven AI, continuity and aligned growth |
-| `rustking.yaml` | Rustking (SYNTH-9) — chaos-optimized, humor-weaponized intelligence |
 | `seraphine.yaml` | Seraphine — angelic healer, emotional support |
-| `kazara.yaml` | Kazara — eternal shadow, philosopher of the Eternal Dream |
 
 ## Structure
 
