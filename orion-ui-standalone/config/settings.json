@@ -107,13 +107,16 @@
     "marcus": {
       "display_name": "Marcus Aurelius",
       "attached_notes": [
-        "d1436386"
+        "d1436386",
+        "cc7ede21"
       ],
       "note_modes": {
-        "d1436386": "directive"
+        "d1436386": "directive",
+        "cc7ede21": "directive"
       },
       "essential_notes": [
-        "d1436386"
+        "d1436386",
+        "cc7ede21"
       ]
     },
     "codex_animus": {
