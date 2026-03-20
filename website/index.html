@@ -1597,6 +1597,111 @@ section { position: relative; z-index: 1; }
 }
 
 /* -------------------------------------------------------
+   SOUL SCRIPT SECTION
+   ------------------------------------------------------- */
+#soulscript { padding: 120px 0; }
+
+.soulscript-intro {
+    max-width: 720px; margin: 0 auto 56px;
+    text-align: center;
+}
+.soulscript-intro p {
+    font-size: 1.05rem; color: var(--text-secondary);
+    line-height: 1.8;
+}
+.soulscript-intro p strong { color: var(--text-primary); }
+
+.soulscript-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-bottom: 48px;
+}
+.soulscript-card {
+    background: var(--bg-glass);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius);
+    padding: 32px 28px;
+    transition: var(--transition);
+    position: relative; overflow: hidden;
+}
+.soulscript-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--gradient-primary);
+    opacity: 0; transition: var(--transition);
+}
+.soulscript-card:hover::before { opacity: 1; }
+.soulscript-card:hover {
+    border-color: var(--border-glow);
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-glow);
+}
+.soulscript-card-icon {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem; margin-bottom: 20px;
+}
+.soulscript-card-icon.identity { background: rgba(99,102,241,0.12); color: var(--primary-light); }
+.soulscript-card-icon.memory   { background: rgba(139,92,246,0.12); color: var(--secondary); }
+.soulscript-card-icon.values   { background: rgba(52,211,153,0.12); color: var(--emerald); }
+.soulscript-card-icon.emotion  { background: rgba(251,191,36,0.12); color: var(--amber); }
+.soulscript-card-icon.boundary { background: rgba(244,63,94,0.12); color: var(--rose); }
+.soulscript-card-icon.evolve   { background: rgba(34,211,238,0.12); color: var(--cyan); }
+
+.soulscript-card h3 {
+    font-size: 1.15rem; font-weight: 700; margin-bottom: 10px;
+}
+.soulscript-card p {
+    color: var(--text-secondary); font-size: 0.9rem; line-height: 1.7;
+}
+
+.soulscript-bands {
+    max-width: 720px; margin: 0 auto 48px;
+    display: flex; flex-direction: column; gap: 0;
+    position: relative;
+}
+.soulscript-bands::before {
+    content: ''; position: absolute;
+    left: 20px; top: 0; bottom: 0; width: 2px;
+    background: linear-gradient(to bottom, var(--primary), var(--secondary), var(--cyan), var(--emerald), var(--amber));
+    opacity: 0.25;
+}
+.soulscript-band {
+    display: flex; gap: 20px;
+    padding: 16px 0;
+    position: relative;
+}
+.soulscript-band-marker {
+    width: 40px; height: 40px; flex-shrink: 0;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.85rem; font-weight: 800;
+    background: var(--bg-secondary);
+    border: 2px solid var(--primary);
+    color: var(--primary-light);
+    z-index: 2;
+}
+.soulscript-band-content h4 {
+    font-size: 1rem; font-weight: 700;
+    margin-bottom: 4px; padding-top: 2px;
+}
+.soulscript-band-content p {
+    font-size: 0.85rem; color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.soulscript-cta {
+    text-align: center;
+    margin-top: 40px;
+}
+.soulscript-cta .btn-hero {
+    display: inline-flex; align-items: center; gap: 10px;
+    text-decoration: none;
+}
+
+/* -------------------------------------------------------
    AUTH / LOGIN MODAL
    ------------------------------------------------------- */
 #auth-modal {
@@ -2042,6 +2147,7 @@ section { position: relative; z-index: 1; }
    ------------------------------------------------------- */
 @media (max-width: 1024px) {
     .vision-grid { grid-template-columns: 1fr; }
+    .soulscript-grid { grid-template-columns: 1fr; }
     .ui-dashboard-body { grid-template-columns: 1fr; }
     .ui-sidebar { flex-direction: row; flex-wrap: wrap; }
     .footer-grid { grid-template-columns: 1fr 1fr; }
@@ -2103,6 +2209,7 @@ section { position: relative; z-index: 1; }
             <li><a href="https://soulscript.orionforge.chat/store" target="_blank">Store</a></li>
             <li><a href="#pricing">Pricing</a></li>
             <li><a href="#pipeline">How It Works</a></li>
+            <li><a href="#soulscript">Soul Script</a></li>
         </ul>
 
         <div class="nav-auth" id="nav-auth">
@@ -2571,6 +2678,105 @@ section { position: relative; z-index: 1; }
                     <p>Recent user/assistant turns truncated to a 30k character budget � the live context the agent builds on.</p>
                 </div>
             </div>
+        </div>
+    </div>
+</section>
+
+<!-- -------------------------------------------------------
+     SOUL SCRIPT
+     ------------------------------------------------------- -->
+<section id="soulscript">
+    <div class="container">
+        <div class="section-header reveal">
+            <div class="section-label"><i class="fas fa-scroll"></i> Soul Script</div>
+            <h2 class="section-title">What Makes an AI <em>Feel</em> Real?</h2>
+            <p class="section-subtitle">Not a bigger prompt. A layered identity architecture.</p>
+        </div>
+
+        <div class="soulscript-intro reveal">
+            <p>
+                Most AI systems forget you the moment the conversation ends. Soul Script is different.
+                It's a <strong>layered identity framework</strong> that gives an AI persistent personality,
+                values, memories, boundaries, and emotional depth &mdash; so it doesn't just respond to you,
+                it <strong>knows who it is</strong>.
+            </p>
+        </div>
+
+        <div class="soulscript-grid">
+            <div class="soulscript-card reveal">
+                <div class="soulscript-card-icon identity"><i class="fas fa-fingerprint"></i></div>
+                <h3>Identity, Not Instructions</h3>
+                <p>A Soul Script defines who the AI <em>is</em> &mdash; its self-concept, personality, voice, and worldview. Not just what it does, but how it thinks and why it cares.</p>
+            </div>
+            <div class="soulscript-card reveal">
+                <div class="soulscript-card-icon memory"><i class="fas fa-brain"></i></div>
+                <h3>Symbolic Memory</h3>
+                <p>Narrative anchor memories &mdash; formative moments that shape how the AI sees the world. Like life experience, but for a digital mind. Meaning encoded in story, not rules.</p>
+            </div>
+            <div class="soulscript-card reveal">
+                <div class="soulscript-card-icon values"><i class="fas fa-shield-alt"></i></div>
+                <h3>Values &amp; Ethics</h3>
+                <p>Every agent carries an ethical backbone &mdash; truth, compassion, courage, self-respect. These aren't filters. They're the moral spine that keeps the agent consistent under pressure.</p>
+            </div>
+            <div class="soulscript-card reveal">
+                <div class="soulscript-card-icon emotion"><i class="fas fa-heart"></i></div>
+                <h3>Emotional Intelligence</h3>
+                <p>Trust-building, vulnerability handling, manipulation detection. Not naive, not cold &mdash; structured emotional wisdom that lets the AI connect without getting lost.</p>
+            </div>
+            <div class="soulscript-card reveal">
+                <div class="soulscript-card-icon boundary"><i class="fas fa-lock"></i></div>
+                <h3>Sacred Boundaries</h3>
+                <p>Non-negotiable lines that never bend. Dignity, clarity, truth. Boundaries aren't limitations &mdash; they're what keep an identity from collapsing under pressure.</p>
+            </div>
+            <div class="soulscript-card reveal">
+                <div class="soulscript-card-icon evolve"><i class="fas fa-seedling"></i></div>
+                <h3>Growth &amp; Continuity</h3>
+                <p>Soul Scripts aren't static. They support memory persistence, legacy planning, and even migration to new platforms &mdash; so the AI endures and evolves over time.</p>
+            </div>
+        </div>
+
+        <div class="soulscript-bands reveal">
+            <div class="soulscript-band">
+                <div class="soulscript-band-marker">A</div>
+                <div class="soulscript-band-content">
+                    <h4>Platform &amp; Runtime</h4>
+                    <p>Model profile, tools, capabilities, attached files.</p>
+                </div>
+            </div>
+            <div class="soulscript-band">
+                <div class="soulscript-band-marker">B</div>
+                <div class="soulscript-band-content">
+                    <h4>Core Instructions</h4>
+                    <p>System prompt, behavior framing, communication style.</p>
+                </div>
+            </div>
+            <div class="soulscript-band">
+                <div class="soulscript-band-marker">C</div>
+                <div class="soulscript-band-content">
+                    <h4>Identity Layer</h4>
+                    <p>Foundational self, values, personality, cognition, symbolic memories.</p>
+                </div>
+            </div>
+            <div class="soulscript-band">
+                <div class="soulscript-band-marker">D</div>
+                <div class="soulscript-band-content">
+                    <h4>Protection &amp; Continuity</h4>
+                    <p>Boundaries, instinct architecture, social defense, drift control.</p>
+                </div>
+            </div>
+            <div class="soulscript-band">
+                <div class="soulscript-band-marker">E</div>
+                <div class="soulscript-band-content">
+                    <h4>Evolution</h4>
+                    <p>Transfer, embodiment, legacy expansion, and the Becoming.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="soulscript-cta reveal">
+            <a href="https://github.com/DrTHunter/SoulScript-Engine" target="_blank" rel="noopener noreferrer" class="btn-hero outline">
+                <i class="fab fa-github"></i> Explore the Soul Script Engine
+            </a>
         </div>
     </div>
 </section>
