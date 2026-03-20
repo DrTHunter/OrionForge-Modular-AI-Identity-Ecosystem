@@ -154,6 +154,13 @@
     color: #fca5a5; font-size: 0.8125rem;
   }
 
+  @keyframes fadeInOut {
+    0% { opacity:0; transform:translateY(-8px); }
+    10% { opacity:1; transform:translateY(0); }
+    80% { opacity:1; }
+    100% { opacity:0; }
+  }
+
   /* Header row */
   .msg-header {
     display: flex; align-items: center; gap: 0.5rem;
@@ -1320,6 +1327,21 @@ function _estimateTtsCost(charCount, provider) {
   return charCount * TTS_COST_PER_CHAR;
 }
 
+function _showVoiceToast(msg) {
+  let container = document.getElementById('voice-toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'voice-toast-container';
+    container.style.cssText = 'position:fixed;top:1rem;right:1rem;z-index:10000;display:flex;flex-direction:column;gap:0.5rem;pointer-events:none;';
+    document.body.appendChild(container);
+  }
+  const toast = document.createElement('div');
+  toast.style.cssText = 'pointer-events:auto;padding:0.625rem 1rem;background:rgba(220,38,38,0.9);color:#fff;border-radius:0.5rem;font-size:0.8rem;max-width:320px;box-shadow:0 4px 12px rgba(0,0,0,0.3);animation:fadeInOut 4s ease forwards;';
+  toast.textContent = msg;
+  container.appendChild(toast);
+  setTimeout(() => { toast.remove(); }, 4000);
+}
+
 async function speakText(text, metaEl) {
   if (!text || _ttsProvider === 'off') return null;
   stopTtsGlobal();
@@ -1365,6 +1387,11 @@ async function speakText(text, metaEl) {
     if (!resp.ok) {
       if (playingIcon) playingIcon.remove();
       document.getElementById('btn-tts-stop').style.display = 'none';
+      try {
+        const err = await resp.json();
+        _showVoiceToast(err.error || 'Voice synthesis failed');
+        if (err.redirect) setTimeout(() => window.location = err.redirect, 2000);
+      } catch(_) { _showVoiceToast('Voice synthesis failed'); }
       return null;
     }
     const charCount = parseInt(resp.headers.get('X-TTS-Characters') || text.length);
@@ -1511,6 +1538,12 @@ function _toggleMicWhisper() {
             ta.value = startVal + (startVal && !startVal.endsWith(' ') ? ' ' : '') + text;
             autoResize(ta); ta.focus();
           }
+        } else {
+          try {
+            const err = await resp.json();
+            _showVoiceToast(err.error || 'Speech-to-text failed');
+            if (err.redirect) setTimeout(() => window.location = err.redirect, 2000);
+          } catch(_) { _showVoiceToast('Speech-to-text failed'); }
         }
       } catch (e) {}
       btn.classList.remove('transcribing');
