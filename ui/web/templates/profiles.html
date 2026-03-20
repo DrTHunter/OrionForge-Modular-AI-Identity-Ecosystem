@@ -1,437 +1,2224 @@
 {% extends "base.html" %}
-{% block title %}Profiles — SoulScript Engine{% endblock %}
+{% block title %}Agent Profiles — SoulScript Engine{% endblock %}
 
 {% block content %}
 <style>
+  /* ── Shell ── */
+  .profiles-shell { max-width: 100%; margin: 0 auto; padding: 0 1rem; }
+
+  /* ── Tab Bar ── */
   .tab-bar {
-    display:flex; align-items:center; gap:0; border-bottom:1px solid #2a2a3a; margin-bottom:1.5rem;
+    display: flex; align-items: center; gap: 0; border-bottom: 1px solid #2a2a3a;
+    margin-bottom: 1.5rem;
   }
   .tab-btn {
-    display:inline-flex; align-items:center; gap:0.5rem;
-    padding:0.75rem 1.25rem; font-size:0.875rem; font-weight:600;
-    color:#71717a; background:none; border:none; cursor:pointer;
-    border-bottom:2px solid transparent; transition:all 0.15s;
-    position:relative; top:1px;
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    padding: 0.75rem 1.25rem; font-size: 0.875rem; font-weight: 600;
+    color: #71717a; background: none; border: none; cursor: pointer;
+    border-bottom: 2px solid transparent; transition: all 0.15s;
+    position: relative; top: 1px;
   }
-  .tab-btn:hover { color:#a1a1aa; }
-  .tab-btn.active { color:#fff; border-bottom-color:#6366f1; }
+  .tab-btn:hover { color: #a1a1aa; }
+  .tab-btn.active { color: #fff; border-bottom-color: #6366f1; }
+  .tab-count {
+    font-size: 0.75rem; font-weight: 700; color: #71717a;
+    background: rgba(42,42,58,0.6); padding: 0.0625rem 0.4rem;
+    border-radius: 9999px; min-width: 1.25rem; text-align: center;
+  }
+  .tab-btn.active .tab-count { color: #a5b4fc; background: rgba(99,102,241,0.15); }
+
+  /* ── View switching ── */
+  .view-panel { display: none; animation: viewFade 0.2s ease; }
+  .view-panel.active { display: block; }
+  @keyframes viewFade {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── User Profile Card ── */
+  .user-card {
+    display: inline-flex; align-items: center; gap: 1.25rem;
+    background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 0.75rem;
+    padding: 1rem 1.5rem; margin-bottom: 2rem;
+  }
+  .user-avatar {
+    width: 3.5rem; height: 3.5rem; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.375rem; font-weight: 800; color: #fff;
+    flex-shrink: 0; position: relative; cursor: pointer;
+    transition: transform 0.15s;
+  }
+  .user-avatar:hover { transform: scale(1.06); }
+  .user-avatar img {
+    width: 100%; height: 100%; border-radius: 50%; object-fit: cover;
+    position: absolute; inset: 0;
+  }
+  .user-avatar .cam-badge {
+    position: absolute; bottom: -2px; right: -2px;
+    background: #1a1a24; border: 2px solid #2a2a3a; border-radius: 50%;
+    width: 1.25rem; height: 1.25rem; display: flex; align-items: center; justify-content: center;
+    font-size: 0.5rem;
+  }
+  .user-meta { flex: 1; }
+  .user-name-input {
+    background: transparent; border: none; color: #fff;
+    font-size: 1.125rem; font-weight: 700; outline: none;
+    border-bottom: 1px solid transparent; transition: border-color 0.15s;
+    padding: 0.125rem 0; max-width: 14rem;
+  }
+  .user-name-input:focus { border-bottom-color: #6366f1; }
+
+  /* ── Color picker ── */
+  .color-picker-wrap { position: relative; display: inline-block; }
+  .color-trigger {
+    width: 1.15rem; height: 1.15rem; border-radius: 50%; cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.25); transition: transform 0.15s, border-color 0.15s;
+    background: conic-gradient(#ef4444, #f59e0b, #eab308, #10b981, #06b6d4, #3b82f6, #6366f1, #9333ea, #db2777, #ef4444);
+  }
+  .color-trigger:hover { transform: scale(1.18); border-color: rgba(255,255,255,0.6); }
+  .color-dropdown {
+    display: none; position: absolute; top: calc(100% + 6px); left: 0;
+    background: #1a1a24; border: 1px solid rgba(99,102,241,0.25); border-radius: 0.625rem;
+    padding: 0.625rem; z-index: 60; min-width: 11rem;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  }
+  .color-dropdown.open { display: block; }
+  .color-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.35rem; }
+  .color-swatch {
+    width: 1.5rem; height: 1.5rem; border-radius: 50%; cursor: pointer;
+    border: 2px solid transparent; transition: border-color 0.15s, transform 0.15s;
+  }
+  .color-swatch:hover { transform: scale(1.18); }
+  .color-swatch.active { border-color: #fff; box-shadow: 0 0 0 1px rgba(255,255,255,0.3); }
+  .color-custom-row {
+    margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.06);
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .color-custom-row label { font-size: 0.7rem; color: #71717a; cursor: pointer; white-space: nowrap; }
+  .color-custom-row input[type=color] {
+    width: 1.5rem; height: 1.5rem; border: none; background: none;
+    cursor: pointer; border-radius: 50%; padding: 0;
+  }
+
+  /* ── Avatar context menu ── */
+  .avatar-menu {
+    display: none; position: absolute; top: calc(100% + 6px); left: 50%;
+    transform: translateX(-50%); background: #1a1a24;
+    border: 1px solid rgba(99,102,241,0.25); border-radius: 0.5rem;
+    padding: 0.25rem 0; z-index: 9999; min-width: 10rem;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  }
+  .avatar-menu.open { display: block; }
+  .avatar-menu-item {
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: 0.5rem 0.875rem; font-size: 0.8125rem; color: #d4d4d8;
+    cursor: pointer; transition: background 0.1s; white-space: nowrap;
+    border: none; background: none; width: 100%; text-align: left;
+  }
+  .avatar-menu-item:hover { background: rgba(99,102,241,0.1); }
+  .avatar-menu-item.danger { color: #fca5a5; }
+  .avatar-menu-item.danger:hover { background: rgba(239,68,68,0.1); }
+
+  /* ── Agent List ── */
+  .list-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1.5rem;
+  }
+  .list-header h2 { font-size: 1.25rem; font-weight: 700; color: #fff; }
 
   .agents-grid {
-    display:grid; grid-template-columns:repeat(2,1fr); gap:0.75rem; margin-bottom:1.5rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.25rem; margin-bottom: 2rem;
   }
-  @media (max-width:768px) { .agents-grid { grid-template-columns:1fr; } }
+  @media (max-width: 768px) { .agents-grid { grid-template-columns: 1fr; } }
 
+  /* ── "Meet the Agent" style card ── */
   .agent-card {
-    background:#1a1a24; border:1px solid #2a2a3a; border-radius:0.75rem;
-    padding:1rem 1.25rem; cursor:pointer; transition:all 0.15s;
-    display:flex; align-items:center; gap:1rem; position:relative;
+    background: rgba(13, 18, 36, 0.7);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 1rem;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    display: flex; flex-direction: column;
   }
-  .agent-card:hover { border-color:rgba(99,102,241,0.4); transform:translateY(-2px); }
-  .agent-card-avatar {
-    width:3rem; height:3rem; border-radius:50%;
-    display:flex; align-items:center; justify-content:center;
-    font-size:1.25rem; font-weight:800; color:#fff; flex-shrink:0;
+  .agent-card:hover {
+    border-color: rgba(99,102,241,0.3);
+    transform: translateY(-6px);
+    box-shadow: 0 20px 60px rgba(99, 102, 241, 0.15);
   }
-  .agent-card-avatar img { width:100%; height:100%; border-radius:50%; object-fit:cover; }
-  .agent-card-info { flex:1; min-width:0; }
-  .agent-card-name { font-size:0.9375rem; font-weight:700; color:#e4e4e7; text-transform:capitalize; }
-  .agent-card-model {
-    font-size:0.6875rem; color:#52525b; margin-top:0.25rem;
-    font-family:ui-monospace,SFMono-Regular,monospace;
+
+  /* Header / picture block */
+  .agent-card-header {
+    height: 130px;
+    display: flex; align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
   }
-  .agent-card-menu {
-    position:absolute; top:0.5rem; right:0.5rem;
-    background:none; border:none; color:#52525b; cursor:pointer;
-    font-size:1.125rem; padding:0.25rem 0.375rem; border-radius:0.375rem;
-    opacity:0; transition:all 0.15s;
+  .agent-card-header::before {
+    content: ''; position: absolute; inset: 0;
+    opacity: 0.35;
   }
-  .agent-card:hover .agent-card-menu { opacity:1; }
-  .agent-card-menu:hover { color:#e4e4e7; background:rgba(99,102,241,0.15); }
+  .agent-card-header .agent-icon {
+    font-size: 3rem; z-index: 2; position: relative;
+    filter: drop-shadow(0 0 20px currentColor);
+    color: inherit;
+  }
+  .agent-card-header .agent-photo {
+    width: 100%; height: 100%;
+    object-fit: cover; object-position: top; position: absolute; inset: 0;
+    z-index: 2;
+  }
+  /* Status badge */
+  .agent-card-status {
+    position: absolute; top: 12px; right: 12px;
+    display: flex; align-items: center; gap: 5px;
+    padding: 3px 10px; border-radius: 50px;
+    font-size: 0.65rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    z-index: 3;
+    background: rgba(34,197,94,0.15); color: #4ade80;
+    border: 1px solid rgba(34,197,94,0.3);
+  }
+  .agent-card-status::before {
+    content: ''; width: 5px; height: 5px;
+    border-radius: 50%; background: #4ade80;
+    animation: agentPulse 2s infinite;
+  }
+  @keyframes agentPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* Body */
+  .agent-card-body {
+    padding: 1.25rem 1.25rem 1rem; flex: 1;
+    display: flex; flex-direction: column;
+  }
+  .agent-card-name {
+    font-size: 1.15rem; font-weight: 700; color: #f1f5f9;
+    text-transform: capitalize; margin-bottom: 0.2rem;
+  }
+  .agent-card-role {
+    font-size: 0.8rem; color: #818cf8; font-weight: 500;
+    margin-bottom: 0.6rem;
+  }
+  .agent-card-desc {
+    font-size: 0.85rem; color: rgba(241,245,249,0.55);
+    line-height: 1.55; margin-bottom: 0.875rem;
+    display: -webkit-box; -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical; overflow: hidden;
+    flex: 1;
+  }
+
+  /* Footer with LLM bubble */
+  .agent-card-footer {
+    display: flex; align-items: center; gap: 0.5rem;
+    margin-top: auto; padding-top: 0.5rem;
+  }
+  .agent-tag-llm {
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    padding: 4px 12px; border-radius: 50px;
+    font-size: 0.7rem; font-weight: 600;
+    background: rgba(34,211,238,0.1); color: #22d3ee;
+    border: 1px solid rgba(34,211,238,0.15);
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+    letter-spacing: -0.01em;
+  }
+  .agent-tag-llm i {
+    font-size: 0.6rem; opacity: 0.7;
+  }
+  .agent-tag-tools {
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    padding: 4px 10px; border-radius: 50px;
+    font-size: 0.65rem; font-weight: 600;
+    background: rgba(99,102,241,0.1); color: #818cf8;
+    border: 1px solid rgba(99,102,241,0.15);
+  }
+
   .agent-add-card {
-    border-style:dashed; border-color:#3a3a4a; color:#52525b;
-    display:flex; align-items:center; justify-content:center; gap:0.5rem;
+    border: 1px dashed #3a3a4a; color: #52525b;
+    display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+    min-height: 220px; border-radius: 1rem; cursor: pointer;
+    transition: all 0.2s; font-size: 0.9rem; font-weight: 600;
   }
-  .agent-add-card:hover { border-color:#6366f1; color:#818cf8; }
+  .agent-add-card:hover { border-color: #6366f1; color: #818cf8; }
 
-  /* Editor */
-  .editor-view { display:none; animation:viewFade 0.2s ease; }
-  .editor-view.active { display:block; }
-  @keyframes viewFade { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
-  .profile-card {
-    background:#1a1a24; border:1px solid #2a2a3a; border-radius:0.75rem;
-    padding:1.5rem 2rem; margin-bottom:1.25rem;
-  }
-  .section-label {
-    font-size:0.75rem; font-weight:600; text-transform:uppercase;
-    letter-spacing:0.05em; color:#71717a; margin-bottom:0.75rem;
-  }
-  .prompt-textarea {
-    width:100%; background:rgba(15,15,20,0.6); border:1px solid #2a2a3a;
-    border-radius:0.5rem; padding:0.75rem 1rem; color:#d4d4d8;
-    font-size:0.8125rem; font-family:ui-monospace,SFMono-Regular,monospace;
-    line-height:1.6; resize:vertical; min-height:12rem; outline:none;
-  }
-  .prompt-textarea:focus { border-color:#6366f1; }
+  /* ── Editor View ── */
+  .editor-view { display: none; animation: viewFade 0.2s ease; }
+  .editor-view.active { display: block; }
 
-  /* Knowledge attach — attached list */
-  .attached-list { display:flex; flex-direction:column; gap:0.5rem; }
-  .attached-item {
-    display:flex; align-items:center; gap:0.75rem;
-    padding:0.75rem 1rem; border-radius:0.625rem;
-    background:rgba(26,26,36,0.5); border:1px solid #2a2a3a;
-    transition:all 0.15s;
+  /* ── Modal-style agent detail panel (matches website popup) ── */
+  .agent-detail-panel {
+    background: #0d1224;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 1rem;
+    overflow: visible;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.3);
+    margin-bottom: 1.25rem;
+    animation: modalIn 0.3s ease-out;
   }
-  .attached-item:hover { border-color:rgba(99,102,241,0.3); }
-  .attached-item-info { flex:1; min-width:0; }
-  .attached-item-title { font-size:0.875rem; color:#d4d4d8; font-weight:600; }
-  .attached-item-remove {
-    background:none; border:none; color:#52525b; cursor:pointer;
-    font-size:1rem; padding:0.25rem 0.375rem; border-radius:0.25rem;
-    transition:all 0.15s;
-  }
-  .attached-item-remove:hover { color:#ef4444; background:rgba(239,68,68,0.1); }
-
-  /* Mode toggle — prominent pill */
-  .mode-pill {
-    display:inline-flex; align-items:center; gap:0;
-    border-radius:9999px; overflow:hidden; border:1px solid #2a2a3a;
-    font-size:0.75rem; font-weight:600; cursor:pointer; user-select:none;
-  }
-  .mode-pill-opt {
-    padding:0.3rem 0.75rem; transition:all 0.15s; color:#52525b;
-    background:transparent;
-  }
-  .mode-pill.always .mode-pill-opt.opt-always {
-    background:rgba(16,185,129,0.2); color:#34d399;
-    box-shadow:inset 0 0 8px rgba(16,185,129,0.15);
-  }
-  .mode-pill.directive .mode-pill-opt.opt-directive {
-    background:rgba(99,102,241,0.2); color:#a5b4fc;
-    box-shadow:inset 0 0 8px rgba(99,102,241,0.15);
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.97) translateY(8px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
   }
 
-  /* Knowledge picker popup */
-  .picker-list { max-height:24rem; overflow-y:auto; }
-  .picker-item {
-    display:flex; align-items:center; gap:0.75rem;
-    padding:0.625rem 0.75rem; border-radius:0.5rem;
-    cursor:pointer; transition:all 0.1s; border:1px solid transparent;
+  /* Modal header — gradient banner with avatar + name */
+  .agent-detail-header {
+    padding: 2rem 2rem 1.5rem;
+    position: relative;
+    overflow: visible;
+    border-radius: 1rem 1rem 0 0;
+    display: flex; align-items: flex-start; gap: 1.5rem;
   }
-  .picker-item:hover { background:rgba(99,102,241,0.06); }
-  .picker-item.selected { border-color:rgba(99,102,241,0.3); background:rgba(99,102,241,0.08); }
-  .picker-item-check {
-    width:1.25rem; height:1.25rem; border-radius:0.375rem;
-    border:2px solid #3a3a4a; display:flex; align-items:center;
-    justify-content:center; flex-shrink:0; transition:all 0.15s;
-    font-size:0.75rem; color:transparent;
+  .agent-detail-header::before {
+    content: ''; position: absolute; inset: 0;
+    opacity: 0.35; z-index: 0;
+    border-radius: 1rem 1rem 0 0;
+    overflow: hidden;
   }
-  .picker-item.selected .picker-item-check {
-    border-color:#6366f1; background:rgba(99,102,241,0.3); color:#fff;
+  .prof-avatar {
+    width: 5rem; height: 5rem; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2rem; font-weight: 800; color: #fff;
+    flex-shrink: 0; position: relative; cursor: pointer;
+    transition: transform 0.15s; z-index: 2;
+    border: 3px solid rgba(255,255,255,0.15);
   }
-  .add-knowledge-btn {
-    display:inline-flex; align-items:center; gap:0.5rem;
-    padding:0.5rem 1rem; border-radius:0.5rem;
-    background:rgba(99,102,241,0.12); border:1px solid rgba(99,102,241,0.2);
-    color:#818cf8; font-size:0.8125rem; font-weight:600; cursor:pointer;
-    transition:all 0.15s;
+  .prof-avatar:hover { transform: scale(1.06); }
+  .prof-avatar img {
+    width: 100%; height: 100%; border-radius: 50%; object-fit: cover;
+    position: absolute; inset: 0;
   }
-  .add-knowledge-btn:hover { background:rgba(99,102,241,0.2); border-color:rgba(99,102,241,0.35); }
+  .prof-avatar .cam-badge {
+    position: absolute; bottom: -2px; right: -2px;
+    background: #1a1a24; border: 2px solid #2a2a3a; border-radius: 50%;
+    width: 1.5rem; height: 1.5rem; display: flex; align-items: center; justify-content: center;
+    font-size: 0.625rem;
+  }
+  .prof-header-info {
+    flex: 1; min-width: 0; z-index: 2;
+  }
+  .prof-name-row {
+    display: flex; align-items: center; gap: 1rem; margin-bottom: 0.25rem;
+  }
+  .prof-name-input {
+    background: transparent; border: none; color: #fff;
+    font-size: 1.5rem; font-weight: 800; outline: none;
+    border-bottom: 1px solid transparent; transition: border-color 0.15s;
+    padding: 0.125rem 0; width: 100%; max-width: 100%;
+    text-transform: capitalize;
+  }
+  .prof-name-input:focus { border-bottom-color: #818cf8; }
+  .prof-desc-input {
+    background: transparent; border: none; color: rgba(241,245,249,0.6);
+    font-size: 0.875rem; outline: none; padding: 0.2rem 0;
+    resize: none; line-height: 1.6; overflow: hidden;
+    font-family: inherit; width: 100%;
+    min-height: 1.4em;
+  }
+  .prof-desc-input:focus { color: #d4d4d8; }
+  .prof-desc-input::placeholder { color: rgba(241,245,249,0.35); }
+
+  /* Modal body — sections below header */
+  .agent-detail-body {
+    padding: 1.5rem 2rem 2rem;
+  }
+
+  /* Section title (matches website popup) */
+  .modal-section-title {
+    font-size: 0.8rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1.5px;
+    color: #818cf8; margin: 1.75rem 0 0.75rem;
+  }
+  .modal-section-title:first-child { margin-top: 0; }
+
+  /* Trait / tool tag pills */
+  .modal-traits { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .modal-trait {
+    padding: 6px 14px; border-radius: 50px;
+    font-size: 0.8rem; font-weight: 500;
+    background: rgba(99,102,241,0.08);
+    color: rgba(241,245,249,0.6);
+    border: 1px solid rgba(255,255,255,0.06);
+    transition: all 0.15s;
+  }
+
+  /* ── Config grid (model, voice, etc.) ── */
+  .config-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;
+    margin-top: 0.5rem;
+  }
+  @media (max-width: 640px) { .config-grid { grid-template-columns: 1fr; } }
+  .config-cell {
+    padding: 0.875rem 1rem;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 0.625rem;
+    transition: border-color 0.15s;
+    position: relative;
+  }
+  .config-cell:hover { border-color: rgba(99,102,241,0.25); }
+  .config-cell-label {
+    font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.06em; color: rgba(241,245,249,0.35);
+    margin-bottom: 0.375rem; display: flex; align-items: center; gap: 0.3rem;
+  }
+  .config-cell-value {
+    font-size: 0.875rem; font-weight: 600; color: #f1f5f9;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .config-cell select {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    opacity: 0; cursor: pointer; z-index: 2;
+  }
+
+  /* ── Tools toggles ── */
+  .tools-toggle-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 0.625rem; margin-top: 0.5rem;
+  }
+  .tool-toggle-card {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 0.625rem;
+    transition: all 0.15s;
+    cursor: pointer;
+  }
+  .tool-toggle-card:hover { border-color: rgba(99,102,241,0.25); }
+  .tool-toggle-card.enabled { border-color: rgba(99,102,241,0.35); background: rgba(99,102,241,0.05); }
+  .tool-toggle-icon {
+    font-size: 1.25rem; flex-shrink: 0;
+    width: 2.25rem; height: 2.25rem;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 0.5rem;
+  }
+  .tool-toggle-info { flex: 1; min-width: 0; }
+  .tool-toggle-name {
+    font-size: 0.8125rem; font-weight: 600; color: #f1f5f9;
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+  }
+  .tool-toggle-desc {
+    font-size: 0.7rem; color: rgba(241,245,249,0.4);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .tool-toggle-switch {
+    position: relative; width: 2.5rem; height: 1.25rem;
+    background: #27272a; border-radius: 9999px;
+    transition: background 0.2s; flex-shrink: 0;
+  }
+  .tool-toggle-switch.on { background: #6366f1; }
+  .tool-toggle-switch .knob {
+    position: absolute; top: 2px; left: 2px;
+    width: 1rem; height: 1rem; border-radius: 50%;
+    background: #fff; transition: transform 0.2s;
+  }
+  .tool-toggle-switch.on .knob { transform: translateX(1.25rem); }
+
+  .tool-status-badge {
+    font-size: 0.55rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.5px; padding: 1px 6px; border-radius: 50px;
+    flex-shrink: 0;
+  }
+  .tool-status-badge.ready { color: #4ade80; background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); }
+  .tool-status-badge.planned { color: #fbbf24; background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.2); }
+  .tool-status-badge.concept { color: #71717a; background: rgba(113,113,122,0.1); border: 1px solid rgba(113,113,122,0.2); }
+
+  /* ── Section Cards ── */
+  .section-card {
+    background: #1a1a24; border: 1px solid #2a2a3a;
+    border-radius: 0.75rem; padding: 1.25rem 1.5rem; margin-bottom: 1.25rem;
+  }
+  .section-title {
+    font-size: 0.8125rem; font-weight: 700; color: #e4e4e7;
+    margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;
+  }
+  .section-title .sec-icon { font-size: 0.875rem; opacity: 0.6; }
+
+  .field-hint { font-size: 0.6875rem; color: #52525b; margin-top: 0.25rem; }
+
+  /* ── System Prompt ── */
+  .textarea-prompt {
+    width: 100%; min-height: 20rem; background: #13131a;
+    border: 1px solid #2a2a3a; border-radius: 0.5rem;
+    padding: 0.75rem; font-size: 0.8125rem; color: #d4d4d8;
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+    line-height: 1.6; outline: none; resize: vertical;
+    transition: border-color 0.15s;
+  }
+  .textarea-prompt:focus { border-color: #6366f1; }
+  .textarea-prompt::placeholder { color: #3f3f46; }
+
+  /* ── Collapsible Sections ── */
+  .collapsible-header {
+    display: flex; align-items: center; justify-content: space-between;
+    cursor: pointer; user-select: none; gap: 0.5rem;
+  }
+  .collapsible-header:hover .collapse-chevron { color: #a5b4fc; }
+  .collapse-chevron {
+    font-size: 0.65rem; color: #52525b; transition: transform 0.25s ease, color 0.15s;
+    flex-shrink: 0;
+  }
+  .collapse-chevron.open { transform: rotate(180deg); }
+  .collapsible-body {
+    overflow: hidden; transition: max-height 0.3s ease, opacity 0.25s ease;
+    max-height: 0; opacity: 0;
+  }
+  .collapsible-body.open {
+    max-height: 4000px; opacity: 1;
+  }
+  .textarea-prompt.soul-script { min-height: 16rem; }
+  .textarea-notes {
+    width: 100%; min-height: 10rem; background: #13131a;
+    border: 1px solid #2a2a3a; border-radius: 0.5rem;
+    padding: 0.75rem; font-size: 0.8125rem; color: #d4d4d8;
+    line-height: 1.6; outline: none; resize: vertical;
+    transition: border-color 0.15s;
+  }
+  .textarea-notes:focus { border-color: #6366f1; }
+  .textarea-notes::placeholder { color: #3f3f46; }
+  .faiss-badge {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    padding: 2px 8px; border-radius: 50px;
+    font-size: 0.6rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: rgba(16,185,129,0.1); color: #10b981;
+    border: 1px solid rgba(16,185,129,0.2);
+  }
+
+  /* ── Notes ── */
+  .notes-grid { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .note-card {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    background: rgba(19,19,26,0.6); border: 1px solid #2a2a3a;
+    border-radius: 0.375rem; padding: 0.375rem 0.625rem;
+    transition: border-color 0.15s; flex: 0 0 auto; max-width: 22rem;
+  }
+  .note-card:hover { border-color: rgba(99,102,241,0.25); }
+  .note-name {
+    font-size: 0.75rem; color: #d4d4d8; font-weight: 500;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 8rem;
+  }
+  .note-source {
+    font-size: 0.625rem; color: #52525b;
+    background: rgba(42,42,58,0.4); padding: 0.0625rem 0.375rem;
+    border-radius: 0.25rem; flex-shrink: 0;
+  }
+  .note-remove-btn {
+    background: none; border: none; color: #52525b; cursor: pointer;
+    font-size: 0.75rem; padding: 0.125rem 0.25rem; line-height: 1;
+    transition: color 0.15s; flex-shrink: 0;
+  }
+  .note-remove-btn:hover { color: #fca5a5; }
+  .mode-toggle {
+    position: relative; width: 2.25rem; height: 1.125rem;
+    background: #27272a; border-radius: 9999px; cursor: pointer;
+    transition: background 0.2s; flex-shrink: 0;
+  }
+  .mode-toggle.active { background: #6366f1; }
+  .mode-toggle .toggle-knob {
+    position: absolute; top: 2px; left: 2px;
+    width: 0.875rem; height: 0.875rem; border-radius: 50%;
+    background: #fff; transition: transform 0.2s;
+  }
+  .mode-toggle.active .toggle-knob { transform: translateX(1.125rem); }
+  .mode-label {
+    font-size: 0.625rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.04em; white-space: nowrap;
+  }
+  .mode-label.always { color: #10b981; }
+  .mode-label.directive { color: #818cf8; }
+  .add-notes-btn {
+    display: inline-flex; align-items: center; gap: 0.375rem;
+    padding: 0.5rem 1rem; border-radius: 0.5rem;
+    background: rgba(99,102,241,0.08); border: 1px dashed rgba(99,102,241,0.3);
+    color: #818cf8; font-size: 0.8125rem; font-weight: 600;
+    cursor: pointer; transition: all 0.15s; margin-top: 0.75rem;
+  }
+  .add-notes-btn:hover { background: rgba(99,102,241,0.16); border-color: #6366f1; }
+  .notes-empty {
+    padding: 1.5rem; text-align: center; color: #3f3f46;
+    font-size: 0.8125rem; border: 1px dashed #2a2a3a; border-radius: 0.5rem;
+  }
+
+  /* ── Action Bar ── */
+  .action-bar {
+    display: flex; justify-content: flex-end; gap: 0.75rem;
+    padding-top: 1rem; border-top: 1px solid #2a2a3a; margin-top: 0.5rem;
+  }
+  .btn { padding: 0.5rem 1.25rem; border-radius: 0.5rem; font-size: 0.8125rem;
+    font-weight: 600; cursor: pointer; transition: all 0.15s; border: none; }
+  .btn-primary { background: #6366f1; color: #fff; }
+  .btn-primary:hover { background: #4f46e5; }
+  .btn-secondary { background: rgba(42,42,58,0.5); color: #a1a1aa; border: 1px solid #2a2a3a; }
+  .btn-secondary:hover { background: rgba(42,42,58,0.8); color: #e4e4e7; }
+  .btn-danger { background: rgba(239,68,68,0.12); color: #fca5a5; border: 1px solid rgba(239,68,68,0.25); }
+  .btn-danger:hover { background: rgba(239,68,68,0.25); color: #fecaca; }
+
+  /* ── New Agent Button ── */
+  .new-agent-btn {
+    display: inline-flex; align-items: center; gap: 0.375rem;
+    padding: 0.4rem 1rem; border-radius: 0.5rem;
+    background: #6366f1; color: #fff; border: none;
+    font-size: 0.8125rem; font-weight: 600; cursor: pointer;
+    transition: background 0.15s;
+  }
+  .new-agent-btn:hover { background: #4f46e5; }
+
+  /* ── Modals ── */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+    display: none; align-items: center; justify-content: center; z-index: 100;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 0.75rem;
+    padding: 1.5rem; width: 28rem; max-width: 90vw; max-height: 80vh;
+    display: flex; flex-direction: column;
+  }
+  .modal-title { font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 1rem; }
+  .modal-note-list {
+    flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+  .modal-note-row {
+    display: flex; align-items: center; gap: 0.75rem;
+    background: rgba(19,19,26,0.6); border: 1px solid #2a2a3a;
+    border-radius: 0.5rem; padding: 0.625rem 0.875rem;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .modal-note-row:hover { border-color: rgba(99,102,241,0.35); }
+  .modal-note-row.already-attached { opacity: 0.4; pointer-events: none; }
+  .modal-note-row .note-check { accent-color: #6366f1; width: 1rem; height: 1rem; cursor: pointer; }
+
+  .field-label {
+    display: block; font-size: 0.75rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    color: #71717a; margin-bottom: 0.375rem;
+  }
+  .text-input, .select-input {
+    width: 100%; background: #13131a; border: 1px solid #2a2a3a;
+    border-radius: 0.5rem; padding: 0.5rem 0.75rem;
+    font-size: 0.875rem; color: #e4e4e7; outline: none;
+    transition: border-color 0.15s;
+  }
+  .text-input:focus, .select-input:focus { border-color: #6366f1; }
+  .text-input::placeholder { color: #3f3f46; }
+  .select-input { cursor: pointer; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 0.75rem center;
+    padding-right: 2rem;
+  }
+
+  /* ══ Photo Position Editor Modal ══ */
+  .photo-editor-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+    display: none; align-items: center; justify-content: center; z-index: 200;
+  }
+  .photo-editor-overlay.open { display: flex; }
+  .photo-editor-box {
+    background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 1rem;
+    padding: 1.5rem; width: 480px; max-width: 94vw;
+    display: flex; flex-direction: column; gap: 1.25rem;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.5);
+  }
+  .photo-editor-title {
+    font-size: 1rem; font-weight: 700; color: #fff;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .photo-editor-viewport {
+    width: 100%; aspect-ratio: 320 / 130;
+    border-radius: 0.75rem; overflow: hidden;
+    position: relative; cursor: grab;
+    background: #0d1224; border: 2px solid rgba(99,102,241,0.3);
+  }
+  .photo-editor-viewport:active { cursor: grabbing; }
+  .photo-editor-viewport img {
+    position: absolute; top: 0; left: 0;
+    transform-origin: 0 0; pointer-events: none;
+    user-select: none; -webkit-user-select: none;
+  }
+  .photo-editor-hint {
+    font-size: 0.75rem; color: #71717a; text-align: center;
+    margin-top: -0.5rem;
+  }
+  .photo-editor-controls {
+    display: flex; align-items: center; gap: 1rem;
+  }
+  .photo-editor-controls label {
+    font-size: 0.75rem; font-weight: 600; color: #a1a1aa;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .photo-editor-controls input[type=range] {
+    flex: 1; accent-color: #6366f1; height: 6px;
+  }
+  .photo-editor-zoom-val {
+    font-size: 0.75rem; font-weight: 700; color: #818cf8;
+    min-width: 3rem; text-align: right;
+  }
+  .photo-editor-actions {
+    display: flex; justify-content: flex-end; gap: 0.75rem;
+    padding-top: 0.5rem; border-top: 1px solid #2a2a3a;
+  }
+  .photo-editor-reset {
+    margin-right: auto; background: none; border: 1px solid #2a2a3a;
+    color: #71717a; padding: 0.45rem 1rem; border-radius: 0.5rem;
+    font-size: 0.8125rem; font-weight: 600; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .photo-editor-reset:hover { border-color: #ef4444; color: #fca5a5; }
+
+  /* ── Trash View ── */
+  .trash-empty {
+    text-align: center; padding: 4rem 2rem; color: #3f3f46;
+  }
+  .trash-empty i { font-size: 3rem; margin-bottom: 1rem; display: block; opacity: 0.4; }
+  .trash-empty p { font-size: 0.9rem; margin-bottom: 0.25rem; }
+  .trash-empty .hint { font-size: 0.8rem; color: #27272a; }
+  .trash-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1rem;
+  }
+  .trash-card {
+    background: rgba(13, 18, 36, 0.5);
+    border: 1px solid rgba(239,68,68,0.12);
+    border-radius: 0.875rem; padding: 1.25rem;
+    display: flex; flex-direction: column; gap: 0.75rem;
+    transition: border-color 0.15s;
+  }
+  .trash-card:hover { border-color: rgba(239,68,68,0.3); }
+  .trash-card-header {
+    display: flex; align-items: center; gap: 0.75rem;
+  }
+  .trash-card-icon {
+    width: 2.75rem; height: 2.75rem; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.125rem; font-weight: 800; color: #fff;
+    background: rgba(239,68,68,0.15); flex-shrink: 0;
+    border: 1px solid rgba(239,68,68,0.2);
+  }
+  .trash-card-info { flex: 1; min-width: 0; }
+  .trash-card-name {
+    font-size: 1rem; font-weight: 700; color: #e4e4e7;
+    text-transform: capitalize;
+  }
+  .trash-card-meta {
+    font-size: 0.75rem; color: #52525b; margin-top: 0.125rem;
+  }
+  .trash-card-meta .days-badge {
+    display: inline-flex; align-items: center; gap: 0.25rem;
+    padding: 2px 8px; border-radius: 50px;
+    font-size: 0.65rem; font-weight: 600;
+    background: rgba(239,68,68,0.1); color: #f87171;
+    border: 1px solid rgba(239,68,68,0.15);
+  }
+  .trash-card-actions {
+    display: flex; gap: 0.5rem; padding-top: 0.5rem;
+    border-top: 1px solid rgba(255,255,255,0.04);
+  }
+  .trash-btn {
+    flex: 1; padding: 0.45rem 0.75rem; border-radius: 0.5rem;
+    font-size: 0.75rem; font-weight: 600; cursor: pointer;
+    transition: all 0.15s; border: none; text-align: center;
+  }
+  .trash-btn-restore {
+    background: rgba(99,102,241,0.12); color: #a5b4fc;
+    border: 1px solid rgba(99,102,241,0.2);
+  }
+  .trash-btn-restore:hover { background: rgba(99,102,241,0.25); color: #c7d2fe; }
+  .trash-btn-delete {
+    background: rgba(239,68,68,0.08); color: #f87171;
+    border: 1px solid rgba(239,68,68,0.15);
+  }
+  .trash-btn-delete:hover { background: rgba(239,68,68,0.2); color: #fca5a5; }
+  .trash-info-bar {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.75rem 1rem; margin-bottom: 1.25rem;
+    background: rgba(239,68,68,0.05); border: 1px solid rgba(239,68,68,0.12);
+    border-radius: 0.625rem; font-size: 0.8125rem; color: #a1a1aa;
+  }
+  .trash-info-bar i { color: #f87171; }
+
+  /* ── Delete Confirm Modal ── */
+  .confirm-delete-body { font-size: 0.875rem; color: #a1a1aa; line-height: 1.7; margin-bottom: 1rem; }
+  .confirm-delete-body strong { color: #f1f5f9; }
+  .confirm-delete-body .warn { color: #f87171; font-size: 0.8rem; margin-top: 0.5rem; }
 </style>
 
-<div>
-  <div class="mb-6">
-    <h1 class="text-2xl font-bold text-white">Agent Profiles</h1>
-    <p class="text-sm text-forge-muted mt-1">Manage agent identities, system prompts, and knowledge attachments</p>
+{% set _COLORS = ['#4f46e5','#6366f1','#818cf8','#9333ea','#a855f7','#db2777','#ec4899','#ef4444','#f97316','#ea580c','#f59e0b','#eab308','#10b981','#059669','#0891b2','#06b6d4','#3b82f6','#2563eb','#71717a','#a1a1aa'] %}
+
+<div class="profiles-shell">
+
+  <!-- ═══ TAB BAR ═══ -->
+  <div class="tab-bar">
+    <button class="tab-btn active" id="tab-btn-agents" onclick="showAgentsList()">
+      Agents <span class="tab-count">{{ agents | length }}</span>
+    </button>
+    <button class="tab-btn" id="tab-btn-trash" onclick="showTrashView()">
+      🗑️ Trash <span class="tab-count" id="trash-count">…</span>
+    </button>
   </div>
 
-  <!-- ═══ AGENT LIST VIEW ═══ -->
-  <div id="list-view">
+  <!-- ═══ VIEW: AGENTS LIST ═══ -->
+  <div class="view-panel active" id="view-agents">
+
+    <!-- User Profile Card -->
+    {% set up = user_profile %}
+    {% set user_color = up.get('color', '#10b981') %}
+    <div class="user-card">
+      <div class="user-avatar" id="avatar-_user"
+           style="background: {{ user_color }};"
+           onclick="toggleUserAvatarMenu(event)">
+        {% if up.get('image') %}
+        <img src="{{ up.image }}" alt="You">
+        {% else %}
+        {{ (up.get('name', 'You'))[0] | upper }}
+        {% endif %}
+        <span class="cam-badge">📷</span>
+        <input type="file" id="file-_user" accept="image/*" style="display:none;"
+               onchange="uploadAvatar('_user', this)">
+        <div class="avatar-menu" id="avatar-menu-_user">
+          <button class="avatar-menu-item" onclick="document.getElementById('file-_user').click(); closeAvatarMenu('_user')">
+            📷 Change Picture
+          </button>
+          <button class="avatar-menu-item danger" onclick="clearImage('_user'); closeAvatarMenu('_user')">
+            ✕ Remove Picture
+          </button>
+        </div>
+      </div>
+      <div class="user-meta">
+        <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
+          <input type="text" class="user-name-input" id="name-_user"
+                 value="{{ up.get('name', 'You') }}"
+                 placeholder="Your display name"
+                 onchange="saveUserField('name', this.value)">
+          <span class="text-xs text-zinc-500">How you appear in chat conversations</span>
+        </div>
+        <div class="color-picker-wrap" id="cpw-_user" style="margin-top:0.5rem;">
+          <div class="color-trigger" onclick="toggleColorDropdown('_user')" title="Change color"></div>
+          <div class="color-dropdown" id="cd-_user">
+            <div class="color-grid">
+              {% for c in _COLORS %}
+              <div class="color-swatch {{ 'active' if c == user_color else '' }}"
+                   style="background: {{ c }};"
+                   onclick="setUserColor('{{ c }}', this)"></div>
+              {% endfor %}
+            </div>
+            <div class="color-custom-row">
+              <input type="color" id="custom-color-_user" value="{{ user_color }}"
+                     onchange="setUserColor(this.value, null, true)">
+              <label onclick="document.getElementById('custom-color-_user').click()">Custom color…</label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Agent List Header -->
+    <div class="list-header">
+      <h2>All Agents</h2>
+      <button class="new-agent-btn" onclick="openNewAgentModal()">＋ New Agent</button>
+    </div>
+
+    <!-- Agent Grid -->
     <div class="agents-grid" id="agents-grid">
       {% for name in agents %}
       {% set ad = agent_data[name] %}
       {% set av = avatar_map.get(name, {}) %}
-      <div class="agent-card" onclick="openEditor('{{ name }}')">
-        <button class="agent-card-menu" onclick="event.stopPropagation();deleteAgent('{{ name }}')" title="Delete">✕</button>
-        {% if av.get('image') %}
-        <div class="agent-card-avatar"><img src="{{ av.image }}" alt="{{ name }}"></div>
-        {% else %}
-        <div class="agent-card-avatar" style="background:{{ av.get('color', '#6366f1') }};">{{ name[0] | upper }}</div>
-        {% endif %}
-        <div class="agent-card-info">
+      {% set agent_color = av.get('color', '#6366f1') %}
+      {% set model_name = ad.config.get('model', ad.profile.get('model', '')) %}
+      {% set tool_count = (ad.profile.get('allowed_tools', []) | length) %}
+      {% set profile_desc = ad.profile.get('description', '') %}
+      <div class="agent-card" data-agent="{{ name }}" onclick="openEditor('{{ name }}')">
+        <!-- Header / picture block -->
+        <div class="agent-card-header"
+             style="background: linear-gradient(135deg, {{ agent_color }}33, {{ agent_color }}0d);">
+          {% if av.get('image') %}
+          <img class="agent-photo" src="{{ av.image }}" alt="{{ name }}"
+               style="{{ 'object-position: %s%% %s%%; transform: scale(%s); transform-origin: %s%% %s%%;'|format(av.get('photo_x', 50), av.get('photo_y', 0), av.get('photo_zoom', 1), av.get('photo_x', 50), av.get('photo_y', 0)) if av.get('photo_zoom') else '' }}">
+          {% else %}
+          <i class="fas fa-user-astronaut agent-icon" style="color: {{ agent_color }};"></i>
+          {% endif %}
+          <div class="agent-card-status">Active</div>
+        </div>
+        <!-- Body -->
+        <div class="agent-card-body">
           <div class="agent-card-name">{{ ad.display_name or name }}</div>
-          <div class="agent-card-model">{{ ad.config.get('model', ad.profile.get('model', 'default')) }}</div>
+          {% set summary = ad.description or profile_desc %}
+          {% if summary %}
+          <div class="agent-card-role">{{ summary[:80] }}{% if summary|length > 80 %}…{% endif %}</div>
+          {% endif %}
+          {% set narrative = profile_desc if (ad.description and profile_desc) else '' %}
+          {% if narrative %}
+          <div class="agent-card-desc">{{ narrative }}</div>
+          {% elif not summary %}
+          <div class="agent-card-desc" style="color:#3f3f46; font-style:italic;">No description yet — click to configure.</div>
+          {% endif %}
+          <div class="agent-card-footer">
+            {% if model_name %}
+            <span class="agent-tag-llm"><i class="fas fa-microchip"></i> {{ model_name }}</span>
+            {% endif %}
+            {% if tool_count > 0 %}
+            <span class="agent-tag-tools">{{ tool_count }} tools</span>
+            {% endif %}
+          </div>
         </div>
       </div>
       {% endfor %}
-      <div class="agent-card agent-add-card" onclick="showCreateModal()">
-        <span style="font-size:1.5rem;">+</span>
-        <span style="font-size:0.8125rem;font-weight:600;">New Agent</span>
-      </div>
     </div>
   </div>
 
-  <!-- ═══ EDITOR VIEW ═══ -->
-  <div id="editor-view" class="editor-view">
-    <div class="flex items-center gap-3 mb-4">
-      <button onclick="closeEditor()" class="filter-btn" style="cursor:pointer;">← Back</button>
-      <h2 id="editor-name" class="text-xl font-bold text-white capitalize"></h2>
-    </div>
+  <!-- ═══ VIEW: AGENT EDITORS (one per agent) ═══ -->
+  {% for name in agents %}
+  {% set ad = agent_data[name] %}
+  {% set av = avatar_map.get(name, {}) %}
+  {% set agent_color = av.get('color', '#6366f1') %}
+  {% set cfg = ad.config %}
+  {% set current_model = cfg.get('model', ad.profile.get('model', '')) %}
+  {% set current_voice = cfg.get('voice_id', ad.profile.get('voice_id', '')) %}
+  {% set current_edge_voice = cfg.get('edge_voice', ad.profile.get('edge_voice', 'alloy')) %}
+  {% set current_identity_profile = ad.profile.get('identity_faiss_profile', '') %}
+  {% set current_memory_profile = ad.profile.get('memory_vault_profile', '') %}
+  {% set current_tools = ad.profile.get('allowed_tools', []) %}
+  <div class="editor-view" id="editor-{{ name }}">
 
-    <!-- System Prompt -->
-    <div class="profile-card">
-      <div class="section-label">System Prompt</div>
-      <p class="text-xs text-forge-muted mb-3">
-        <strong>Layer 1</strong> of the prompt injection pipeline.
-        This is the agent's base identity — always injected first.
-      </p>
-      <textarea id="ed-system-prompt" class="prompt-textarea"></textarea>
-    </div>
+    <!-- ═══ Modal-style Agent Detail Panel ═══ -->
+    <div class="agent-detail-panel">
 
-    <!-- Model Selection -->
-    <div class="profile-card">
-      <div class="section-label">Model</div>
-      <select id="ed-model" class="search-input w-full" style="max-width:24rem;">
-        <option value="">Use connection default</option>
-        {% for m in all_models %}
-        <option value="{{ m }}">{{ m }}</option>
-        {% endfor %}
-      </select>
-    </div>
+      <!-- Header — gradient banner + avatar + name/desc -->
+      <div class="agent-detail-header"
+           style="background: linear-gradient(135deg, {{ agent_color }}22 0%, {{ agent_color }}08 60%, transparent 100%);">
+        <div class="prof-avatar" id="avatar-{{ name }}"
+             style="background: {{ agent_color }};"
+             onclick="toggleAvatarMenu('{{ name }}', event)">
+          {% if av.get('image') %}
+          <img src="{{ av.image }}" alt="{{ name }}">
+          {% else %}
+          {{ name[0] | upper }}
+          {% endif %}
+          <span class="cam-badge">📷</span>
+          <input type="file" id="file-{{ name }}" accept="image/*" style="display:none;"
+                 onchange="uploadAvatar('{{ name }}', this)">
+          <div class="avatar-menu" id="avatar-menu-{{ name }}">
+            <button class="avatar-menu-item" onclick="document.getElementById('file-{{ name }}').click(); closeAvatarMenu('{{ name }}')">
+              📷 Change Picture
+            </button>
+            <button class="avatar-menu-item" onclick="openPhotoEditor('{{ name }}'); closeAvatarMenu('{{ name }}')">
+              ✂ Edit Position
+            </button>
+            <button class="avatar-menu-item danger" onclick="clearImage('{{ name }}'); closeAvatarMenu('{{ name }}')">
+              ✕ Remove Picture
+            </button>
+          </div>
+          <!-- Color picker -->
+          <div class="color-picker-wrap" id="cpw-{{ name }}" style="position:absolute;top:-4px;left:-4px;z-index:10;" onclick="event.stopPropagation()">
+            <div class="color-trigger" onclick="toggleColorDropdown('{{ name }}')" title="Change color"></div>
+            <div class="color-dropdown" id="cd-{{ name }}">
+              <div class="color-grid">
+                {% for c in _COLORS %}
+                <div class="color-swatch {{ 'active' if c == agent_color else '' }}"
+                     style="background: {{ c }};"
+                     onclick="setColor('{{ name }}', '{{ c }}', this)"></div>
+                {% endfor %}
+              </div>
+              <div class="color-custom-row">
+                <input type="color" id="custom-color-{{ name }}" value="{{ agent_color }}"
+                       onchange="setColor('{{ name }}', this.value, null, true)">
+                <label onclick="document.getElementById('custom-color-{{ name }}').click()">Custom color…</label>
+              </div>
+            </div>
+          </div>
+        </div>
 
-    <!-- Knowledge Attachments -->
-    <div class="profile-card">
-      <div class="section-label">Knowledge Attachments</div>
-      <p class="text-xs text-forge-muted mb-3">
-        Attach knowledge notes to this agent. Choose injection mode:
-        <br><span class="text-forge-success font-semibold">Always</span> = verbatim text, every message (Layer 3).
-        <span class="text-forge-accent2 font-semibold">Directive</span> = FAISS semantic retrieval per message (Layer 2 — Soul Script).
-      </p>
-
-      <!-- Attached knowledge (only shows selected items) -->
-      <div class="attached-list mb-4" id="ed-attached-list">
-        <!-- Populated by JS -->
+        <div class="prof-header-info">
+          <div class="prof-name-row">
+            <input type="text" class="prof-name-input" id="name-{{ name }}"
+                   value="{{ ad.display_name or name }}"
+                   placeholder="Name"
+                   maxlength="30"
+                   onchange="saveField('{{ name }}', 'display_name', this.value)">
+          </div>
+          <textarea class="prof-desc-input" id="desc-{{ name }}"
+                    placeholder="Short description — what does this agent do?"
+                    maxlength="200" rows="2"
+                    oninput="autoResizeDesc(this)"
+                    onchange="saveField('{{ name }}', 'description', this.value)">{{ ad.description or '' }}</textarea>
+        </div>
       </div>
 
-      <button type="button" class="add-knowledge-btn" onclick="openKnowledgePicker()">
-        <span>+</span> Add Knowledge
-      </button>
+      <!-- Body — all config sections -->
+      <div class="agent-detail-body">
+
+        <!-- ── Default Model ── -->
+        <div class="modal-section-title">⚡ Default Model</div>
+        <div class="config-grid" style="grid-template-columns: 1fr;">
+          <div class="config-cell">
+            <div class="config-cell-label"><i class="fas fa-microchip" style="font-size:0.65rem;"></i> Preferred LLM</div>
+            <div class="config-cell-value" id="model-display-{{ name }}">{{ current_model or '— Select Model —' }}</div>
+            <select id="model-{{ name }}" data-current="{{ current_model }}"
+                    onchange="onModelSelect('{{ name }}', this)">
+              <option value="">— Select Model —</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- ── TTS / Voice ── -->
+        <div class="modal-section-title">🔊 Voice & TTS</div>
+        <div class="config-grid">
+          <div class="config-cell">
+            <div class="config-cell-label">💰 Paid TTS (ElevenLabs)</div>
+            <div class="config-cell-value" id="voice-paid-display-{{ name }}">{{ current_voice or 'Not set' }}</div>
+            <select id="voice-paid-{{ name }}" data-current="{{ current_voice }}"
+                    onchange="onVoiceSelect('{{ name }}', 'paid', this)">
+              <option value="">— Select Voice —</option>
+            </select>
+          </div>
+          <div class="config-cell">
+            <div class="config-cell-label">🆓 Free TTS (Edge-TTS / Piper)</div>
+            <div class="config-cell-value" id="voice-free-display-{{ name }}">{{ current_edge_voice or 'alloy' }}</div>
+            <select id="voice-free-{{ name }}" data-current="{{ current_edge_voice }}"
+                    onchange="onVoiceSelect('{{ name }}', 'free', this)">
+              <option value="">— Select Voice —</option>
+              <optgroup label="Piper (CPU · fast)">
+                <option value="alloy" {{ 'selected' if current_edge_voice == 'alloy' else '' }}>alloy</option>
+                <option value="echo" {{ 'selected' if current_edge_voice == 'echo' else '' }}>echo</option>
+                <option value="echo-alt" {{ 'selected' if current_edge_voice == 'echo-alt' else '' }}>echo-alt</option>
+                <option value="fable" {{ 'selected' if current_edge_voice == 'fable' else '' }}>fable</option>
+                <option value="onyx" {{ 'selected' if current_edge_voice == 'onyx' else '' }}>onyx</option>
+                <option value="nova" {{ 'selected' if current_edge_voice == 'nova' else '' }}>nova</option>
+                <option value="shimmer" {{ 'selected' if current_edge_voice == 'shimmer' else '' }}>shimmer</option>
+              </optgroup>
+              <optgroup label="XTTS v2 (GPU · HD)">
+                <option value="alloy-hd" {{ 'selected' if current_edge_voice == 'alloy-hd' else '' }}>alloy (HD)</option>
+                <option value="echo-hd" {{ 'selected' if current_edge_voice == 'echo-hd' else '' }}>echo (HD)</option>
+                <option value="fable-hd" {{ 'selected' if current_edge_voice == 'fable-hd' else '' }}>fable (HD)</option>
+                <option value="onyx-hd" {{ 'selected' if current_edge_voice == 'onyx-hd' else '' }}>onyx (HD)</option>
+                <option value="nova-hd" {{ 'selected' if current_edge_voice == 'nova-hd' else '' }}>nova (HD)</option>
+                <option value="shimmer-hd" {{ 'selected' if current_edge_voice == 'shimmer-hd' else '' }}>shimmer (HD)</option>
+              </optgroup>
+            </select>
+          </div>
+        </div>
+
+        <!-- ── Memory Profiles ── -->
+        <div class="modal-section-title">🧠 Memory</div>
+        <div class="config-grid">
+          <div class="config-cell">
+            <div class="config-cell-label"><i class="fas fa-fingerprint" style="font-size:0.65rem;"></i> Identity FAISS Profile</div>
+            <div class="config-cell-value" id="identity-profile-display-{{ name }}">{{ current_identity_profile or '— Select Profile —' }}</div>
+            <select id="identity-profile-{{ name }}" data-current="{{ current_identity_profile }}"
+                    onchange="onMemoryProfileSelect('{{ name }}', 'identity', this)">
+              <option value="">— Select Profile —</option>
+            </select>
+          </div>
+          <div class="config-cell">
+            <div class="config-cell-label"><i class="fas fa-database" style="font-size:0.65rem;"></i> Memory Vault Profile</div>
+            <div class="config-cell-value" id="memory-profile-display-{{ name }}">{{ current_memory_profile or '— Select Profile —' }}</div>
+            <select id="memory-profile-{{ name }}" data-current="{{ current_memory_profile }}"
+                    onchange="onMemoryProfileSelect('{{ name }}', 'memory', this)">
+              <option value="">— Select Profile —</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- ── Tools ── -->
+        <div class="modal-section-title" style="display:flex; align-items:center; justify-content:space-between;">
+          <span>🛠️ Available Tools</span>
+          <span style="font-size:0.7rem; font-weight:500; color:rgba(241,245,249,0.35); text-transform:none; letter-spacing:0;">
+            <span id="tool-count-{{ name }}">{{ current_tools | length }}</span> / {{ all_tool_names | length }} enabled
+          </span>
+        </div>
+        <div class="tools-toggle-grid" id="tools-grid-{{ name }}">
+          {% for tool_name in all_tool_names %}
+          {% set td = tool_display.get(tool_name, {}) %}
+          {% set is_on = tool_name in current_tools %}
+          <div class="tool-toggle-card {{ 'enabled' if is_on else '' }}"
+               id="tool-card-{{ name }}-{{ tool_name }}"
+               onclick="toggleTool('{{ name }}', '{{ tool_name }}', this)">
+            <div class="tool-toggle-icon" style="background:{{ td.get('icon_bg', 'rgba(99,102,241,0.08)') or 'rgba(99,102,241,0.08)' }};">
+              {{ td.get('icon', '🔧') }}
+            </div>
+            <div class="tool-toggle-info">
+              <div class="tool-toggle-name">{{ tool_name }}</div>
+              {% if td.get('description') %}
+              <div class="tool-toggle-desc">{{ td.description[:80] }}{% if td.description|length > 80 %}…{% endif %}</div>
+              {% endif %}
+            </div>
+            <span class="tool-status-badge {{ td.get('status', 'planned') }}">{{ td.get('status', 'planned') }}</span>
+            <div class="tool-toggle-switch {{ 'on' if is_on else '' }}" id="tool-sw-{{ name }}-{{ tool_name }}">
+              <span class="knob"></span>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+
+        <!-- ── System Prompt (collapsible) ── -->
+        <div class="modal-section-title collapsible-header" onclick="toggleCollapse('sys-prompt-{{ name }}')">
+          <span>✦ System Prompt</span>
+          <i class="fas fa-chevron-down collapse-chevron open" id="chevron-sys-prompt-{{ name }}"></i>
+        </div>
+        <div class="collapsible-body open" id="sys-prompt-{{ name }}">
+          <textarea class="textarea-prompt" id="prompt-{{ name }}"
+                    placeholder="Write the system prompt for this agent…"
+                    onchange="saveField('{{ name }}', 'system_prompt_text', this.value)"
+          >{{ ad.system_prompt }}</textarea>
+          <div class="field-hint">The foundational instruction set that defines behavior, personality, and role.</div>
+        </div>
+
+        <!-- ── Soul Script (collapsible) ── -->
+        <div class="modal-section-title collapsible-header" onclick="toggleCollapse('soul-script-{{ name }}')">
+          <span>🧬 Soul Script</span>
+          <span style="display:flex; align-items:center; gap:0.5rem;">
+            <span class="faiss-badge"><i class="fas fa-brain" style="font-size:0.5rem;"></i> FAISS Indexed</span>
+            <i class="fas fa-chevron-down collapse-chevron open" id="chevron-soul-script-{{ name }}"></i>
+          </span>
+        </div>
+        <div class="collapsible-body open" id="soul-script-{{ name }}">
+          <textarea class="textarea-prompt soul-script" id="soul-{{ name }}"
+                    placeholder="Write the soul script / directive for this agent…"
+                    onchange="saveField('{{ name }}', 'soul_script_text', this.value)"
+          >{{ ad.soul_script }}</textarea>
+          <div class="field-hint">
+            The agent's deep identity layer — personality, lore, behavioral modes, and core truths.
+            Automatically indexed into FAISS memory and semantically retrieved during chat for this agent only.
+          </div>
+        </div>
+
+        <!-- ── Notes (collapsible) ── -->
+        <div class="modal-section-title collapsible-header" onclick="toggleCollapse('notes-{{ name }}')">
+          <span>📝 Knowledge Notes</span>
+          <i class="fas fa-chevron-down collapse-chevron open" id="chevron-notes-{{ name }}"></i>
+        </div>
+        <div class="collapsible-body open" id="notes-{{ name }}">
+          <p class="field-hint" style="margin-bottom:0.75rem;">
+            Attached notes are injected into the agent's context.
+            <span class="mode-label always">Always</span> = every session &nbsp;|&nbsp;
+            <span class="mode-label directive">Directive</span> = on-demand via FAISS search.
+          </p>
+          <div class="notes-grid" id="notes-grid-{{ name }}">
+            {% for note_id in cfg.get('attached_notes', []) %}
+            {% set mode = cfg.get('note_modes', {}).get(note_id, 'always') %}
+            {% set is_essential = note_id in cfg.get('essential_notes', []) %}
+            {% set note_info = notes | selectattr('id', 'equalto', note_id) | first %}
+            {% set note_title = note_info.title if note_info else note_id %}
+            {% set note_emoji = note_info.emoji if note_info else '📝' %}
+            <div class="note-card" id="note-user-{{ name }}-{{ note_id }}">
+              <span class="note-name">{{ note_emoji }} {{ note_title }}{% if is_essential %} <span style="font-size:0.6rem; color:#818cf8; margin-left:0.25rem;">ESSENTIAL</span>{% endif %}</span>
+              <span class="note-source">user note</span>
+              <div style="display:flex; align-items:center; gap:0.375rem;">
+                <span class="mode-label {{ mode }}"
+                      id="ml-{{ name }}-{{ note_id }}">
+                  {{ mode | upper }}
+                </span>
+                <div class="mode-toggle {{ 'active' if mode == 'directive' else '' }}"
+                     id="mt-{{ name }}-{{ note_id }}"
+                     onclick="toggleNoteMode('{{ name }}', '{{ note_id }}', this)">
+                  <span class="toggle-knob"></span>
+                </div>
+              </div>
+              {% if not is_essential %}
+              <button class="note-remove-btn" title="Detach" onclick="detachUserNote('{{ name }}', '{{ note_id }}')">✕</button>
+              {% endif %}
+            </div>
+            {% endfor %}
+          </div>
+
+          <div class="notes-empty" id="notes-empty-{{ name }}"
+               style="{{ 'display:none;' if cfg.get('attached_notes') else '' }}">
+            No knowledge notes attached. Click "Add Notes" to connect knowledge sources.
+          </div>
+
+          <button class="add-notes-btn" onclick="openAddNotesModal('{{ name }}')">
+            ＋ Add Notes
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Save -->
-    <div class="flex gap-3 mt-4">
-      <button onclick="saveProfile()" class="filter-btn active" style="cursor:pointer;">Save Changes</button>
-      <span id="save-status" class="text-xs text-forge-success self-center" style="display:none;">Saved ✓</span>
+    <div class="action-bar">
+      <button class="btn btn-danger" onclick="confirmDeleteAgent('{{ name }}')" style="margin-right:auto;">
+        <i class="fas fa-trash-alt" style="margin-right:0.35rem;"></i> Delete Agent
+      </button>
+      <button class="btn btn-secondary" onclick="showAgentsList()">Back</button>
+      <button class="btn btn-primary" onclick="saveAll('{{ name }}')">Save &amp; Apply</button>
+    </div>
+  </div>
+  {% endfor %}
+
+  <!-- ═══ VIEW: TRASH ═══ -->
+  <div class="view-panel" id="view-trash">
+    <div class="trash-info-bar">
+      <i class="fas fa-info-circle"></i>
+      Deleted agents are kept for 30 days before being permanently removed.
+    </div>
+    <div id="trash-content">
+      <div class="trash-empty">
+        <i class="fas fa-trash-alt"></i>
+        <p>Trash is empty</p>
+        <p class="hint">Deleted agents will appear here for 30 days.</p>
+      </div>
     </div>
   </div>
 
-  <!-- ═══ CREATE AGENT MODAL ═══ -->
-  <div id="create-modal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center hidden">
-    <div class="bg-forge-card border border-forge-border rounded-xl p-6 w-full max-w-md shadow-2xl">
-      <h2 class="text-lg font-bold text-white mb-4">Create New Agent</h2>
-      <div class="mb-4">
-        <label class="block text-xs text-forge-muted mb-1">Agent Name</label>
-        <input id="new-agent-name" type="text" class="search-input w-full" placeholder="e.g. oracle, mentor">
-      </div>
-      <div class="mb-4">
-        <label class="block text-xs text-forge-muted mb-1">System Prompt</label>
-        <textarea id="new-agent-prompt" class="prompt-textarea" rows="4" placeholder="You are..."></textarea>
-      </div>
-      <div class="flex gap-3 mt-6">
-        <div class="flex-1"></div>
-        <button onclick="hideCreateModal()" class="filter-btn" style="cursor:pointer;">Cancel</button>
-        <button onclick="createAgent()" class="filter-btn active" style="cursor:pointer;">Create</button>
-      </div>
+</div>
+
+<!-- ═══ ADD NOTES MODAL ═══ -->
+<div class="modal-overlay" id="add-notes-modal">
+  <div class="modal-box">
+    <div class="modal-title">Add Notes</div>
+    <p class="field-hint" style="margin-bottom:0.75rem;">Select notes to attach to this agent. Already-attached notes are dimmed.</p>
+    <div class="modal-note-list" id="add-notes-list"></div>
+    <div style="display:flex; justify-content:flex-end; gap:0.75rem;">
+      <button class="btn btn-secondary" onclick="closeAddNotesModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmAddNotes()">Attach Selected</button>
     </div>
   </div>
+</div>
 
-  <!-- ═══ KNOWLEDGE PICKER MODAL ═══ -->
-  <div id="knowledge-picker" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center hidden">
-    <div class="bg-forge-card border border-forge-border rounded-xl p-6 w-full max-w-lg shadow-2xl">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-bold text-white">Attach Knowledge</h2>
-        <button onclick="closeKnowledgePicker()" class="text-forge-muted hover:text-white text-xl" style="cursor:pointer;">✕</button>
-      </div>
-      <p class="text-xs text-forge-muted mb-4">Select knowledge notes to attach to this agent. Click to toggle.</p>
-      <div class="picker-list" id="picker-list">
-        {% for n in notes %}
-        <div class="picker-item" data-id="{{ n.id }}" onclick="togglePickerItem(this)">
-          <div class="picker-item-check">✓</div>
-          <div style="flex:1;min-width:0;">
-            <div class="text-sm font-semibold text-zinc-200">{{ n.emoji }} {{ n.title }}</div>
-            {% if n.section %}<div class="text-xs text-forge-muted">{{ n.section }}</div>{% endif %}
-          </div>
-        </div>
-        {% endfor %}
-        {% if not notes %}
-        <p class="text-sm text-zinc-500 p-4 text-center">No knowledge notes yet. Create some in the Knowledge tab.</p>
-        {% endif %}
-      </div>
-      <div class="flex gap-3 mt-5">
-        <div class="flex-1"></div>
-        <button onclick="closeKnowledgePicker()" class="filter-btn" style="cursor:pointer;">Cancel</button>
-        <button onclick="applyKnowledgePicker()" class="filter-btn active" style="cursor:pointer;">Apply</button>
-      </div>
+<!-- ═══ DELETE CONFIRM MODAL ═══ -->
+<div class="modal-overlay" id="delete-agent-modal">
+  <div class="modal-box">
+    <div class="modal-title" style="color:#f87171;">🗑️ Delete Agent</div>
+    <div class="confirm-delete-body">
+      Are you sure you want to delete <strong id="delete-agent-name-display"></strong>?<br>
+      <div class="warn">The agent will be moved to trash and kept for 30 days. You can restore it anytime during that period.</div>
+    </div>
+    <div style="display:flex; justify-content:flex-end; gap:0.75rem;">
+      <button class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+      <button class="btn btn-danger" id="confirm-delete-btn" onclick="executeDeleteAgent()">Delete Agent</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ NEW AGENT MODAL ═══ -->
+<div class="modal-overlay" id="new-agent-modal">
+  <div class="modal-box">
+    <div class="modal-title">Create New Agent</div>
+    <div style="margin-bottom:1rem;">
+      <label class="field-label">Agent Name</label>
+      <input type="text" class="text-input" id="new-agent-name" placeholder="e.g. atlas, nova, sage">
+      <div class="field-hint">Lowercase, no spaces — this becomes the profile filename.</div>
+    </div>
+    <div style="margin-bottom:1rem;">
+      <label class="field-label">Base Model</label>
+      <select class="select-input" id="new-agent-model">
+        <option value="">Select a base model</option>
+      </select>
+    </div>
+    <div style="margin-bottom:1rem;">
+      <label class="field-label">Description</label>
+      <input type="text" class="text-input" id="new-agent-desc" placeholder="What does this agent do?" maxlength="150">
+    </div>
+    <div style="display:flex; justify-content:flex-end; gap:0.75rem; margin-top:1rem;">
+      <button class="btn btn-secondary" onclick="closeNewAgentModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="createNewAgent()">Create Agent</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ PHOTO POSITION EDITOR MODAL ══ -->
+<div class="photo-editor-overlay" id="photo-editor-modal">
+  <div class="photo-editor-box">
+    <div class="photo-editor-title">✂ Adjust Photo Position</div>
+    <div class="photo-editor-viewport" id="photo-editor-viewport">
+      <img id="photo-editor-img" src="" alt="Preview">
+    </div>
+    <div class="photo-editor-hint">Drag to reposition · Scroll or use slider to zoom</div>
+    <div class="photo-editor-controls">
+      <label>Zoom</label>
+      <input type="range" id="photo-editor-zoom" min="100" max="300" value="100" step="1">
+      <span class="photo-editor-zoom-val" id="photo-editor-zoom-val">100%</span>
+    </div>
+    <div class="photo-editor-actions">
+      <button class="photo-editor-reset" onclick="resetPhotoEditor()">Reset</button>
+      <button class="btn btn-secondary" onclick="closePhotoEditor()">Cancel</button>
+      <button class="btn btn-primary" onclick="savePhotoPosition()">Apply</button>
     </div>
   </div>
 </div>
 
 <script>
-const _agentData = {{ agent_data | tojson }};
-const _allNotes = {{ notes | tojson }};
-let _editingAgent = null;
-let _attachedIds = [];  // currently attached note IDs
-let _noteModes = {};    // noteId → 'always' | 'directive'
+  // ── DATA ──
+  const _allNotes = {{ notes | tojson }};
+  const _connections = {{ connections | tojson }};
+  const _allToolNames = {{ all_tool_names | tojson }};
+  const _avatarMap = {{ avatar_map | tojson }};
 
-/* ═══ Build note map for quick lookup ═══ */
-const _noteMap = {};
-_allNotes.forEach(n => _noteMap[n.id] = n);
+  let _currentEditor = null;
+  let _addNotesAgent = null;
 
-function openEditor(name) {
-  _editingAgent = name;
-  const ad = _agentData[name] || {};
-  const cfg = ad.config || {};
+  // ── Model dropdown population ──
+  function populateModelDropdowns() {
+    const selectors = document.querySelectorAll('select[id^="model-"]');
+    const newAgentSel = document.getElementById('new-agent-model');
+    const allSels = [...selectors];
+    if (newAgentSel) allSels.push(newAgentSel);
 
-  document.getElementById('editor-name').textContent = cfg.display_name || name;
-  document.getElementById('ed-system-prompt').value = ad.system_prompt || '';
-  document.getElementById('ed-model').value = cfg.model || ad.profile?.model || '';
+    allSels.forEach(sel => {
+      const current = sel.dataset.current || '';
+      const isNew = sel.id === 'new-agent-model';
+      sel.innerHTML = isNew ? '<option value="">Select a base model</option>' : '<option value="">— Select Model —</option>';
+      let selectedText = '—';
 
-  // Load attachments
-  _attachedIds = [...(cfg.attached_notes || [])];
-  _noteModes = {...(cfg.note_modes || {})};
-  // Default missing modes to 'always'
-  _attachedIds.forEach(id => { if (!_noteModes[id]) _noteModes[id] = 'always'; });
+      _connections.forEach(conn => {
+        if (!conn.models || conn.models.length === 0) return;
+        const grp = document.createElement('optgroup');
+        grp.label = conn.name;
+        conn.models.forEach(m => {
+          const opt = document.createElement('option');
+          opt.value = m;
+          opt.textContent = m;
+          if (m === current) { opt.selected = true; selectedText = m; }
+          grp.appendChild(opt);
+        });
+        sel.appendChild(grp);
+      });
 
-  renderAttachedList();
-
-  document.getElementById('list-view').style.display = 'none';
-  document.getElementById('editor-view').classList.add('active');
-}
-
-function closeEditor() {
-  _editingAgent = null;
-  document.getElementById('editor-view').classList.remove('active');
-  document.getElementById('list-view').style.display = '';
-}
-
-/* ═══ Render attached knowledge list ═══ */
-function renderAttachedList() {
-  const container = document.getElementById('ed-attached-list');
-  if (_attachedIds.length === 0) {
-    container.innerHTML = '<p class="text-sm text-zinc-500 py-3">No knowledge attached yet. Click "Add Knowledge" to attach notes.</p>';
-    return;
+      if (!isNew) {
+        const agName = sel.id.replace('model-', '');
+        const disp = document.getElementById('model-display-' + agName);
+        if (disp) disp.textContent = selectedText;
+      }
+    });
   }
-  container.innerHTML = _attachedIds.map(id => {
-    const n = _noteMap[id];
-    if (!n) return '';
-    const mode = _noteModes[id] || 'always';
-    return `
-      <div class="attached-item" data-id="${id}">
-        <div class="attached-item-info">
-          <div class="attached-item-title">${n.emoji || '📄'} ${n.title}</div>
-          ${n.section ? `<div class="text-xs text-forge-muted mt-0.5">${n.section}</div>` : ''}
-        </div>
-        <div class="mode-pill ${mode}" onclick="cyclePillMode(this, '${id}')" title="Click to switch injection mode">
-          <span class="mode-pill-opt opt-always">Always</span>
-          <span class="mode-pill-opt opt-directive">Directive</span>
-        </div>
-        <button class="attached-item-remove" onclick="removeAttached('${id}')" title="Remove">✕</button>
-      </div>`;
-  }).join('');
-}
 
-function cyclePillMode(pill, noteId) {
-  const current = _noteModes[noteId] || 'always';
-  const next = current === 'always' ? 'directive' : 'always';
-  _noteModes[noteId] = next;
-  pill.className = 'mode-pill ' + next;
-}
+  // ── Auto-resize description textarea ──
+  function autoResizeDesc(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.max(20, Math.min(el.scrollHeight, 60)) + 'px';
+  }
+  document.querySelectorAll('.prof-desc-input').forEach(autoResizeDesc);
 
-function removeAttached(id) {
-  _attachedIds = _attachedIds.filter(x => x !== id);
-  delete _noteModes[id];
-  renderAttachedList();
-}
+  // ── View Navigation ──
+  function showAgentsList() {
+    document.querySelectorAll('.editor-view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.view-panel').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-agents').classList.add('active');
+    const btn = document.getElementById('tab-btn-agents');
+    btn.innerHTML = 'Agents <span class="tab-count">{{ agents | length }}</span>';
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    _currentEditor = null;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 
-/* ═══ Knowledge Picker Modal ═══ */
-function openKnowledgePicker() {
-  // Mark currently attached items as selected in the picker
-  document.querySelectorAll('#picker-list .picker-item').forEach(item => {
-    const id = item.dataset.id;
-    item.classList.toggle('selected', _attachedIds.includes(id));
-  });
-  document.getElementById('knowledge-picker').classList.remove('hidden');
-}
+  function showTrashView() {
+    document.querySelectorAll('.editor-view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.view-panel').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-trash').classList.add('active');
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-btn-trash').classList.add('active');
+    _currentEditor = null;
+    loadTrashItems();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 
-function closeKnowledgePicker() {
-  document.getElementById('knowledge-picker').classList.add('hidden');
-}
+  function openEditor(name) {
+    document.getElementById('view-agents').classList.remove('active');
+    document.querySelectorAll('.editor-view').forEach(v => v.classList.remove('active'));
+    const editor = document.getElementById('editor-' + name);
+    if (editor) {
+      editor.classList.add('active');
+      _currentEditor = name;
+      const displayName = document.getElementById('name-' + name)?.value || name;
+      document.getElementById('tab-btn-agents').innerHTML =
+        '<span style="opacity:0.6">Agents</span> <span style="color:#3f3f46;margin:0 0.25rem;">›</span> ' + _esc(displayName);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
 
-function togglePickerItem(el) {
-  el.classList.toggle('selected');
-}
+  // ── Avatar / Color ──
+  function toggleColorDropdown(id) {
+    document.querySelectorAll('.color-dropdown.open').forEach(d => {
+      if (d.id !== 'cd-' + id) d.classList.remove('open');
+    });
+    document.getElementById('cd-' + id).classList.toggle('open');
+  }
 
-function applyKnowledgePicker() {
-  const newIds = [...document.querySelectorAll('#picker-list .picker-item.selected')].map(el => el.dataset.id);
-  // Add newly selected ones, keep existing modes
-  newIds.forEach(id => {
-    if (!_attachedIds.includes(id)) {
-      _attachedIds.push(id);
-      _noteModes[id] = 'always';
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.color-picker-wrap')) {
+      document.querySelectorAll('.color-dropdown.open').forEach(d => d.classList.remove('open'));
+    }
+    if (!e.target.closest('.prof-avatar') && !e.target.closest('.user-avatar')) {
+      document.querySelectorAll('.avatar-menu.open').forEach(m => m.classList.remove('open'));
     }
   });
-  // Remove unselected ones
-  _attachedIds = _attachedIds.filter(id => newIds.includes(id));
-  Object.keys(_noteModes).forEach(id => {
-    if (!_attachedIds.includes(id)) delete _noteModes[id];
+
+  function toggleAvatarMenu(agent, e) {
+    e.stopPropagation();
+    document.querySelectorAll('.avatar-menu.open').forEach(m => {
+      if (m.id !== 'avatar-menu-' + agent) m.classList.remove('open');
+    });
+    const menu = document.getElementById('avatar-menu-' + agent);
+    if (menu) menu.classList.toggle('open');
+  }
+  function closeAvatarMenu(agent) {
+    const menu = document.getElementById('avatar-menu-' + agent);
+    if (menu) menu.classList.remove('open');
+  }
+  function toggleUserAvatarMenu(e) {
+    e.stopPropagation();
+    document.querySelectorAll('.avatar-menu.open').forEach(m => {
+      if (m.id !== 'avatar-menu-_user') m.classList.remove('open');
+    });
+    const menu = document.getElementById('avatar-menu-_user');
+    if (menu) menu.classList.toggle('open');
+  }
+
+  async function setColor(agent, color, el, isCustom) {
+    const preview = document.getElementById('avatar-' + agent);
+    if (preview) preview.style.background = color;
+    const grid = document.querySelector('#cd-' + agent + ' .color-grid');
+    if (grid) grid.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+    if (el && !isCustom) el.classList.add('active');
+    const customInput = document.getElementById('custom-color-' + agent);
+    if (customInput) customInput.value = color;
+    const card = document.querySelector(`.agent-card[data-agent="${agent}"] .agent-card-avatar`);
+    if (card) card.style.background = color;
+    const dd = document.getElementById('cd-' + agent);
+    if (dd) dd.classList.remove('open');
+    await fetch(`/api/profiles/${agent}/avatar`, {
+      method: 'PUT', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({color}),
+    });
+  }
+
+  /* ── Image resize helper (max 300px, JPEG 85%) ── */
+  function resizeImage(file, maxDim = 300) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+          const w = Math.round(img.width * scale);
+          const h = Math.round(img.height * scale);
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', 0.85));
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function uploadAvatar(agent, input) {
+    const file = input.files[0];
+    if (!file) return;
+    const dataUrl = await resizeImage(file, 300);
+    const preview = document.getElementById('avatar-' + agent);
+    let img = preview.querySelector('img');
+    if (!img) { img = document.createElement('img'); img.alt = agent; preview.appendChild(img); }
+    img.src = dataUrl;
+    const endpoint = agent === '_user' ? '/api/profiles/user' : `/api/profiles/${agent}/avatar`;
+    const resp = await fetch(endpoint, {
+      method: 'PUT', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({image: dataUrl}),
+    });
+    // Update preview to use saved URL if returned
+    try {
+      const result = await resp.json();
+      if (result.image) img.src = result.image;
+    } catch(_) {}
+    input.value = '';
+  }
+
+  async function clearImage(agent) {
+    const preview = document.getElementById('avatar-' + agent);
+    const img = preview.querySelector('img');
+    if (img) img.remove();
+    if (agent === '_user') {
+      const nm = document.getElementById('name-_user')?.value || 'You';
+      Array.from(preview.childNodes).forEach(n => { if (n.nodeType === 3) n.remove(); });
+      preview.insertBefore(document.createTextNode(nm.charAt(0).toUpperCase()), preview.querySelector('.cam-badge'));
+      await fetch('/api/profiles/user', {
+        method: 'PUT', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({image: ''}),
+      });
+    } else {
+      Array.from(preview.childNodes).forEach(n => { if (n.nodeType === 3) n.remove(); });
+      preview.insertBefore(document.createTextNode(agent.charAt(0).toUpperCase()), preview.querySelector('.cam-badge'));
+      await fetch(`/api/profiles/${agent}/avatar`, {
+        method: 'PUT', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({image: ''}),
+      });
+    }
+  }
+
+  async function setUserColor(color, el, isCustom) {
+    const preview = document.getElementById('avatar-_user');
+    if (preview) preview.style.background = color;
+    const grid = document.querySelector('#cd-_user .color-grid');
+    if (grid) grid.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+    if (el && !isCustom) el.classList.add('active');
+    const customInput = document.getElementById('custom-color-_user');
+    if (customInput) customInput.value = color;
+    const dd = document.getElementById('cd-_user');
+    if (dd) dd.classList.remove('open');
+    await fetch('/api/profiles/user', {
+      method: 'PUT', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({color}),
+    });
+  }
+
+  // ── Inline config select handlers ──
+  function onModelSelect(agent, sel) {
+    const display = document.getElementById('model-display-' + agent);
+    if (display) display.textContent = sel.value || '— Select Model —';
+    saveField(agent, 'model', sel.value);
+  }
+
+  // ── Memory profile handler ──
+  function onMemoryProfileSelect(agent, type, sel) {
+    if (type === 'identity') {
+      const display = document.getElementById('identity-profile-display-' + agent);
+      if (display) display.textContent = sel.options[sel.selectedIndex]?.textContent || '— Select Profile —';
+      saveField(agent, 'identity_faiss_profile', sel.value);
+    } else {
+      const display = document.getElementById('memory-profile-display-' + agent);
+      if (display) display.textContent = sel.options[sel.selectedIndex]?.textContent || '— Select Profile —';
+      saveField(agent, 'memory_vault_profile', sel.value);
+    }
+  }
+
+  // ── Voice / TTS handlers ──
+  function onVoiceSelect(agent, type, sel) {
+    if (type === 'paid') {
+      const display = document.getElementById('voice-paid-display-' + agent);
+      if (display) display.textContent = sel.value || 'Not set';
+      saveField(agent, 'voice_id', sel.value);
+    } else {
+      const display = document.getElementById('voice-free-display-' + agent);
+      if (display) display.textContent = sel.value || 'alloy';
+      saveField(agent, 'edge_voice', sel.value);
+    }
+  }
+
+  // Fetch ElevenLabs voices and populate paid TTS dropdowns
+  async function populateElevenLabsVoices() {
+    try {
+      const resp = await fetch('/api/tts/voices');
+      const data = await resp.json();
+      if (!data.voices || data.voices.length === 0) return;
+      document.querySelectorAll('select[id^="voice-paid-"]').forEach(sel => {
+        const current = sel.dataset.current || '';
+        let selectedText = 'Not set';
+        const grp = document.createElement('optgroup');
+        grp.label = 'ElevenLabs';
+        data.voices.forEach(v => {
+          const opt = document.createElement('option');
+          opt.value = v.voice_id;
+          opt.textContent = v.name + (v.category ? ` (${v.category})` : '');
+          if (v.voice_id === current) { opt.selected = true; selectedText = v.name; }
+          grp.appendChild(opt);
+        });
+        sel.appendChild(grp);
+        const agName = sel.id.replace('voice-paid-', '');
+        const disp = document.getElementById('voice-paid-display-' + agName);
+        if (disp && current) disp.textContent = selectedText;
+      });
+    } catch (e) { /* ElevenLabs not configured */ }
+  }
+
+  // Fetch Edge-TTS voices and populate free TTS dropdowns
+  async function populateEdgeTTSVoices() {
+    try {
+      const resp = await fetch('/api/tts/edge/voices');
+      const data = await resp.json();
+      if (!data.voices || data.voices.length === 0) return;
+      // Group by engine
+      const byEngine = {};
+      data.voices.forEach(v => {
+        const label = v.engine_label || v.engine || 'Edge-TTS';
+        if (!byEngine[label]) byEngine[label] = [];
+        byEngine[label].push(v);
+      });
+      document.querySelectorAll('select[id^="voice-free-"]').forEach(sel => {
+        const current = sel.dataset.current || 'alloy';
+        // Clear existing and rebuild with live data
+        sel.innerHTML = '<option value="">— Select Voice —</option>';
+        let selectedText = current;
+        for (const [engineLabel, voices] of Object.entries(byEngine)) {
+          const grp = document.createElement('optgroup');
+          grp.label = engineLabel;
+          voices.forEach(v => {
+            const opt = document.createElement('option');
+            opt.value = v.voice_id;
+            opt.textContent = v.name;
+            if (v.voice_id === current) { opt.selected = true; selectedText = v.name; }
+            grp.appendChild(opt);
+          });
+          sel.appendChild(grp);
+        }
+        const agName = sel.id.replace('voice-free-', '');
+        const disp = document.getElementById('voice-free-display-' + agName);
+        if (disp) disp.textContent = selectedText;
+      });
+    } catch (e) { /* Edge-TTS not configured — keep hardcoded fallback */ }
+  }
+
+  // ── Tool toggle handler ──
+  function toggleTool(agent, toolName, cardEl) {
+    const sw = document.getElementById('tool-sw-' + agent + '-' + toolName);
+    const isOn = sw.classList.toggle('on');
+    cardEl.classList.toggle('enabled', isOn);
+
+    // Collect all enabled tool names
+    const enabled = [];
+    document.querySelectorAll(`#tools-grid-${agent} .tool-toggle-switch.on`).forEach(s => {
+      const id = s.id.replace('tool-sw-' + agent + '-', '');
+      enabled.push(id);
+    });
+
+    // Update count
+    const counter = document.getElementById('tool-count-' + agent);
+    if (counter) counter.textContent = enabled.length;
+
+    // Also update the agent card footer tool count
+    const card = document.querySelector(`.agent-card[data-agent="${agent}"]`);
+    if (card) {
+      const toolTag = card.querySelector('.agent-tag-tools');
+      if (enabled.length > 0) {
+        if (toolTag) {
+          toolTag.textContent = enabled.length + ' tools';
+        } else {
+          const footer = card.querySelector('.agent-card-footer');
+          if (footer) footer.insertAdjacentHTML('beforeend',
+            `<span class="agent-tag-tools">${enabled.length} tools</span>`);
+        }
+      } else if (toolTag) {
+        toolTag.remove();
+      }
+    }
+
+    // Save
+    saveField(agent, 'allowed_tools', enabled);
+  }
+
+  // ── Collapsible toggle ──
+  function toggleCollapse(id) {
+    const body = document.getElementById(id);
+    const chevron = document.getElementById('chevron-' + id);
+    if (!body) return;
+    body.classList.toggle('open');
+    if (chevron) chevron.classList.toggle('open');
+  }
+
+  // ── Save field ──
+  async function saveField(agent, field, value) {
+    await fetch(`/api/profiles/${agent}/config`, {
+      method: 'PUT', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({[field]: value}),
+    });
+  }
+
+  async function saveUserField(field, value) {
+    await fetch('/api/profiles/user', {
+      method: 'PUT', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({[field]: value}),
+    });
+  }
+
+  // ── Notes ──
+  async function toggleNoteMode(agent, noteId, el) {
+    const isActive = el.classList.toggle('active');
+    const mode = isActive ? 'directive' : 'always';
+    const label = document.getElementById('ml-' + agent + '-' + noteId);
+    if (label) {
+      label.textContent = mode.toUpperCase();
+      label.className = 'mode-label ' + mode;
+    }
+    // Re-save all attached notes with updated mode
+    const grid = document.getElementById('notes-grid-' + agent);
+    const attached = [];
+    const modes = {};
+    grid.querySelectorAll('.note-card').forEach(card => {
+      const id = card.id.replace('note-user-' + agent + '-', '');
+      attached.push(id);
+      const lbl = card.querySelector('.mode-label');
+      modes[id] = lbl && lbl.textContent.trim().toLowerCase() === 'directive' ? 'directive' : 'always';
+    });
+    await fetch(`/api/profiles/${agent}/knowledge`, {
+      method: 'PUT', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({attached_notes: attached, note_modes: modes}),
+    });
+  }
+
+  async function detachUserNote(agent, noteId) {
+    const el = document.getElementById('note-user-' + agent + '-' + noteId);
+    if (el) el.remove();
+    checkNotesEmpty(agent);
+    // Re-save without this note
+    const grid = document.getElementById('notes-grid-' + agent);
+    const attached = [];
+    const modes = {};
+    grid.querySelectorAll('.note-card').forEach(card => {
+      const id = card.id.replace('note-user-' + agent + '-', '');
+      attached.push(id);
+      const lbl = card.querySelector('.mode-label');
+      modes[id] = lbl && lbl.textContent.trim().toLowerCase() === 'directive' ? 'directive' : 'always';
+    });
+    await fetch(`/api/profiles/${agent}/knowledge`, {
+      method: 'PUT', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({attached_notes: attached, note_modes: modes}),
+    });
+  }
+
+  function checkNotesEmpty(agent) {
+    const grid = document.getElementById('notes-grid-' + agent);
+    const empty = document.getElementById('notes-empty-' + agent);
+    if (grid && empty) {
+      empty.style.display = grid.children.length === 0 ? '' : 'none';
+    }
+  }
+
+  // ── Add Notes Modal ──
+  function openAddNotesModal(agent) {
+    _addNotesAgent = agent;
+    const list = document.getElementById('add-notes-list');
+    list.innerHTML = '';
+
+    const attachedIds = new Set();
+    document.querySelectorAll(`#notes-grid-${agent} .note-card`).forEach(card => {
+      const id = card.id.replace('note-user-' + agent + '-', '');
+      attachedIds.add(id);
+    });
+
+    (_allNotes || []).forEach(note => {
+      const attached = attachedIds.has(note.id);
+      list.innerHTML += `
+        <div class="modal-note-row ${attached ? 'already-attached' : ''}" data-type="user" data-id="${note.id}">
+          <input type="checkbox" class="note-check" ${attached ? 'checked disabled' : ''}>
+          <span class="note-name" style="flex:1;">${note.emoji || '📝'} ${note.title}</span>
+          <span class="note-source">user note</span>
+        </div>`;
+    });
+
+    if (list.children.length === 0) {
+      list.innerHTML = '<p class="text-xs text-zinc-600 text-center py-4">No notes available. Create them in the <a href="/knowledge" class="text-forge-accent2 hover:underline">Knowledge</a> section.</p>';
+    }
+
+    document.getElementById('add-notes-modal').classList.add('open');
+  }
+
+  function closeAddNotesModal() {
+    document.getElementById('add-notes-modal').classList.remove('open');
+    _addNotesAgent = null;
+  }
+
+  async function confirmAddNotes() {
+    if (!_addNotesAgent) return;
+    const agent = _addNotesAgent;
+    const rows = document.querySelectorAll('#add-notes-list .modal-note-row:not(.already-attached)');
+    const grid = document.getElementById('notes-grid-' + agent);
+
+    // Collect already-attached
+    const attached = [];
+    const modes = {};
+    grid.querySelectorAll('.note-card').forEach(card => {
+      const id = card.id.replace('note-user-' + agent + '-', '');
+      attached.push(id);
+      const lbl = card.querySelector('.mode-label');
+      modes[id] = lbl && lbl.textContent.trim().toLowerCase() === 'directive' ? 'directive' : 'always';
+    });
+
+    for (const row of rows) {
+      const check = row.querySelector('.note-check');
+      if (!check.checked) continue;
+      const id = row.dataset.id;
+      attached.push(id);
+      modes[id] = 'always';
+      const noteData = _allNotes.find(n => n.id === id);
+      const emoji = noteData?.emoji || '📝';
+      const title = noteData?.title || id;
+      grid.insertAdjacentHTML('beforeend', `
+        <div class="note-card" id="note-user-${agent}-${id}">
+          <span class="note-name">${emoji} ${title}</span>
+          <span class="note-source">user note</span>
+          <div style="display:flex; align-items:center; gap:0.375rem;">
+            <span class="mode-label always" id="ml-${agent}-${id}">ALWAYS</span>
+            <div class="mode-toggle" id="mt-${agent}-${id}"
+                 onclick="toggleNoteMode('${agent}', '${id}', this)">
+              <span class="toggle-knob"></span>
+            </div>
+          </div>
+          <button class="note-remove-btn" title="Detach" onclick="detachUserNote('${agent}', '${id}')">✕</button>
+        </div>`);
+    }
+
+    // Save to backend
+    await fetch(`/api/profiles/${agent}/knowledge`, {
+      method: 'PUT', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({attached_notes: attached, note_modes: modes}),
+    });
+
+    checkNotesEmpty(agent);
+    document.getElementById('notes-empty-' + agent).style.display = 'none';
+    closeAddNotesModal();
+  }
+
+  function _esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+  // Fetch saved memory profiles and populate dropdowns
+  async function populateMemoryProfileDropdowns() {
+    // Identity FAISS profiles
+    try {
+      const resp = await fetch('/api/tools/memory/identity/profiles');
+      const profiles = await resp.json();
+      document.querySelectorAll('select[id^="identity-profile-"]').forEach(sel => {
+        const current = sel.dataset.current || '';
+        let selectedText = '— Select Profile —';
+        profiles.forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p.filename;
+          opt.textContent = p.name + (p.pinned ? ' ★' : '');
+          if (p.filename === current) { opt.selected = true; selectedText = p.name + (p.pinned ? ' ★' : ''); }
+          sel.appendChild(opt);
+        });
+        const agName = sel.id.replace('identity-profile-', '');
+        const disp = document.getElementById('identity-profile-display-' + agName);
+        if (disp && current) disp.textContent = selectedText;
+      });
+    } catch (e) { console.warn('Could not load identity profiles', e); }
+    // Memory Vault profiles
+    try {
+      const resp = await fetch('/api/tools/memory/profiles');
+      const profiles = await resp.json();
+      document.querySelectorAll('select[id^="memory-profile-"]').forEach(sel => {
+        const current = sel.dataset.current || '';
+        let selectedText = '— Select Profile —';
+        profiles.forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p.filename;
+          opt.textContent = p.name + (p.pinned ? ' ★' : '');
+          if (p.filename === current) { opt.selected = true; selectedText = p.name + (p.pinned ? ' ★' : ''); }
+          sel.appendChild(opt);
+        });
+        const agName = sel.id.replace('memory-profile-', '');
+        const disp = document.getElementById('memory-profile-display-' + agName);
+        if (disp && current) disp.textContent = selectedText;
+      });
+    } catch (e) { console.warn('Could not load memory vault profiles', e); }
+  }
+
+  populateModelDropdowns();
+  populateElevenLabsVoices();
+  populateEdgeTTSVoices();
+  populateMemoryProfileDropdowns();
+
+  // ══════════════════════════════════════════════
+  // Photo Position Editor
+  // ══════════════════════════════════════════════
+  let _peAgent = null;
+  let _peZoom = 1;
+  let _peX = 50;   // percent offset X (0-100)
+  let _peY = 0;    // percent offset Y (0-100)
+  let _peDragging = false;
+  let _peDragStart = {x:0, y:0};
+  let _peStartX = 50;
+  let _peStartY = 0;
+
+  function openPhotoEditor(agent) {
+    const av = _avatarMap[agent];
+    if (!av || !av.image) { showToast('No photo to edit', true); return; }
+    _peAgent = agent;
+    _peZoom = parseFloat(av.photo_zoom || 1);
+    _peX = parseFloat(av.photo_x ?? 50);
+    _peY = parseFloat(av.photo_y ?? 0);
+
+    const img = document.getElementById('photo-editor-img');
+    img.src = av.image;
+    img.onload = () => { _peApplyTransform(); };
+
+    const slider = document.getElementById('photo-editor-zoom');
+    slider.value = Math.round(_peZoom * 100);
+    document.getElementById('photo-editor-zoom-val').textContent = Math.round(_peZoom * 100) + '%';
+
+    document.getElementById('photo-editor-modal').classList.add('open');
+  }
+
+  function closePhotoEditor() {
+    document.getElementById('photo-editor-modal').classList.remove('open');
+    _peAgent = null;
+  }
+
+  function resetPhotoEditor() {
+    _peZoom = 1; _peX = 50; _peY = 0;
+    const slider = document.getElementById('photo-editor-zoom');
+    slider.value = 100;
+    document.getElementById('photo-editor-zoom-val').textContent = '100%';
+    _peApplyTransform();
+  }
+
+  function _peApplyTransform() {
+    const viewport = document.getElementById('photo-editor-viewport');
+    const img = document.getElementById('photo-editor-img');
+    const vw = viewport.clientWidth;
+    const vh = viewport.clientHeight;
+    const nw = img.naturalWidth;
+    const nh = img.naturalHeight;
+    if (!nw || !nh) return;
+
+    // Fit image to cover the viewport at zoom=1
+    const coverScale = Math.max(vw / nw, vh / nh);
+    const scaledW = nw * coverScale * _peZoom;
+    const scaledH = nh * coverScale * _peZoom;
+    img.style.width = scaledW + 'px';
+    img.style.height = scaledH + 'px';
+
+    // Compute position from percentage offsets
+    const maxPanX = Math.max(0, scaledW - vw);
+    const maxPanY = Math.max(0, scaledH - vh);
+    const px = -(_peX / 100) * maxPanX;
+    const py = -(_peY / 100) * maxPanY;
+    img.style.left = px + 'px';
+    img.style.top = py + 'px';
+    img.style.transform = 'none';
+  }
+
+  // Zoom slider
+  document.getElementById('photo-editor-zoom').addEventListener('input', function() {
+    _peZoom = this.value / 100;
+    document.getElementById('photo-editor-zoom-val').textContent = this.value + '%';
+    _peApplyTransform();
   });
-  renderAttachedList();
-  closeKnowledgePicker();
-}
 
-/* ═══ Save / Delete / Create ═══ */
-async function saveProfile() {
-  if (!_editingAgent) return;
+  // Mouse wheel zoom
+  document.getElementById('photo-editor-viewport').addEventListener('wheel', function(e) {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -5 : 5;
+    const slider = document.getElementById('photo-editor-zoom');
+    let val = parseInt(slider.value) + delta;
+    val = Math.max(100, Math.min(300, val));
+    slider.value = val;
+    _peZoom = val / 100;
+    document.getElementById('photo-editor-zoom-val').textContent = val + '%';
+    _peApplyTransform();
+  }, {passive: false});
 
-  // Save profile
-  await fetch(`/api/profiles/${_editingAgent}`, {
-    method:'PUT', headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({
-      system_prompt: document.getElementById('ed-system-prompt').value,
-      config: { model: document.getElementById('ed-model').value || undefined },
-    }),
+  // Drag to pan
+  const _peVP = document.getElementById('photo-editor-viewport');
+  _peVP.addEventListener('mousedown', function(e) {
+    e.preventDefault();
+    _peDragging = true;
+    _peDragStart = {x: e.clientX, y: e.clientY};
+    _peStartX = _peX;
+    _peStartY = _peY;
   });
+  document.addEventListener('mousemove', function(e) {
+    if (!_peDragging) return;
+    const viewport = document.getElementById('photo-editor-viewport');
+    const img = document.getElementById('photo-editor-img');
+    const vw = viewport.clientWidth;
+    const vh = viewport.clientHeight;
+    const nw = img.naturalWidth;
+    const nh = img.naturalHeight;
+    const coverScale = Math.max(vw / nw, vh / nh);
+    const scaledW = nw * coverScale * _peZoom;
+    const scaledH = nh * coverScale * _peZoom;
+    const maxPanX = Math.max(1, scaledW - vw);
+    const maxPanY = Math.max(1, scaledH - vh);
 
-  // Save knowledge attachments
-  await fetch(`/api/profiles/${_editingAgent}/knowledge`, {
-    method:'PUT', headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({ attached_notes: _attachedIds, note_modes: _noteModes }),
+    const dx = e.clientX - _peDragStart.x;
+    const dy = e.clientY - _peDragStart.y;
+    _peX = Math.max(0, Math.min(100, _peStartX - (dx / maxPanX) * 100));
+    _peY = Math.max(0, Math.min(100, _peStartY - (dy / maxPanY) * 100));
+    _peApplyTransform();
   });
+  document.addEventListener('mouseup', function() { _peDragging = false; });
 
-  const status = document.getElementById('save-status');
-  status.style.display = '';
-  setTimeout(() => status.style.display = 'none', 2000);
-}
+  // Touch drag
+  _peVP.addEventListener('touchstart', function(e) {
+    if (e.touches.length !== 1) return;
+    _peDragging = true;
+    _peDragStart = {x: e.touches[0].clientX, y: e.touches[0].clientY};
+    _peStartX = _peX;
+    _peStartY = _peY;
+  }, {passive: true});
+  document.addEventListener('touchmove', function(e) {
+    if (!_peDragging || e.touches.length !== 1) return;
+    const viewport = document.getElementById('photo-editor-viewport');
+    const img = document.getElementById('photo-editor-img');
+    const vw = viewport.clientWidth;
+    const vh = viewport.clientHeight;
+    const nw = img.naturalWidth;
+    const nh = img.naturalHeight;
+    const coverScale = Math.max(vw / nw, vh / nh);
+    const scaledW = nw * coverScale * _peZoom;
+    const scaledH = nh * coverScale * _peZoom;
+    const maxPanX = Math.max(1, scaledW - vw);
+    const maxPanY = Math.max(1, scaledH - vh);
 
-async function deleteAgent(name) {
-  if (!confirm(`Delete agent "${name}"? This removes the profile and system prompt.`)) return;
-  await fetch(`/api/profiles/${name}`, {method:'DELETE'});
-  location.reload();
-}
+    const dx = e.touches[0].clientX - _peDragStart.x;
+    const dy = e.touches[0].clientY - _peDragStart.y;
+    _peX = Math.max(0, Math.min(100, _peStartX - (dx / maxPanX) * 100));
+    _peY = Math.max(0, Math.min(100, _peStartY - (dy / maxPanY) * 100));
+    _peApplyTransform();
+  }, {passive: true});
+  document.addEventListener('touchend', function() { _peDragging = false; });
 
-function showCreateModal() { document.getElementById('create-modal').classList.remove('hidden'); }
-function hideCreateModal() { document.getElementById('create-modal').classList.add('hidden'); }
+  async function savePhotoPosition() {
+    if (!_peAgent) return;
+    const payload = {
+      photo_zoom: Math.round(_peZoom * 1000) / 1000,
+      photo_x: Math.round(_peX * 100) / 100,
+      photo_y: Math.round(_peY * 100) / 100,
+    };
+    await fetch(`/api/profiles/${_peAgent}/avatar`, {
+      method: 'PUT', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload),
+    });
 
-async function createAgent() {
-  const name = document.getElementById('new-agent-name').value.trim();
-  const prompt = document.getElementById('new-agent-prompt').value.trim();
-  if (!name) return alert('Name required');
-  const resp = await fetch('/api/profiles', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({name, system_prompt:prompt}),
-  });
-  const data = await resp.json();
-  if (data.error) return alert(data.error);
-  location.reload();
-}
+    // Update live avatar_map so re-opening works
+    if (_avatarMap[_peAgent]) {
+      _avatarMap[_peAgent].photo_zoom = payload.photo_zoom;
+      _avatarMap[_peAgent].photo_x = payload.photo_x;
+      _avatarMap[_peAgent].photo_y = payload.photo_y;
+    }
+
+    // Apply to card header photo
+    _applyPhotoCrop(_peAgent, payload);
+
+    showToast('Photo position saved');
+    closePhotoEditor();
+  }
+
+  function _applyPhotoCrop(agent, crop) {
+    // Apply to the agent card in the grid
+    const card = document.querySelector(`.agent-card[data-agent="${agent}"] .agent-photo`);
+    if (card) {
+      if (crop.photo_zoom && crop.photo_zoom !== 1) {
+        card.style.objectPosition = `${crop.photo_x}% ${crop.photo_y}%`;
+        card.style.transform = `scale(${crop.photo_zoom})`;
+        card.style.transformOrigin = `${crop.photo_x}% ${crop.photo_y}%`;
+      } else {
+        card.style.objectPosition = `${crop.photo_x}% ${crop.photo_y}%`;
+        card.style.transform = '';
+        card.style.transformOrigin = '';
+      }
+    }
+    // Apply to editor avatar too
+    const edAvatar = document.querySelector(`#avatar-${agent} img`);
+    if (edAvatar) {
+      edAvatar.style.objectPosition = `${crop.photo_x}% ${crop.photo_y}%`;
+    }
+  }
+
+  // ── Save All ──
+  async function saveAll(agent) {
+    // Collect enabled tools
+    const enabledTools = [];
+    document.querySelectorAll(`#tools-grid-${agent} .tool-toggle-switch.on`).forEach(s => {
+      const id = s.id.replace('tool-sw-' + agent + '-', '');
+      enabledTools.push(id);
+    });
+
+    const data = {
+      display_name: document.getElementById('name-' + agent)?.value || agent,
+      description: document.getElementById('desc-' + agent)?.value || '',
+      model: document.getElementById('model-' + agent)?.value || '',
+      system_prompt_text: document.getElementById('prompt-' + agent)?.value || '',
+      soul_script_text: document.getElementById('soul-' + agent)?.value || '',
+      voice_id: document.getElementById('voice-paid-' + agent)?.value || '',
+      edge_voice: document.getElementById('voice-free-' + agent)?.value || 'alloy',
+      allowed_tools: enabledTools,
+    };
+
+    const resp = await fetch(`/api/profiles/${agent}/config`, {
+      method: 'PUT', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(data),
+    });
+    if (resp.ok) {
+      showToast('Profile saved');
+      const card = document.querySelector(`.agent-card[data-agent="${agent}"]`);
+      if (card) {
+        const cardName = card.querySelector('.agent-card-name');
+        if (cardName) cardName.textContent = data.display_name;
+        // Update the description/narrative in the card body
+        let cardDesc = card.querySelector('.agent-card-desc');
+        if (cardDesc) {
+          if (data.description) {
+            cardDesc.textContent = data.description;
+            cardDesc.style.cssText = '';
+          } else {
+            cardDesc.textContent = 'No description set — click to edit.';
+            cardDesc.style.color = '#3f3f46';
+            cardDesc.style.fontStyle = 'italic';
+          }
+        }
+        // Update model bubble
+        const footer = card.querySelector('.agent-card-footer');
+        if (footer) {
+          const llmTag = footer.querySelector('.agent-tag-llm');
+          if (data.model) {
+            if (llmTag) {
+              llmTag.innerHTML = '<i class="fas fa-microchip"></i> ' + _esc(data.model);
+            } else {
+              footer.insertAdjacentHTML('afterbegin',
+                `<span class="agent-tag-llm"><i class="fas fa-microchip"></i> ${_esc(data.model)}</span>`);
+            }
+          } else if (llmTag) {
+            llmTag.remove();
+          }
+        }
+      }
+      // Update tab breadcrumb
+      document.getElementById('tab-btn-agents').innerHTML =
+        '<span style="opacity:0.6">Agents</span> <span style="color:#3f3f46;margin:0 0.25rem;">›</span> ' + _esc(data.display_name);
+    } else {
+      showToast('Save failed', true);
+    }
+  }
+
+  // ── New agent ──
+  function openNewAgentModal() {
+    document.getElementById('new-agent-modal').classList.add('open');
+    document.getElementById('new-agent-name').focus();
+  }
+  function closeNewAgentModal() {
+    document.getElementById('new-agent-modal').classList.remove('open');
+  }
+  async function createNewAgent() {
+    const name = document.getElementById('new-agent-name').value.trim().toLowerCase().replace(/\s+/g, '_');
+    const model = document.getElementById('new-agent-model').value.trim() || '';
+    const desc = document.getElementById('new-agent-desc')?.value.trim() || '';
+    if (!name) return;
+    const resp = await fetch('/api/profiles/create', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({name, model, description: desc}),
+    });
+    if (resp.ok) {
+      location.reload();
+    } else {
+      const err = await resp.json();
+      alert(err.error || 'Failed to create agent');
+    }
+  }
+
+  // ── Delete Agent ──
+  let _deleteAgentName = null;
+  function confirmDeleteAgent(name) {
+    _deleteAgentName = name;
+    const displayEl = document.getElementById('delete-agent-name-display');
+    const nameInput = document.getElementById('name-' + name);
+    displayEl.textContent = nameInput ? nameInput.value : name;
+    document.getElementById('delete-agent-modal').classList.add('open');
+  }
+  function closeDeleteModal() {
+    document.getElementById('delete-agent-modal').classList.remove('open');
+    _deleteAgentName = null;
+  }
+  async function executeDeleteAgent() {
+    if (!_deleteAgentName) return;
+    const name = _deleteAgentName;
+    const resp = await fetch('/api/profiles/' + encodeURIComponent(name), { method: 'DELETE' });
+    closeDeleteModal();
+    if (resp.ok) {
+      showToast('Agent moved to trash');
+      setTimeout(() => location.reload(), 600);
+    } else {
+      const err = await resp.json().catch(() => ({}));
+      showToast(err.error || 'Delete failed', true);
+    }
+  }
+
+  // ── Trash Management ──
+  async function loadTrashItems() {
+    const resp = await fetch('/api/profiles/trash');
+    const data = await resp.json();
+    const items = data.items || [];
+    const countEl = document.getElementById('trash-count');
+    countEl.textContent = items.length;
+    const container = document.getElementById('trash-content');
+    if (items.length === 0) {
+      container.innerHTML = `
+        <div class="trash-empty">
+          <i class="fas fa-trash-alt"></i>
+          <p>Trash is empty</p>
+          <p class="hint">Deleted agents will appear here for 30 days.</p>
+        </div>`;
+      return;
+    }
+    let html = '<div class="trash-grid">';
+    for (const item of items) {
+      const deletedDate = new Date(item.deleted_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      const initial = (item.display_name || item.name || '?')[0].toUpperCase();
+      html += `
+        <div class="trash-card" data-trash-id="${_esc(item.id)}">
+          <div class="trash-card-header">
+            <div class="trash-card-icon">${_esc(initial)}</div>
+            <div class="trash-card-info">
+              <div class="trash-card-name">${_esc(item.display_name || item.name)}</div>
+              <div class="trash-card-meta">
+                Deleted ${_esc(deletedDate)}
+                &nbsp;·&nbsp;
+                <span class="days-badge"><i class="fas fa-clock" style="font-size:0.55rem;"></i> ${item.days_remaining}d left</span>
+              </div>
+            </div>
+          </div>
+          <div class="trash-card-actions">
+            <button class="trash-btn trash-btn-restore" onclick="restoreAgent('${_esc(item.id)}')">
+              <i class="fas fa-undo" style="margin-right:0.3rem;"></i> Restore
+            </button>
+            <button class="trash-btn trash-btn-delete" onclick="permanentlyDeleteAgent('${_esc(item.id)}', '${_esc(item.display_name || item.name)}')">
+              <i class="fas fa-times" style="margin-right:0.3rem;"></i> Delete Forever
+            </button>
+          </div>
+        </div>`;
+    }
+    html += '</div>';
+    container.innerHTML = html;
+  }
+
+  async function restoreAgent(trashId) {
+    const resp = await fetch('/api/profiles/trash/' + encodeURIComponent(trashId) + '/restore', { method: 'POST' });
+    if (resp.ok) {
+      showToast('Agent restored');
+      setTimeout(() => location.reload(), 600);
+    } else {
+      const err = await resp.json().catch(() => ({}));
+      showToast(err.error || 'Restore failed', true);
+    }
+  }
+
+  async function permanentlyDeleteAgent(trashId, displayName) {
+    if (!confirm(`Permanently delete "${displayName}"? This cannot be undone.`)) return;
+    const resp = await fetch('/api/profiles/trash/' + encodeURIComponent(trashId), { method: 'DELETE' });
+    if (resp.ok) {
+      showToast('Agent permanently deleted');
+      loadTrashItems();
+    } else {
+      showToast('Failed to delete', true);
+    }
+  }
+
+  // Load trash count on page load
+  (async function() {
+    try {
+      const resp = await fetch('/api/profiles/trash');
+      const data = await resp.json();
+      document.getElementById('trash-count').textContent = (data.items || []).length;
+    } catch(e) {
+      document.getElementById('trash-count').textContent = '0';
+    }
+  })();
+
+  // ── Toast ──
+  function showToast(msg, isError) {
+    const t = document.createElement('div');
+    t.textContent = msg;
+    t.style.cssText = `position:fixed;bottom:1.5rem;right:1.5rem;padding:0.625rem 1.25rem;border-radius:0.5rem;font-size:0.8125rem;font-weight:600;color:#fff;z-index:200;animation:viewFade 0.2s ease;${isError ? 'background:#ef4444;' : 'background:#6366f1;'}`;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2500);
+  }
 </script>
 {% endblock %}

@@ -1091,9 +1091,9 @@
         <!-- ── Notes (collapsible) ── -->
         <div class="modal-section-title collapsible-header" onclick="toggleCollapse('notes-{{ name }}')">
           <span>📝 Knowledge Notes</span>
-          <i class="fas fa-chevron-down collapse-chevron" id="chevron-notes-{{ name }}"></i>
+          <i class="fas fa-chevron-down collapse-chevron open" id="chevron-notes-{{ name }}"></i>
         </div>
-        <div class="collapsible-body" id="notes-{{ name }}">
+        <div class="collapsible-body open" id="notes-{{ name }}">
           <p class="field-hint" style="margin-bottom:0.75rem;">
             Attached notes are injected into the agent's context.
             <span class="mode-label always">Always</span> = every session &nbsp;|&nbsp;
@@ -1102,8 +1102,12 @@
           <div class="notes-grid" id="notes-grid-{{ name }}">
             {% for note_id in cfg.get('attached_notes', []) %}
             {% set mode = cfg.get('note_modes', {}).get(note_id, 'always') %}
+            {% set is_essential = note_id in cfg.get('essential_notes', []) %}
+            {% set note_info = notes | selectattr('id', 'equalto', note_id) | first %}
+            {% set note_title = note_info.title if note_info else note_id %}
+            {% set note_emoji = note_info.emoji if note_info else '📝' %}
             <div class="note-card" id="note-user-{{ name }}-{{ note_id }}">
-              <span class="note-name">📝 {{ note_id }}</span>
+              <span class="note-name">{{ note_emoji }} {{ note_title }}{% if is_essential %} <span style="font-size:0.6rem; color:#818cf8; margin-left:0.25rem;">ESSENTIAL</span>{% endif %}</span>
               <span class="note-source">user note</span>
               <div style="display:flex; align-items:center; gap:0.375rem;">
                 <span class="mode-label {{ mode }}"
@@ -1116,7 +1120,9 @@
                   <span class="toggle-knob"></span>
                 </div>
               </div>
+              {% if not is_essential %}
               <button class="note-remove-btn" title="Detach" onclick="detachUserNote('{{ name }}', '{{ note_id }}')">✕</button>
+              {% endif %}
             </div>
             {% endfor %}
           </div>
