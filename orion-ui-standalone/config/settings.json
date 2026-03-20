@@ -80,6 +80,12 @@
       "photo_zoom": 1,
       "photo_x": 50,
       "photo_y": 30
+    },
+    "aristotle": {
+      "image": "/uploads/avatar_aristotle_forge2026.png",
+      "photo_zoom": 1,
+      "photo_x": 50,
+      "photo_y": 30
     }
   },
   "agent_configs": {
