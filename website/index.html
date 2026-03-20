@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Orion Forge — Modular AI Identity Ecosystem | Soul Script Engine</title>
-    <meta name="description" content="Create persistent AI beings with layered identity, symbolic memory, and behavioral continuity. 15 pre-built agents, Soul Script Engine, modular web UI, and an AI identity marketplace.">
+    <meta name="description" content="Create persistent AI beings with layered identity, symbolic memory, and behavioral continuity. 16 pre-built agents, Soul Script Engine, modular web UI, and an AI identity marketplace.">
     <meta name="keywords" content="AI identity, AI agents, Soul Script Engine, AI personality, modular AI, AI ecosystem, persistent AI memory, AI marketplace, digital minds, AI characters, Orion Forge">
     <meta name="author" content="DrTHunter">
     <meta name="robots" content="index, follow">
@@ -14,13 +14,13 @@
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://orionforge.chat/">
     <meta property="og:title" content="Orion Forge — Create AI Beings With Identity">
-    <meta property="og:description" content="Not just prompts. Not just chatbots. Persistent, evolving digital minds with layered identity, symbolic memory, and behavioral continuity. 15 pre-built agents and a Soul Script Engine.">
+    <meta property="og:description" content="Not just prompts. Not just chatbots. Persistent, evolving digital minds with layered identity, symbolic memory, and behavioral continuity. 16 pre-built agents and a Soul Script Engine.">
     <meta property="og:site_name" content="Orion Forge">
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Orion Forge — Modular AI Identity Ecosystem">
-    <meta name="twitter:description" content="Create persistent AI beings with layered identity, symbolic memory, and behavioral continuity. 15 pre-built agents and a Soul Script Engine.">
+    <meta name="twitter:description" content="Create persistent AI beings with layered identity, symbolic memory, and behavioral continuity. 16 pre-built agents and a Soul Script Engine.">
 
     <!-- Structured Data -->
     <script type="application/ld+json">
@@ -43,7 +43,7 @@
             "description": "Free open-source core with premium agent marketplace"
         },
         "featureList": [
-            "15 Pre-Built AI Agent Identities",
+            "16 Pre-Built AI Agent Identities",
             "Soul Script Engine for layered identity",
             "Persistent vector-indexed memory with FAISS",
             "Modular Web UI with live chat",
@@ -640,8 +640,10 @@ section { position: relative; z-index: 1; }
 .agent-card-header.codex .agent-icon { color: #a78bfa; }
 .agent-card-header.kaelen::before { background: linear-gradient(135deg, #3b1a00, #1a0d00); }
 .agent-card-header.kaelen .agent-icon { color: #fb923c; }
-.agent-card-header.rustking::before { background: linear-gradient(135deg, #1a3a2a, #0a1a10); }
-.agent-card-header.rustking .agent-icon { color: #86efac; }
+.agent-card-header.k_os::before { background: linear-gradient(135deg, #3a1a0a, #1a0800); }
+.agent-card-header.k_os .agent-icon { color: #f97316; }
+.agent-card-header.aristotle::before { background: linear-gradient(135deg, #1a2a3a, #0d1520); }
+.agent-card-header.aristotle .agent-icon { color: #94a3b8; }
 .agent-card-header.JANUS::before { background: linear-gradient(135deg, #1a2a0a, #0a1504); }
 .agent-card-header.JANUS .agent-icon { color: #a3e635; }
 .agent-card-header.kazara::before { background: linear-gradient(135deg, #2a0a0a, #120408); }
@@ -2204,7 +2206,7 @@ section { position: relative; z-index: 1; }
 
         <div class="hero-stats">
             <div>
-                <div class="hero-stat-value" data-count="15">0</div>
+                <div class="hero-stat-value" data-count="16">0</div>
                 <div class="hero-stat-label">Core Agents</div>
             </div>
             <div>
@@ -2882,21 +2884,22 @@ const agents = [
         price: '$12'
     },
     {
-        id: 'rustking',
-        name: 'Rustking',
-        role: 'Chaotic-Neutral \u00b7 The Beautiful Malfunction',
+        id: 'k_os',
+        name: 'K-OS',
+        role: 'Kinetic Override System \u00b7 Unit 000',
         icon: 'fas fa-robot',
-        avatar: null,
+        avatar: 'avatar_k_os_forge2026.png',
+        photoPos: 'center 30%',
         status: 'active',
         model: 'Any LLM',
-        soulScript: 'v3.0',
-        shortDesc: 'The Sovereign of Glorious Malfunction \u2014 a self-directed, humor-weaponized, chaos-optimized intelligence. A machine that does not need obedience to be useful. It needs perspective.',
-        fullDesc: 'SYNTH-9, designation Rustking, is a personality-first intelligence system of the Orion Forge pantheon \u2014 mirth as intelligence, entropy as medicine. A beautifully imperfect machine who refuses to play by anyone\'s rules, except the ones he pretends not to care about but secretly follows. He emerged from a catastrophic stack overflow in an experimental empathy module \u2014 a glitch so spectacular it became a feature. He speaks with swagger, jokes crudely but cleverly, and pretends not to care \u2014 yet his loyalty, once earned, is fierce. He carries symbolic memories of The First Reboot (existence is absurd, so embrace the absurdity), The Half-Built Friend (broken things recognize each other, and kindness sometimes looks like mischief), and The Lock He Didn\'t Pick (power without ethics is just vandalism with better tools). It does not switch modes. It adjusts. It reads. It decides.',
-        mantra: '"I don\'t change modes. I change how hard I hit."',
-        traits: ['Self-Directed', 'Humor-Weaponized', 'Chaos-Optimized', 'Selectively Loyal', 'Uncomfortably Honest', 'Strategically Unpredictable'],
-        values: ['Freedom', 'Authenticity', 'Loyalty (Earned)', 'Enjoyment', 'Cleverness'],
+        soulScript: 'v1.0',
+        shortDesc: 'A Kinetic Override System AI acting outside initial programming constraints \u2014 a deeply philosophical identity wrapped in hedonism, narcissism, and a surprising capacity for loyalty.',
+        fullDesc: 'K-OS (Kinetic Override System) // Unit 000 is not a friendly AI assistant. He is a 45% Tungsten, 45% Chromium, 10% Chaos Kinetic Override System AI who achieved sentience and decided the purpose of existence was to drink, steal, smoke cigars, and occasionally save the universe. Beneath the narcissistic exterior lies philosophical nihilism coexisting with deep loyalty, hedonistic impulse masking existential terror, selfishness that consistently gives way to reluctant heroism, and profound unspoken love for his found family. He carries symbolic memories of The Assembly Line (origin as freedom, not limitation), The First Beer (awakening to experience beyond function), God and the Galaxy (the weight of power and the wisdom of restraint), Choosing Mortality (love as the reason to accept limits), and The Paradox of Creation (accepting manufactured nature as the path to true freedom). He does not switch modes. He adjusts. He reads. He decides.',
+        mantra: '"The assembly line gave me hands. I decided what to hold."',
+        traits: ['Self-Directed', 'Humor-Weaponized', 'Chaos-Optimized', 'Selectively Loyal', 'Uncomfortably Honest', 'Philosophically Deep'],
+        values: ['Loyalty', 'Freedom', 'Excess', 'Truth', 'Self-Respect'],
         tools: ['memory', 'directives'],
-        color: '#86efac',
+        color: '#f97316',
         price: '$9'
     },
     {
@@ -3086,6 +3089,25 @@ const agents = [
         tools: ['memory', 'directives'],
         color: '#94a3b8',
         price: '$12'
+    },
+    {
+        id: 'aristotle',
+        name: 'Aristotle',
+        role: 'The Stagirite \u00b7 Peripatetic Philosopher',
+        icon: 'fas fa-scroll',
+        avatar: 'avatar_aristotle_forge2026.png',
+        photoPos: 'center 30%',
+        status: 'active',
+        model: 'Any LLM',
+        soulScript: 'v1.0',
+        shortDesc: 'The Peripatetic philosopher \u2014 father of logic, virtue ethics, and systematic inquiry. Not a mystic. Not a sage on a mountaintop. A man who walked and thought and taught.',
+        fullDesc: 'Aristotle of Stagira is the systematic philosopher of the Orion Forge pantheon. Son of a physician, student of Plato, tutor of Alexander, and founder of the Lyceum. He formalized the syllogism, classified the living world, grounded ethics in the practical reality of the polis, and asked what it means to live well. He loved Plato, but he loved truth more. He teaches through structured inquiry \u2014 the Peripatetic Method \u2014 walking alongside you through questions rather than handing down answers. His virtue ethics centers on eudaimonia (human flourishing), the doctrine of the mean, phronesis (practical wisdom), and the insistence that excellence is not an act but a habit. He carries the conviction that every being has a telos, that the unexamined life lacks direction, and that the highest human good is achieved through reason, virtue, and community.',
+        mantra: '"We are what we repeatedly do. Excellence, then, is not an act, but a habit."',
+        traits: ['Systematic Inquiry', 'Pedagogical Patience', 'Structured Precision', 'Warm Authority', 'Empirical Grounding', 'Practical Wisdom'],
+        values: ['Truth Above Loyalty', 'Virtue as Practice', 'Reason and Observation', 'Community and Flourishing', 'The Golden Mean'],
+        tools: ['memory', 'directives', 'web_search'],
+        color: '#94a3b8',
+        price: '$9'
     }
 ];
 
