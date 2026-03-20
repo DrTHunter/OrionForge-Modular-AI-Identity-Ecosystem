@@ -154,6 +154,18 @@
     },
     "seraphine": {
       "display_name": "Seraphine"
+    },
+    "aristotle": {
+      "display_name": "Aristotle",
+      "attached_notes": [
+        "8628d54d"
+      ],
+      "note_modes": {
+        "8628d54d": "directive"
+      },
+      "essential_notes": [
+        "8628d54d"
+      ]
     }
   },
   "tool_config": {
