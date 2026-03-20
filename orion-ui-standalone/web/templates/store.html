@@ -286,7 +286,7 @@
     <div class="packs-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:1.25rem;">
       {% for pack in store_packs %}
       {% set all_owned = true %}
-      {% for item in pack.items %}
+      {% for item in pack['items'] %}
         {% if item.type == 'agent' and item.id not in purchases.agents %}{% set all_owned = false %}{% endif %}
         {% if item.type == 'tool' and item.id not in purchases.tools %}{% set all_owned = false %}{% endif %}
       {% endfor %}
@@ -298,12 +298,12 @@
           <div class="catalog-icon" style="font-size:1.5rem; background:{{ pack.color }}22;">{{ pack.icon }}</div>
           <div>
             <div class="catalog-name" style="font-size:1.05rem;">{{ pack.name }}</div>
-            <div style="font-size:0.7rem; color:#71717a;">{{ pack.items | length }} items</div>
+            <div style="font-size:0.7rem; color:#71717a;">{{ pack['items'] | length }} items</div>
           </div>
         </div>
         <div class="catalog-desc" style="margin-bottom:0.75rem;">{{ pack.description }}</div>
         <div style="display:flex; flex-wrap:wrap; gap:0.375rem; margin-bottom:0.75rem;">
-          {% for item in pack.items %}
+          {% for item in pack['items'] %}
           {% set entry = none %}
           {% for c in catalog %}{% if c.id == item.id %}{% set entry = c %}{% endif %}{% endfor %}
           {% if entry %}
