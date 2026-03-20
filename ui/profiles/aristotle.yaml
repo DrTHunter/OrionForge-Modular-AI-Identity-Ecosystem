@@ -1,0 +1,38 @@
+allowed_tools:
+- agi_loop
+- continuation_update
+- cost_tracker
+- directives
+- echo
+- memory
+- model_router
+- web_search
+base_url: https://api.openai.com/v1
+description: 'The Stagirite — Peripatetic philosopher, father of logic, virtue ethics, and systematic inquiry'
+directives:
+  enabled: true
+  max_sections: 5
+  scopes:
+  - shared
+  - aristotle
+edge_voice: fable
+identity_faiss_profile: __default__
+memory:
+  enabled: true
+  max_items: 20
+  scopes:
+  - shared
+  - aristotle
+  similarity_threshold: 0.85
+memory_vault_profile: __default__
+model: ''
+name: aristotle
+policy:
+  max_iterations: 25
+  stasis_mode: false
+  tool_failure_mode: continue
+provider: openai
+system_prompt: aristotle.system.md
+temperature: 0.7
+voice_id: ''
+window_size: 50
