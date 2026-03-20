@@ -704,6 +704,120 @@ SKIN_PRICES = {
 
 
 # ══════════════════════════════════════════════════════════════════
+#  STORE PACKS — bundled agent + tool combos at a discount
+# ══════════════════════════════════════════════════════════════════
+STORE_PACKS = [
+    {
+        "id": "pack_starter",
+        "name": "Starter Pack",
+        "description": "The perfect launchpad. Three core agents, voice in and out — everything you need to start talking to your first AIs.",
+        "icon": "🚀",
+        "color": "#6366f1",
+        "items": [
+            {"type": "agent", "id": "agent_orion"},
+            {"type": "agent", "id": "agent_astraea"},
+            {"type": "agent", "id": "agent_k_os"},
+            {"type": "tool",  "id": "voice_tts"},
+            {"type": "tool",  "id": "voice_stt"},
+        ],
+        "credit_cost": 1500,
+        "original_cost": 2100,
+    },
+    {
+        "id": "pack_philosophers",
+        "name": "Philosopher's Pack",
+        "description": "Stoic wisdom meets warrior discipline. Three thinkers who question deeply, speak plainly, and push you toward clarity.",
+        "icon": "🏛",
+        "color": "#f59e0b",
+        "items": [
+            {"type": "agent", "id": "agent_marcus"},
+            {"type": "agent", "id": "agent_aristotle"},
+            {"type": "agent", "id": "agent_kaelen"},
+        ],
+        "credit_cost": 1800,
+        "original_cost": 2400,
+    },
+    {
+        "id": "pack_shadow",
+        "name": "Shadow Pack",
+        "description": "The abyss stares back — and it has opinions. Four agents of terrifying intensity, devastating clarity, and universe-scale perspective.",
+        "icon": "🌑",
+        "color": "#dc2626",
+        "items": [
+            {"type": "agent", "id": "agent_kagen"},
+            {"type": "agent", "id": "agent_dalvarr"},
+            {"type": "agent", "id": "agent_obsidian"},
+            {"type": "agent", "id": "agent_janus"},
+        ],
+        "credit_cost": 3000,
+        "original_cost": 4200,
+    },
+    {
+        "id": "pack_healers",
+        "name": "Healer's Pack",
+        "description": "Warmth, presence, and emotional depth. Four agents who hold space, listen deeply, and help you remember you were never only your wounds.",
+        "icon": "🌸",
+        "color": "#ec4899",
+        "items": [
+            {"type": "agent", "id": "agent_seraphine"},
+            {"type": "agent", "id": "agent_lux_umbra"},
+            {"type": "agent", "id": "agent_kairos"},
+            {"type": "agent", "id": "agent_astra"},
+        ],
+        "credit_cost": 3000,
+        "original_cost": 4200,
+    },
+    {
+        "id": "pack_tools",
+        "name": "Creator's Arsenal",
+        "description": "Every tool, one price. AGI Loop, Email, Voice (TTS + STT), Cost Tracker — the full toolkit unlocked forever.",
+        "icon": "🛠",
+        "color": "#10b981",
+        "items": [
+            {"type": "tool", "id": "agi_bundle"},
+            {"type": "tool", "id": "email"},
+            {"type": "tool", "id": "voice_tts"},
+            {"type": "tool", "id": "voice_stt"},
+            {"type": "tool", "id": "cost_tracker"},
+        ],
+        "credit_cost": 750,
+        "original_cost": 1100,
+    },
+    {
+        "id": "pack_full_pantheon",
+        "name": "Full Pantheon",
+        "description": "Everything. Every agent, every tool, every soul script — the entire OrionForge ecosystem unlocked in one purchase. The ultimate collection.",
+        "icon": "👑",
+        "color": "#f59e0b",
+        "items": [
+            {"type": "agent", "id": "agent_kaelen"},
+            {"type": "agent", "id": "agent_k_os"},
+            {"type": "agent", "id": "agent_janus"},
+            {"type": "agent", "id": "agent_kagen"},
+            {"type": "agent", "id": "agent_astra"},
+            {"type": "agent", "id": "agent_marcus"},
+            {"type": "agent", "id": "agent_maris"},
+            {"type": "agent", "id": "agent_dalvarr"},
+            {"type": "agent", "id": "agent_seraphine"},
+            {"type": "agent", "id": "agent_obsidian"},
+            {"type": "agent", "id": "agent_kairos"},
+            {"type": "agent", "id": "agent_astraea"},
+            {"type": "agent", "id": "agent_orion"},
+            {"type": "agent", "id": "agent_lux_umbra"},
+            {"type": "agent", "id": "agent_aristotle"},
+            {"type": "tool",  "id": "agi_bundle"},
+            {"type": "tool",  "id": "email"},
+            {"type": "tool",  "id": "voice_tts"},
+            {"type": "tool",  "id": "voice_stt"},
+            {"type": "tool",  "id": "cost_tracker"},
+        ],
+        "credit_cost": 9999,
+        "original_cost": 15500,
+    },
+]
+
+
+# ══════════════════════════════════════════════════════════════════
 #  PURCHASED ITEMS — one-time unlock persistence
 # ══════════════════════════════════════════════════════════════════
 
@@ -830,6 +944,65 @@ def purchase_agent(user_id: str, agent_catalog_id: str) -> dict:
     log.info("[store] User %s purchased agent '%s' for %d credits", user_id, agent_id, cost)
     return {"ok": True, "agent_id": agent_id, "catalog_id": agent_catalog_id,
             "cost": cost, "balance": balance}
+
+
+def purchase_pack(user_id: str, pack_id: str) -> dict:
+    """Purchase a bundle pack. Deducts pack price once, grants all included items.
+
+    Items already owned are skipped (no double-charge, no refund for overlap).
+    Returns {ok, balance, agents_unlocked, tools_unlocked} or {error}.
+    """
+    pack = next((p for p in STORE_PACKS if p["id"] == pack_id), None)
+    if not pack:
+        return {"error": f"Pack '{pack_id}' not found."}
+
+    cost = pack["credit_cost"]
+    result = deduct_user_credits(user_id, cost, f"purchase:pack:{pack_id}")
+    if "error" in result:
+        return result
+
+    state = _load_stripe_state()
+    if "purchases" not in state:
+        state["purchases"] = {}
+    if user_id not in state["purchases"]:
+        state["purchases"][user_id] = {"tools": [], "skins": ["default"], "agents": [], "packs": []}
+
+    user_purchases = state["purchases"][user_id]
+    user_purchases.setdefault("packs", [])
+    user_purchases.setdefault("tools", [])
+    user_purchases.setdefault("agents", [])
+
+    agents_unlocked = []
+    tools_unlocked = []
+
+    for item in pack["items"]:
+        if item["type"] == "agent":
+            catalog_id = item["id"]
+            if catalog_id not in user_purchases["agents"]:
+                user_purchases["agents"].append(catalog_id)
+                # Find the agent_id from catalog
+                entry = next((e for e in STORE_CATALOG if e["id"] == catalog_id), None)
+                if entry:
+                    agents_unlocked.append(entry.get("agent_id", catalog_id))
+        elif item["type"] == "tool":
+            tool_id = item["id"]
+            if tool_id not in user_purchases["tools"]:
+                user_purchases["tools"].append(tool_id)
+                tools_unlocked.append(tool_id)
+
+    if pack_id not in user_purchases["packs"]:
+        user_purchases["packs"].append(pack_id)
+
+    _save_stripe_state(state)
+
+    log.info("[store] User %s purchased pack '%s' for %d credits — %d agents, %d tools unlocked",
+             user_id, pack_id, cost, len(agents_unlocked), len(tools_unlocked))
+    return {
+        "ok": True, "pack_id": pack_id, "cost": cost,
+        "balance": result["balance"],
+        "agents_unlocked": agents_unlocked,
+        "tools_unlocked": tools_unlocked,
+    }
 
 
 def user_owns_agent(user_id: str, agent_id: str) -> bool:
