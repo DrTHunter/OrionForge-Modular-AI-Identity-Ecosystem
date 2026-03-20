@@ -3503,6 +3503,16 @@ async def api_chat_send(req: ChatRequest, request: Request):
     _credits_deducted = 0           # cumulative credits deducted across rounds
     _credits_balance = -1           # user's credit balance after deductions (-1 = not applicable)
 
+    # ── Pre-flight credit check for platform-hosted keys ──
+    if conn.get("platform_hosted") and user:
+        _preflight_balance = get_user_credits(user["id"])
+        if _preflight_balance <= 0:
+            return JSONResponse({
+                "error": "Insufficient credits. Purchase more in the Store.",
+                "credits_balance": 0,
+                "redirect": "/store",
+            }, status_code=402)
+
     # ── Inject runtime context for runtime_info tool ──
     try:
         from src.tools.runtime_info import RuntimeInfoTool
@@ -3866,6 +3876,14 @@ async def _stream_chat_generator(req: ChatRequest, request: Request, user, conn,
     cost_data = {}
     _credits_deducted = 0
     _credits_balance = -1
+
+    # ── Pre-flight credit check for platform-hosted keys ──
+    # Reject immediately if the user has zero credits to prevent free API usage
+    if conn.get("platform_hosted") and user:
+        _preflight_balance = get_user_credits(user["id"])
+        if _preflight_balance <= 0:
+            yield _sse({"type": "error", "message": "Insufficient credits. Purchase more in the Store.", "redirect": "/store"})
+            return
 
     # Inject runtime context
     try:
