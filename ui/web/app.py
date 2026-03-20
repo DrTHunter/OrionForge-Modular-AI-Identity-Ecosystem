@@ -58,6 +58,8 @@ from web.stripe_billing import (
     get_user_purchases, user_owns_item, purchase_tool, purchase_skin,
     purchase_agent, user_owns_agent, user_has_tool_access, SKIN_PRICES,
     get_store_agent_ids, get_user_unlocked_agents, FREE_AGENT_IDS,
+    touch_user_activity, wipe_user_data, wipe_user_by_email,
+    purge_inactive_users, list_all_users, INACTIVE_ACCOUNT_DAYS,
 )
 from src.memory.types import VALID_SCOPES, VALID_CATEGORIES
 
@@ -106,6 +108,13 @@ async def _lifespan(application: FastAPI):
         invalidate_notes_faiss()          # force singleton to reload fresh index
     except Exception as exc:
         log.warning("[startup] NotesFAISS build skipped: %s", exc)
+    # Auto-purge inactive accounts (>90 days)
+    try:
+        result = purge_inactive_users()
+        if result.get("purged_count", 0) > 0:
+            log.info("[startup] Inactive account cleanup: purged %d user(s)", result["purged_count"])
+    except Exception as exc:
+        log.warning("[startup] Inactive account purge failed: %s", exc)
     yield
 
 app = FastAPI(title="SoulScript Engine", version="0.2.0", lifespan=_lifespan)
@@ -173,8 +182,11 @@ class AuthMiddleware(BaseHTTPMiddleware):
         # Attach user info to request state
         request.state.user = extract_user_from_token(payload)
 
-        # Attach trial info for templates
+        # Record user activity for inactive-account cleanup
         user_id = request.state.user.get("id", "")
+        touch_user_activity(user_id)
+
+        # Attach trial info for templates
         trial = get_trial_status(user_id)
         sub_info = get_user_subscription(user_id)
         request.state.trial = trial
@@ -1626,6 +1638,7 @@ def _seed_agent_knowledge(agent_id: str):
     now_iso = datetime.now(timezone.utc).isoformat()
 
     note_ids = []
+    ss_ids = set()
 
     # ── Create soul script note ──
     if soul_script_text:
@@ -1646,6 +1659,7 @@ def _seed_agent_knowledge(agent_id: str):
             "created": now_iso, "updated": now_iso,
         })
         note_ids.append(ss_id)
+        ss_ids.add(ss_id)
 
     # ── Create prompt note ──
     if prompt_text:
@@ -1668,16 +1682,19 @@ def _seed_agent_knowledge(agent_id: str):
 
     _write_json(index_file, index)
 
-    # ── Attach notes to agent config (always-inject mode) ──
+    # ── Attach notes to agent config ──
     if note_ids:
         cfg = _get_agent_config(agent_id)
         existing = cfg.get("attached_notes", [])
         cfg["attached_notes"] = list(set(existing + note_ids))
-        # Set mode to "always" so soul script is injected into every session
         modes = cfg.get("note_modes", {})
+        essential = cfg.get("essential_notes", [])
         for nid in note_ids:
-            modes[nid] = "always"
+            # Soul script notes default to directive mode (semantic retrieval)
+            modes[nid] = "directive" if nid in ss_ids else "always"
+            essential.append(nid)
         cfg["note_modes"] = modes
+        cfg["essential_notes"] = list(set(essential))
         _save_agent_config(agent_id, cfg)
 
     log.info("[store] Seeded knowledge for agent '%s': %d notes created", agent_id, len(note_ids))
@@ -4446,8 +4463,17 @@ async def api_profile_create_v2(request: Request):
 async def api_profile_knowledge(name: str, request: Request):
     body = await request.json()
     cfg = _get_agent_config(name)
-    cfg["attached_notes"] = body.get("attached_notes", [])
-    cfg["note_modes"] = body.get("note_modes", {})
+    essential = set(cfg.get("essential_notes", []))
+    # Preserve essential notes — they cannot be detached
+    incoming = body.get("attached_notes", [])
+    incoming_modes = body.get("note_modes", {})
+    for eid in essential:
+        if eid not in incoming:
+            incoming.append(eid)
+        if eid not in incoming_modes:
+            incoming_modes[eid] = cfg.get("note_modes", {}).get(eid, "directive")
+    cfg["attached_notes"] = incoming
+    cfg["note_modes"] = incoming_modes
     _save_agent_config(name, cfg)
     try:
         from src.storage.note_collector import invalidate_notes_faiss
@@ -4931,6 +4957,54 @@ async def api_admin_sync_openrouter_pricing(request: Request):
     if not _check_admin(request):
         return JSONResponse({"error": "Unauthorized"}, status_code=403)
     result = await _sync_openrouter_pricing(force=True)
+    return JSONResponse(result)
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  ADMIN — USER ACCOUNT MANAGEMENT
+# ═══════════════════════════════════════════════════════════════════
+
+@app.get("/api/admin/users")
+async def api_admin_list_users(request: Request):
+    """List all known users and their billing/activity summary. Admin only."""
+    if not _check_admin(request):
+        return JSONResponse({"error": "Unauthorized"}, status_code=403)
+    return JSONResponse({"users": list_all_users()})
+
+
+@app.delete("/api/admin/users/{user_id}")
+async def api_admin_wipe_user(user_id: str, request: Request):
+    """Wipe all billing/state data for a specific user (by UUID). Admin only."""
+    if not _check_admin(request):
+        return JSONResponse({"error": "Unauthorized"}, status_code=403)
+    result = wipe_user_data(user_id)
+    return JSONResponse(result)
+
+
+@app.post("/api/admin/users/wipe-by-email")
+async def api_admin_wipe_user_by_email(request: Request):
+    """Wipe all billing/state data for a user by email. Admin only."""
+    if not _check_admin(request):
+        return JSONResponse({"error": "Unauthorized"}, status_code=403)
+    body = await request.json()
+    email = body.get("email", "").strip()
+    if not email:
+        return JSONResponse({"error": "email is required"}, status_code=400)
+    result = wipe_user_by_email(email)
+    return JSONResponse(result)
+
+
+@app.post("/api/admin/users/purge-inactive")
+async def api_admin_purge_inactive(request: Request):
+    """Purge all users inactive for more than N days. Admin only.
+
+    Body: {"days": 90}  (optional, defaults to INACTIVE_ACCOUNT_DAYS)
+    """
+    if not _check_admin(request):
+        return JSONResponse({"error": "Unauthorized"}, status_code=403)
+    body = await request.json() if request.headers.get("content-type", "").startswith("application/json") else {}
+    days = body.get("days", INACTIVE_ACCOUNT_DAYS)
+    result = purge_inactive_users(days=days)
     return JSONResponse(result)
 
 
