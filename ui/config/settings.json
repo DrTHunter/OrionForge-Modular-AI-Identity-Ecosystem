@@ -19,7 +19,7 @@
       "image": "/uploads/avatar_dalvarr_v4mythic.png",
       "photo_zoom": 1,
       "photo_x": 50,
-      "photo_y": 0
+      "photo_y": 15
     },
     "maris": {
       "image": "/uploads/avatar_maris_workshop.png",
@@ -37,7 +37,7 @@
       "image": "/uploads/avatar_kaelen_forge2026.png",
       "photo_zoom": 1,
       "photo_x": 50,
-      "photo_y": 0
+      "photo_y": 15
     },
     "kazara": {
       "image": "/uploads/avatar_kazara_forge2026.png",
