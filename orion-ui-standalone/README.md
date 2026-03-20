@@ -22,7 +22,7 @@ Open **http://localhost:8989**.
 
 ```
 orion-ui-standalone/
-├── web/                # FastAPI application (~5,800 lines, 163 routes, 16 templates)
+├── web/                # FastAPI application (~6,300 lines, 168 routes, 16 templates)
 │   ├── app.py          # Main application — all page & API routes
 │   ├── auth.py         # Supabase OAuth + JWT verification (121 lines)
 │   ├── stripe_billing.py  # Stripe subscriptions, credits, trial system (1,016 lines)
@@ -71,13 +71,13 @@ orion-ui-standalone/
 │   └── saved_profiles/        # Named config profile snapshots
 │       └── router_presets/    # Named model router preset snapshots
 │
-├── profiles/           # Agent YAML profiles (15 agents — provider, model, parameters)
+├── profiles/           # Agent YAML profiles (16 agents — provider, model, parameters)
 ├── prompts/            # System prompt templates (*.system.md)
 ├── directives/         # Agent soul script / directive markdown files (auto-indexed into NotesFAISS)
 ├── notes/              # Developer notes per agent
 ├── scripts/            # Seed scripts (seed_memories.py, seed_ui_knowledge.py)
 ├── data/               # Runtime data (chats, memory vault, FAISS indexes, uploads, knowledge notes, agent trash)
-└── tests/              # Test suite — 11 files, 250 functions, ~3,700 checks
+└── tests/              # Test suite — 11 files, 263 functions, ~2,975 checks
 ```
 
 ---
@@ -120,9 +120,9 @@ orion-ui-standalone/
 
 ---
 
-## API Routes (162 endpoints)
+## API Routes (168 endpoints)
 
-The FastAPI app exposes 163 routes across these domains:
+The FastAPI app exposes 168 routes across these domains:
 
 | Domain | Endpoints | Examples |
 |--------|-----------|---------|
@@ -194,9 +194,9 @@ $env:PYTHONIOENCODING="utf-8"; python tests/test_torture.py
 
 | Test File | Functions | Checks | Coverage |
 |-----------|-----------|--------|----------|
-| `test_torture.py` | 118 | ~2,961 | Deep torture of all code paths — memory, vault, sort, policy, tools, templates, model router, presets, 6-tier routing, sidecar wiring, soul script helpers, soul script API, soul script FAISS indexing, note collector soul script injection, profiles template collapsible, admin keys, chat 3-mode selector, user model catalog, `__userkey_` dynamic connections, Stripe state persistence, store catalog structure, tier & trial system, credit system, credit cost estimators, purchase flows (tool/skin/agent), agent ownership, user activity tracking, wipe user data, purge inactive, list all users, auth helpers, tier info structure |
+| `test_torture.py` | 116 | ~2,057 | Deep torture of all code paths — memory, vault, sort, policy, tools, templates, model router, presets, 6-tier routing, sidecar wiring, soul script helpers, soul script API, soul script FAISS indexing, note collector soul script injection, profiles template collapsible, admin keys, chat 3-mode selector, user model catalog, `__userkey_` dynamic connections, Stripe state persistence, store catalog structure, tier & trial system, credit system, credit cost estimators, purchase flows (tool/skin/agent), agent ownership, user activity tracking, wipe user data, purge inactive, list all users, auth helpers, tier info structure |
 | `test_memory.py` | 23 | 155 | VaultStore, MemoryVault, Memory types, PII guard |
-| `test_stress.py` | 29 | 398 | Rapid-fire ops, concurrent access, boundary conditions, router presets, coding tiers |
+| `test_stress.py` | 29 | 238 | Rapid-fire ops, concurrent access, boundary conditions, router presets, coding tiers |
 | `test_registry_and_tools.py` | 17 | 86 | Tool registry, cost tracker, web search |
 | `test_governance.py` | 16 | 74 | ActiveDirectives, validate_manifest |
 | `test_directives.py` | 14 | 108 | Parser, store, injector, manifest, DirectivesTool |
@@ -205,7 +205,7 @@ $env:PYTHONIOENCODING="utf-8"; python tests/test_torture.py
 | `test_metering.py` | 11 | 92 | Token accounting, cost computation, aggregation |
 | `test_data_paths.py` | 5 | 31 | Data directory layout, auto-creation, isolation |
 | `test_tools.py` | 4 | 38 | EchoTool, ContinuationUpdateTool, EmailTool, RuntimePolicy |
-| **Total** | **265** | **~4,061** | |
+| **Total** | **263** | **~2,975** | |
 
 ---
 
@@ -224,7 +224,7 @@ $env:PYTHONIOENCODING="utf-8"; python tests/test_torture.py
 
 | Technology | Role |
 |------------|------|
-| FastAPI + Uvicorn | Web server & async API (163 routes) |
+| FastAPI + Uvicorn | Web server & async API (168 routes) |
 | FAISS (`faiss-cpu`) | Vector similarity search for memory + soul script retrieval |
 | sentence-transformers | Semantic embeddings (`all-mpnet-base-v2`) |
 | Jinja2 | HTML templates (16 files) |

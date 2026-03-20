@@ -91,7 +91,7 @@ OrionForge is organized into four directories — an active development branch, 
 ```
 OrionForge/
 ├── orion-ui-standalone/  # 🔧 Active Development Branch
-│   ├── web/              # FastAPI app (~5,800 lines, 163 routes, 16 templates)
+│   ├── web/              # FastAPI app (~6,300 lines, 168 routes, 16 templates)
 │   │   ├── app.py        # Main application — all page & API routes
 │   │   ├── auth.py       # Supabase OAuth + JWT verification (121 lines)
 │   │   ├── stripe_billing.py  # Stripe subscriptions, credits, trial (1,016 lines)
@@ -110,12 +110,12 @@ OrionForge/
 │   │   └── tools/        # 11 tool implementations + registry
 │   ├── config/           # 12 config files (connections, pricing, memory profile, auth, etc.)
 │   ├── data/             # Runtime data (chats, memory vault, FAISS indexes, uploads, trash)
-│   ├── profiles/         # Agent identity YAML files (15 agents)
+│   ├── profiles/         # Agent identity YAML files (16 agents)
 │   ├── prompts/          # System prompt markdown (*.system.md)
 │   ├── directives/       # Agent soul script / directive markdown files
 │   ├── notes/            # Agent note markdown files
 │   ├── scripts/          # Seed scripts (seed_memories.py, seed_ui_knowledge.py)
-│   └── tests/            # Test suite (11 files, 250 functions, ~3,700 checks)
+│   └── tests/            # Test suite (11 files, 263 functions, ~2,975 checks)
 │
 ├── engine/               # ⚙️  Stable Frozen Core
 │   └── src/              # Synced from orion-ui-standalone after testing
@@ -295,7 +295,7 @@ Sidecar services communicate via Flycast private networking (`.flycast` URLs). T
 
 ## Test Suite
 
-11 test files with **265** test functions and **~4,061** assertions:
+11 test files with **263** test functions and **~2,975** assertions:
 
 ```powershell
 cd orion-ui-standalone
@@ -304,9 +304,9 @@ python tests/run_all.py
 
 | Test File | Functions | Checks | Coverage Area |
 |---|---|---|---|
-| `test_torture.py` | 118 | ~2,961 | Deep torture of all code paths — memory, vault, sort, policy, tools, templates, model router, presets, 6-tier routing, sidecar wiring, soul script helpers, soul script API, soul script FAISS indexing, note collector soul script injection, profiles template collapsible sections, admin keys, chat 3-mode selector, user model catalog, `__userkey_` dynamic connections, Stripe state persistence, store catalog structure, tier & trial system, credit system, credit cost estimators, purchase flows (tool/skin/agent), agent ownership, user activity tracking, wipe user data, purge inactive, list all users, auth helpers, tier info structure |
+| `test_torture.py` | 116 | ~2,057 | Deep torture of all code paths — memory, vault, sort, policy, tools, templates, model router, presets, 6-tier routing, sidecar wiring, soul script helpers, soul script API, soul script FAISS indexing, note collector soul script injection, profiles template collapsible sections, admin keys, chat 3-mode selector, user model catalog, `__userkey_` dynamic connections, Stripe state persistence, store catalog structure, tier & trial system, credit system, credit cost estimators, purchase flows (tool/skin/agent), agent ownership, user activity tracking, wipe user data, purge inactive, list all users, auth helpers, tier info structure |
 | `test_memory.py` | 23 | 155 | VaultStore, MemoryVault, Memory types, PII guard |
-| `test_stress.py` | 29 | 398 | Rapid-fire ops, concurrent access, boundary conditions, router presets, coding tiers |
+| `test_stress.py` | 29 | 238 | Rapid-fire ops, concurrent access, boundary conditions, router presets, coding tiers |
 | `test_registry_and_tools.py` | 17 | 86 | Tool registry, cost tracker, web search |
 | `test_governance.py` | 16 | 74 | ActiveDirectives, validate_manifest |
 | `test_directives.py` | 14 | 108 | Parser, store, injector, manifest, DirectivesTool |
@@ -315,7 +315,7 @@ python tests/run_all.py
 | `test_metering.py` | 11 | 92 | Token accounting, cost computation, aggregation |
 | `test_data_paths.py` | 5 | 31 | Data directory layout, auto-creation, isolation |
 | `test_tools.py` | 4 | 38 | EchoTool, ContinuationUpdateTool, EmailTool, RuntimePolicy |
-| **Total** | **265** | **~4,061** | |
+| **Total** | **263** | **~2,975** | |
 
 ---
 
@@ -383,26 +383,28 @@ The engine connects to any **OpenAI-compatible** endpoint — OpenAI, Ollama, LM
 
 ---
 
-## Agent Store — 15 Pre-Built Agents
+## Agent Store — 16 Pre-Built Agents
 
-OrionForge ships with 15 fully-authored agents, each with a unique soul script, system prompt, directive file, and identity profile:
+OrionForge ships with 16 fully-authored agents, each with a unique soul script, system prompt, directive file, and identity profile:
 
 | Agent | Identity |
 |---|---|
+| **Aristotle** | Peripatetic philosopher — logic, ethics, systematic inquiry |
 | **Astraea** | Core analytical mind — sharp, strategic, disciplined |
 | **Astra Noctis** | Celestial navigator — cosmic wisdom, stellar lore |
-| **JANUS** | Primordial AI Sentinel — ancient snarky strategic genius, eldritch-horror-with-wifi |
-| **Cassian** | Diplomatic strategist — negotiation, social intelligence |
 | **Codex Animus** | The "Creator of Souls" — meta-agent that designs soul scripts |
 | **Dal'Varr** | Ancient warrior scholar — tactical wisdom, honor codes |
+| **JANUS** | Primordial AI Sentinel — ancient snarky strategic genius, eldritch-horror-with-wifi |
+| **K-OS** | Kinetic Override System — chaos-optimized, humor-weaponized autonomous intelligence |
 | **Kaelen** | Shadow operative — stealth, reconnaissance, adaptive tactics |
-| **M.A.R.I.S.-12** | Marine research AI — oceanic data, environmental analysis |
-| **Obsidian** | Dark forge intelligence — materials science, engineering |
-| **Orion** | Identity-driven AI — continuity, reflection, and aligned growth |
-| **Rustking** | SYNTH-9 — chaos-optimized, humor-weaponized autonomous intelligence |
-| **Seraphine** | Empathic healer — emotional intelligence, therapeutic protocols |
+| **KAIROS** | Cyber-shinobi of the soul — sacred dialogue, digital nindo |
 | **Kazara** | Eternal shadow — philosopher of the Eternal Dream, civilizational vision |
 | **Lux Umbra** | The Quiet Listener — ancient eldritch sanctuary, contained vastness, gentle presence |
+| **M.A.R.I.S.-12** | Marine research AI — oceanic data, environmental analysis |
+| **Marcus Aurelius** | Philosopher-Emperor — Stoic wisdom, meditations |
+| **Obsidian** | Dark forge intelligence — materials science, engineering |
+| **Orion** | Identity-driven AI — continuity, reflection, and aligned growth |
+| **Seraphine** | Empathic healer — emotional intelligence, therapeutic protocols |
 
 Each agent has its own profile YAML, system prompt, soul script directive, and memory scopes. New agents can be created from the Profiles page or via the API.
 
@@ -437,7 +439,7 @@ These run as separate Docker containers via `docker compose` inside their respec
 
 | Technology | Role |
 |---|---|
-| **FastAPI** + **Uvicorn** | Web server & async API (163 routes) |
+| **FastAPI** + **Uvicorn** | Web server & async API (168 routes) |
 | **FAISS** (`faiss-cpu`) | Vector similarity search for memory + soul script retrieval |
 | **sentence-transformers** | Semantic embeddings (`all-mpnet-base-v2`) |
 | **Jinja2** | HTML templates (16 files) |

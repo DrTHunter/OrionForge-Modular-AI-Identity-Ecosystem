@@ -14,7 +14,7 @@ python -m uvicorn web.app:app --host 0.0.0.0 --port 8989 --reload
 
 | File | Purpose |
 |------|---------|
-| `app.py` | FastAPI application — all routes, helpers, and API endpoints (162 routes, ~5,700 lines) |
+| `app.py` | FastAPI application — all routes, helpers, and API endpoints (168 routes, ~6,300 lines) |
 | `auth.py` | Supabase OAuth + JWT verification — JWKS validation, session middleware, path whitelist (121 lines) |
 | `stripe_billing.py` | Stripe subscription system — checkout, webhooks, credits, trial management, tier gating (840 lines) |
 | `image_gen.py` | Image generation helper (9 providers: OpenAI DALL-E/GPT Image, Google Imagen, Stability, Ideogram, Replicate, FAL, Leonardo, Midjourney) |
@@ -42,7 +42,7 @@ python -m uvicorn web.app:app --host 0.0.0.0 --port 8989 --reload
 | `agi_loop.html` | AGI loop configuration (intervals, budgets, steps) |
 | `about.html` | Project wiki with auto-generated articles from READMEs + custom notes editor |
 
-## API Endpoints (159 routes)
+## API Endpoints (168 routes)
 
 ### Pages (15 routes)
 
