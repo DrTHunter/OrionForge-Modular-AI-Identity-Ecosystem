@@ -86,6 +86,12 @@
       "photo_zoom": 1,
       "photo_x": 50,
       "photo_y": 30
+    },
+    "k_os": {
+      "image": "/uploads/avatar_k_os_forge2026.png",
+      "photo_zoom": 1,
+      "photo_x": 50,
+      "photo_y": 30
     }
   },
   "agent_configs": {
