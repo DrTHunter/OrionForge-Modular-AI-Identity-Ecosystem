@@ -388,7 +388,7 @@ STT_COST_PER_MINUTE = {
 # ──────────────────────────────────────────────────────────────────
 
 STORE_CATALOG = [
-    # ── One-time unlock: AGI Bundle (500 credits / $5) ───────────
+    # ── One-time unlock: AGI Bundle (300 credits / $3) ───────────
     {
         "id": "agi_bundle",
         "name": "AGI Loop Bundle",
@@ -396,7 +396,7 @@ STORE_CATALOG = [
         "icon": "∞",
         "category": "premium_tool",
         "purchase_type": "one_time",
-        "credit_cost": 500,
+        "credit_cost": 300,
         "unlocks": ["agi_loop", "continuation_update"],
         "tags": ["autonomy", "reasoning", "advanced"],
     },
@@ -438,7 +438,7 @@ STORE_CATALOG = [
         "platform_api": True,
         "tags": ["voice", "audio", "input"],
     },
-    # ── One-time unlock: Cost Tracker (200 credits / $2) ────────
+    # ── One-time unlock: Cost Tracker (100 credits / $1) ────────
     {
         "id": "cost_tracker",
         "name": "Cost Tracker",
@@ -446,7 +446,7 @@ STORE_CATALOG = [
         "icon": "📊",
         "category": "premium_tool",
         "purchase_type": "one_time",
-        "credit_cost": 200,
+        "credit_cost": 100,
         "unlocks": ["cost_tracker"],
         "tags": ["analytics", "spending", "monitoring"],
     },
@@ -780,8 +780,8 @@ STORE_PACKS = [
             {"type": "tool", "id": "voice_stt"},
             {"type": "tool", "id": "cost_tracker"},
         ],
-        "credit_cost": 750,
-        "original_cost": 1100,
+        "credit_cost": 500,
+        "original_cost": 800,
     },
     {
         "id": "pack_full_pantheon",
@@ -812,7 +812,7 @@ STORE_PACKS = [
             {"type": "tool",  "id": "cost_tracker"},
         ],
         "credit_cost": 9999,
-        "original_cost": 15500,
+        "original_cost": 15200,
     },
 ]
 
