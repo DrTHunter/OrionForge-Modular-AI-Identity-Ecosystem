@@ -56,8 +56,9 @@ from web.stripe_billing import (
     estimate_tts_credit_cost, estimate_stt_credit_cost,
     get_credit_history, get_trial_status, FREE_TRIAL_DAYS,
     get_user_purchases, user_owns_item, purchase_tool, purchase_skin,
-    purchase_agent, user_owns_agent, user_has_tool_access, SKIN_PRICES,
+    purchase_agent, purchase_pack, user_owns_agent, user_has_tool_access, SKIN_PRICES,
     get_store_agent_ids, get_user_unlocked_agents, FREE_AGENT_IDS,
+    STORE_PACKS,
     touch_user_activity, wipe_user_data, wipe_user_by_email,
     purge_inactive_users, list_all_users, INACTIVE_ACCOUNT_DAYS,
 )
@@ -1482,6 +1483,7 @@ async def page_store(request: Request):
         "tool_costs": TOOL_CREDIT_COSTS,
         "purchases": purchases,
         "skin_prices": SKIN_PRICES,
+        "store_packs": STORE_PACKS,
         "stripe_publishable_key": STRIPE_PUBLISHABLE_KEY,
         "auth_config": auth_cfg,
     })
@@ -1598,6 +1600,37 @@ async def api_purchase_agent(request: Request):
         "catalog_id": agent_catalog_id,
         "cost": result["cost"],
         "balance": result["balance"],
+    })
+
+
+@app.post("/api/store/purchase-pack")
+async def api_purchase_pack(request: Request):
+    """Purchase a bundle pack (agents + tools at discount)."""
+    user = getattr(request.state, "user", None)
+    if not user:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    body = await request.json()
+    pack_id = body.get("pack_id", "")
+
+    result = purchase_pack(user["id"], pack_id)
+    if "error" in result:
+        status = 402 if "Insufficient" in result.get("error", "") else 400
+        return JSONResponse(result, status_code=status)
+
+    # Seed knowledge for each newly unlocked agent
+    for agent_id in result.get("agents_unlocked", []):
+        try:
+            _seed_agent_knowledge(agent_id)
+        except Exception as exc:
+            log.warning("[store] Pack agent seeding failed for '%s': %s", agent_id, exc)
+
+    return JSONResponse({
+        "success": True,
+        "pack_id": pack_id,
+        "cost": result["cost"],
+        "balance": result["balance"],
+        "agents_unlocked": result["agents_unlocked"],
+        "tools_unlocked": result["tools_unlocked"],
     })
 
 

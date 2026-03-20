@@ -245,7 +245,8 @@
   <!-- Tabs -->
   <div class="store-tabs">
     <button class="store-tab active" onclick="switchStoreTab('credits')">💳 Credit Packs</button>
-    <button class="store-tab" onclick="switchStoreTab('tools')">⚒ Tools &amp; Upgrades</button>
+    <button class="store-tab" onclick="switchStoreTab('packs')">📦 Packs</button>
+    <button class="store-tab" onclick="switchStoreTab('tools')">⚒ Tools</button>
     <button class="store-tab" onclick="switchStoreTab('agents')">🤖 Agents</button>
     <button class="store-tab" onclick="switchStoreTab('skins')">🎨 Skins</button>
     <button class="store-tab" onclick="switchStoreTab('llm')">🧠 LLM Usage</button>
@@ -277,7 +278,61 @@
     </div>
   </div>
 
-  <!-- ═══ TOOLS & UPGRADES ═══ -->
+  <!-- ═══ PACKS ═══ -->
+  <div id="section-packs" class="store-section">
+    <p style="color:#a1a1aa; margin-bottom:1.5rem; font-size:0.9rem;">
+      Bundle deals — agents and tools at a discount. Items you already own are skipped automatically. One purchase, everything unlocked forever.
+    </p>
+    <div class="packs-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:1.25rem;">
+      {% for pack in store_packs %}
+      {% set all_owned = true %}
+      {% for item in pack.items %}
+        {% if item.type == 'agent' and item.id not in purchases.agents %}{% set all_owned = false %}{% endif %}
+        {% if item.type == 'tool' and item.id not in purchases.tools %}{% set all_owned = false %}{% endif %}
+      {% endfor %}
+      <div class="catalog-card {% if all_owned %}owned{% endif %}" style="border-left:3px solid {{ pack.color }}; position:relative;">
+        {% if all_owned %}
+        <span class="owned-badge">✓ Owned</span>
+        {% endif %}
+        <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.75rem;">
+          <div class="catalog-icon" style="font-size:1.5rem; background:{{ pack.color }}22;">{{ pack.icon }}</div>
+          <div>
+            <div class="catalog-name" style="font-size:1.05rem;">{{ pack.name }}</div>
+            <div style="font-size:0.7rem; color:#71717a;">{{ pack.items | length }} items</div>
+          </div>
+        </div>
+        <div class="catalog-desc" style="margin-bottom:0.75rem;">{{ pack.description }}</div>
+        <div style="display:flex; flex-wrap:wrap; gap:0.375rem; margin-bottom:0.75rem;">
+          {% for item in pack.items %}
+          {% set entry = none %}
+          {% for c in catalog %}{% if c.id == item.id %}{% set entry = c %}{% endif %}{% endfor %}
+          {% if entry %}
+          <span style="font-size:0.65rem; padding:0.2rem 0.5rem; border-radius:50px; background:rgba(99,102,241,0.08); color:#a1a1aa; border:1px solid rgba(42,42,58,0.4);">
+            {{ entry.icon }} {{ entry.name | truncate(20, true) }}
+          </span>
+          {% endif %}
+          {% endfor %}
+        </div>
+        <div class="catalog-footer" style="display:flex; align-items:center; justify-content:space-between;">
+          <div>
+            <div class="catalog-price" style="font-size:1rem;">🪙 {{ "{:,}".format(pack.credit_cost) }} credits</div>
+            <div style="font-size:0.7rem; color:#71717a; text-decoration:line-through;">{{ "{:,}".format(pack.original_cost) }} credits</div>
+            <div style="font-size:0.7rem; color:#10b981; font-weight:600;">Save {{ (((pack.original_cost - pack.credit_cost) / pack.original_cost * 100) | round | int) }}%</div>
+          </div>
+          {% if all_owned %}
+          <button class="catalog-buy-btn owned-btn" disabled>✓ All Owned</button>
+          {% else %}
+          <button class="catalog-buy-btn" onclick="purchasePack('{{ pack.id }}', {{ pack.credit_cost }}, '{{ pack.name }}')" id="pack-btn-{{ pack.id }}" style="background:linear-gradient(135deg, {{ pack.color }}, {{ pack.color }}cc);">
+            Buy Pack
+          </button>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- ═══ TOOLS ═══ -->
   <div id="section-tools" class="store-section">
     <p style="color:#a1a1aa; margin-bottom:1.5rem; font-size:0.9rem;">
       Unlock premium tools with a one-time credit purchase — use them forever. Free tools are included for all users.
@@ -287,7 +342,7 @@
     <h3 style="color:#fff; font-size:1.1rem; font-weight:700; margin-bottom:1rem;">🔓 Premium Tools <span style="font-size:0.75rem; color:#71717a; font-weight:400;">— one-time unlock</span></h3>
     <div class="catalog-grid" style="margin-bottom:2rem;">
       {% for item in catalog %}
-      {% if item.purchase_type == 'one_time' %}
+      {% if item.purchase_type == 'one_time' and item.category != 'agent' %}
       {% set owned = item.id in purchases.tools %}
       <div class="catalog-card {% if owned %}owned{% endif %}">
         {% if owned %}
@@ -320,7 +375,7 @@
     <h3 style="color:#fff; font-size:1.1rem; font-weight:700; margin-bottom:1rem;">🎁 Free Tools <span style="font-size:0.75rem; color:#71717a; font-weight:400;">— included for everyone</span></h3>
     <div class="catalog-grid">
       {% for item in catalog %}
-      {% if item.purchase_type == 'free' %}
+      {% if item.purchase_type == 'free' and item.category != 'agent' %}
       <div class="catalog-card owned">
         <span class="free-badge">Free</span>
         <div class="catalog-card-header">
@@ -823,6 +878,42 @@
     .catch(function(err) {
       alert('Failed to process. Please try again.');
       if (btn) { btn.disabled = false; btn.textContent = 'Buy & Unlock'; }
+    });
+  }
+
+  // ── Purchase pack (bundle deal) ──
+  function purchasePack(packId, cost, packName) {
+    var balance = parseInt(document.getElementById('credit-balance').textContent, 10);
+    if (balance < cost) {
+      alert('Insufficient credits! You need ' + cost.toLocaleString() + ' credits but have ' + balance.toLocaleString() + '. Buy more credits first.');
+      switchStoreTab('credits');
+      document.querySelectorAll('.store-tab')[0].classList.add('active');
+      return;
+    }
+    if (!confirm('Buy "' + packName + '" for ' + cost.toLocaleString() + ' credits?\n\nAll agents and tools in this pack will be unlocked.\nItems you already own are skipped automatically.\n\nOne-time purchase — yours forever.')) return;
+    var btn = document.getElementById('pack-btn-' + packId);
+    if (btn) { btn.disabled = true; btn.textContent = 'Unlocking…'; }
+    fetch('/api/store/purchase-pack', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pack_id: packId })
+    })
+    .then(function(resp) { return resp.json(); })
+    .then(function(data) {
+      if (data.success) {
+        document.getElementById('credit-balance').textContent = data.balance;
+        var agentCount = (data.agents_unlocked || []).length;
+        var toolCount = (data.tools_unlocked || []).length;
+        alert('✓ ' + packName + ' unlocked!\n\n' + data.cost.toLocaleString() + ' credits deducted.\n' + agentCount + ' agent(s) and ' + toolCount + ' tool(s) unlocked.\n\nAll soul scripts and prompts have been added to your Knowledge tab.');
+        window.location.reload();
+      } else if (data.error) {
+        alert('Error: ' + data.error);
+        if (btn) { btn.disabled = false; btn.textContent = 'Buy Pack'; }
+      }
+    })
+    .catch(function(err) {
+      alert('Failed to process. Please try again.');
+      if (btn) { btn.disabled = false; btn.textContent = 'Buy Pack'; }
     });
   }
 
