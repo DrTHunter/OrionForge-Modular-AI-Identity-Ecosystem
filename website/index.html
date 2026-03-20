@@ -1805,11 +1805,100 @@ section { position: relative; z-index: 1; }
    ------------------------------------------------------- */
 #pricing { padding: 120px 0; }
 
+/* Subscription hero card */
+.subscription-hero {
+    max-width: 640px;
+    margin: 48px auto 0;
+    background: var(--bg-card);
+    border: 2px solid var(--primary);
+    border-radius: var(--radius);
+    padding: 44px 40px 36px;
+    position: relative;
+    text-align: center;
+    box-shadow: 0 0 80px rgba(99, 102, 241, 0.12);
+}
+.subscription-hero::before {
+    content: '🔑 Platform Access';
+    position: absolute;
+    top: -14px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--gradient-primary);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 5px 20px;
+    border-radius: 50px;
+    white-space: nowrap;
+}
+.subscription-hero h3 { font-size: 1.4rem; font-weight: 800; margin-bottom: 8px; }
+.subscription-hero .sub-tagline { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 24px; line-height: 1.5; }
+.subscription-hero .sub-price { font-size: 3rem; font-weight: 900; color: var(--text-primary); line-height: 1; }
+.subscription-hero .sub-period { font-size: 0.9rem; color: var(--text-muted); font-weight: 500; }
+.subscription-hero .sub-trial { font-size: 0.85rem; color: var(--cyan); font-weight: 600; margin-top: 6px; }
+.sub-features {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 20px;
+    margin: 24px 0;
+    text-align: left;
+    list-style: none;
+}
+.sub-features li {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    padding: 5px 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+.sub-features li i { color: #4ade80; font-size: 0.65rem; margin-top: 4px; flex-shrink: 0; }
+.sub-features li.credit-note { color: var(--amber); }
+.sub-features li.credit-note i { color: var(--amber); }
+.subscription-hero .sub-cta {
+    display: inline-block;
+    padding: 14px 48px;
+    background: var(--gradient-primary);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--transition);
+    font-family: var(--font-sans);
+    margin-top: 8px;
+}
+.subscription-hero .sub-cta:hover { opacity: 0.9; transform: translateY(-2px); }
+@media (max-width: 600px) {
+    .subscription-hero { padding: 36px 24px 28px; }
+    .sub-features { grid-template-columns: 1fr; }
+}
+
+/* Credits section label */
+.credits-label {
+    text-align: center;
+    margin-top: 64px;
+    margin-bottom: -8px;
+}
+.credits-label h3 {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+.credits-label p {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-top: 6px;
+}
+
 .pricing-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 24px;
-    margin-top: 48px;
+    margin-top: 32px;
     align-items: start;
 }
 @media (max-width: 1100px) { .pricing-grid { grid-template-columns: repeat(2, 1fr); } }
@@ -2794,6 +2883,35 @@ section { position: relative; z-index: 1; }
 
         <div class="pricing-grid">
 
+            <!-- SUBSCRIPTION HERO -->
+            <div style="grid-column: 1 / -1;">
+                <div class="subscription-hero reveal">
+                    <h3>SoulScript Pro</h3>
+                    <div class="sub-tagline">Full platform access. Every agent, every tool, unlimited messages. One simple price.</div>
+                    <div class="sub-price">$9.99</div>
+                    <div class="sub-period">/month</div>
+                    <div class="sub-trial">5-day free trial — all agents &amp; tools unlocked, no credit card required</div>
+                    <ul class="sub-features">
+                        <li><i class="fas fa-check"></i> All 15 AI agents unlocked</li>
+                        <li><i class="fas fa-check"></i> All premium tools (AGI Loop, Voice, Email)</li>
+                        <li><i class="fas fa-check"></i> Unlimited chat messages</li>
+                        <li><i class="fas fa-check"></i> Full memory vault &amp; knowledge base</li>
+                        <li><i class="fas fa-check"></i> Image generation &amp; web search</li>
+                        <li><i class="fas fa-check"></i> Custom skins &amp; themes</li>
+                        <li><i class="fas fa-check"></i> Bring your own API keys (free LLM)</li>
+                        <li class="credit-note"><i class="fas fa-coins"></i> Platform LLM keys: credits at 2× token cost</li>
+                    </ul>
+                    <button class="sub-cta" onclick="openAuth()"><i class="fas fa-rocket" style="margin-right:8px;"></i>Start Free Trial</button>
+                </div>
+            </div>
+
+            <!-- CREDITS LABEL -->
+            <div style="grid-column: 1 / -1;">
+                <div class="credits-label reveal">
+                    <h3>Credit Packs</h3>
+                    <p>Credits power LLM usage on platform keys. Buy once, never expires. Bring your own keys? LLMs are free.</p>
+                </div>
+            </div>
             <!-- CREDIT PACK: 1,000 -->
             <div class="price-card reveal">
                 <div class="price-tier-icon starter"><i class="fas fa-coins"></i></div>
@@ -2884,7 +3002,7 @@ section { position: relative; z-index: 1; }
         <div class="pricing-philosophy reveal">
             <div class="section-header" style="margin-bottom:0;">
                 <h2 class="section-title" style="font-size:1.5rem;">Agent &amp; Tool Pricing</h2>
-                <p class="section-subtitle">One-time credit purchases. Unlock once, use forever. No subscriptions.</p>
+                <p class="section-subtitle">One-time credit purchases. Unlock once, use forever.</p>
             </div>
 
             <div class="philosophy-grid">
@@ -2906,8 +3024,8 @@ section { position: relative; z-index: 1; }
             </div>
 
             <div class="pricing-closing reveal">
-                <p>Orion Forge uses a credit-based economy — no subscriptions, no recurring charges. Buy credits when you need them, unlock agents and tools permanently, and use platform-hosted LLMs at 2× token cost (or bring your own keys for free). Credits never expire. Every purchase is yours forever.</p>
-                <div class="forge-quote">"No subscriptions. No surprises. Just credits and creation."</div>
+                <p>Orion Forge runs on a simple model: $9.99/mo for full platform access, plus a credit system for LLM usage on platform keys. Credits never expire. Bring your own API keys and LLM usage is free. Every agent and tool purchase is permanent — yours forever, even if you cancel.</p>
+                <div class="forge-quote">"One subscription. Credits when you need them. Everything you build is yours."</div>
             </div>
         </div>
 
