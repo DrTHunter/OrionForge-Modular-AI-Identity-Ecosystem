@@ -1,15 +1,15 @@
 """Stripe Subscription — Checkout, webhooks, tier gating, credits, and LLM markup.
 
-Implements a Pro-only ($9.99/mo) paywall with 15-day free trial:
-  - New users get 15 days of full Pro access for free
-  - After trial, users must subscribe to Pro ($9.99/mo)
+Implements a Pro-only ($9.99/mo) paywall with 5-day free trial:
+  - New users get 5 days of full access to all agents and tools
+  - During trial: LLM usage via platform keys costs credits at 2×
+  - After trial, users must subscribe to Pro ($9.99/mo) to continue
   - Premium tools (AGI Loop, Email, Voice) cost credits
-  - LLM usage via platform API keys is charged at 2× token cost
   - Users who provide their own API keys get free LLM usage
 
 Flow:
-  1. User signs up via Supabase → 15-day trial starts automatically
-  2. During trial: full access, LLM still costs credits at 2×
+  1. User signs up via Supabase → 5-day trial starts automatically
+  2. During trial: unlimited agents & tools, LLM costs credits at 2×
   3. After trial: must subscribe to Pro ($9.99/mo) to continue
   4. Premium tools deduct credits; buy credit packs via Stripe
   5. LLM calls bill at 2× when using platform-hosted keys
@@ -80,7 +80,7 @@ TIER_INFO = {
 }
 
 # ── Free Trial ───────────────────────────────────────────────────
-FREE_TRIAL_DAYS = 15
+FREE_TRIAL_DAYS = 5
 _SECONDS_PER_DAY = 86400
 
 
@@ -1036,9 +1036,14 @@ def get_user_unlocked_agents(user_id: str) -> set:
 
     Includes:
     - FREE_AGENT_IDS (codex_animus — always free)
+    - ALL agents during active trial (5-day full access)
     - Purchased agents from the store
     """
     unlocked = set(FREE_AGENT_IDS)
+    # Trial users get access to all agents
+    trial = get_trial_status(user_id)
+    if trial["active"]:
+        return unlocked | get_store_agent_ids()
     purchases = get_user_purchases(user_id)
     owned_catalog_ids = set(purchases.get("agents", []))
     for entry in STORE_CATALOG:
@@ -1052,12 +1057,18 @@ def get_user_unlocked_agents(user_id: str) -> set:
 def user_has_tool_access(user_id: str, tool_name: str) -> bool:
     """Check if a user has access to a given tool (purchased or free).
 
+    During trial: all tools are unlocked.
     For AGI bundle tools, checks if the user purchased 'agi_bundle'.
     For free tools (web_search, image_generation), always returns True.
     """
     # Free tools — always available
     free_tools = {"web_search", "image_generation", "echo", "memory", "directives"}
     if tool_name in free_tools:
+        return True
+
+    # Trial users get access to all tools
+    trial = get_trial_status(user_id)
+    if trial["active"]:
         return True
 
     purchases = get_user_purchases(user_id)
