@@ -22,6 +22,9 @@ Rich notes created via the web dashboard's Knowledge page with formatting, secti
 | `astraea.md` | Only Astraea |
 | `callum.md` | Only Callum |
 | `codex_animus.md` | Only Codex Animus |
+| `orion.md` | Only Orion |
+
+> **Note:** Agent Store agents (Astra Noctis, Aristotle, JANUS, K-OS, Dal'Varr, Kaelen, KAIROS, Lux Umbra, Marcus Aurelius, M.A.R.I.S.-12, Kazara, Obsidian, Orion, Seraphine) use Soul Scripts and Knowledge Notes instead of these markdown files. Create `<agent>.md` here if you want always-on markdown notes for them.
 
 ## How to Use
 

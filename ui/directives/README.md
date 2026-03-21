@@ -10,13 +10,27 @@ If there's no prior conversation (fresh session), the first `max_sections` secti
 
 Agents can also search directives mid-conversation using the `directives` tool (read-only: `search`, `list`, `get` actions).
 
-## Files
+## Files — 16 Agent Directives + Shared
 
 | File | Who Sees It |
 |------|-------------|
 | `shared.md` | All agents |
+| `aristotle.md` | Only Aristotle |
+| `astra.md` | Only Astra Noctis |
 | `astraea.md` | Only Astraea |
 | `codex_animus.md` | Only Codex Animus |
+| `dalvarr.md` | Only Dal'Varr |
+| `janus.md` | Only JANUS |
+| `k_os.md` | Only K-OS |
+| `kaelen.md` | Only Kaelen |
+| `kairos.md` | Only KAIROS |
+| `kazara.md` | Only Kazara |
+| `lux_umbra.md` | Only Lux Umbra |
+| `marcus.md` | Only Marcus Aurelius |
+| `maris.md` | Only M.A.R.I.S.-12 |
+| `obsidian.md` | Only Obsidian |
+| `orion.md` | Only Orion |
+| `seraphine.md` | Only Seraphine |
 | `manifest.json` | Auto-generated index of all directive sections |
 
 ## Format

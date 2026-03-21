@@ -550,6 +550,148 @@ def test_backward_compat_alias():
         shutil.rmtree(tmp, ignore_errors=True)
 
 
+def test_batch_context_manager():
+    """batch() buffers writes into a single file handle."""
+    print("\n=== Batch Context Manager ===")
+    vault, tmp = make_vault()
+    try:
+        with vault.batch():
+            vault.create_memory("Batch A", "shared", "bio")
+            vault.create_memory("Batch B", "shared", "preference")
+            vault.create_memory("Batch C", "astraea", "identity")
+
+        active = vault.read_active()
+        check("batch wrote 3 memories", len(active) == 3)
+        texts = {m.text for m in active}
+        check("Batch A present", "Batch A" in texts)
+        check("Batch B present", "Batch B" in texts)
+        check("Batch C present", "Batch C" in texts)
+
+        # Raw lines also 3 (no extra junk)
+        raw = vault.read_all()
+        check("3 raw lines", len(raw) == 3)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def test_batch_resolve_cache():
+    """resolve_latest() returns cached data inside a batch."""
+    print("\n=== Batch Resolve Cache ===")
+    vault, tmp = make_vault()
+    try:
+        # Pre-populate
+        m1 = vault.create_memory("Pre-existing", "shared", "bio")
+
+        with vault.batch():
+            # resolve_latest should see pre-existing memory from cache
+            resolved = vault.resolve_latest()
+            check("cache has pre-existing", m1.id in resolved)
+
+            # Create within batch
+            m2 = vault.create_memory("In-batch", "shared", "fact")
+
+            # resolve_latest should see the in-batch memory too
+            resolved2 = vault.resolve_latest()
+            check("cache has in-batch", m2.id in resolved2)
+            check("cache still has pre-existing", m1.id in resolved2)
+
+        # After batch, normal resolve_latest reads from file
+        resolved3 = vault.resolve_latest()
+        check("post-batch has both", len(resolved3) == 2)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def test_batch_update_delete():
+    """Updates and deletes work correctly inside a batch."""
+    print("\n=== Batch Update & Delete ===")
+    vault, tmp = make_vault()
+    try:
+        m1 = vault.create_memory("Original", "shared", "bio")
+        m2 = vault.create_memory("To delete", "shared", "meta")
+
+        with vault.batch():
+            vault.update_memory(m1.id, text="Updated in batch")
+            vault.delete_memory(m2.id)
+
+        active = vault.read_active()
+        check("1 active after batch", len(active) == 1)
+        check("text updated", active[0].text == "Updated in batch")
+
+        # Verify file has all 4 lines (2 creates + 1 update + 1 tombstone)
+        raw = vault.read_all()
+        check("4 raw lines", len(raw) == 4)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def test_batch_create_many():
+    """batch_create_many stores multiple memories in one call."""
+    print("\n=== Batch Create Many ===")
+    vault, tmp = make_vault()
+    try:
+        items = [
+            {"text": "Fact one", "scope": "shared", "category": "bio"},
+            {"text": "Fact two", "scope": "astraea", "category": "identity",
+             "tags": ["core"], "tier": "canon"},
+            {"text": "Fact three", "scope": "shared", "category": "preference",
+             "source": "chat"},
+        ]
+        created = vault.batch_create_many(items)
+        check("returned 3 memories", len(created) == 3)
+        check("all are Memory", all(isinstance(m, Memory) for m in created))
+
+        active = vault.read_active()
+        check("3 active", len(active) == 3)
+
+        # Check specific fields carried through
+        by_text = {m.text: m for m in created}
+        check("tags carried", by_text["Fact two"].tags == ["core"])
+        check("tier carried", by_text["Fact two"].tier == "canon")
+        check("source carried", by_text["Fact three"].source == "chat")
+        check("scope carried", by_text["Fact two"].scope == "astraea")
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def test_batch_create_many_pii_blocked():
+    """batch_create_many rejects PII — nothing is written."""
+    print("\n=== Batch Create Many PII ===")
+    vault, tmp = make_vault()
+    try:
+        items = [
+            {"text": "Safe text", "scope": "shared", "category": "bio"},
+            {"text": "SSN: 123-45-6789", "scope": "shared", "category": "bio"},
+        ]
+        blocked = False
+        try:
+            vault.batch_create_many(items)
+        except ValueError:
+            blocked = True
+        check("PII blocks batch", blocked)
+
+        # Nothing written because validation is up front
+        check("vault empty", len(vault.read_active()) == 0)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def test_batch_reentrant():
+    """Nested batch() calls pass through safely."""
+    print("\n=== Batch Reentrant ===")
+    vault, tmp = make_vault()
+    try:
+        with vault.batch():
+            vault.create_memory("Outer", "shared", "bio")
+            with vault.batch():
+                vault.create_memory("Inner", "shared", "bio")
+
+        active = vault.read_active()
+        check("reentrant batch wrote 2", len(active) == 2)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
 # ------------------------------------------------------------------
 if __name__ == "__main__":
     test_create_and_read()
@@ -569,6 +711,12 @@ if __name__ == "__main__":
     test_create_validation()
     test_jsonl_format()
     test_backward_compat_alias()
+    test_batch_context_manager()
+    test_batch_resolve_cache()
+    test_batch_update_delete()
+    test_batch_create_many()
+    test_batch_create_many_pii_blocked()
+    test_batch_reentrant()
 
     print(f"\n{'=' * 40}")
     print(f"Results: {PASS} passed, {FAIL} failed")
