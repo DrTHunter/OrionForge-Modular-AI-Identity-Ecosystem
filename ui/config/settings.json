@@ -92,6 +92,12 @@
       "photo_zoom": 1,
       "photo_x": 50,
       "photo_y": 30
+    },
+    "obsidian": {
+      "image": "/uploads/avatar_obsidian_forge2026.png",
+      "photo_zoom": 1,
+      "photo_x": 50,
+      "photo_y": 20
     }
   },
   "agent_configs": {
