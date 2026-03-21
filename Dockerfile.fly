@@ -25,6 +25,9 @@ RUN ln -sf /app/engine/src /app/app/src
 # (the live uploads dir gets symlinked to persistent storage)
 RUN cp -a /app/app/data/uploads /app/_bundled_uploads
 
+# Stage bundled memory vault so seeded memories survive across deploys
+RUN cp -a /app/app/data/memory /app/_bundled_memory
+
 # Copy boot script
 COPY boot.sh /app/boot.sh
 RUN chmod +x /app/boot.sh
