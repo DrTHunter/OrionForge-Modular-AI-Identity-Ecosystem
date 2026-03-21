@@ -173,7 +173,7 @@ OrionForge uses **Supabase OAuth** for authentication and **Stripe** for billing
 | **Login** | Supabase OAuth (Google, GitHub, email) via `/login` |
 | **JWT verification** | `auth.py` — JWKS-based token validation, session middleware |
 | **Subscription** | $9.99/month Pro plan via Stripe Checkout (`/plans`) |
-| **15-day trial** | Free trial on first sign-up, auto-expires. Trial state persisted across deploys via Fly.io volume |
+| **5-day trial** | Free trial on first sign-up, auto-expires. Trial state persisted across deploys via Fly.io volume |
 | **Credit system** | Buy credit packs in the store (`/store`) — spend on tools and LLM usage |
 | **LLM markup** | Platform-hosted LLM calls billed at 2× base cost, deducted from credits |
 | **TTS/STT billing** | Per-use billing for platform-hosted voice services (2× markup) |
@@ -295,7 +295,7 @@ Sidecar services communicate via Flycast private networking (`.flycast` URLs). T
 
 ## Test Suite
 
-11 test files with **263** test functions and **~2,975** assertions:
+11 test files with **263** test functions and **~3,897** assertions:
 
 ```powershell
 cd orion-ui-standalone
@@ -304,7 +304,7 @@ python tests/run_all.py
 
 | Test File | Functions | Checks | Coverage Area |
 |---|---|---|---|
-| `test_torture.py` | 116 | ~2,057 | Deep torture of all code paths — memory, vault, sort, policy, tools, templates, model router, presets, 6-tier routing, sidecar wiring, soul script helpers, soul script API, soul script FAISS indexing, note collector soul script injection, profiles template collapsible sections, admin keys, chat 3-mode selector, user model catalog, `__userkey_` dynamic connections, Stripe state persistence, store catalog structure, tier & trial system, credit system, credit cost estimators, purchase flows (tool/skin/agent), agent ownership, user activity tracking, wipe user data, purge inactive, list all users, auth helpers, tier info structure |
+| `test_torture.py` | 116 | ~2,979 | Deep torture of all code paths — memory, vault, sort, policy, tools, templates, model router, presets, 6-tier routing, sidecar wiring, soul script helpers, soul script API, soul script FAISS indexing, note collector soul script injection, profiles template collapsible sections, admin keys, chat 3-mode selector, user model catalog, `__userkey_` dynamic connections, Stripe state persistence, store catalog structure, tier & trial system, credit system, credit cost estimators, purchase flows (tool/skin/agent), agent ownership, user activity tracking, wipe user data, purge inactive, list all users, auth helpers, tier info structure |
 | `test_memory.py` | 23 | 155 | VaultStore, MemoryVault, Memory types, PII guard |
 | `test_stress.py` | 29 | 238 | Rapid-fire ops, concurrent access, boundary conditions, router presets, coding tiers |
 | `test_registry_and_tools.py` | 17 | 86 | Tool registry, cost tracker, web search |
@@ -315,7 +315,7 @@ python tests/run_all.py
 | `test_metering.py` | 11 | 92 | Token accounting, cost computation, aggregation |
 | `test_data_paths.py` | 5 | 31 | Data directory layout, auto-creation, isolation |
 | `test_tools.py` | 4 | 38 | EchoTool, ContinuationUpdateTool, EmailTool, RuntimePolicy |
-| **Total** | **263** | **~2,975** | |
+| **Total** | **263** | **~3,897** | |
 
 ---
 

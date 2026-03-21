@@ -1,12 +1,12 @@
 # tests/
 
-Comprehensive test suite for the OrionForge agent runtime. **172 test functions, ~2,438 assertions** across 7 files.
+Comprehensive test suite for the OrionForge agent runtime. **172 test functions, ~3,360 assertions** across 7 files.
 
 ## Test Files
 
 | File | Functions | Checks | What It Tests |
 |------|-----------|--------|---------------|
-| `test_torture.py` | 116 | ~2,057 | Deep torture of all code paths — memory, vault, sort, policy, tools, templates, model router, presets, 6-tier routing, sidecar wiring, soul script helpers, soul script API, soul script FAISS indexing, note collector soul script injection, profiles template collapsible, admin keys, chat 3-mode selector, user model catalog, `__userkey_` dynamic connections, Stripe state persistence, store catalog structure, tier & trial system, credit system, credit cost estimators, purchase flows (tool/skin/agent), agent ownership, user activity tracking, wipe user data, purge inactive, list all users, auth helpers, tier info structure |
+| `test_torture.py` | 116 | ~2,979 | Deep torture of all code paths — memory, vault, sort, policy, tools, templates, model router, presets, 6-tier routing, sidecar wiring, soul script helpers, soul script API, soul script FAISS indexing, note collector soul script injection, profiles template collapsible, admin keys, chat 3-mode selector, user model catalog, `__userkey_` dynamic connections, Stripe state persistence, store catalog structure, tier & trial system, credit system, credit cost estimators, purchase flows (tool/skin/agent), agent ownership, user activity tracking, wipe user data, purge inactive, list all users, auth helpers, tier info structure |
 | `test_memory.py` | 17 | 133 | VaultStore CRUD, scoping, PII guard, bulk delete, versioning, resolve_latest, compact, stats, Memory dataclass, taxonomy constants, tiers & topics, tags & source, JSONL format |
 | `test_directives.py` | 14 | 108 | Parser, store search, store list/get, scoping, injector, directives tool, scoring, manifest generation, save/load, helpers, diff, audit, changes action |
 | `test_governance.py` | 16 | 74 | ActiveDirectives (record/list/ids/summary/reset), validate_manifest (schema/enums/duplicates/SHA-256 drift) |
@@ -14,7 +14,7 @@ Comprehensive test suite for the OrionForge agent runtime. **172 test functions,
 | `test_tools.py` | 3 | 24 | EchoTool, ContinuationUpdateTool, EmailTool, RuntimePolicy |
 | `run_all.py` | — | — | Master runner — executes all suites in dependency order, consolidates results |
 
-**Total: 172 functions, ~2,438 checks across 7 test suites**
+**Total: 172 functions, ~3,360 checks across 7 test suites**
 
 ## Running Tests
 

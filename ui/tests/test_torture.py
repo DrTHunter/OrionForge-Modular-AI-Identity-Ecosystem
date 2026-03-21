@@ -8282,7 +8282,7 @@ def test_stripe_state_persist_path():
         shutil.rmtree(tmp, ignore_errors=True)
 
     # ── 7. FREE_TRIAL_DAYS constant ──
-    check("FREE_TRIAL_DAYS is 15", billing.FREE_TRIAL_DAYS == 15)
+    check("FREE_TRIAL_DAYS is 5", billing.FREE_TRIAL_DAYS == 5)
 
 
 # ═════════════════════════════════════════════
@@ -8364,7 +8364,7 @@ def test_store_catalog_structure():
 
     # Constants
     check("LLM_MARKUP_MULTIPLIER is 2.0", billing.LLM_MARKUP_MULTIPLIER == 2.0)
-    check("FREE_TRIAL_DAYS is 15", billing.FREE_TRIAL_DAYS == 15)
+    check("FREE_TRIAL_DAYS is 5", billing.FREE_TRIAL_DAYS == 5)
     check("INACTIVE_ACCOUNT_DAYS is 365", billing.INACTIVE_ACCOUNT_DAYS == 365)
 
 
@@ -8389,7 +8389,7 @@ def test_tier_and_trial_system():
         trial = billing.get_trial_status(uid)
         check("trial is active for new user", trial["active"] is True)
         check("trial has days_left > 0", trial["days_left"] > 0)
-        check("trial days_left <= 15", trial["days_left"] <= 15)
+        check("trial days_left <= 5", trial["days_left"] <= 5)
         check("trial started_at > 0", trial["started_at"] > 0)
         check("trial expires_at > started_at", trial["expires_at"] > trial["started_at"])
 
@@ -8576,8 +8576,8 @@ def test_purchase_flows():
         # ── 1. Purchase tool — happy path ──
         result = billing.purchase_tool(uid, "agi_bundle")
         check("tool purchase ok", result.get("ok") is True)
-        check("tool purchase has cost", result.get("cost") == 500)
-        check("tool purchase balance reduced", result["balance"] == 9500)
+        check("tool purchase has cost", result.get("cost") == 300)
+        check("tool purchase balance reduced", result["balance"] == 9700)
 
         # ── 2. Purchase tool — already owned ──
         result2 = billing.purchase_tool(uid, "agi_bundle")
@@ -8665,7 +8665,10 @@ def test_agent_ownership():
         check("store_agent_ids is set", isinstance(store_ids, set))
         check("store has agents", len(store_ids) >= 1)
 
-        # ── 3. Fresh user only has free agents ──
+        # ── 3. Fresh user (expired trial) only has free agents ──
+        state = billing._load_stripe_state()
+        state.setdefault("trials", {})[uid] = {"started_at": time.time() - (20 * 86400)}
+        billing._save_stripe_state(state)
         unlocked = billing.get_user_unlocked_agents(uid)
         check("fresh user has codex_animus", "codex_animus" in unlocked)
         check("fresh user count", len(unlocked) == len(billing.FREE_AGENT_IDS))
@@ -8703,8 +8706,11 @@ def test_agent_ownership():
         check("bundle unlocks continuation_update",
               billing.user_has_tool_access(uid, "continuation_update") is True)
 
-        # Non-purchased tool
+        # Non-purchased tool (expired trial)
         uid2 = "test_owner_user_002"
+        state = billing._load_stripe_state()
+        state.setdefault("trials", {})[uid2] = {"started_at": time.time() - (20 * 86400)}
+        billing._save_stripe_state(state)
         check("non-purchased tool → no access",
               billing.user_has_tool_access(uid2, "agi_loop") is False)
 
