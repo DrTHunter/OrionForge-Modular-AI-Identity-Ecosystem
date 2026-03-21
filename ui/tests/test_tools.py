@@ -17,6 +17,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from src.tools.echo import EchoTool
 from src.tools.continuation_update import ContinuationUpdateTool
+from src.tools.email_tool import EmailTool
 from src.runtime_policy import RuntimePolicy
 
 PASS = 0
@@ -143,12 +144,64 @@ def test_policy():
 
 
 # ─────────────────────────────────────────────
+# 4. Email tool
+# ─────────────────────────────────────────────
+def test_email():
+    print("\n=== Email Tool ===")
+    tool = EmailTool()
+
+    # Definition
+    defn = tool.definition()
+    check("email definition name", defn["name"] == "email")
+    check("email has parameters", "parameters" in defn)
+    actions = defn["parameters"]["properties"]["action"]["enum"]
+    check("email has send action", "send" in actions)
+    check("email has status action", "status" in actions)
+    check("email has accounts action", "accounts" in actions)
+
+    # Accounts (should return list even if empty)
+    r = json.loads(tool.execute({"action": "accounts"}))
+    check("accounts returns list", "accounts" in r)
+    check("accounts is list type", isinstance(r["accounts"], list))
+
+    # Status check
+    r = json.loads(tool.execute({"action": "status"}))
+    check("status has accounts_configured", "accounts_configured" in r)
+
+    # Send — missing fields
+    r = json.loads(tool.execute({"action": "send"}))
+    check("send w/o subject → error", "error" in r)
+
+    r = json.loads(tool.execute({"action": "send", "subject": "test"}))
+    check("send w/o body → error", "error" in r)
+
+    r = json.loads(tool.execute({"action": "send", "subject": "test", "body": "hello"}))
+    check("send w/o recipients → error", "error" in r)
+
+    # Send — invalid email address
+    r = json.loads(tool.execute({
+        "action": "send", "subject": "test", "body": "hello",
+        "recipients": ["not-an-email"],
+    }))
+    check("send invalid email → error", "error" in r)
+
+    # Unknown action
+    r = json.loads(tool.execute({"action": "explode"}))
+    check("unknown action → error", "error" in r)
+
+    # Execute with agent_name parameter
+    r = json.loads(tool.execute({"action": "accounts"}, agent_name="astraea"))
+    check("accounts with agent_name", "accounts" in r)
+
+
+# ─────────────────────────────────────────────
 # Run all
 # ─────────────────────────────────────────────
 if __name__ == "__main__":
     test_echo()
     test_continuation_update()
     test_policy()
+    test_email()
 
     print(f"\n{'='*40}")
     print(f"Results: {PASS} passed, {FAIL} failed")
@@ -156,3 +209,4 @@ if __name__ == "__main__":
         sys.exit(1)
     else:
         print("All tests passed.")
+

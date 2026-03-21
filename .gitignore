@@ -43,3 +43,11 @@ ui/data/user_notes/*.json
 # Backup files
 *.old
 *.bak
+
+# Test output artifacts
+**/torture_result.txt
+**/test_torture_output.txt
+**/test_torture_out.txt
+**/verify.txt
+**/fails_only.txt
+test_output.txt
