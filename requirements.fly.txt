@@ -1,4 +1,4 @@
-# Fly.io deployment requirements
+# Fly.io deployment requirements (slim — VaultStore fallback, no FAISS/torch)
 requests>=2.28.0
 pyyaml>=6.0
 fastapi>=0.100.0
@@ -15,7 +15,3 @@ PyJWT>=2.8.0
 stripe>=7.0.0
 python-dotenv>=1.0.0
 httpx>=0.24.0
-
-# FAISS vector memory system (required for Memory Vault)
-faiss-cpu>=1.7.4
-sentence-transformers>=2.2.0
