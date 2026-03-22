@@ -30,16 +30,7 @@ MEMORIES = [
         tags=["ui", "dashboard", "navigation", "overview"],
         source="operator", tier="canon",
     ),
-    dict(
-        text=(
-            "The UI runs on port 8989 by default using uvicorn with --reload. "
-            "Static assets are served from web/static/ (CSS) and templates live in "
-            "web/templates/. All backend logic is in web/app.py."
-        ),
-        scope="shared", category="meta",
-        tags=["ui", "server", "port", "uvicorn", "fastapi"],
-        source="operator", tier="canon",
-    ),
+    # REMOVED: Server port and file paths (opsec risk)
 
     # ── Chat Page ────────────────────────────────────────────────
     dict(
@@ -246,7 +237,7 @@ MEMORIES = [
     ),
     dict(
         text=(
-            "Current ready tools: web_search (SearXNG-powered web search with fast/normal/deep "
+            "Current ready tools: web_search (privacy-respecting web search with fast/normal/deep "
             "modes), email (SMTP-based with account management), echo (test tool), and "
             "cost_tracker (token pricing and spend monitoring). Planned tools: memory, "
             "directives, task_inbox, continuation_update, runtime_info, inbox. Concept: computer_use."
@@ -258,7 +249,7 @@ MEMORIES = [
     dict(
         text=(
             "The Tools page includes configuration panels for each ready tool. "
-            "Web Search has SearXNG URL and mode settings. Email has SMTP account "
+            "Web Search has URL and mode settings. Email has SMTP account "
             "management (add/remove accounts, test send). Cost Tracker shows spending "
             "breakdowns by today/month/all-time with per-model rates."
         ),

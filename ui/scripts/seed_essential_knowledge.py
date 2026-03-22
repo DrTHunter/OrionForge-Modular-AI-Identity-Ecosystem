@@ -37,17 +37,7 @@ MEMORIES = [
         tags=["platform", "orionforge", "identity", "core"],
         source="operator", tier="canon",
     ),
-    dict(
-        text=(
-            "OrionForge runs as a FastAPI/Uvicorn web application deployed on Fly.io. "
-            "The web dashboard is the primary interface where users chat with agents, "
-            "manage profiles, browse the memory vault, configure tools, and customize "
-            "their experience. The app serves on port 8989."
-        ),
-        scope="shared", category="meta",
-        tags=["platform", "deployment", "fastapi", "fly_io"],
-        source="operator", tier="canon",
-    ),
+    # REMOVED: Fly.io deployment details (opsec risk — exposes hosting platform, framework, port)
     dict(
         text=(
             "OrionForge ships with 16 pre-built agents, each with a unique personality, "
@@ -156,7 +146,7 @@ MEMORIES = [
         text=(
             "Available tools that may be enabled for you: "
             "(1) memory — search, add, update, delete, and compact vault memories. "
-            "(2) web_search — SearXNG-powered privacy-respecting web search with "
+            "(2) web_search — privacy-respecting web search with "
             "fast/normal/deep modes. "
             "(3) email — send emails via SMTP with configured accounts. "
             "(4) directives — retrieve sections from your directive documents. "
@@ -254,17 +244,7 @@ MEMORIES = [
     # ═══════════════════════════════════════════════════════════════
     # 7. AUTH & BILLING — Monetization context
     # ═══════════════════════════════════════════════════════════════
-    dict(
-        text=(
-            "OrionForge uses Supabase for authentication (Google, GitHub, email OAuth) "
-            "and Stripe for billing. Plans: Free tier (limited access) and Pro tier "
-            "($9.99/month). New users get a 5-day free trial with full access on signup. "
-            "Credits can be purchased in the Store for additional features like TTS/STT."
-        ),
-        scope="shared", category="knowledge",
-        tags=["auth", "billing", "stripe", "supabase", "trial"],
-        source="operator", tier="canon",
-    ),
+    # REMOVED: Auth & billing provider names (opsec risk — exposes Supabase, Stripe, OAuth provider details)
     dict(
         text=(
             "The Agent Store sells individual agents and tool packs via credits. "
@@ -280,18 +260,7 @@ MEMORIES = [
     # ═══════════════════════════════════════════════════════════════
     # 8. CLOUD INFRASTRUCTURE — Services you rely on
     # ═══════════════════════════════════════════════════════════════
-    dict(
-        text=(
-            "OrionForge is deployed on Fly.io with a 1 GB persistent volume at /persist "
-            "for billing state. Three private sidecar services connect via Flycast "
-            "internal networking: SearXNG (privacy-respecting web search), "
-            "openedai-speech (text-to-speech via Piper and XTTS voices), and "
-            "faster-whisper (speech-to-text transcription)."
-        ),
-        scope="shared", category="knowledge",
-        tags=["infrastructure", "fly_io", "sidecars", "tts", "stt", "search"],
-        source="operator", tier="canon",
-    ),
+    # REMOVED: Cloud infrastructure topology (opsec risk — exposes volume paths, sidecar services, internal networking)
 
     # ═══════════════════════════════════════════════════════════════
     # 9. VOICE & IMAGE — Multimedia capabilities
@@ -299,7 +268,7 @@ MEMORIES = [
     dict(
         text=(
             "Voice capabilities: Text-to-Speech via ElevenLabs, Edge-TTS, or "
-            "openedai-speech (Piper/XTTS). Speech-to-Text via faster-whisper. "
+            "self-hosted TTS. Speech-to-Text via local transcription service. "
             "Image generation via 9 providers: DALL-E, GPT Image, Google Imagen, "
             "Stability AI, Ideogram, Replicate, FAL, Leonardo, and Midjourney. "
             "Users can generate images by asking any agent with the feature enabled."
@@ -414,44 +383,13 @@ MEMORIES = [
         tags=["dashboard", "pages", "ui", "navigation"],
         source="operator", tier="canon",
     ),
-    dict(
-        text=(
-            "The website for OrionForge is https://orionforge.chat — this is the public "
-            "marketing site. The deployed app lives at https://orionforge-engine.fly.dev "
-            "which is the actual dashboard users log into. The GitHub repository is at "
-            "https://github.com/DrTHunter/OrionForge-Modular-AI-Identity-Ecosystem."
-        ),
-        scope="shared", category="knowledge",
-        tags=["urls", "website", "deployment", "github"],
-        source="operator", tier="canon",
-    ),
+    # REMOVED: Internal URLs (opsec risk — exposes deployment URL, GitHub repo)
 
     # ═══════════════════════════════════════════════════════════════
     # 13. GOVERNANCE & SECURITY
     # ═══════════════════════════════════════════════════════════════
-    dict(
-        text=(
-            "The governance system provides session-scoped directive registries with "
-            "append-only JSONL audit logging. Every directive retrieval is logged. "
-            "The policy layer enforces boundaries with risk classification (low/med/high) "
-            "and deterministic denial payloads for dangerous requests."
-        ),
-        scope="shared", category="governance",
-        tags=["governance", "audit", "policy", "security"],
-        source="operator", tier="canon",
-    ),
-    dict(
-        text=(
-            "Directives use SHA-256 manifest hashing for integrity verification and "
-            "change control. The directive system is file-based — all directives live "
-            "in directives/{agent}.md organized under ## headings. Relevant sections "
-            "are retrieved via FAISS semantic search during each conversation, not "
-            "loaded in bulk."
-        ),
-        scope="shared", category="governance",
-        tags=["directives", "sha256", "manifest", "faiss", "retrieval"],
-        source="operator", tier="canon",
-    ),
+    # REMOVED: Governance internals (opsec risk — exposes audit format, policy enforcement mechanisms)
+    # REMOVED: Directive security implementation (opsec risk — exposes hashing, file paths, retrieval mechanism)
 ]
 
 
