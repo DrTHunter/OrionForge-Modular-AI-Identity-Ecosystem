@@ -1049,6 +1049,12 @@ def _build_chat_messages(agent: str, messages: list[dict]) -> tuple[list[dict], 
 
     # ── 1. Base prompt ──
     system_prompt = _load_system_prompt(agent)
+
+    # ── 1b. User identity — let the agent know who it's talking to ──
+    user_name = _load_settings().get("user_profile", {}).get("name", "").strip()
+    if user_name:
+        system_prompt += f"\n\nThe user's name is {user_name}."
+
     layers["base_prompt"]["chars"] = len(system_prompt)
     layers["base_prompt"]["preview"] = system_prompt[:300]
 

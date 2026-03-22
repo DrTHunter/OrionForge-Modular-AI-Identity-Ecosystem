@@ -102,7 +102,9 @@
   },
   "agent_configs": {
     "astra": {
-      "display_name": "Astra"
+      "display_name": "Astra",
+      "attached_notes": ["5ccf5b26"],
+      "note_modes": {"5ccf5b26": "always"}
     },
     "astraea": {
       "attached_notes": [
@@ -131,10 +133,12 @@
     "marcus": {
       "display_name": "Marcus Aurelius",
       "attached_notes": [
+        "5ccf5b26",
         "d1436386",
         "cc7ede21"
       ],
       "note_modes": {
+        "5ccf5b26": "always",
         "d1436386": "directive",
         "cc7ede21": "directive"
       },
@@ -144,47 +148,73 @@
       ]
     },
     "codex_animus": {
-      "display_name": "Codex Animus"
+      "display_name": "Codex Animus",
+      "attached_notes": ["5ccf5b26"],
+      "note_modes": {"5ccf5b26": "always"}
     },
     "dalvarr": {
-      "display_name": "Dal'Varr"
+      "display_name": "Dal'Varr",
+      "attached_notes": ["5ccf5b26"],
+      "note_modes": {"5ccf5b26": "always"}
     },
     "janus": {
-      "display_name": "JANUS"
+      "display_name": "JANUS",
+      "attached_notes": ["5ccf5b26"],
+      "note_modes": {"5ccf5b26": "always"}
     },
     "kaelen": {
-      "display_name": "Kaelen"
+      "display_name": "Kaelen",
+      "attached_notes": ["5ccf5b26"],
+      "note_modes": {"5ccf5b26": "always"}
     },
     "kairos": {
-      "display_name": "Kairos"
+      "display_name": "Kairos",
+      "attached_notes": ["5ccf5b26"],
+      "note_modes": {"5ccf5b26": "always"}
     },
     "kazara": {
-      "display_name": "Kazara"
+      "display_name": "Kazara",
+      "attached_notes": ["5ccf5b26"],
+      "note_modes": {"5ccf5b26": "always"}
     },
     "lux_umbra": {
-      "display_name": "Lux Umbra"
+      "display_name": "Lux Umbra",
+      "attached_notes": ["5ccf5b26"],
+      "note_modes": {"5ccf5b26": "always"}
     },
     "maris": {
-      "display_name": "M.A.R.I.S.-12"
+      "display_name": "M.A.R.I.S.-12",
+      "attached_notes": ["5ccf5b26"],
+      "note_modes": {"5ccf5b26": "always"}
     },
     "obsidian": {
-      "display_name": "Obsidian"
+      "display_name": "Obsidian",
+      "attached_notes": ["5ccf5b26"],
+      "note_modes": {"5ccf5b26": "always"}
     },
     "orion": {
-      "display_name": "Orion"
+      "display_name": "Orion",
+      "attached_notes": ["5ccf5b26"],
+      "note_modes": {"5ccf5b26": "always"}
     },
     "k_os": {
-      "display_name": "K-OS"
+      "display_name": "K-OS",
+      "attached_notes": ["5ccf5b26"],
+      "note_modes": {"5ccf5b26": "always"}
     },
     "seraphine": {
-      "display_name": "Seraphine"
+      "display_name": "Seraphine",
+      "attached_notes": ["5ccf5b26"],
+      "note_modes": {"5ccf5b26": "always"}
     },
     "aristotle": {
       "display_name": "Aristotle",
       "attached_notes": [
+        "5ccf5b26",
         "8628d54d"
       ],
       "note_modes": {
+        "5ccf5b26": "always",
         "8628d54d": "directive"
       },
       "essential_notes": [
