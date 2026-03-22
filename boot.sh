@@ -1,8 +1,8 @@
 #!/bin/bash
-# â”€â”€ OrionForge Fly.io Boot Script â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-# Ensures uploads and memory vault are on the persistent volume so
-# avatars, user-uploaded files, and memories survive across deploys.
-# â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
+# ── OrionForge Fly.io Boot Script ──────────────────────────────
+# Ensures uploads, memory vault, config, and user notes are on the
+# persistent volume so they survive across deploys.
+# ─────────────────────────────────────────────────────────────────
 
 set -e
 
@@ -13,6 +13,13 @@ BUNDLED_UPLOADS="/app/_bundled_uploads"
 PERSIST_MEMORY="/persist/memory"
 APP_MEMORY="/app/app/data/memory"
 BUNDLED_MEMORY="/app/_bundled_memory"
+
+PERSIST_CONFIG="/persist/config"
+APP_CONFIG="/app/app/config"
+BUNDLED_CONFIG="/app/_bundled_config"
+
+PERSIST_NOTES="/persist/user_notes"
+APP_NOTES="/app/app/data/user_notes"
 
 # 1. Create persistent uploads dir if it doesn't exist
 mkdir -p "$PERSIST_UPLOADS"
@@ -62,5 +69,53 @@ ln -sfn "$PERSIST_MEMORY" "$APP_MEMORY"
 
 echo "[boot] Memory vault linked to persistent volume."
 
-# 7. Start the app
+# ── CONFIG PERSISTENCE ─────────────────────────────────
+# 7. Create persistent config dir if it doesn't exist
+mkdir -p "$PERSIST_CONFIG"
+
+# 8. Seed bundled config on first deploy; preserve user changes thereafter.
+if [ -d "$BUNDLED_CONFIG" ]; then
+    if [ ! -f "$PERSIST_CONFIG/settings.json" ]; then
+        echo "[boot] First deploy — seeding bundled config."
+        cp -a "$BUNDLED_CONFIG"/* "$PERSIST_CONFIG/" 2>/dev/null || true
+    else
+        echo "[boot] Persistent config exists — preserving user settings."
+        # Merge in any NEW config files shipped in the image (no-clobber)
+        cp -n "$BUNDLED_CONFIG"/* "$PERSIST_CONFIG/" 2>/dev/null || true
+    fi
+fi
+
+# 9. Symlink config dir to persistent volume
+if [ -L "$APP_CONFIG" ]; then
+    rm "$APP_CONFIG"
+elif [ -d "$APP_CONFIG" ]; then
+    rm -rf "$APP_CONFIG"
+fi
+ln -sfn "$PERSIST_CONFIG" "$APP_CONFIG"
+
+echo "[boot] Config linked to persistent volume."
+
+# ── USER NOTES PERSISTENCE ─────────────────────────────
+# 10. Create persistent user_notes dir if it doesn't exist
+mkdir -p "$PERSIST_NOTES"
+
+# 11. Seed bundled notes on first deploy; preserve user notes thereafter.
+if [ ! -f "$PERSIST_NOTES/index.json" ]; then
+    echo "[boot] First deploy — seeding bundled user notes."
+    cp -a "$APP_NOTES"/* "$PERSIST_NOTES/" 2>/dev/null || true
+else
+    echo "[boot] Persistent user notes exist — preserving."
+fi
+
+# 12. Symlink user_notes dir to persistent volume
+if [ -L "$APP_NOTES" ]; then
+    rm "$APP_NOTES"
+elif [ -d "$APP_NOTES" ]; then
+    rm -rf "$APP_NOTES"
+fi
+ln -sfn "$PERSIST_NOTES" "$APP_NOTES"
+
+echo "[boot] User notes linked to persistent volume."
+
+# 13. Start the app
 exec python -m uvicorn web.app:app --host 0.0.0.0 --port 8989 --workers 2
