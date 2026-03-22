@@ -278,6 +278,15 @@ _migrate_base64_avatars()
 
 # ── FAISS memory (lazy singleton) ────────────────────────────────
 _faiss_memory = None
+_vault_store = None
+
+def _get_vault_store():
+    """Return a VaultStore instance (always works — no ML deps)."""
+    global _vault_store
+    if _vault_store is None:
+        from src.memory.vault import VaultStore
+        _vault_store = VaultStore(str(_VAULT_PATH))
+    return _vault_store
 
 def _get_faiss_memory():
     global _faiss_memory
@@ -290,7 +299,7 @@ def _get_faiss_memory():
             )
             log.info("[vault] FAISSMemory loaded — %d memories", len(_faiss_memory.list_all()))
         except Exception as exc:
-            log.error("[vault] FAISSMemory init failed: %s", exc)
+            log.warning("[vault] FAISSMemory unavailable (%s) — using VaultStore fallback", exc)
     return _faiss_memory
 
 
@@ -1180,8 +1189,11 @@ def _extract_and_save_memories(agent: str, response_text: str) -> list[dict]:
 
     fm = _get_faiss_memory()
     if not fm:
-        log.warning("[memory] Vault not available — cannot save memories")
-        return []
+        # Fall back to VaultStore for memory saves
+        vs = _get_vault_store()
+        if not vs:
+            log.warning("[memory] Vault not available — cannot save memories")
+            return []
 
     saved = []
     for category_raw, text_raw in matches:
@@ -1193,13 +1205,22 @@ def _extract_and_save_memories(agent: str, response_text: str) -> list[dict]:
         if category not in valid_cats:
             category = "other"
         try:
-            mem = fm.add(
-                text=text,
-                scope=agent,
-                category=category,
-                source="chat",
-                tags=["auto-saved"],
-            )
+            if fm:
+                mem = fm.add(
+                    text=text,
+                    scope=agent,
+                    category=category,
+                    source="chat",
+                    tags=["auto-saved"],
+                )
+            else:
+                mem = vs.create_memory(
+                    text=text,
+                    scope=agent,
+                    category=category,
+                    source="chat",
+                    tags=["auto-saved"],
+                )
             saved.append({"id": mem.id, "text": text[:120], "category": category})
             log.info("[memory] Saved to vault: scope=%s cat=%s text=%.60s", agent, category, text)
         except Exception as exc:
@@ -1866,6 +1887,7 @@ async def page_profiles(request: Request):
 @app.get("/vault", response_class=HTMLResponse)
 async def page_vault(request: Request, q: str = "", scope: str = "", category: str = "", sort: str = "newest"):
     fm = _get_faiss_memory()
+    vs = _get_vault_store()
     memories, scopes, categories = [], [], []
     # Load max_total_memories from memory profile (0 = unlimited)
     mp = _load_memory_profile()
@@ -1895,41 +1917,63 @@ async def page_vault(request: Request, q: str = "", scope: str = "", category: s
                 all_mems = [m for m in all_mems if getattr(m, "category", "") == category]
             memories = [m.__dict__ if hasattr(m, "__dict__") else m for m in all_mems]
 
-        # ── Sort memories ──────────────────────────────────────────
-        def _sort_key(m):
-            """Extract sort key from a Memory object or dict."""
-            if isinstance(m, dict):
-                get = m.get
-            else:
-                get = lambda k, d="": getattr(m, k, d)
-            if sort == "oldest":
-                return get("created_at", "")
-            elif sort == "scope":
-                return (get("scope", ""), get("created_at", ""))
-            elif sort == "category":
-                return (get("category", ""), get("created_at", ""))
-            elif sort == "tier":
-                return (get("tier", "canon"), get("created_at", ""))
-            elif sort == "alpha":
-                return (get("text", "") or "").lower()
-            elif sort == "source":
-                return (get("source", "") or "", get("created_at", ""))
-            elif sort == "tag":
-                tags = get("tags", []) or []
-                return ((tags[0] if tags else "~"), get("created_at", ""))
-            elif sort == "updated":
-                return get("updated_at", "") or get("created_at", "") or ""
-            else:  # newest (default)
-                return get("created_at", "")
-
-        reverse = sort not in ("oldest", "alpha", "tag")  # ascending for oldest, alpha, tag
-        if sort == "updated":
-            reverse = True
-        memories = sorted(memories, key=_sort_key, reverse=reverse)
-
         all_raw = fm.list_all()
         scopes = sorted({getattr(m, "scope", "") for m in all_raw} - {""})
         categories = sorted({getattr(m, "category", "") for m in all_raw} - {""})
+    elif vs:
+        # ── VaultStore fallback (no FAISS / no semantic search) ──
+        all_active = vs.read_active()
+        active_count = len(all_active)
+        stats["active_count"] = active_count
+        stats["raw_lines"] = len(vs.read_all())
+        stats["compactable_lines"] = stats["raw_lines"] - active_count
+        if max_total and max_total > 0:
+            stats["utilization_pct"] = min(100, round(active_count / max_total * 100))
+
+        filtered = all_active
+        if scope:
+            filtered = [m for m in filtered if m.scope == scope]
+        if category:
+            filtered = [m for m in filtered if m.category == category]
+        if q:
+            q_lower = q.lower()
+            filtered = [m for m in filtered if q_lower in (m.text or "").lower()]
+        memories = [m.__dict__ for m in filtered]
+
+        scopes = sorted({m.scope for m in all_active if m.scope} - {""})
+        categories = sorted({m.category for m in all_active if m.category} - {""})
+
+    # ── Sort memories ──────────────────────────────────────────
+    def _sort_key(m):
+        """Extract sort key from a Memory object or dict."""
+        if isinstance(m, dict):
+            get = m.get
+        else:
+            get = lambda k, d="": getattr(m, k, d)
+        if sort == "oldest":
+            return get("created_at", "")
+        elif sort == "scope":
+            return (get("scope", ""), get("created_at", ""))
+        elif sort == "category":
+            return (get("category", ""), get("created_at", ""))
+        elif sort == "tier":
+            return (get("tier", "canon"), get("created_at", ""))
+        elif sort == "alpha":
+            return (get("text", "") or "").lower()
+        elif sort == "source":
+            return (get("source", "") or "", get("created_at", ""))
+        elif sort == "tag":
+            tags = get("tags", []) or []
+            return ((tags[0] if tags else "~"), get("created_at", ""))
+        elif sort == "updated":
+            return get("updated_at", "") or get("created_at", "") or ""
+        else:  # newest (default)
+            return get("created_at", "")
+
+    reverse = sort not in ("oldest", "alpha", "tag")  # ascending for oldest, alpha, tag
+    if sort == "updated":
+        reverse = True
+    memories = sorted(memories, key=_sort_key, reverse=reverse)
 
     return templates.TemplateResponse("vault.html", {
         "request": request, "page": "vault",
@@ -2255,7 +2299,9 @@ async def page_tools(request: Request):
                 "in_sync": _fs.get("in_sync", True),
             }
         else:
-            faiss_stats = {"total_memories": 0, "vault_path": str(_VAULT_PATH), "faiss_dir": str(_FAISS_DIR), "embedding_model": "all-mpnet-base-v2", "faiss_vectors": 0, "vector_dimensions": 768, "index_type": "IndexFlatIP", "in_sync": True}
+            vs = _get_vault_store()
+            _count = len(vs.read_active()) if vs else 0
+            faiss_stats = {"total_memories": _count, "vault_path": str(_VAULT_PATH), "faiss_dir": str(_FAISS_DIR), "embedding_model": "N/A (VaultStore mode)", "faiss_vectors": 0, "vector_dimensions": 0, "index_type": "VaultStore", "in_sync": True}
     except Exception:
         faiss_stats = {"total_memories": 0, "vault_path": str(_VAULT_PATH), "faiss_dir": str(_FAISS_DIR), "embedding_model": "all-mpnet-base-v2", "faiss_vectors": 0, "vector_dimensions": 768, "index_type": "IndexFlatIP", "in_sync": True}
     # Email tool config
@@ -4634,10 +4680,24 @@ async def api_vault_add(request: Request):
     if not text:
         return JSONResponse({"error": "Memory text is required"}, 400)
     fm = _get_faiss_memory()
-    if not fm:
+    if fm:
+        try:
+            mem = fm.add(
+                text=text,
+                scope=body.get("scope", "shared"),
+                category=body.get("category", "other"),
+                source=body.get("source", "manual"),
+                tags=body.get("tags", []),
+            )
+            return {"status": "saved", "id": mem.id, "text": text[:120]}
+        except Exception as exc:
+            return JSONResponse({"error": str(exc)}, 500)
+    # VaultStore fallback
+    vs = _get_vault_store()
+    if not vs:
         return JSONResponse({"error": "Vault not available"}, 500)
     try:
-        mem = fm.add(
+        mem = vs.create_memory(
             text=text,
             scope=body.get("scope", "shared"),
             category=body.get("category", "other"),
@@ -4656,10 +4716,22 @@ async def api_vault_batch_add(request: Request):
     if not items or not isinstance(items, list):
         return JSONResponse({"error": "memories array is required"}, 400)
     fm = _get_faiss_memory()
-    if not fm:
+    if fm:
+        try:
+            created = fm.batch_add(items)
+            return {
+                "status": "saved",
+                "count": len(created),
+                "ids": [m.id for m in created],
+            }
+        except Exception as exc:
+            return JSONResponse({"error": str(exc)}, 500)
+    # VaultStore fallback
+    vs = _get_vault_store()
+    if not vs:
         return JSONResponse({"error": "Vault not available"}, 500)
     try:
-        created = fm.batch_add(items)
+        created = vs.batch_create_many(items)
         return {
             "status": "saved",
             "count": len(created),
@@ -4671,25 +4743,41 @@ async def api_vault_batch_add(request: Request):
 @app.get("/api/vault/stats")
 async def api_vault_stats():
     fm = _get_faiss_memory()
-    return fm.stats() if fm else {"error": "Vault not available"}
+    if fm:
+        return fm.stats()
+    vs = _get_vault_store()
+    if vs:
+        active = vs.read_active()
+        all_raw = vs.read_all()
+        return {"active_count": len(active), "raw_lines": len(all_raw),
+                "compactable_lines": len(all_raw) - len(active)}
+    return {"error": "Vault not available"}
 
 @app.post("/api/vault/delete")
 async def api_vault_delete(request: Request):
     body = await request.json()
     fm = _get_faiss_memory()
-    if not fm:
+    if fm:
+        deleted = [mid for mid in body.get("ids", []) if fm.delete(mid)]
+        return {"deleted": deleted}
+    vs = _get_vault_store()
+    if not vs:
         return {"error": "Vault not available"}
-    deleted = [mid for mid in body.get("ids", []) if fm.delete(mid)]
-    return {"deleted": deleted}
+    result = vs.bulk_delete(body.get("ids", []))
+    return {"deleted": result["deleted"]}
 
 @app.get("/api/vault/compact")
 async def api_vault_compact():
     fm = _get_faiss_memory()
-    if not fm:
+    if fm:
+        before = fm.stats().get("raw_lines", 0)
+        fm.rebuild_index()
+        return {"before_lines": before, "after_lines": fm.stats().get("raw_lines", 0)}
+    vs = _get_vault_store()
+    if not vs:
         return {"error": "Vault not available"}
-    before = fm.stats().get("raw_lines", 0)
-    fm.rebuild_index()
-    return {"before_lines": before, "after_lines": fm.stats().get("raw_lines", 0)}
+    result = vs.compact()
+    return {"before_lines": result.get("raw_before", 0), "after_lines": result.get("raw_after", 0)}
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -6376,4 +6464,5 @@ async def api_move_chat(chat_id: str, request: Request):
 @app.get("/api/health")
 async def api_health():
     fm = _get_faiss_memory()
-    return {"status": "ok", "agents": _list_agents(), "vault_loaded": fm is not None}
+    vs = _get_vault_store()
+    return {"status": "ok", "agents": _list_agents(), "vault_loaded": fm is not None, "vault_store": vs is not None}
