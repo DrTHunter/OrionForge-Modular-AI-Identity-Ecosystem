@@ -341,7 +341,7 @@ PLATFORM_OLLAMA_URL = "http://orionforge-engine-ollama.flycast:11434"
 # user-BYOK only — configurable in Settings → API Keys.
 _ENV_KEY_MAP = {
     "openrouter":   ("OPENROUTER_API_KEY",   "https://openrouter.ai/api/v1"),
-    "elevenlabs":   ("ELEVENLABS_API_KEY",   "https://api.elevenlabs.io/v1"),
+    "elevenlabs":   ("ELEVENLABS_API_KEY",   "https://api.elevenlabs.io"),
 }
 
 def _seed_platform_keys_from_env():
@@ -365,7 +365,12 @@ def _seed_platform_keys_from_env():
                 existing = c
                 break
         if existing:
-            if existing.get("api_key") != key:
+            needs_update = existing.get("api_key") != key
+            # Fix base URL if it was stored with a trailing /v1 path
+            if existing.get("url", "").rstrip("/") != default_url.rstrip("/"):
+                existing["url"] = default_url
+                needs_update = True
+            if needs_update:
                 existing["api_key"] = key
                 existing["enabled"] = True
                 existing["platform_hosted"] = True
