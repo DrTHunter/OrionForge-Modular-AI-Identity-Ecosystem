@@ -893,6 +893,9 @@ let _sttRecognition = null;
 let _sttProvider = 'whisper';
 let _mediaRecorder = null;
 let _audioChunks = [];
+let _sttStream = null;
+let _sttSilenceTimer = null;
+let _sttAnalyser = null;
 let _index = {{ chat_index | tojson }};
 const _agentConns = {{ agent_connections | tojson }};
 const _userProfile = {{ user_profile | tojson }};
@@ -1619,20 +1622,48 @@ function _toggleMicBrowser() {
 function _toggleMicWhisper() {
   const btn = document.getElementById('btn-mic');
   const ta  = document.getElementById('chat-stimulus');
-  if (_mediaRecorder && _mediaRecorder.state === 'recording') { _mediaRecorder.stop(); return; }
+
+  // If already recording, stop immediately
+  if (_mediaRecorder && _mediaRecorder.state === 'recording') {
+    clearInterval(_sttSilenceTimer);
+    _sttSilenceTimer = null;
+    _mediaRecorder.stop();
+    return;
+  }
 
   navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+    _sttStream = stream;
     _audioChunks = [];
+
+    // Set up silence detection via AudioContext analyser
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const source = audioCtx.createMediaStreamSource(stream);
+    const analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 512;
+    source.connect(analyser);
+    _sttAnalyser = analyser;
+    const dataArr = new Uint8Array(analyser.frequencyBinCount);
+    let lastSpeechTime = Date.now();
+    const SILENCE_MS = 3000;
+    const NOISE_THRESHOLD = 15;
+
     const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
     _mediaRecorder = recorder;
     recorder.ondataavailable = (e) => { if (e.data.size > 0) _audioChunks.push(e.data); };
+
     recorder.onstop = async () => {
+      // Cleanup audio context and stream
+      clearInterval(_sttSilenceTimer); _sttSilenceTimer = null;
       stream.getTracks().forEach(t => t.stop());
+      _sttStream = null;
+      try { audioCtx.close(); } catch(_) {}
       btn.classList.remove('recording');
-      btn.classList.add('transcribing');
+
       const blob = new Blob(_audioChunks, { type: 'audio/webm' });
       _audioChunks = []; _mediaRecorder = null;
-      if (blob.size < 100) { btn.classList.remove('transcribing'); return; }
+      if (blob.size < 100) return;
+
+      btn.classList.add('transcribing');
       try {
         const formData = new FormData();
         formData.append('file', blob, 'recording.webm');
@@ -1661,8 +1692,25 @@ function _toggleMicWhisper() {
       } catch (e) { console.error('[stt] whisper error:', e); _showVoiceToast('Speech-to-text error: ' + e.message); }
       btn.classList.remove('transcribing');
     };
+
     recorder.start();
     btn.classList.add('recording');
+
+    // Monitor silence — auto-stop after 3s of no voice
+    _sttSilenceTimer = setInterval(() => {
+      if (!_mediaRecorder || _mediaRecorder.state !== 'recording') {
+        clearInterval(_sttSilenceTimer); _sttSilenceTimer = null;
+        return;
+      }
+      analyser.getByteFrequencyData(dataArr);
+      const avg = dataArr.reduce((a, b) => a + b, 0) / dataArr.length;
+      if (avg > NOISE_THRESHOLD) lastSpeechTime = Date.now();
+      if (Date.now() - lastSpeechTime > SILENCE_MS) {
+        console.log('[stt] auto-stop: 3s silence detected');
+        _mediaRecorder.stop();
+      }
+    }, 200);
+
   }).catch(err => {
     if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
       alert('Microphone access denied.\n\nClick the lock icon (\uD83D\uDD12) in your browser address bar \u2192 set Microphone to \"Allow\" \u2192 reload the page.');
