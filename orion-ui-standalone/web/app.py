@@ -5213,6 +5213,69 @@ async def api_admin_purge_inactive(request: Request):
 
 
 # ═══════════════════════════════════════════════════════════════════
+#  ADMIN — VOICE ALLOWLIST
+# ═══════════════════════════════════════════════════════════════════
+
+@app.get("/admin/voices", response_class=HTMLResponse)
+async def page_admin_voices(request: Request):
+    """Admin page for managing which ElevenLabs voices users can see."""
+    if not _check_admin(request):
+        return JSONResponse({"error": "Unauthorized"}, status_code=403)
+    settings = _load_settings()
+    return templates.TemplateResponse("admin_voices.html", {
+        "request": request,
+        "page": "admin",
+        "allowed_voices": settings.get("allowed_voices", []),
+    })
+
+
+@app.get("/api/admin/voices/all")
+async def api_admin_voices_all(request: Request):
+    """Fetch ALL ElevenLabs voices (admin only, unfiltered)."""
+    if not _check_admin(request):
+        return JSONResponse({"error": "Unauthorized"}, status_code=403)
+    conn_data = _load_connections()
+    el_conn = None
+    for c in conn_data.get("connections", []):
+        if c.get("provider") == "elevenlabs" and c.get("enabled", True):
+            el_conn = c
+            break
+    if not el_conn or not el_conn.get("api_key"):
+        return JSONResponse({"voices": [], "error": "No ElevenLabs connection configured"})
+    url = f"{el_conn['url'].rstrip('/')}/v1/voices"
+    headers = {"xi-api-key": el_conn["api_key"]}
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.get(url, headers=headers)
+            resp.raise_for_status()
+            data = resp.json()
+        voices = [
+            {"voice_id": v["voice_id"], "name": v["name"],
+             "category": v.get("category", ""),
+             "labels": v.get("labels", {})}
+            for v in data.get("voices", [])
+        ]
+        return JSONResponse({"voices": voices})
+    except Exception as e:
+        return JSONResponse({"voices": [], "error": str(e)})
+
+
+@app.put("/api/admin/voices/allowed")
+async def api_admin_save_allowed_voices(request: Request):
+    """Save the admin-curated allowlist of voice IDs."""
+    if not _check_admin(request):
+        return JSONResponse({"error": "Unauthorized"}, status_code=403)
+    body = await request.json()
+    allowed = body.get("allowed_voices", [])
+    if not isinstance(allowed, list):
+        return JSONResponse({"error": "allowed_voices must be a list"}, status_code=400)
+    settings = _load_settings()
+    settings["allowed_voices"] = allowed
+    _save_settings(settings)
+    return JSONResponse({"status": "ok", "count": len(allowed)})
+
+
+# ═══════════════════════════════════════════════════════════════════
 #  CONNECTIONS API
 # ═══════════════════════════════════════════════════════════════════
 
@@ -5678,7 +5741,7 @@ async def api_tts_speak(request: Request):
 
 @app.get("/api/tts/voices")
 async def api_tts_voices():
-    """Fetch available voices from ElevenLabs."""
+    """Fetch available voices from ElevenLabs, filtered by admin allowlist."""
     conn_data = _load_connections()
     el_conn = None
     for c in conn_data.get("connections", []):
@@ -5696,6 +5759,11 @@ async def api_tts_voices():
             data = resp.json()
         voices = [{"voice_id": v["voice_id"], "name": v["name"], "category": v.get("category", "")}
                   for v in data.get("voices", [])]
+        # Apply admin allowlist filter
+        allowed = _load_settings().get("allowed_voices", [])
+        if allowed:
+            allowed_set = set(allowed)
+            voices = [v for v in voices if v["voice_id"] in allowed_set]
         return JSONResponse({"voices": voices})
     except Exception as e:
         return JSONResponse({"voices": [], "error": str(e)})
