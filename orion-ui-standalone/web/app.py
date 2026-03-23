@@ -3573,6 +3573,11 @@ async def api_chat_send(req: ChatRequest, request: Request):
             conn = tier_conn
             log.info("[router] Switched connection to tier '%s'", _router_decision.tier_name)
 
+    # ── OpenRouter prefix fix ──────────────────────────────────────
+    if conn.get("provider") == "openrouter" and model and "/" not in model:
+        model = f"openai/{model}"
+        log.info("[send] Auto-prefixed model for OpenRouter: %s", model)
+
     # Call LLM API (with tool-call loop)
     url = conn["url"].rstrip("/")
     if not url.endswith("/chat/completions"):
@@ -3580,6 +3585,8 @@ async def api_chat_send(req: ChatRequest, request: Request):
     headers = {"Content-Type": "application/json"}
     if conn.get("api_key"):
         headers["Authorization"] = f"Bearer {conn['api_key']}"
+
+    log.info("[send] agent=%s model=%s conn=%s", req.agent, model, conn.get("id"))
 
     MAX_TOOL_ROUNDS = 10          # safety cap
     tool_call_log: list[dict] = []  # track every tool invocation for the UI
@@ -3948,12 +3955,22 @@ async def _stream_chat_generator(req: ChatRequest, request: Request, user, conn,
             if tier_conn:
                 conn = tier_conn
 
+    # ── OpenRouter prefix fix ──────────────────────────────────────
+    # OpenRouter requires "provider/model" format (e.g. "openai/gpt-5.4").
+    # If the resolved model has no slash and the connection is OpenRouter,
+    # auto-prefix with "openai/" so bare names like "gpt-5.4" work.
+    if conn.get("provider") == "openrouter" and model and "/" not in model:
+        model = f"openai/{model}"
+        log.info("[stream] Auto-prefixed model for OpenRouter: %s", model)
+
     url = conn["url"].rstrip("/")
     if not url.endswith("/chat/completions"):
         url += "/chat/completions"
     headers = {"Content-Type": "application/json"}
     if conn.get("api_key"):
         headers["Authorization"] = f"Bearer {conn['api_key']}"
+
+    log.info("[stream] agent=%s model=%s conn=%s", req.agent, model, conn.get("id"))
 
     MAX_TOOL_ROUNDS = 10
     tool_call_log: list[dict] = []
@@ -4002,6 +4019,7 @@ async def _stream_chat_generator(req: ChatRequest, request: Request, user, conn,
                 async with client.stream("POST", url, json=payload, headers=headers) as resp:
                     if resp.status_code != 200:
                         body = await resp.aread()
+                        log.error("[stream] API error %s for model=%s: %s", resp.status_code, model, body.decode()[:500])
                         yield _sse({"type": "error", "message": f"API {resp.status_code}: {body.decode()[:300]}"})
                         return
 

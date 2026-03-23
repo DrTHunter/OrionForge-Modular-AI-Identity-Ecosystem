@@ -1,0 +1,4 @@
+model: gpt-4o
+name: new_agent
+system_prompt: new_agent.system.md
+temperature: 0.5
