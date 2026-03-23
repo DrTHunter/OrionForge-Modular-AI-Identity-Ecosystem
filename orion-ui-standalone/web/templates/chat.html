@@ -821,8 +821,9 @@
             <button type="button" onclick="toggleMic()" id="btn-mic" class="mic-btn" title="Voice input (Speech-to-Text)">🎙️</button>
           </div>
           <div class="compose-toolbar">
-            <button type="button" onclick="toggleSTTProvider()" id="btn-stt" class="tb stt-toggle on-browser" title="STT: Chrome / Browser">
-              <span class="stt-dot"></span><span id="stt-label">🎤 Chrome</span>
+            <!-- Browser STT toggle hidden; Whisper is the sole provider -->
+            <button type="button" onclick="toggleSTTProvider()" id="btn-stt" class="tb stt-toggle on-whisper" title="STT: Whisper" style="display:none">
+              <span class="stt-dot"></span><span id="stt-label">🎤 Whisper</span>
             </button>
             <div class="tb-sep"></div>
             <select id="chat-agent" class="tb-sel" title="Agent">
@@ -889,7 +890,7 @@ let _ttsVolume = 0.8;
 const _ttsCache = new Map();
 const _TTS_CACHE_MAX = 10;
 let _sttRecognition = null;
-let _sttProvider = 'browser';
+let _sttProvider = 'whisper';
 let _mediaRecorder = null;
 let _audioChunks = [];
 let _index = {{ chat_index | tojson }};
