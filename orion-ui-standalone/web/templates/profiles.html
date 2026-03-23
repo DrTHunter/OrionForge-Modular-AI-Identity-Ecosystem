@@ -1508,13 +1508,34 @@
     try {
       const resp = await fetch('/api/tts/voices');
       const data = await resp.json();
-      if (!data.voices || data.voices.length === 0) return;
+      console.log('[profiles] ElevenLabs voices:', data);
+      const voices = (data.voices && data.voices.length > 0) ? data.voices : [
+        {voice_id: '21m00Tcm4TlvDq8ikWAM', name: 'Rachel', category: 'premade'},
+        {voice_id: 'AZnzlk1XvdvUeBnXmlld', name: 'Domi', category: 'premade'},
+        {voice_id: 'EXAVITQu4vr4xnSDxMaL', name: 'Bella', category: 'premade'},
+        {voice_id: 'ErXwobaYiN019PkySvjV', name: 'Antoni', category: 'premade'},
+        {voice_id: 'MF3mGyEYCl7XYWbV9V6O', name: 'Elli', category: 'premade'},
+        {voice_id: 'TxGEqnHWrfWFTfGW9XjX', name: 'Josh', category: 'premade'},
+        {voice_id: 'VR6AewLTigWG4xSOukaG', name: 'Arnold', category: 'premade'},
+        {voice_id: 'pNInz6obpgDQGcFmaJgB', name: 'Adam', category: 'premade'},
+        {voice_id: 'yoZ06aMxZJJ28mfd3POQ', name: 'Sam', category: 'premade'},
+        {voice_id: 'jBpfuIE2acCO8z3wKNLl', name: 'Gigi', category: 'premade'},
+        {voice_id: 'onwK4e9ZLuTAKqWW03F9', name: 'Daniel', category: 'premade'},
+        {voice_id: 'XB0fDUnXU5powFXDhCwa', name: 'Charlotte', category: 'premade'},
+        {voice_id: 'Xb7hH8MSUJpSbSDYk0k2', name: 'Alice', category: 'premade'},
+        {voice_id: 'iP95p4xoKVk53GoZ742B', name: 'Chris', category: 'premade'},
+        {voice_id: 'nPczCjzI2devNBz1zQrb', name: 'Brian', category: 'premade'},
+        {voice_id: 'N2lVS1w4EtoT3dr4eOWO', name: 'Callum', category: 'premade'},
+        {voice_id: 'TX3LPaxmHKxFdv7VOQHJ', name: 'Liam', category: 'premade'},
+        {voice_id: 'XrExE9yKIg1WjnnlVkGX', name: 'Lily', category: 'premade'},
+        {voice_id: 'pFZP5JQG7iQjIQuC4Bku', name: 'George', category: 'premade'},
+      ];
       document.querySelectorAll('select[id^="voice-paid-"]').forEach(sel => {
         const current = sel.dataset.current || '';
         let selectedText = 'Not set';
         const grp = document.createElement('optgroup');
         grp.label = 'ElevenLabs';
-        data.voices.forEach(v => {
+        voices.forEach(v => {
           const opt = document.createElement('option');
           opt.value = v.voice_id;
           opt.textContent = v.name + (v.category ? ` (${v.category})` : '');
@@ -1526,7 +1547,7 @@
         const disp = document.getElementById('voice-paid-display-' + agName);
         if (disp && current) disp.textContent = selectedText;
       });
-    } catch (e) { /* ElevenLabs not configured */ }
+    } catch (e) { console.error('[profiles] ElevenLabs voices error:', e); }
   }
 
   // Fetch Edge-TTS voices and populate free TTS dropdowns
