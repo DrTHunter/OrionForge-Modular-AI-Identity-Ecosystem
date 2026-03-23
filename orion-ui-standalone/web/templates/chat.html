@@ -447,15 +447,15 @@
 
   /* TTS toggle */
   .tts-toggle { position: relative; }
-  .tts-toggle.on-edge { background: rgba(34,197,94,0.15); color: #22c55e; border-color: rgba(34,197,94,0.3); }
-  .tts-toggle.on-xtts { background: rgba(99,102,241,0.15); color: #818cf8; border-color: rgba(99,102,241,0.3); }
+  .tts-toggle.on-inworld { background: rgba(34,197,94,0.15); color: #22c55e; border-color: rgba(34,197,94,0.3); }
+  .tts-toggle.on-inworld-hd { background: rgba(99,102,241,0.15); color: #818cf8; border-color: rgba(99,102,241,0.3); }
   .tts-toggle.on-eleven { background: rgba(245,158,11,0.15); color: #f59e0b; border-color: rgba(245,158,11,0.3); }
   .tts-toggle .tts-dot {
     width: 5px; height: 5px; border-radius: 50%; background: #52525b;
     display: inline-block; margin-right: 0.125rem;
   }
-  .tts-toggle.on-edge .tts-dot { background: #22c55e; box-shadow: 0 0 4px #22c55e; }
-  .tts-toggle.on-xtts .tts-dot { background: #818cf8; box-shadow: 0 0 4px #818cf8; }
+  .tts-toggle.on-inworld .tts-dot { background: #22c55e; box-shadow: 0 0 4px #22c55e; }
+  .tts-toggle.on-inworld-hd .tts-dot { background: #818cf8; box-shadow: 0 0 4px #818cf8; }
   .tts-toggle.on-eleven .tts-dot { background: #f59e0b; box-shadow: 0 0 4px #f59e0b; }
   .tts-playing-icon { display: inline-flex; align-items: center; gap: 1px; height: 10px; margin-left: 0.25rem; }
   .tts-playing-icon span {
@@ -882,7 +882,7 @@ let _sessionId = null;
 let _poll = null;
 let _msgs = [];
 const _openFolders = new Set();
-let _ttsProvider = 'off';     // 'off' | 'edge' | 'xtts' | 'eleven'
+let _ttsProvider = 'off';     // 'off' | 'inworld' | 'inworld-hd' | 'eleven'
 let _ttsAudio = null;
 let _ttsVolume = 0.8;
 const _ttsCache = new Map();
@@ -1453,15 +1453,15 @@ function _unlockAudio() {
 }
 
 function toggleTTS() {
-  const cycle = { off: 'edge', edge: 'xtts', xtts: 'eleven', eleven: 'off' };
+  const cycle = { off: 'inworld', inworld: 'inworld-hd', 'inworld-hd': 'eleven', eleven: 'off' };
   _ttsProvider = cycle[_ttsProvider] || 'off';
   const btn = document.getElementById('btn-tts');
   const label = document.getElementById('tts-label');
   btn.className = 'tb tts-toggle';
-  if (_ttsProvider === 'edge') {
-    _unlockAudio(); btn.classList.add('on-edge'); label.textContent = '🔊 Piper';
-  } else if (_ttsProvider === 'xtts') {
-    _unlockAudio(); btn.classList.add('on-xtts'); label.textContent = '🔊 XTTS HD';
+  if (_ttsProvider === 'inworld') {
+    _unlockAudio(); btn.classList.add('on-inworld'); label.textContent = '🔊 Inworld';
+  } else if (_ttsProvider === 'inworld-hd') {
+    _unlockAudio(); btn.classList.add('on-inworld-hd'); label.textContent = '🔊 Inworld HD';
   } else if (_ttsProvider === 'eleven') {
     _unlockAudio(); btn.classList.add('on-eleven'); label.textContent = '🔊 11Labs';
   } else {
@@ -1472,11 +1472,14 @@ function toggleTTS() {
 
 const TTS_COST_PER_CHAR = 0.0003;
 const TTS_PREMIUM_SURCHARGE_PER_CHAR = 0.0002;
+const TTS_INWORLD_COST_PER_CHAR = 0.000005;  // $5/1M chars (Mini)
+const TTS_INWORLD_HD_COST_PER_CHAR = 0.00001; // $10/1M chars (Max)
 function _estimateTtsCost(charCount, provider, isPremium) {
-  if (provider === 'edge' || provider === 'xtts') return 0;
+  if (provider === 'inworld') return charCount * TTS_INWORLD_COST_PER_CHAR;
+  if (provider === 'inworld-hd') return charCount * TTS_INWORLD_HD_COST_PER_CHAR;
   let cost = charCount * TTS_COST_PER_CHAR;
   if (isPremium) cost += charCount * TTS_PREMIUM_SURCHARGE_PER_CHAR;
-  return cost * 2; // 2x markup for TTS
+  return cost * 2; // 2x markup for ElevenLabs TTS
 }
 
 function _showVoiceToast(msg) {
@@ -1517,17 +1520,12 @@ async function speakText(text, metaEl) {
 
   try {
     let resp;
-    if (provider === 'edge') {
-      const edgeVoice = (_avatarMap[agent] || {}).edge_voice || 'alloy';
-      resp = await fetch('/api/tts/edge/speak', {
+    if (provider === 'inworld' || provider === 'inworld-hd') {
+      const inworldVoice = (_avatarMap[agent] || {}).inworld_voice || 'Ashley';
+      const modelId = provider === 'inworld-hd' ? 'inworld-tts-1.5-max' : 'inworld-tts-1.5-mini';
+      resp = await fetch('/api/tts/inworld/speak', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, voice: edgeVoice, model: 'tts-1' }),
-      });
-    } else if (provider === 'xtts') {
-      const edgeVoice = (_avatarMap[agent] || {}).edge_voice || 'alloy';
-      resp = await fetch('/api/tts/edge/speak', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, voice: edgeVoice, model: 'tts-1-hd' }),
+        body: JSON.stringify({ text, voice_id: inworldVoice, model_id: modelId }),
       });
     } else {
       const voiceId = (_avatarMap[agent] || {}).voice_id || '21m00Tcm4TlvDq8ikWAM';
@@ -1583,19 +1581,19 @@ function _playAudioBlob(url, playingIcon, revokeOnEnd) {
 
 function _updateMetaWithTts(metaEl, apiCostStr, ttsCost, provider, isPremium) {
   if (!metaEl) return;
-  const isFree = provider === 'edge' || provider === 'xtts';
-  const ttsCostStr = isFree ? 'FREE' : (ttsCost < 0.001 ? ttsCost.toFixed(6) : ttsCost.toFixed(3));
+  const isFree = false;
+  const ttsCostStr = ttsCost < 0.001 ? ttsCost.toFixed(6) : ttsCost.toFixed(3);
   const apiCostNum = parseFloat(apiCostStr) || 0;
   const totalCost = apiCostNum + ttsCost;
   const totalStr = totalCost < 0.001 ? totalCost.toFixed(6) : totalCost.toFixed(3);
-  const provLabels = { edge: 'Piper', xtts: 'XTTS', eleven: '11Labs' };
+  const provLabels = { inworld: 'Inworld', 'inworld-hd': 'Inworld HD', eleven: '11Labs' };
   const provLabel = provLabels[provider] || provider;
   const premLabel = isPremium ? ' ⭐' : '';
   if (!metaEl.querySelector('.meta-tts-cost')) {
     metaEl.appendChild(document.createTextNode(' · '));
     const el = document.createElement('span');
-    el.className = 'meta-tts-cost' + (isFree ? ' free' : '') + (isPremium ? ' premium' : '');
-    el.textContent = isFree ? `TTS ${provLabel} FREE` : `TTS ${provLabel}${premLabel} $${ttsCostStr}`;
+    el.className = 'meta-tts-cost' + (isPremium ? ' premium' : '');
+    el.textContent = `TTS ${provLabel}${premLabel} $${ttsCostStr}`;
     if (isPremium) el.style.color = '#f59e0b';
     metaEl.appendChild(el);
   }
@@ -2225,7 +2223,7 @@ function _renderEntry(role, text, data, timeStr, layers) {
       speakBtn.onclick = () => {
         if (speakBtn.classList.contains('active')) { stopTtsGlobal(); speakBtn.classList.remove('active'); speakBtn.innerHTML = '🔊 Read Aloud'; return; }
         _unlockAudio();
-        const prov = _ttsProvider !== 'off' ? _ttsProvider : 'edge';
+        const prov = _ttsProvider !== 'off' ? _ttsProvider : 'inworld';
         const savedProv = _ttsProvider;
         _ttsProvider = prov;
         const metaTarget = el.querySelector('.msg-meta');

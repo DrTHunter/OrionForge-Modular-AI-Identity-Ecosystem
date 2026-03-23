@@ -364,7 +364,9 @@ LLM_MARKUP_MULTIPLIER = 2.0
 # TTS cost per 1,000 characters by provider
 TTS_COST_PER_1K_CHARS = {
     "elevenlabs": 0.30,    # ElevenLabs standard tier
-    "edge-tts":   0.015,   # Local Piper / XTTS compute
+    "inworld":    0.005,   # Inworld TTS-1.5 Mini ($5/1M chars)
+    "inworld-hd": 0.010,   # Inworld TTS-1.5 Max ($10/1M chars)
+    "edge-tts":   0.015,   # Legacy Edge-TTS / Piper
     "default":    0.03,
 }
 
