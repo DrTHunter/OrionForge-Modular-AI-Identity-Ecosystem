@@ -15,8 +15,8 @@ RUN pip install --no-cache-dir \
     python-multipart \
     && pip cache purge
 
-# Pre-download the tiny model for fast startup
-RUN python -c "from faster_whisper import WhisperModel; WhisperModel('tiny', device='cpu', compute_type='int8')" 2>/dev/null || true
+# Pre-download the base model for fast startup
+RUN python -c "from faster_whisper import WhisperModel; WhisperModel('base', device='cpu', compute_type='int8')" 2>/dev/null || true
 
 # Copy the server script
 COPY server.py .

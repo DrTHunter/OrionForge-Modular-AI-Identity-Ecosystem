@@ -12,7 +12,7 @@ app = FastAPI(title="OrionForge Whisper STT")
 
 # Lazy-load model on first request
 _model = None
-_model_name = os.environ.get("WHISPER_MODEL", "tiny")
+_model_name = os.environ.get("WHISPER_MODEL", "base")
 
 def get_model():
     global _model

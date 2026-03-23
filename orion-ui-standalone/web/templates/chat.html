@@ -1635,7 +1635,7 @@ function _toggleMicWhisper() {
       try {
         const formData = new FormData();
         formData.append('file', blob, 'recording.webm');
-        formData.append('model', 'tiny');
+        formData.append('model', 'base');
         formData.append('language', 'en');
         const resp = await fetch('/api/stt/whisper', { method: 'POST', body: formData });
         if (resp.ok) {
