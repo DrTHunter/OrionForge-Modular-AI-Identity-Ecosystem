@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+{% block title %}Admin — Voice Allowlist{% endblock %}
+
+{% block content %}
+<style>
+  .admin-header { margin-bottom: 2rem; }
+  .admin-header h1 { font-size: 1.5rem; font-weight: 800; color: #fff; }
+  .admin-header p { font-size: 0.8rem; color: rgba(241,245,249,0.45); margin-top: 0.25rem; }
+
+  .voice-controls {
+    display: flex; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: center;
+    max-width: 52rem;
+  }
+  .btn-fetch {
+    padding: 0.5rem 1.25rem; border-radius: 0.375rem; font-size: 0.8125rem;
+    font-weight: 600; cursor: pointer; border: 1px solid #6366f1;
+    background: #6366f1; color: #fff; transition: all 0.15s;
+  }
+  .btn-fetch:hover { background: #4f46e5; }
+  .btn-fetch:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-save {
+    padding: 0.5rem 1.25rem; border-radius: 0.375rem; font-size: 0.8125rem;
+    font-weight: 600; cursor: pointer; border: 1px solid rgba(52,211,153,0.5);
+    background: rgba(52,211,153,0.1); color: #34d399; transition: all 0.15s;
+  }
+  .btn-save:hover { background: rgba(52,211,153,0.2); }
+  .btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-clear {
+    padding: 0.5rem 1rem; border-radius: 0.375rem; font-size: 0.8125rem;
+    font-weight: 600; cursor: pointer; border: 1px solid rgba(239,68,68,0.3);
+    background: transparent; color: #ef4444; transition: all 0.15s;
+  }
+  .btn-clear:hover { background: rgba(239,68,68,0.1); }
+
+  .search-box {
+    flex: 1; min-width: 12rem; padding: 0.5rem 0.75rem; border-radius: 0.375rem;
+    border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3);
+    color: #e2e8f0; font-size: 0.8125rem; outline: none;
+  }
+  .search-box:focus { border-color: #6366f1; }
+  .search-box::placeholder { color: rgba(241,245,249,0.3); }
+
+  .stats {
+    font-size: 0.75rem; color: rgba(241,245,249,0.5); margin-left: auto;
+  }
+  .stats strong { color: #a5b4fc; }
+
+  .info-banner {
+    background: rgba(99,102,241,0.06); border: 1px solid rgba(99,102,241,0.15);
+    border-radius: 0.75rem; padding: 1rem 1.25rem; margin-bottom: 1.5rem; max-width: 52rem;
+  }
+  .info-banner p { font-size: 0.8rem; color: rgba(241,245,249,0.6); line-height: 1.6; }
+  .info-banner strong { color: #a5b4fc; }
+
+  .voice-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 0.75rem; max-width: 52rem;
+  }
+
+  .voice-card {
+    background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 0.625rem; padding: 0.875rem 1rem; cursor: pointer;
+    transition: all 0.15s; user-select: none; display: flex; align-items: center; gap: 0.75rem;
+  }
+  .voice-card:hover { border-color: rgba(255,255,255,0.15); background: rgba(255,255,255,0.04); }
+  .voice-card.selected { border-color: rgba(99,102,241,0.5); background: rgba(99,102,241,0.08); }
+
+  .voice-check {
+    width: 20px; height: 20px; border-radius: 4px; border: 2px solid rgba(255,255,255,0.2);
+    background: transparent; flex-shrink: 0; display: flex; align-items: center;
+    justify-content: center; font-size: 0.75rem; transition: all 0.15s;
+  }
+  .voice-card.selected .voice-check {
+    background: #6366f1; border-color: #6366f1; color: #fff;
+  }
+
+  .voice-info { flex: 1; min-width: 0; }
+  .voice-name { font-size: 0.8125rem; font-weight: 600; color: #e2e8f0; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis; }
+  .voice-meta { font-size: 0.7rem; color: rgba(241,245,249,0.4); margin-top: 0.125rem; }
+  .voice-id { font-size: 0.65rem; color: rgba(241,245,249,0.25); font-family: monospace;
+    margin-top: 0.125rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .loading { text-align: center; padding: 3rem; color: rgba(241,245,249,0.4); font-size: 0.875rem; }
+  .empty { text-align: center; padding: 3rem; color: rgba(241,245,249,0.35); font-size: 0.85rem; }
+
+  .toast {
+    position: fixed; bottom: 1.5rem; right: 1.5rem; padding: 0.75rem 1.25rem;
+    border-radius: 0.5rem; font-size: 0.8125rem; font-weight: 600;
+    background: #1e293b; border: 1px solid rgba(255,255,255,0.1);
+    color: #e2e8f0; z-index: 9999; opacity: 0; transition: opacity 0.3s;
+    pointer-events: none;
+  }
+  .toast.success { border-color: rgba(52,211,153,0.4); color: #34d399; }
+  .toast.error { border-color: rgba(239,68,68,0.4); color: #ef4444; }
+  .toast.show { opacity: 1; }
+
+  .back-link {
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    font-size: 0.75rem; color: rgba(241,245,249,0.4); text-decoration: none;
+    margin-bottom: 1rem; transition: color 0.15s;
+  }
+  .back-link:hover { color: #a5b4fc; }
+</style>
+
+<div>
+  <a href="/admin/keys" class="back-link">← Back to Admin Keys</a>
+
+  <div class="admin-header">
+    <h1>🎙️ Voice Allowlist</h1>
+    <p>Control which ElevenLabs voices are available to users. Unselected voices are hidden from every user.</p>
+  </div>
+
+  <div class="info-banner">
+    <p>
+      <strong>How it works:</strong> Fetch all voices from your ElevenLabs account, then check the ones
+      you want users to see. If no voices are selected, all voices are shown (no filter).
+      Save your changes to apply them immediately.
+    </p>
+  </div>
+
+  <div class="voice-controls">
+    <button onclick="fetchVoices()" id="btn-fetch" class="btn-fetch">🔄 Fetch Voices</button>
+    <button onclick="saveAllowlist()" id="btn-save" class="btn-save" disabled>💾 Save Allowlist</button>
+    <button onclick="clearAll()" id="btn-clear" class="btn-clear">✖ Clear All</button>
+    <input type="text" id="voice-search" class="search-box" placeholder="Search voices…" oninput="filterVoices()">
+    <span class="stats" id="stats"></span>
+  </div>
+
+  <div id="voice-list">
+    <div class="empty">Click <strong>Fetch Voices</strong> to load your ElevenLabs voices.</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const _savedAllowed = {{ allowed_voices | tojson }};
+let _allVoices = [];
+let _selected = new Set(_savedAllowed);
+
+function updateStats() {
+  const el = document.getElementById('stats');
+  if (!_allVoices.length) { el.textContent = ''; return; }
+  el.innerHTML = `<strong>${_selected.size}</strong> of <strong>${_allVoices.length}</strong> selected`;
+  document.getElementById('btn-save').disabled = false;
+}
+
+function renderVoices(voices) {
+  const container = document.getElementById('voice-list');
+  if (!voices.length) {
+    container.innerHTML = '<div class="empty">No voices match your search.</div>';
+    return;
+  }
+  let html = '<div class="voice-grid">';
+  voices.forEach(v => {
+    const sel = _selected.has(v.voice_id) ? ' selected' : '';
+    const check = _selected.has(v.voice_id) ? '✓' : '';
+    const labels = v.labels ? Object.values(v.labels).filter(Boolean).join(', ') : '';
+    html += `
+      <div class="voice-card${sel}" data-id="${v.voice_id}" onclick="toggleVoice('${v.voice_id}')">
+        <div class="voice-check">${check}</div>
+        <div class="voice-info">
+          <div class="voice-name">${escHtml(v.name)}</div>
+          <div class="voice-meta">${escHtml(v.category)}${labels ? ' · ' + escHtml(labels) : ''}</div>
+          <div class="voice-id">${v.voice_id}</div>
+        </div>
+      </div>`;
+  });
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function escHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s || '';
+  return d.innerHTML;
+}
+
+function toggleVoice(id) {
+  if (_selected.has(id)) _selected.delete(id);
+  else _selected.add(id);
+  const card = document.querySelector(`.voice-card[data-id="${id}"]`);
+  if (card) {
+    card.classList.toggle('selected');
+    card.querySelector('.voice-check').textContent = _selected.has(id) ? '✓' : '';
+  }
+  updateStats();
+}
+
+function filterVoices() {
+  const q = document.getElementById('voice-search').value.toLowerCase();
+  const filtered = q ? _allVoices.filter(v =>
+    v.name.toLowerCase().includes(q) ||
+    v.category.toLowerCase().includes(q) ||
+    v.voice_id.toLowerCase().includes(q) ||
+    (v.labels && JSON.stringify(v.labels).toLowerCase().includes(q))
+  ) : _allVoices;
+  renderVoices(filtered);
+}
+
+function clearAll() {
+  _selected.clear();
+  renderVoices(_allVoices);
+  updateStats();
+}
+
+async function fetchVoices() {
+  const btn = document.getElementById('btn-fetch');
+  btn.disabled = true; btn.textContent = '⏳ Fetching…';
+  document.getElementById('voice-list').innerHTML = '<div class="loading">Fetching voices from ElevenLabs…</div>';
+  try {
+    const resp = await fetch('/api/admin/voices/all');
+    const data = await resp.json();
+    if (data.error) { toast(data.error, 'error'); return; }
+    _allVoices = data.voices || [];
+    _allVoices.sort((a, b) => a.name.localeCompare(b.name));
+    renderVoices(_allVoices);
+    updateStats();
+    toast(`Loaded ${_allVoices.length} voices`, 'success');
+  } catch (e) {
+    toast('Failed to fetch voices: ' + e.message, 'error');
+    document.getElementById('voice-list').innerHTML = '<div class="empty">Failed to load voices.</div>';
+  } finally {
+    btn.disabled = false; btn.textContent = '🔄 Fetch Voices';
+  }
+}
+
+async function saveAllowlist() {
+  const btn = document.getElementById('btn-save');
+  btn.disabled = true; btn.textContent = '💾 Saving…';
+  try {
+    const resp = await fetch('/api/admin/voices/allowed', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ allowed_voices: Array.from(_selected) }),
+    });
+    const data = await resp.json();
+    if (data.error) { toast(data.error, 'error'); return; }
+    toast(`Saved ${data.count} allowed voices`, 'success');
+  } catch (e) {
+    toast('Save failed: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = '💾 Save Allowlist';
+  }
+}
+
+function toast(msg, type) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast ' + (type || '') + ' show';
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// Auto-fetch on load if voices were previously saved
+if (_savedAllowed.length) fetchVoices();
+</script>
+{% endblock %}
