@@ -52,8 +52,21 @@ async def transcribe(
 
     try:
         m = get_model()
-        segments, info = m.transcribe(tmp_path, language=language, beam_size=5)
-        text = " ".join(seg.text.strip() for seg in segments)
+        segments, info = m.transcribe(
+            tmp_path, language=language, beam_size=5,
+            vad_filter=True, vad_parameters={"min_silence_duration_ms": 500},
+            no_speech_threshold=0.6,
+        )
+        parts = []
+        for seg in segments:
+            t = seg.text.strip()
+            if t:
+                parts.append(t)
+        text = " ".join(parts)
+        # Filter repetitive hallucinations (e.g. "you you you you")
+        words = text.split()
+        if len(words) >= 3 and len(set(w.lower() for w in words)) == 1:
+            text = ""
     finally:
         os.unlink(tmp_path)
 
