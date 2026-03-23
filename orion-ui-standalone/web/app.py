@@ -1808,11 +1808,11 @@ async def page_chat(request: Request):
     conns = [c for c in store.get("connections", []) if c.get("enabled")]
     platform_conns = [
         c for c in conns
-        if c.get("platform_hosted") and c.get("provider") not in ("elevenlabs", "edge-tts", "whisper")
+        if c.get("platform_hosted") and c.get("provider") not in ("elevenlabs", "edge-tts")
     ]
     user_conns = [
         c for c in conns
-        if not c.get("platform_hosted") and c.get("provider") not in ("elevenlabs", "edge-tts", "whisper")
+        if not c.get("platform_hosted") and c.get("provider") not in ("elevenlabs", "edge-tts")
     ]
     settings = _load_settings()
     stt_cfg = settings.get("stt", {})
@@ -1841,7 +1841,7 @@ async def page_chat(request: Request):
         "pricing": _load_pricing(),
         "chat_background": settings.get("chat_background") or "",
         "pinned_models": settings.get("pinned_models", []),
-        "stt_provider": stt_cfg.get("provider", "whisper"),
+        "stt_provider": stt_cfg.get("provider", "elevenlabs"),
     })
 
 @app.get("/profiles", response_class=HTMLResponse)
@@ -4980,11 +4980,10 @@ async def page_admin_keys(request: Request):
     if not _check_admin(request):
         return JSONResponse({"error": "Unauthorized"}, status_code=403)
     platform_conns = _get_platform_connections()
-    # Expose env-var connections for Edge-TTS and Whisper so the UI shows them
+    # Expose env-var connections for Edge-TTS so the UI shows them
     _existing_providers = {c.get("provider") for c in platform_conns}
     for env_key, provider, label in [
         ("TTS_URL", "edge-tts", "OpenedAI Speech (TTS)"),
-        ("WHISPER_URL", "whisper", "Whisper STT"),
     ]:
         if provider not in _existing_providers:
             env_val = os.environ.get(env_key, "")
@@ -5016,7 +5015,7 @@ async def api_admin_save_platform_key(request: Request):
 
     if not provider:
         return JSONResponse({"error": "provider is required"}, 400)
-    _KEYLESS_PROVIDERS = {"edge-tts", "whisper"}
+    _KEYLESS_PROVIDERS = {"edge-tts"}
     if provider not in _KEYLESS_PROVIDERS and provider != "ollama" and not api_key:
         return JSONResponse({"error": "api_key is required"}, 400)
 
@@ -5086,7 +5085,7 @@ async def api_admin_test_platform_key(request: Request):
     url = body.get("url", "").strip().rstrip("/")
     api_key = body.get("api_key", "").strip()
 
-    _KEYLESS_PROVIDERS = {"edge-tts", "whisper"}
+    _KEYLESS_PROVIDERS = {"edge-tts"}
     if provider not in _KEYLESS_PROVIDERS and provider != "ollama" and not api_key:
         return JSONResponse({"ok": False, "error": "No API key provided"})
 
@@ -5097,8 +5096,8 @@ async def api_admin_test_platform_key(request: Request):
     elif provider == "ollama":
         test_url = f"{_normalize_ollama_url(url)}/api/tags"
         headers = {}
-    elif provider in ("edge-tts", "whisper"):
-        # Self-hosted services — no API key needed
+    elif provider == "edge-tts":
+        # Self-hosted service — no API key needed
         test_url = f"{url}/v1/models"
         headers = {}
     elif provider == "google_gemini":
@@ -5386,7 +5385,7 @@ async def api_platform_models(request: Request):
     for conn in store.get("connections", []):
         if not conn.get("enabled") or not conn.get("platform_hosted"):
             continue
-        if conn.get("provider") in ("elevenlabs", "edge-tts", "whisper"):
+        if conn.get("provider") in ("elevenlabs", "edge-tts"):
             continue
         models_with_pricing = []
         prov = conn.get("provider", "openai")
@@ -5810,37 +5809,32 @@ async def api_tts_edge_voices():
 
 
 # ═══════════════════════════════════════════════════════════════════
-#  STT API (Whisper)
+#  STT API (ElevenLabs)
 # ═══════════════════════════════════════════════════════════════════
 
-def _get_whisper_conn():
-    """Return the first enabled whisper connection or None."""
-    # Fly.io private-network override via env var
-    env_url = os.environ.get("WHISPER_URL")
-    if env_url:
-        return {"id": "fly-whisper", "provider": "whisper", "url": env_url,
-                "api_key": "", "enabled": True, "platform_hosted": True}
+def _get_elevenlabs_conn():
+    """Return the first enabled ElevenLabs connection or None."""
     for c in _load_connections().get("connections", []):
-        if c.get("provider") == "whisper" and c.get("enabled", True):
+        if c.get("provider") == "elevenlabs" and c.get("enabled", True):
             return c
     return None
 
 
-@app.post("/api/stt/whisper")
-async def api_stt_whisper(request: Request):
-    """Transcribe uploaded audio via local Whisper container."""
+@app.post("/api/stt/elevenlabs")
+async def api_stt_elevenlabs(request: Request):
+    """Transcribe uploaded audio via ElevenLabs Speech-to-Text API."""
     # ── Ownership check: user must have purchased voice_stt ──
     user = getattr(request.state, "user", None)
     if user and not user_owns_item(user["id"], "voice_stt"):
         return JSONResponse({"error": "Voice STT not unlocked. Purchase it in the Store first.",
                              "redirect": "/store"}, 403)
 
-    conn = _get_whisper_conn()
-    if not conn:
-        return JSONResponse({"error": "No Whisper STT connection configured."}, 400)
+    conn = _get_elevenlabs_conn()
+    if not conn or not conn.get("api_key"):
+        return JSONResponse({"error": "No ElevenLabs connection configured. Add one in Settings → API Keys."}, 400)
+
     form = await request.form()
     audio_file = form.get("file")
-    model = form.get("model", "tiny")
     language = form.get("language", "en")
     if not audio_file:
         return JSONResponse({"error": "No audio file provided"}, 400)
@@ -5848,12 +5842,11 @@ async def api_stt_whisper(request: Request):
     filename = getattr(audio_file, 'filename', 'audio.webm') or 'audio.webm'
 
     # ── Pre-flight credit check for platform-hosted keys ──
-    # Estimate audio duration from file size (~16 KB/s for typical speech WebM)
     is_platform = conn.get("platform_hosted", False)
     estimated_seconds = max(len(audio_bytes) / (16 * 1024), 1.0)
     credit_cost = 0
     if is_platform and user:
-        credit_cost = estimate_stt_credit_cost(estimated_seconds, provider="whisper")
+        credit_cost = estimate_stt_credit_cost(estimated_seconds, provider="elevenlabs")
         if credit_cost > 0:
             balance = get_user_credits(user["id"])
             if balance < credit_cost:
@@ -5864,47 +5857,36 @@ async def api_stt_whisper(request: Request):
                     "redirect": "/store",
                 }, status_code=402)
 
-    url = f"{conn['url'].rstrip('/')}/v1/audio/transcriptions"
-    headers = {}
-    if conn.get('api_key'):
-        headers["Authorization"] = f"Bearer {conn['api_key']}"
+    url = f"{conn['url'].rstrip('/')}/v1/speech-to-text"
+    headers = {"xi-api-key": conn["api_key"]}
     try:
         async with httpx.AsyncClient(timeout=120) as client:
-            resp = await client.post(url, files={"file": (filename, audio_bytes, "audio/webm")},
-                                     data={"model": model, "language": language}, headers=headers)
+            resp = await client.post(
+                url,
+                headers=headers,
+                files={"file": (filename, audio_bytes, "audio/webm")},
+                data={"language_code": language},
+            )
             resp.raise_for_status()
             data = resp.json()
 
-        # ── Deduct credits for platform-hosted Whisper ──
+        text = data.get("text", "").strip()
+
+        # ── Deduct credits for platform-hosted ElevenLabs STT ──
         if is_platform and user and credit_cost > 0:
             try:
-                deduct_user_credits(user["id"], credit_cost, f"stt:whisper:{int(estimated_seconds)}s")
+                deduct_user_credits(user["id"], credit_cost, f"stt:elevenlabs:{int(estimated_seconds)}s")
             except Exception as exc:
                 log.warning("[credits] STT credit deduction failed: %s", exc)
 
-        return JSONResponse({"text": data.get("text", "").strip(), "provider": "whisper", "model": model})
+        return JSONResponse({"text": text, "provider": "elevenlabs"})
     except httpx.HTTPStatusError as e:
         detail = str(e)
-        try: detail = e.response.text[:300]
+        try: detail = e.response.json().get("detail", {}).get("message", str(e))
         except Exception: pass
-        return JSONResponse({"error": f"Whisper error: {detail}"}, 502)
+        return JSONResponse({"error": f"ElevenLabs STT error: {detail}"}, 502)
     except Exception as e:
         return JSONResponse({"error": str(e)}, 500)
-
-
-@app.get("/api/stt/whisper/status")
-async def api_stt_whisper_status():
-    """Check if the Whisper container is reachable."""
-    conn = _get_whisper_conn()
-    if not conn:
-        return JSONResponse({"available": False, "reason": "No connection configured"})
-    try:
-        async with httpx.AsyncClient(timeout=5) as client:
-            resp = await client.get(f"{conn['url'].rstrip('/')}/v1/models")
-            resp.raise_for_status()
-        return JSONResponse({"available": True})
-    except Exception as e:
-        return JSONResponse({"available": False, "reason": str(e)})
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -6287,10 +6269,6 @@ async def api_save_voice_settings(request: Request):
     stt = body.get("stt", {})
     settings["stt"] = {
         "provider":             stt.get("provider", "none"),
-        "whisper_api_key":      stt.get("whisper_api_key", ""),
-        "whisper_local_url":    stt.get("whisper_local_url", "http://localhost:8080"),
-        "whisper_local_api_key":stt.get("whisper_local_api_key", ""),
-        "whisper_model":        stt.get("whisper_model", "base"),
     }
 
     tts = body.get("tts", {})
@@ -6404,24 +6382,7 @@ async def api_openedai_voices_proxy(request: Request):
         return JSONResponse({"voices": [], "error": str(e)})
 
 
-@app.post("/api/settings/voice/whisper/test")
-async def api_whisper_test_proxy(request: Request):
-    """Test connectivity to a local Whisper server."""
-    body = await request.json()
-    base_url = (body.get("url", "") or "").rstrip("/")
-    api_key = body.get("api_key", "")
-    if not base_url:
-        return JSONResponse({"available": False, "reason": "No URL provided"})
-    headers = {}
-    if api_key:
-        headers["Authorization"] = f"Bearer {api_key}"
-    try:
-        async with httpx.AsyncClient(timeout=8) as client:
-            resp = await client.get(f"{base_url}/v1/models", headers=headers)
-            resp.raise_for_status()
-        return JSONResponse({"available": True})
-    except Exception as e:
-        return JSONResponse({"available": False, "reason": str(e)})
+
 
 
 # ═══════════════════════════════════════════════════════════════════

@@ -255,9 +255,7 @@
     "ollama_url": "http://orionforge-engine-ollama.flycast:11434"
   },
   "stt": {
-    "provider": "whisper",
-    "whisper_api_key": "",
-    "whisper_model": "base"
+    "provider": "elevenlabs"
   },
   "tts": {
     "provider": "edge_tts",

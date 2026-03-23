@@ -525,14 +525,12 @@
 
   /* STT toggle button */
   .stt-toggle { position: relative; }
-  .stt-toggle.on-browser { background: rgba(99,102,241,0.15); color: #818cf8; border-color: rgba(99,102,241,0.3); }
-  .stt-toggle.on-whisper { background: rgba(34,197,94,0.15); color: #22c55e; border-color: rgba(34,197,94,0.3); }
+  .stt-toggle.on-elevenlabs { background: rgba(245,158,11,0.15); color: #f59e0b; border-color: rgba(245,158,11,0.3); }
   .stt-toggle .stt-dot {
     width: 5px; height: 5px; border-radius: 50%; background: #52525b;
     display: inline-block; margin-right: 0.125rem;
   }
-  .stt-toggle.on-browser .stt-dot { background: #818cf8; box-shadow: 0 0 4px #818cf8; }
-  .stt-toggle.on-whisper .stt-dot { background: #22c55e; box-shadow: 0 0 4px #22c55e; }
+  .stt-toggle.on-elevenlabs .stt-dot { background: #f59e0b; box-shadow: 0 0 4px #f59e0b; }
 
   .empty-state {
     display: flex; flex-direction: column; align-items: center;
@@ -818,12 +816,12 @@
                       placeholder="Send a message…"
                       onkeydown="handleKey(event)"
                       oninput="autoResize(this)"></textarea>
-            <button type="button" onclick="toggleMic()" id="btn-mic" class="mic-btn" title="Voice input (Speech-to-Text)">🎙️</button>
+            <button type="button" onclick="toggleMic()" id="btn-mic" class="mic-btn" title="Voice input (ElevenLabs Speech-to-Text)">🎙️</button>
           </div>
           <div class="compose-toolbar">
-            <!-- Browser STT toggle hidden; Whisper is the sole provider -->
-            <button type="button" onclick="toggleSTTProvider()" id="btn-stt" class="tb stt-toggle on-whisper" title="STT: Whisper" style="display:none">
-              <span class="stt-dot"></span><span id="stt-label">🎤 Whisper</span>
+            <!-- STT provider toggle hidden; ElevenLabs is the sole provider -->
+            <button type="button" onclick="toggleSTTProvider()" id="btn-stt" class="tb stt-toggle on-elevenlabs" title="STT: ElevenLabs" style="display:none">
+              <span class="stt-dot"></span><span id="stt-label">🎤 ElevenLabs</span>
             </button>
             <div class="tb-sep"></div>
             <select id="chat-agent" class="tb-sel" title="Agent">
@@ -890,7 +888,7 @@ let _ttsVolume = 0.8;
 const _ttsCache = new Map();
 const _TTS_CACHE_MAX = 10;
 let _sttRecognition = null;
-let _sttProvider = {{ stt_provider | tojson | default("'whisper'") }};
+let _sttProvider = {{ stt_provider | tojson | default("'elevenlabs'") }};
 let _mediaRecorder = null;
 let _audioChunks = [];
 let _sttStream = null;
@@ -1535,16 +1533,11 @@ function _updateMetaWithTts(metaEl, apiCostStr, ttsCost, provider) {
 //  STT
 // ═══════════════════════════════════════════
 function toggleSTTProvider() {
-  const cycle = { browser: 'whisper', whisper: 'browser' };
-  _sttProvider = cycle[_sttProvider] || 'browser';
+  _sttProvider = 'elevenlabs';
   const btn = document.getElementById('btn-stt');
   const label = document.getElementById('stt-label');
-  btn.className = 'tb stt-toggle';
-  if (_sttProvider === 'browser') {
-    btn.classList.add('on-browser'); label.textContent = '🎤 Chrome';
-  } else {
-    btn.classList.add('on-whisper'); label.textContent = '🎤 Whisper';
-  }
+  btn.className = 'tb stt-toggle on-elevenlabs';
+  label.textContent = '🎤 ElevenLabs';
 }
 
 async function toggleMic() {
@@ -1572,54 +1565,10 @@ async function toggleMic() {
       }
     } catch (_) { /* permissions API not supported for mic, continue normally */ }
   }
-  if (_sttProvider === 'whisper') _toggleMicWhisper();
-  else _toggleMicBrowser();
+  _toggleMicElevenLabs();
 }
 
-function _toggleMicBrowser() {
-  const btn = document.getElementById('btn-mic');
-  const ta  = document.getElementById('chat-stimulus');
-  if (_sttRecognition) { _sttRecognition.stop(); return; }
-  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRec) { alert('Browser does not support Speech Recognition. Switch to Whisper mode.'); return; }
-
-  navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-    stream.getTracks().forEach(t => t.stop());
-    const rec = new SpeechRec();
-    rec.lang = 'en-US'; rec.interimResults = true; rec.continuous = true;
-    let finalTranscript = '';
-    const startVal = ta.value;
-    btn.classList.add('recording');
-    rec.onresult = (e) => {
-      let interim = '';
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const t = e.results[i][0].transcript;
-        if (e.results[i].isFinal) finalTranscript += t;
-        else interim += t;
-      }
-      ta.value = startVal + (startVal && !startVal.endsWith(' ') && finalTranscript ? ' ' : '') + finalTranscript + interim;
-      autoResize(ta);
-    };
-    rec.onerror = () => { btn.classList.remove('recording'); _sttRecognition = null; };
-    rec.onend = () => {
-      btn.classList.remove('recording'); _sttRecognition = null;
-      ta.value = startVal + (startVal && !startVal.endsWith(' ') && finalTranscript ? ' ' : '') + finalTranscript;
-      autoResize(ta); ta.focus();
-    };
-    rec.start();
-    _sttRecognition = rec;
-  }).catch(err => {
-    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-      alert('Microphone access denied.\n\nClick the lock icon (\uD83D\uDD12) in your browser address bar \u2192 set Microphone to \"Allow\" \u2192 reload the page.');
-    } else if (err.name === 'NotFoundError') {
-      alert('No microphone found. Please connect a microphone and try again.');
-    } else {
-      alert('Microphone error: ' + err.message);
-    }
-  });
-}
-
-function _toggleMicWhisper() {
+function _toggleMicElevenLabs() {
   const btn = document.getElementById('btn-mic');
   const ta  = document.getElementById('chat-stimulus');
 
@@ -1667,20 +1616,19 @@ function _toggleMicWhisper() {
       try {
         const formData = new FormData();
         formData.append('file', blob, 'recording.webm');
-        formData.append('model', 'base');
         formData.append('language', 'en');
-        const resp = await fetch('/api/stt/whisper', { method: 'POST', body: formData });
+        const resp = await fetch('/api/stt/elevenlabs', { method: 'POST', body: formData });
         if (resp.ok) {
           const data = await resp.json();
           const text = (data.text || '').trim();
-          console.log('[stt] whisper response:', data);
+          console.log('[stt] elevenlabs response:', data);
           if (text) {
             const startVal = ta.value;
             ta.value = startVal + (startVal && !startVal.endsWith(' ') ? ' ' : '') + text;
             ta.dispatchEvent(new Event('input', { bubbles: true }));
             autoResize(ta); ta.focus();
           } else {
-            _showVoiceToast('No speech detected — try again');
+            _showVoiceToast('No speech detected \u2014 try again');
           }
         } else {
           try {
@@ -1689,14 +1637,14 @@ function _toggleMicWhisper() {
             if (err.redirect) setTimeout(() => window.location = err.redirect, 2000);
           } catch(_) { _showVoiceToast('Speech-to-text failed'); }
         }
-      } catch (e) { console.error('[stt] whisper error:', e); _showVoiceToast('Speech-to-text error: ' + e.message); }
+      } catch (e) { console.error('[stt] elevenlabs error:', e); _showVoiceToast('Speech-to-text error: ' + e.message); }
       btn.classList.remove('transcribing');
     };
 
     recorder.start();
     btn.classList.add('recording');
 
-    // Monitor silence — auto-stop after 3s of no voice
+    // Monitor silence — auto-stop after 1s of no voice
     _sttSilenceTimer = setInterval(() => {
       if (!_mediaRecorder || _mediaRecorder.state !== 'recording') {
         clearInterval(_sttSilenceTimer); _sttSilenceTimer = null;
@@ -1706,7 +1654,7 @@ function _toggleMicWhisper() {
       const avg = dataArr.reduce((a, b) => a + b, 0) / dataArr.length;
       if (avg > NOISE_THRESHOLD) lastSpeechTime = Date.now();
       if (Date.now() - lastSpeechTime > SILENCE_MS) {
-        console.log('[stt] auto-stop: 3s silence detected');
+        console.log('[stt] auto-stop: silence detected');
         _mediaRecorder.stop();
       }
     }, 200);

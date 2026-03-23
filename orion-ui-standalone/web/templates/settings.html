@@ -364,38 +364,14 @@
     <!-- ── STT ─────────────────────────────────────────── -->
     <div class="settings-section">
       <div class="settings-section-title">Speech-to-Text (STT)</div>
-      <div class="settings-section-desc">Choose a speech recognition provider for voice input</div>
+      <div class="settings-section-desc">Voice input is powered by ElevenLabs — uses your platform ElevenLabs key automatically</div>
 
       <div class="mb-3">
         <label class="block text-xs text-forge-muted mb-1">Provider</label>
-        <select id="stt-provider" class="search-input" style="max-width:20rem;" onchange="toggleSttFields()">
+        <select id="stt-provider" class="search-input" style="max-width:20rem;">
           <option value="none" {{ 'selected' if settings.get('stt', {}).get('provider', 'none') == 'none' }}>Disabled</option>
-          <option value="whisper" {{ 'selected' if settings.get('stt', {}).get('provider') == 'whisper' }}>Whisper (OpenAI API)</option>
-          <option value="whisper_local" {{ 'selected' if settings.get('stt', {}).get('provider') == 'whisper_local' }}>Whisper (Local / Self-Hosted)</option>
+          <option value="elevenlabs" {{ 'selected' if settings.get('stt', {}).get('provider') == 'elevenlabs' }}>ElevenLabs</option>
         </select>
-      </div>
-
-      <!-- Whisper OpenAI API fields -->
-      <div id="stt-whisper-fields" style="display:none;">
-        <div class="mb-3">
-          <label class="block text-xs text-forge-muted mb-1">OpenAI API Key <span class="text-zinc-600">(uses your OpenAI key from API Keys tab if blank)</span></label>
-          <input id="stt-whisper-api-key" type="password" class="search-input w-full" style="max-width:32rem;"
-                 placeholder="sk-... (optional)" value="{{ settings.get('stt', {}).get('whisper_api_key', '') }}">
-        </div>
-      </div>
-
-      <!-- Whisper Local fields -->
-      <div id="stt-whisper-local-fields" style="display:none;">
-        <div class="p-4 rounded-lg border border-amber-500/20 bg-amber-500/5 mb-3" style="max-width:32rem;">
-          <div class="flex items-center gap-2 mb-1">
-            <span style="font-size:1.1rem;">🚧</span>
-            <span class="text-sm font-semibold text-amber-300">Feature Coming Soon</span>
-          </div>
-          <p class="text-xs text-amber-200/70">
-            Local Whisper STT integration (self-hosted Whisper server) is under active development.
-            Use the <strong>Whisper OpenAI API</strong> option above for immediate access, or check back in a future release.
-          </p>
-        </div>
       </div>
     </div>
 
@@ -708,11 +684,6 @@ async function saveImageSettings() {
 }
 
 /* ── Voice (STT / TTS) ────────────────────────────────── */
-function toggleSttFields() {
-  const p = document.getElementById('stt-provider').value;
-  document.getElementById('stt-whisper-fields').style.display = p === 'whisper' ? 'block' : 'none';
-  document.getElementById('stt-whisper-local-fields').style.display = p === 'whisper_local' ? 'block' : 'none';
-}
 function toggleTtsFields() {
   const p = document.getElementById('tts-provider').value;
   document.getElementById('tts-elevenlabs-fields').style.display = p === 'elevenlabs' ? 'block' : 'none';
@@ -720,14 +691,12 @@ function toggleTtsFields() {
   document.getElementById('tts-openedai-local-fields').style.display = p === 'openedai_local' ? 'block' : 'none';
 }
 // initialise on load
-toggleSttFields();
 toggleTtsFields();
 
 async function saveVoiceSettings() {
   const payload = {
     stt: {
       provider:             document.getElementById('stt-provider').value,
-      whisper_api_key:      document.getElementById('stt-whisper-api-key').value,
     },
     tts: {
       provider:                 document.getElementById('tts-provider').value,
