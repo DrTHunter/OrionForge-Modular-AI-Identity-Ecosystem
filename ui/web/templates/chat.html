@@ -1641,10 +1641,14 @@ function _toggleMicWhisper() {
         if (resp.ok) {
           const data = await resp.json();
           const text = (data.text || '').trim();
+          console.log('[stt] whisper response:', data);
           if (text) {
             const startVal = ta.value;
             ta.value = startVal + (startVal && !startVal.endsWith(' ') ? ' ' : '') + text;
+            ta.dispatchEvent(new Event('input', { bubbles: true }));
             autoResize(ta); ta.focus();
+          } else {
+            _showVoiceToast('No speech detected — try again');
           }
         } else {
           try {
@@ -1653,7 +1657,7 @@ function _toggleMicWhisper() {
             if (err.redirect) setTimeout(() => window.location = err.redirect, 2000);
           } catch(_) { _showVoiceToast('Speech-to-text failed'); }
         }
-      } catch (e) {}
+      } catch (e) { console.error('[stt] whisper error:', e); _showVoiceToast('Speech-to-text error: ' + e.message); }
       btn.classList.remove('transcribing');
     };
     recorder.start();
