@@ -1,7 +1,7 @@
 #!/bin/bash
 # ── OrionForge Fly.io Boot Script ──────────────────────────────
-# Ensures uploads, memory vault, config, and user notes are on the
-# persistent volume so they survive across deploys.
+# Ensures uploads, memory vault, config, user notes, chat history,
+# and trash are on the persistent volume so they survive deploys.
 # ─────────────────────────────────────────────────────────────────
 
 set -e
@@ -116,6 +116,39 @@ fi
 ln -sfn "$PERSIST_NOTES" "$APP_NOTES"
 
 echo "[boot] User notes linked to persistent volume."
+
+# ── CHAT HISTORY PERSISTENCE ───────────────────────────
+PERSIST_CHATS="/persist/chats"
+APP_CHATS="/app/app/data/chats"
+
+mkdir -p "$PERSIST_CHATS"
+
+if [ -L "$APP_CHATS" ]; then
+    rm "$APP_CHATS"
+elif [ -d "$APP_CHATS" ]; then
+    # First deploy: migrate any existing chats to persistent volume
+    cp -a "$APP_CHATS"/* "$PERSIST_CHATS/" 2>/dev/null || true
+    rm -rf "$APP_CHATS"
+fi
+ln -sfn "$PERSIST_CHATS" "$APP_CHATS"
+
+echo "[boot] Chat history linked to persistent volume."
+
+# ── TRASH PERSISTENCE ──────────────────────────────────
+PERSIST_TRASH="/persist/trash"
+APP_TRASH="/app/app/data/trash"
+
+mkdir -p "$PERSIST_TRASH"
+
+if [ -L "$APP_TRASH" ]; then
+    rm "$APP_TRASH"
+elif [ -d "$APP_TRASH" ]; then
+    cp -a "$APP_TRASH"/* "$PERSIST_TRASH/" 2>/dev/null || true
+    rm -rf "$APP_TRASH"
+fi
+ln -sfn "$PERSIST_TRASH" "$APP_TRASH"
+
+echo "[boot] Trash linked to persistent volume."
 
 # 13. Start the app
 exec python -m uvicorn web.app:app --host 0.0.0.0 --port 8989 --workers 2
