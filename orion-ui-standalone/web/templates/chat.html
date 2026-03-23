@@ -901,7 +901,9 @@ const _avatarMap = {{ avatar_map | tojson }};
 const _pricing = {{ pricing | tojson }};
 const _platformConnections = {{ platform_connections | tojson }};
 let _pinnedModels = {{ pinned_models | tojson }};
+const _chatDefaults = {{ chat_defaults | tojson }};
 let _lastPlatformData = null;
+let _pendingModelRestore = null;
 let _sessionCost = 0;
 let _sessionTokens = 0;
 let _sessionCredits = 0;
@@ -910,12 +912,55 @@ let _creditBalance = -1;  // -1 = unknown
 // ═══════════════════════════════════════════
 //  INIT
 // ═══════════════════════════════════════════
+function _saveChatDefaults() {
+  const agent = document.getElementById('chat-agent').value;
+  const connection = document.getElementById('chat-connection').value;
+  const model = document.getElementById('chat-model').value;
+  fetch('/api/settings/chat-defaults', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ last_agent: agent, last_connection: connection, last_model: model }),
+  }).catch(() => {});
+}
+
 (function init() {
   renderSidebar();
+
+  // Restore saved agent
+  if (_chatDefaults.last_agent) {
+    const agentSel = document.getElementById('chat-agent');
+    const opts = Array.from(agentSel.options).map(o => o.value);
+    if (opts.includes(_chatDefaults.last_agent)) {
+      agentSel.value = _chatDefaults.last_agent;
+    }
+  }
+
+  // Restore saved connection
+  if (_chatDefaults.last_connection) {
+    const connSel = document.getElementById('chat-connection');
+    const opts = Array.from(connSel.options).map(o => o.value);
+    if (opts.includes(_chatDefaults.last_connection)) {
+      connSel.value = _chatDefaults.last_connection;
+    }
+  }
+
+  // Queue model restore after async model fetch completes
+  if (_chatDefaults.last_model) {
+    _pendingModelRestore = _chatDefaults.last_model;
+  }
+
   document.getElementById('chat-agent').addEventListener('change', function() {
     document.getElementById('chat-connection').value = _agentConns[this.value] || '__platform__';
     onConnectionChange(document.getElementById('chat-connection'));
+    _saveChatDefaults();
   });
+  document.getElementById('chat-connection').addEventListener('change', function() {
+    _saveChatDefaults();
+  });
+  document.getElementById('chat-model').addEventListener('change', function() {
+    _saveChatDefaults();
+  });
+
   backfillEmojis();
   if (!document.getElementById('chat-connection').value) {
     document.getElementById('chat-connection').value = '__platform__';
@@ -986,6 +1031,17 @@ async function fetchCreditBalance() {
 //  CONNECTION / MODEL HELPERS
 // ═══════════════════════════════════════════
 let _ollamaModels = null;
+
+function _tryRestoreModel() {
+  if (!_pendingModelRestore) return;
+  const modelSel = document.getElementById('chat-model');
+  const opts = Array.from(modelSel.options).map(o => o.value);
+  if (opts.includes(_pendingModelRestore)) {
+    modelSel.value = _pendingModelRestore;
+    _updatePinButtonState();
+  }
+  _pendingModelRestore = null;
+}
 
 function onConnectionChange(sel) {
   const opt = sel.selectedOptions[0];
@@ -1094,6 +1150,7 @@ function _renderPlatformDropdown(data) {
 
   if (pinBtn) pinBtn.style.display = '';
   _updatePinButtonState();
+  _tryRestoreModel();
   return added;
 }
 
@@ -1188,6 +1245,7 @@ async function _fetchPlatformModelsFallback() {
     if (!added) {
       modelSel.innerHTML = '<option value="">No OpenRouter models available</option>';
     }
+    _tryRestoreModel();
   } catch (e) {
     modelSel.innerHTML = '<option value="">⚠ OpenRouter models unavailable</option>';
   }
@@ -1222,6 +1280,7 @@ async function fetchUserModels() {
     if (!added) {
       modelSel.innerHTML = '<option value="">No API keys configured — add them in Settings</option>';
     }
+    _tryRestoreModel();
   } catch (e) {
     modelSel.innerHTML = '<option value="">⚠ Failed to load user models</option>';
   }
@@ -1281,6 +1340,7 @@ async function fetchOllamaModels(url) {
       });
       modelSel.appendChild(group);
       modelSel.style.display = '';
+      _tryRestoreModel();
     } else {
       modelSel.innerHTML = '<option value="">No models found</option>';
       if (data.error) modelSel.innerHTML = `<option value="">⚠ Ollama offline</option>`;
@@ -1309,6 +1369,7 @@ async function fetchCloudModels(connId) {
       });
       modelSel.appendChild(group);
       modelSel.style.display = '';
+      _tryRestoreModel();
     } else {
       modelSel.style.display = 'none';
     }
@@ -1885,6 +1946,7 @@ function loadChatIntoThread(chat) {
   const agentCap = (chat.agent || 'Agent').charAt(0).toUpperCase() + (chat.agent || '').slice(1);
   document.getElementById('chat-title').textContent = chat.title || agentCap;
   document.getElementById('chat-agent').value = chat.agent || 'astraea';
+  _saveChatDefaults();
   // Recalculate session cost
   _sessionCost = 0; _sessionTokens = 0; _sessionCredits = 0;
   _msgs.forEach(m => {
