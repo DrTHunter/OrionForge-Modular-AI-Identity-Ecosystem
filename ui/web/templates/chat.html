@@ -1543,7 +1543,7 @@ function toggleSTTProvider() {
   }
 }
 
-function toggleMic() {
+async function toggleMic() {
   if (!window.isSecureContext) {
     alert('Microphone requires HTTPS or localhost.');
     return;
@@ -1551,6 +1551,22 @@ function toggleMic() {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     alert('Your browser does not support microphone access.');
     return;
+  }
+  // Check permission state — if denied, try requesting again to trigger browser prompt
+  if (navigator.permissions) {
+    try {
+      const perm = await navigator.permissions.query({ name: 'microphone' });
+      if (perm.state === 'denied') {
+        // Attempt getUserMedia to trigger the browser's permission prompt
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          stream.getTracks().forEach(t => t.stop());
+        } catch (_) {
+          alert('Microphone access is blocked.\n\nClick the lock icon (\uD83D\uDD12) in your browser address bar \u2192 set Microphone to \"Allow\" \u2192 reload the page.');
+          return;
+        }
+      }
+    } catch (_) { /* permissions API not supported for mic, continue normally */ }
   }
   if (_sttProvider === 'whisper') _toggleMicWhisper();
   else _toggleMicBrowser();
@@ -1589,7 +1605,13 @@ function _toggleMicBrowser() {
     rec.start();
     _sttRecognition = rec;
   }).catch(err => {
-    alert('Microphone error: ' + err.message);
+    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+      alert('Microphone access denied.\n\nClick the lock icon (\uD83D\uDD12) in your browser address bar \u2192 set Microphone to \"Allow\" \u2192 reload the page.');
+    } else if (err.name === 'NotFoundError') {
+      alert('No microphone found. Please connect a microphone and try again.');
+    } else {
+      alert('Microphone error: ' + err.message);
+    }
   });
 }
 
@@ -1636,7 +1658,15 @@ function _toggleMicWhisper() {
     };
     recorder.start();
     btn.classList.add('recording');
-  }).catch(err => { alert('Microphone error: ' + err.message); });
+  }).catch(err => {
+    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+      alert('Microphone access denied.\n\nClick the lock icon (\uD83D\uDD12) in your browser address bar \u2192 set Microphone to \"Allow\" \u2192 reload the page.');
+    } else if (err.name === 'NotFoundError') {
+      alert('No microphone found. Please connect a microphone and try again.');
+    } else {
+      alert('Microphone error: ' + err.message);
+    }
+  });
 }
 
 // ═══════════════════════════════════════════
