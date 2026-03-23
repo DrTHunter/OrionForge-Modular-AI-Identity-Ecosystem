@@ -5736,7 +5736,7 @@ async def api_tts_edge_speak(request: Request):
         headers["Authorization"] = f"Bearer {conn['api_key']}"
     payload = {"input": text, "voice": voice, "model": model}
     try:
-        async with httpx.AsyncClient(timeout=60) as client:
+        async with httpx.AsyncClient(timeout=120) as client:
             resp = await client.post(url, headers=headers, json=payload)
             resp.raise_for_status()
 
@@ -5753,8 +5753,10 @@ async def api_tts_edge_speak(request: Request):
         detail = str(e)
         try: detail = e.response.text[:300]
         except Exception: pass
+        log.error("[tts] Edge-TTS HTTP error: %s", detail)
         return JSONResponse({"error": f"Edge-TTS error: {detail}"}, 502)
     except Exception as e:
+        log.error("[tts] Edge-TTS exception: %s", e)
         return JSONResponse({"error": str(e)}, 500)
 
 
