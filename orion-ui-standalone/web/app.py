@@ -1847,6 +1847,7 @@ async def page_chat(request: Request):
         "chat_background": settings.get("chat_background") or "",
         "pinned_models": settings.get("pinned_models", []),
         "stt_provider": stt_cfg.get("provider", "elevenlabs"),
+        "chat_defaults": settings.get("chat_defaults", {}),
     })
 
 @app.get("/profiles", response_class=HTMLResponse)
@@ -6086,6 +6087,20 @@ async def api_delete_chat_background():
         if old_path.exists():
             old_path.unlink()
     settings["chat_background"] = None
+    _save_settings(settings)
+    return JSONResponse({"status": "ok"})
+
+
+@app.put("/api/settings/chat-defaults")
+async def api_save_chat_defaults(request: Request):
+    """Persist the user's last-selected agent, connection, and model."""
+    body = await request.json()
+    settings = _load_settings()
+    defaults = settings.get("chat_defaults", {})
+    for key in ("last_agent", "last_connection", "last_model"):
+        if key in body:
+            defaults[key] = body[key]
+    settings["chat_defaults"] = defaults
     _save_settings(settings)
     return JSONResponse({"status": "ok"})
 
