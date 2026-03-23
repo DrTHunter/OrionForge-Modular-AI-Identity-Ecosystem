@@ -5731,7 +5731,9 @@ async def api_tts_edge_speak(request: Request):
                 }, status_code=402)
 
     url = f"{conn['url'].rstrip('/')}/v1/audio/speech"
-    headers = {"Authorization": f"Bearer {conn.get('api_key', '')}", "Content-Type": "application/json"}
+    headers = {"Content-Type": "application/json"}
+    if conn.get("api_key"):
+        headers["Authorization"] = f"Bearer {conn['api_key']}"
     payload = {"input": text, "voice": voice, "model": model}
     try:
         async with httpx.AsyncClient(timeout=60) as client:
@@ -5763,7 +5765,9 @@ async def api_tts_edge_voices():
     if not conn:
         return JSONResponse({"voices": []})
     base_url = conn['url'].rstrip('/')
-    headers = {"Authorization": f"Bearer {conn.get('api_key', '')}"}
+    headers = {}
+    if conn.get("api_key"):
+        headers["Authorization"] = f"Bearer {conn['api_key']}"
     VOICE_ENGINE_MAP = {
         "tts-1": {"engine": "piper", "label": "Piper (CPU · fast)"},
         "tts-1-hd": {"engine": "xtts", "label": "XTTS v2 (GPU · HD)"},
