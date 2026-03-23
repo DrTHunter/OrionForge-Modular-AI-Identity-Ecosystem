@@ -4965,6 +4965,20 @@ async def page_admin_keys(request: Request):
     if not _check_admin(request):
         return JSONResponse({"error": "Unauthorized"}, status_code=403)
     platform_conns = _get_platform_connections()
+    # Expose env-var connections for Edge-TTS and Whisper so the UI shows them
+    _existing_providers = {c.get("provider") for c in platform_conns}
+    for env_key, provider, label in [
+        ("TTS_URL", "edge-tts", "OpenedAI Speech (TTS)"),
+        ("WHISPER_URL", "whisper", "Whisper STT"),
+    ]:
+        if provider not in _existing_providers:
+            env_val = os.environ.get(env_key, "")
+            if env_val:
+                platform_conns.append({
+                    "id": f"env_{provider}", "provider": provider,
+                    "url": env_val, "api_key": "", "enabled": True,
+                    "platform_hosted": True, "name": f"Platform — {label}",
+                })
     return templates.TemplateResponse("admin_keys.html", {
         "request": request,
         "page": "admin",
@@ -4987,7 +5001,8 @@ async def api_admin_save_platform_key(request: Request):
 
     if not provider:
         return JSONResponse({"error": "provider is required"}, 400)
-    if provider != "ollama" and not api_key:
+    _KEYLESS_PROVIDERS = {"edge-tts", "whisper"}
+    if provider not in _KEYLESS_PROVIDERS and provider != "ollama" and not api_key:
         return JSONResponse({"error": "api_key is required"}, 400)
 
     if provider == "ollama":
@@ -5056,7 +5071,8 @@ async def api_admin_test_platform_key(request: Request):
     url = body.get("url", "").strip().rstrip("/")
     api_key = body.get("api_key", "").strip()
 
-    if provider != "ollama" and not api_key:
+    _KEYLESS_PROVIDERS = {"edge-tts", "whisper"}
+    if provider not in _KEYLESS_PROVIDERS and provider != "ollama" and not api_key:
         return JSONResponse({"ok": False, "error": "No API key provided"})
 
     # ElevenLabs uses a different endpoint
@@ -5065,6 +5081,10 @@ async def api_admin_test_platform_key(request: Request):
         headers = {"xi-api-key": api_key}
     elif provider == "ollama":
         test_url = f"{_normalize_ollama_url(url)}/api/tags"
+        headers = {}
+    elif provider in ("edge-tts", "whisper"):
+        # Self-hosted services — no API key needed
+        test_url = f"{url}/v1/models"
         headers = {}
     elif provider == "google_gemini":
         # Google Gemini OpenAI-compatible endpoint
