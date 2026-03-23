@@ -1644,7 +1644,7 @@ function _toggleMicWhisper() {
     _sttAnalyser = analyser;
     const dataArr = new Uint8Array(analyser.frequencyBinCount);
     let lastSpeechTime = Date.now();
-    const SILENCE_MS = 3000;
+    const SILENCE_MS = 1500;
     const NOISE_THRESHOLD = 15;
 
     const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
