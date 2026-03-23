@@ -1538,8 +1538,9 @@
         voices.forEach(v => {
           const opt = document.createElement('option');
           opt.value = v.voice_id;
-          opt.textContent = v.name + (v.category ? ` (${v.category})` : '');
-          if (v.voice_id === current) { opt.selected = true; selectedText = v.name; }
+          const premTag = v.premium ? ' ⭐ PREMIUM' : '';
+          opt.textContent = v.name + (v.category ? ` (${v.category})` : '') + premTag;
+          if (v.voice_id === current) { opt.selected = true; selectedText = v.name + premTag; }
           grp.appendChild(opt);
         });
         sel.appendChild(grp);
