@@ -35,5 +35,5 @@ policy:
 provider: openai
 system_prompt: k_os.system.md
 temperature: 0.85
-voice_id: ''
+voice_id: 17emZEdpFxzVxRKIMpMN
 window_size: 50

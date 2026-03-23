@@ -35,5 +35,5 @@ policy:
 provider: openai
 system_prompt: lux_umbra.system.md
 temperature: 0.7
-voice_id: ''
+voice_id: qhH5VOAvpCwvNpmn2srO
 window_size: 50
