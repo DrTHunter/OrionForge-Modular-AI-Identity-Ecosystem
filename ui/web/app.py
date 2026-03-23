@@ -1816,6 +1816,19 @@ async def page_chat(request: Request):
     ]
     settings = _load_settings()
     stt_cfg = settings.get("stt", {})
+
+    # Merge voice fields from agent profiles into avatar_map so the
+    # frontend can route TTS to the correct voice per agent.
+    avatar_map = dict(settings.get("agent_avatars", {}))
+    for agent_name in agents:
+        prof = _load_profile(agent_name)
+        entry = dict(avatar_map.get(agent_name, {}))
+        if prof.get("edge_voice"):
+            entry["edge_voice"] = prof["edge_voice"]
+        if prof.get("voice_id"):
+            entry["voice_id"] = prof["voice_id"]
+        avatar_map[agent_name] = entry
+
     return templates.TemplateResponse("chat.html", {
         "request": request, "page": "chat",
         "agents": agents, "connections": conns,
@@ -1823,7 +1836,7 @@ async def page_chat(request: Request):
         "user_connections": user_conns,
         "chat_index": _load_chat_index(),
         "agent_connections": store.get("agent_connections", {}),
-        "avatar_map": settings.get("agent_avatars", {}),
+        "avatar_map": avatar_map,
         "user_profile": settings.get("user_profile", {}),
         "pricing": _load_pricing(),
         "chat_background": settings.get("chat_background") or "",
