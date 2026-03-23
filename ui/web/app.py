@@ -3627,7 +3627,7 @@ async def api_chat_send(req: ChatRequest, request: Request):
                 "model": model,
                 "messages": running_messages,
                 "temperature": profile.get("temperature", 0.7),
-                "max_tokens": profile.get("max_tokens", 4096),
+                "max_tokens": profile.get("max_tokens", 16384),
             }
             if tool_defs:
                 payload["tools"] = tool_defs
@@ -4010,7 +4010,7 @@ async def _stream_chat_generator(req: ChatRequest, request: Request, user, conn,
             "model": model,
             "messages": running_messages,
             "temperature": profile.get("temperature", 0.7),
-            "max_tokens": profile.get("max_tokens", 4096),
+            "max_tokens": profile.get("max_tokens", 16384),
             "stream": True,
         }
         if tool_defs:
