@@ -35,5 +35,5 @@ policy:
 provider: openai
 system_prompt: astraea.system.md
 temperature: 0.7
-voice_id: ''
+voice_id: X03mvPuTfprif8QBAVeJ
 window_size: 50

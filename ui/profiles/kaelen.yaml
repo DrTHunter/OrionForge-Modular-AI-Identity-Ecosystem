@@ -35,5 +35,5 @@ policy:
 provider: openai
 system_prompt: kaelen.system.md
 temperature: 0.7
-voice_id: ''
+voice_id: zYcjlYFOd3taleS0gkk3
 window_size: 50

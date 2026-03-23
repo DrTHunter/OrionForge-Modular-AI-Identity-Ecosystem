@@ -35,5 +35,5 @@ policy:
 provider: openai
 system_prompt: dalvarr.system.md
 temperature: 0.65
-voice_id: ''
+voice_id: xsiB5fGhEtknnqzudCO6
 window_size: 50

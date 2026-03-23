@@ -35,5 +35,5 @@ policy:
 provider: openai
 system_prompt: kazara.system.md
 temperature: 0.65
-voice_id: ''
+voice_id: uuUzmO5DqwnGoJIDCLmw
 window_size: 50

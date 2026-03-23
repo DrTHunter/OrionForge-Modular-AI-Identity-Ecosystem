@@ -35,5 +35,5 @@ policy:
 provider: openai
 system_prompt: janus.system.md
 temperature: 0.85
-voice_id: ''
+voice_id: UgBBYS2sOqTuMpoF3BR0
 window_size: 50

@@ -35,5 +35,5 @@ policy:
 provider: openai
 system_prompt: astra.system.md
 temperature: 0.8
-voice_id: ''
+voice_id: flHkNRp1BlvT73UL6gyz
 window_size: 50
