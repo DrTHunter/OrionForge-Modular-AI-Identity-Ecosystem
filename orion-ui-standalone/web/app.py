@@ -1826,6 +1826,7 @@ async def page_chat(request: Request):
         "user_profile": settings.get("user_profile", {}),
         "pricing": _load_pricing(),
         "chat_background": settings.get("chat_background") or "",
+        "pinned_models": settings.get("pinned_models", []),
     })
 
 @app.get("/profiles", response_class=HTMLResponse)
@@ -6073,6 +6074,19 @@ async def api_save_timezone(request: Request):
     settings["timezone_offset_hours"] = body.get("timezone_offset_hours", None)
     _save_settings(settings)
     return JSONResponse({"status": "ok"})
+
+
+@app.put("/api/settings/pinned-models")
+async def api_save_pinned_models(request: Request):
+    """Save the user's pinned/favorite model list for the chat dropdown."""
+    body = await request.json()
+    pinned = body.get("pinned_models", [])
+    if not isinstance(pinned, list):
+        return JSONResponse({"error": "pinned_models must be a list"}, 400)
+    settings = _load_settings()
+    settings["pinned_models"] = pinned[:50]  # cap at 50 favorites
+    _save_settings(settings)
+    return JSONResponse({"status": "ok", "pinned_models": settings["pinned_models"]})
 
 
 # ═══════════════════════════════════════════════════════════════════
