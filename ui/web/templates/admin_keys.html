@@ -142,17 +142,6 @@ const PROVIDERS = [
     provider_type: "edge-tts",
     keyless: true,
   },
-  {
-    id: "whisper",
-    name: "Whisper STT",
-    icon: "🎙️",
-    desc: "Self-hosted speech-to-text via faster-whisper. No API key needed.",
-    url_default: "https://orionforge-engine-whisper.fly.dev",
-    key_placeholder: "(optional)",
-    models: ["tiny", "base", "small"],
-    provider_type: "whisper",
-    keyless: true,
-  },
 ];
 
 let platformConns = {{ platform_connections | tojson }};
