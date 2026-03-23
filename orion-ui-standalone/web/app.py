@@ -5226,6 +5226,7 @@ async def page_admin_voices(request: Request):
         "request": request,
         "page": "admin",
         "allowed_voices": settings.get("allowed_voices", []),
+        "premium_voices": settings.get("premium_voices", []),
     })
 
 
@@ -5269,10 +5270,14 @@ async def api_admin_save_allowed_voices(request: Request):
     allowed = body.get("allowed_voices", [])
     if not isinstance(allowed, list):
         return JSONResponse({"error": "allowed_voices must be a list"}, status_code=400)
+    premium = body.get("premium_voices", [])
+    if not isinstance(premium, list):
+        return JSONResponse({"error": "premium_voices must be a list"}, status_code=400)
     settings = _load_settings()
     settings["allowed_voices"] = allowed
+    settings["premium_voices"] = premium
     _save_settings(settings)
-    return JSONResponse({"status": "ok", "count": len(allowed)})
+    return JSONResponse({"status": "ok", "count": len(allowed), "premium_count": len(premium)})
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -5686,12 +5691,15 @@ async def api_tts_speak(request: Request):
     if not el_conn or not el_conn.get("api_key"):
         return JSONResponse({"error": "No ElevenLabs connection configured. Add one in Settings → Connections."}, 400)
 
+    # ── Check if voice is premium ──
+    is_premium = voice_id in set(_load_settings().get("premium_voices", []))
+
     # ── Pre-flight credit check for platform-hosted keys ──
     is_platform = el_conn.get("platform_hosted", False)
     char_count_est = len(text)
     credit_cost = 0
     if is_platform and user:
-        credit_cost = estimate_tts_credit_cost(char_count_est, provider="elevenlabs")
+        credit_cost = estimate_tts_credit_cost(char_count_est, provider="elevenlabs", premium=is_premium)
         if credit_cost > 0:
             balance = get_user_credits(user["id"])
             if balance < credit_cost:
@@ -5723,13 +5731,15 @@ async def api_tts_speak(request: Request):
         if is_platform and user and credit_cost > 0:
             try:
                 # Recalculate with actual char count from response
-                actual_cost = estimate_tts_credit_cost(char_count, provider="elevenlabs")
-                deduct_user_credits(user["id"], actual_cost, f"tts:elevenlabs:{char_count}chars")
+                actual_cost = estimate_tts_credit_cost(char_count, provider="elevenlabs", premium=is_premium)
+                label = f"tts:elevenlabs{'_premium' if is_premium else ''}:{char_count}chars"
+                deduct_user_credits(user["id"], actual_cost, label)
             except Exception as exc:
                 log.warning("[credits] TTS credit deduction failed: %s", exc)
 
         return Response(content=resp.content, media_type="audio/mpeg",
-                        headers={"X-TTS-Characters": str(char_count), "X-TTS-Model": model_id})
+                        headers={"X-TTS-Characters": str(char_count), "X-TTS-Model": model_id,
+                                 "X-TTS-Premium": "1" if is_premium else "0"})
     except httpx.HTTPStatusError as e:
         detail = str(e)
         try: detail = e.response.json().get("detail", {}).get("message", str(e))
@@ -5760,10 +5770,14 @@ async def api_tts_voices():
         voices = [{"voice_id": v["voice_id"], "name": v["name"], "category": v.get("category", "")}
                   for v in data.get("voices", [])]
         # Apply admin allowlist filter
-        allowed = _load_settings().get("allowed_voices", [])
+        settings = _load_settings()
+        allowed = settings.get("allowed_voices", [])
+        premium_set = set(settings.get("premium_voices", []))
         if allowed:
             allowed_set = set(allowed)
             voices = [v for v in voices if v["voice_id"] in allowed_set]
+        for v in voices:
+            v["premium"] = v["voice_id"] in premium_set
         return JSONResponse({"voices": voices})
     except Exception as e:
         return JSONResponse({"voices": [], "error": str(e)})
@@ -5953,7 +5967,10 @@ async def api_stt_elevenlabs(request: Request):
             except Exception as exc:
                 log.warning("[credits] STT credit deduction failed: %s", exc)
 
-        return JSONResponse({"text": text, "provider": "elevenlabs"})
+        # Estimate USD cost for frontend session tracker (2x markup)
+        stt_usd = (estimated_seconds / 60) * 0.006 * 2
+        return JSONResponse({"text": text, "provider": "elevenlabs",
+                             "stt_cost": round(stt_usd, 6), "audio_seconds": round(estimated_seconds, 1)})
     except httpx.HTTPStatusError as e:
         detail = str(e)
         try: detail = e.response.json().get("detail", {}).get("message", str(e))

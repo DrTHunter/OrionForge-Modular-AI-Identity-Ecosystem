@@ -81,6 +81,21 @@
   .voice-id { font-size: 0.65rem; color: rgba(241,245,249,0.25); font-family: monospace;
     margin-top: 0.125rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
+  .premium-toggle {
+    flex-shrink: 0; width: 28px; height: 28px; border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.1); background: transparent;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-size: 0.85rem; transition: all 0.15s; color: rgba(255,255,255,0.2);
+  }
+  .premium-toggle:hover { border-color: rgba(245,158,11,0.4); color: rgba(245,158,11,0.6); }
+  .premium-toggle.active { border-color: rgba(245,158,11,0.6); background: rgba(245,158,11,0.12); color: #f59e0b; }
+
+  .premium-badge {
+    display: inline-block; font-size: 0.6rem; font-weight: 700; color: #f59e0b;
+    background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.25);
+    border-radius: 3px; padding: 0 0.3rem; margin-left: 0.4rem; vertical-align: middle;
+  }
+
   .loading { text-align: center; padding: 3rem; color: rgba(241,245,249,0.4); font-size: 0.875rem; }
   .empty { text-align: center; padding: 3rem; color: rgba(241,245,249,0.35); font-size: 0.85rem; }
 
@@ -136,13 +151,18 @@
 
 <script>
 const _savedAllowed = {{ allowed_voices | tojson }};
+const _savedPremium = {{ premium_voices | tojson }};
 let _allVoices = [];
 let _selected = new Set(_savedAllowed);
+let _premiumSet = new Set(_savedPremium);
 
 function updateStats() {
   const el = document.getElementById('stats');
   if (!_allVoices.length) { el.textContent = ''; return; }
-  el.innerHTML = `<strong>${_selected.size}</strong> of <strong>${_allVoices.length}</strong> selected`;
+  const pCount = _premiumSet.size;
+  let html = `<strong>${_selected.size}</strong> of <strong>${_allVoices.length}</strong> selected`;
+  if (pCount > 0) html += ` · <strong style="color:#f59e0b;">${pCount}</strong> premium`;
+  el.innerHTML = html;
   document.getElementById('btn-save').disabled = false;
 }
 
@@ -156,15 +176,19 @@ function renderVoices(voices) {
   voices.forEach(v => {
     const sel = _selected.has(v.voice_id) ? ' selected' : '';
     const check = _selected.has(v.voice_id) ? '✓' : '';
+    const isPrem = _premiumSet.has(v.voice_id);
+    const premClass = isPrem ? ' active' : '';
     const labels = v.labels ? Object.values(v.labels).filter(Boolean).join(', ') : '';
+    const premBadge = isPrem ? '<span class="premium-badge">PREMIUM</span>' : '';
     html += `
       <div class="voice-card${sel}" data-id="${v.voice_id}" onclick="toggleVoice('${v.voice_id}')">
         <div class="voice-check">${check}</div>
         <div class="voice-info">
-          <div class="voice-name">${escHtml(v.name)}</div>
-          <div class="voice-meta">${escHtml(v.category)}${labels ? ' · ' + escHtml(labels) : ''}</div>
+          <div class="voice-name">${escHtml(v.name)}${premBadge}</div>
+          <div class="voice-meta">${escHtml(v.category)}${labels ? ' · ' + escHtml(labels) : ''}${isPrem ? ' · $0.20/1K chars extra' : ''}</div>
           <div class="voice-id">${v.voice_id}</div>
         </div>
+        <button class="premium-toggle${premClass}" onclick="event.stopPropagation(); togglePremium('${v.voice_id}')" title="Toggle premium voice ($0.20/1K chars surcharge)">⭐</button>
       </div>`;
   });
   html += '</div>';
@@ -188,6 +212,31 @@ function toggleVoice(id) {
   updateStats();
 }
 
+function togglePremium(id) {
+  if (_premiumSet.has(id)) _premiumSet.delete(id);
+  else _premiumSet.add(id);
+  const card = document.querySelector(`.voice-card[data-id="${id}"]`);
+  if (card) {
+    const btn = card.querySelector('.premium-toggle');
+    btn.classList.toggle('active');
+    // Re-render name to update badge
+    const nameEl = card.querySelector('.voice-name');
+    const voice = _allVoices.find(v => v.voice_id === id);
+    if (nameEl && voice) {
+      const badge = _premiumSet.has(id) ? '<span class="premium-badge">PREMIUM</span>' : '';
+      nameEl.innerHTML = escHtml(voice.name) + badge;
+    }
+    const metaEl = card.querySelector('.voice-meta');
+    if (metaEl && voice) {
+      const labels = voice.labels ? Object.values(voice.labels).filter(Boolean).join(', ') : '';
+      const premNote = _premiumSet.has(id) ? ' · $0.20/1K chars extra' : '';
+      metaEl.textContent = (voice.category || '') + (labels ? ' · ' + labels : '') + premNote;
+    }
+  }
+  updateStats();
+  document.getElementById('btn-save').disabled = false;
+}
+
 function filterVoices() {
   const q = document.getElementById('voice-search').value.toLowerCase();
   const filtered = q ? _allVoices.filter(v =>
@@ -201,6 +250,7 @@ function filterVoices() {
 
 function clearAll() {
   _selected.clear();
+  _premiumSet.clear();
   renderVoices(_allVoices);
   updateStats();
 }
@@ -233,11 +283,15 @@ async function saveAllowlist() {
     const resp = await fetch('/api/admin/voices/allowed', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ allowed_voices: Array.from(_selected) }),
+      body: JSON.stringify({
+        allowed_voices: Array.from(_selected),
+        premium_voices: Array.from(_premiumSet),
+      }),
     });
     const data = await resp.json();
     if (data.error) { toast(data.error, 'error'); return; }
-    toast(`Saved ${data.count} allowed voices`, 'success');
+    const msg = `Saved ${data.count} allowed voices` + (data.premium_count ? `, ${data.premium_count} premium` : '');
+    toast(msg, 'success');
   } catch (e) {
     toast('Save failed: ' + e.message, 'error');
   } finally {

@@ -1471,9 +1471,12 @@ function toggleTTS() {
 }
 
 const TTS_COST_PER_CHAR = 0.0003;
-function _estimateTtsCost(charCount, provider) {
+const TTS_PREMIUM_SURCHARGE_PER_CHAR = 0.0002;
+function _estimateTtsCost(charCount, provider, isPremium) {
   if (provider === 'edge' || provider === 'xtts') return 0;
-  return charCount * TTS_COST_PER_CHAR;
+  let cost = charCount * TTS_COST_PER_CHAR;
+  if (isPremium) cost += charCount * TTS_PREMIUM_SURCHARGE_PER_CHAR;
+  return cost * 2; // 2x markup for TTS
 }
 
 function _showVoiceToast(msg) {
@@ -1544,12 +1547,18 @@ async function speakText(text, metaEl) {
       return null;
     }
     const charCount = parseInt(resp.headers.get('X-TTS-Characters') || text.length);
-    const ttsCost = _estimateTtsCost(charCount, provider);
+    const isPremium = resp.headers.get('X-TTS-Premium') === '1';
+    const ttsCost = _estimateTtsCost(charCount, provider, isPremium);
     const blob = await resp.blob();
     const url = URL.createObjectURL(blob);
     _ttsCacheSet(text, url, provider, charCount);
     _playAudioBlob(url, playingIcon, false);
-    return { characters: charCount, cost: ttsCost, provider };
+    // Add TTS cost to session tracker
+    if (ttsCost > 0) {
+      _sessionCost += ttsCost;
+      updateCostTicker();
+    }
+    return { characters: charCount, cost: ttsCost, provider, premium: isPremium };
   } catch (e) {
     if (playingIcon) playingIcon.remove();
     document.getElementById('btn-tts-stop').style.display = 'none';
@@ -1572,7 +1581,7 @@ function _playAudioBlob(url, playingIcon, revokeOnEnd) {
   if (p) p.catch(() => { if (playingIcon) playingIcon.remove(); _ttsAudio = null; document.getElementById('btn-tts-stop').style.display = 'none'; });
 }
 
-function _updateMetaWithTts(metaEl, apiCostStr, ttsCost, provider) {
+function _updateMetaWithTts(metaEl, apiCostStr, ttsCost, provider, isPremium) {
   if (!metaEl) return;
   const isFree = provider === 'edge' || provider === 'xtts';
   const ttsCostStr = isFree ? 'FREE' : (ttsCost < 0.001 ? ttsCost.toFixed(6) : ttsCost.toFixed(3));
@@ -1581,11 +1590,13 @@ function _updateMetaWithTts(metaEl, apiCostStr, ttsCost, provider) {
   const totalStr = totalCost < 0.001 ? totalCost.toFixed(6) : totalCost.toFixed(3);
   const provLabels = { edge: 'Piper', xtts: 'XTTS', eleven: '11Labs' };
   const provLabel = provLabels[provider] || provider;
+  const premLabel = isPremium ? ' ⭐' : '';
   if (!metaEl.querySelector('.meta-tts-cost')) {
     metaEl.appendChild(document.createTextNode(' · '));
     const el = document.createElement('span');
-    el.className = 'meta-tts-cost' + (isFree ? ' free' : '');
-    el.textContent = isFree ? `TTS ${provLabel} FREE` : `TTS ${provLabel} $${ttsCostStr}`;
+    el.className = 'meta-tts-cost' + (isFree ? ' free' : '') + (isPremium ? ' premium' : '');
+    el.textContent = isFree ? `TTS ${provLabel} FREE` : `TTS ${provLabel}${premLabel} $${ttsCostStr}`;
+    if (isPremium) el.style.color = '#f59e0b';
     metaEl.appendChild(el);
   }
 }
@@ -1683,6 +1694,11 @@ function _toggleMicElevenLabs() {
           const data = await resp.json();
           const text = (data.text || '').trim();
           console.log('[stt] elevenlabs response:', data);
+          // Track STT cost in session
+          if (data.stt_cost > 0) {
+            _sessionCost += data.stt_cost;
+            updateCostTicker();
+          }
           if (text) {
             const startVal = ta.value;
             ta.value = startVal + (startVal && !startVal.endsWith(' ') ? ' ' : '') + text;
@@ -2218,7 +2234,7 @@ function _renderEntry(role, text, data, timeStr, layers) {
           _ttsProvider = savedProv;
           speakBtn.classList.remove('active'); speakBtn.innerHTML = '🔊 Read Aloud';
           if (r && !r.cached && metaTarget && apiCostStr !== null) {
-            _updateMetaWithTts(metaTarget, apiCostStr, r.cost, r.provider);
+            _updateMetaWithTts(metaTarget, apiCostStr, r.cost, r.provider, r.premium);
           }
         });
       };
@@ -2244,7 +2260,7 @@ function _renderEntry(role, text, data, timeStr, layers) {
       if (_ttsProvider !== 'off' && d._live) {
         const metaEl = el.querySelector('.msg-meta');
         speakText(text, metaEl).then(r => {
-          if (r && metaEl && apiCostStr !== null) _updateMetaWithTts(metaEl, apiCostStr, r.cost, r.provider);
+          if (r && metaEl && apiCostStr !== null) _updateMetaWithTts(metaEl, apiCostStr, r.cost, r.provider, r.premium);
         });
       }
 

@@ -368,6 +368,9 @@ TTS_COST_PER_1K_CHARS = {
     "default":    0.03,
 }
 
+# Premium voice surcharge per 1,000 characters (on top of base rate)
+TTS_PREMIUM_SURCHARGE_PER_1K = 0.20
+
 # STT cost per minute of audio by provider
 STT_COST_PER_MINUTE = {
     "whisper": 0.006,      # OpenAI Whisper pricing
@@ -1101,15 +1104,18 @@ def estimate_llm_credit_cost(usd_cost: float) -> int:
     return max(credits, 1)  # minimum 1 credit
 
 
-def estimate_tts_credit_cost(char_count: int, provider: str = "elevenlabs") -> int:
+def estimate_tts_credit_cost(char_count: int, provider: str = "elevenlabs", premium: bool = False) -> int:
     """Convert TTS character count to credits at 2× markup.
 
     Uses provider-specific per-1K-char pricing, then applies the same
     2× markup as LLM usage.  Returns 0 for zero-length text.
+    Premium voices add an extra surcharge per 1K chars.
     """
     if char_count <= 0:
         return 0
     rate = TTS_COST_PER_1K_CHARS.get(provider, TTS_COST_PER_1K_CHARS["default"])
+    if premium:
+        rate += TTS_PREMIUM_SURCHARGE_PER_1K
     usd_cost = (char_count / 1000) * rate
     return estimate_llm_credit_cost(usd_cost)
 
