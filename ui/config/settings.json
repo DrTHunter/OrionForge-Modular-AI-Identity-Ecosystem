@@ -252,7 +252,8 @@
     "deepseek": "",
     "google_gemini": "",
     "openrouter": "",
-    "ollama_url": "http://orionforge-engine-ollama.flycast:11434"
+    "ollama_url": "http://orionforge-engine-ollama.flycast:11434",
+    "inworld": ""
   },
   "stt": {
     "provider": "elevenlabs"

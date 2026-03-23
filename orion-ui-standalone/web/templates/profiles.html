@@ -881,6 +881,7 @@
   {% set current_model = cfg.get('model', ad.profile.get('model', '')) %}
   {% set current_voice = cfg.get('voice_id', ad.profile.get('voice_id', '')) %}
   {% set current_edge_voice = cfg.get('edge_voice', ad.profile.get('edge_voice', 'alloy')) %}
+  {% set current_inworld_voice = cfg.get('inworld_voice', ad.profile.get('inworld_voice', 'Ashley')) %}
   {% set current_identity_profile = ad.profile.get('identity_faiss_profile', '') %}
   {% set current_memory_profile = ad.profile.get('memory_vault_profile', '') %}
   {% set current_tools = ad.profile.get('allowed_tools', []) %}
@@ -978,28 +979,14 @@
             </select>
           </div>
           <div class="config-cell">
-            <div class="config-cell-label">🆓 Free TTS (Edge-TTS / Piper)</div>
-            <div class="config-cell-value" id="voice-free-display-{{ name }}">{{ current_edge_voice or 'alloy' }}</div>
-            <select id="voice-free-{{ name }}" data-current="{{ current_edge_voice }}"
+            <div class="config-cell-label">� Inworld TTS</div>
+            <div class="config-cell-value" id="voice-free-display-{{ name }}">{{ current_inworld_voice or 'Ashley' }}</div>
+            <select id="voice-free-{{ name }}" data-current="{{ current_inworld_voice }}"
                     onchange="onVoiceSelect('{{ name }}', 'free', this)">
               <option value="">— Select Voice —</option>
-              <optgroup label="Piper (CPU · fast)">
-                <option value="alloy" {{ 'selected' if current_edge_voice == 'alloy' else '' }}>alloy</option>
-                <option value="echo" {{ 'selected' if current_edge_voice == 'echo' else '' }}>echo</option>
-                <option value="echo-alt" {{ 'selected' if current_edge_voice == 'echo-alt' else '' }}>echo-alt</option>
-                <option value="fable" {{ 'selected' if current_edge_voice == 'fable' else '' }}>fable</option>
-                <option value="onyx" {{ 'selected' if current_edge_voice == 'onyx' else '' }}>onyx</option>
-                <option value="nova" {{ 'selected' if current_edge_voice == 'nova' else '' }}>nova</option>
-                <option value="shimmer" {{ 'selected' if current_edge_voice == 'shimmer' else '' }}>shimmer</option>
-              </optgroup>
-              <optgroup label="XTTS v2 (GPU · HD)">
-                <option value="alloy-hd" {{ 'selected' if current_edge_voice == 'alloy-hd' else '' }}>alloy (HD)</option>
-                <option value="echo-hd" {{ 'selected' if current_edge_voice == 'echo-hd' else '' }}>echo (HD)</option>
-                <option value="fable-hd" {{ 'selected' if current_edge_voice == 'fable-hd' else '' }}>fable (HD)</option>
-                <option value="onyx-hd" {{ 'selected' if current_edge_voice == 'onyx-hd' else '' }}>onyx (HD)</option>
-                <option value="nova-hd" {{ 'selected' if current_edge_voice == 'nova-hd' else '' }}>nova (HD)</option>
-                <option value="shimmer-hd" {{ 'selected' if current_edge_voice == 'shimmer-hd' else '' }}>shimmer (HD)</option>
-              </optgroup>
+              <option value="Ashley" {{ 'selected' if (current_inworld_voice or '') == 'Ashley' else '' }}>Ashley</option>
+              <option value="Dennis" {{ 'selected' if (current_inworld_voice or '') == 'Dennis' else '' }}>Dennis</option>
+              <option value="Alex" {{ 'selected' if (current_inworld_voice or '') == 'Alex' else '' }}>Alex</option>
             </select>
           </div>
         </div>
@@ -1498,8 +1485,8 @@
       saveField(agent, 'voice_id', sel.value);
     } else {
       const display = document.getElementById('voice-free-display-' + agent);
-      if (display) display.textContent = sel.value || 'alloy';
-      saveField(agent, 'edge_voice', sel.value);
+      if (display) display.textContent = sel.value || 'Ashley';
+      saveField(agent, 'inworld_voice', sel.value);
     }
   }
 
@@ -1551,41 +1538,29 @@
     } catch (e) { console.error('[profiles] ElevenLabs voices error:', e); }
   }
 
-  // Fetch Edge-TTS voices and populate free TTS dropdowns
-  async function populateEdgeTTSVoices() {
+  // Fetch Inworld TTS voices and populate Inworld TTS dropdowns
+  async function populateInworldVoices() {
     try {
-      const resp = await fetch('/api/tts/edge/voices');
+      const resp = await fetch('/api/tts/inworld/voices');
       const data = await resp.json();
       if (!data.voices || data.voices.length === 0) return;
-      // Group by engine
-      const byEngine = {};
-      data.voices.forEach(v => {
-        const label = v.engine_label || v.engine || 'Edge-TTS';
-        if (!byEngine[label]) byEngine[label] = [];
-        byEngine[label].push(v);
-      });
       document.querySelectorAll('select[id^="voice-free-"]').forEach(sel => {
-        const current = sel.dataset.current || 'alloy';
-        // Clear existing and rebuild with live data
+        const current = sel.dataset.current || 'Ashley';
         sel.innerHTML = '<option value="">— Select Voice —</option>';
         let selectedText = current;
-        for (const [engineLabel, voices] of Object.entries(byEngine)) {
-          const grp = document.createElement('optgroup');
-          grp.label = engineLabel;
-          voices.forEach(v => {
-            const opt = document.createElement('option');
-            opt.value = v.voice_id;
-            opt.textContent = v.name;
-            if (v.voice_id === current) { opt.selected = true; selectedText = v.name; }
-            grp.appendChild(opt);
-          });
-          sel.appendChild(grp);
-        }
+        data.voices.forEach(v => {
+          const opt = document.createElement('option');
+          opt.value = v.voice_id;
+          const desc = v.tags && v.tags.length ? ` (${v.tags.join(', ')})` : '';
+          opt.textContent = v.name + desc;
+          if (v.voice_id === current) { opt.selected = true; selectedText = v.name; }
+          sel.appendChild(opt);
+        });
         const agName = sel.id.replace('voice-free-', '');
         const disp = document.getElementById('voice-free-display-' + agName);
         if (disp) disp.textContent = selectedText;
       });
-    } catch (e) { /* Edge-TTS not configured — keep hardcoded fallback */ }
+    } catch (e) { /* Inworld not configured — keep hardcoded fallback */ }
   }
 
   // ── Tool toggle handler ──
@@ -1834,7 +1809,7 @@
 
   populateModelDropdowns();
   populateElevenLabsVoices();
-  populateEdgeTTSVoices();
+  populateInworldVoices();
   populateMemoryProfileDropdowns();
 
   // ══════════════════════════════════════════════

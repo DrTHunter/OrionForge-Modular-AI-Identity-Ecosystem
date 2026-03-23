@@ -1828,6 +1828,8 @@ async def page_chat(request: Request):
     for agent_name in agents:
         prof = _load_profile(agent_name)
         entry = dict(avatar_map.get(agent_name, {}))
+        if prof.get("inworld_voice"):
+            entry["inworld_voice"] = prof["inworld_voice"]
         if prof.get("edge_voice"):
             entry["edge_voice"] = prof["edge_voice"]
         if prof.get("voice_id"):
@@ -4503,7 +4505,7 @@ async def api_profile_config(name: str, request: Request):
     body = await request.json()
     cfg = _get_agent_config(name)
     for key in ("display_name", "description", "model", "allowed_tools",
-                "voice_id", "edge_voice", "tts_paid_provider", "tts_free_provider",
+                "voice_id", "edge_voice", "inworld_voice", "tts_paid_provider", "tts_free_provider",
                 "identity_faiss_profile", "memory_vault_profile"):
         if key in body:
             cfg[key] = body[key]
@@ -4515,6 +4517,8 @@ async def api_profile_config(name: str, request: Request):
         profile["voice_id"] = body["voice_id"]
     if "edge_voice" in body:
         profile["edge_voice"] = body["edge_voice"]
+    if "inworld_voice" in body:
+        profile["inworld_voice"] = body["inworld_voice"]
     if "allowed_tools" in body:
         profile["allowed_tools"] = body["allowed_tools"]
     if "identity_faiss_profile" in body:
@@ -5783,26 +5787,19 @@ async def api_tts_voices():
         return JSONResponse({"voices": [], "error": str(e)})
 
 
-def _get_edge_tts_conn():
-    """Return the first enabled edge-tts connection or None."""
-    # Fly.io private-network override via env var
-    env_url = os.environ.get("TTS_URL")
-    if env_url:
-        return {"id": "fly-tts", "provider": "edge-tts", "url": env_url,
-                "api_key": "", "enabled": True, "platform_hosted": True}
-    for c in _load_connections().get("connections", []):
-        if c.get("provider") == "edge-tts" and c.get("enabled", True):
-            return c
-    return None
+def _get_inworld_api_key():
+    """Return the user's Inworld TTS API key from settings, or None."""
+    settings = _load_settings()
+    return settings.get("api_keys", {}).get("inworld", "") or None
 
 
-@app.post("/api/tts/edge/speak")
-async def api_tts_edge_speak(request: Request):
-    """Proxy text-to-speech via local Edge-TTS container (Piper / XTTS)."""
+@app.post("/api/tts/inworld/speak")
+async def api_tts_inworld_speak(request: Request):
+    """Synthesise speech via Inworld TTS API (user provides own API key)."""
     body = await request.json()
     text = body.get("text", "").strip()
-    voice = body.get("voice", "alloy")
-    model = body.get("model", "tts-1")
+    voice_id = body.get("voice_id", "Ashley")
+    model_id = body.get("model_id", "inworld-tts-1.5-mini")
     if not text:
         return JSONResponse({"error": "No text provided"}, 400)
 
@@ -5812,87 +5809,60 @@ async def api_tts_edge_speak(request: Request):
         return JSONResponse({"error": "Voice TTS not unlocked. Purchase it in the Store first.",
                              "redirect": "/store"}, 403)
 
-    conn = _get_edge_tts_conn()
-    if not conn:
-        return JSONResponse({"error": "No Edge-TTS connection configured."}, 400)
+    api_key = _get_inworld_api_key()
+    if not api_key:
+        return JSONResponse({"error": "No Inworld API key configured. Add it in Settings → API Keys."}, 400)
 
-    # ── Pre-flight credit check for platform-hosted keys ──
-    is_platform = conn.get("platform_hosted", False)
     char_count = len(text)
-    credit_cost = 0
-    if is_platform and user:
-        credit_cost = estimate_tts_credit_cost(char_count, provider="edge-tts")
-        if credit_cost > 0:
-            balance = get_user_credits(user["id"])
-            if balance < credit_cost:
-                return JSONResponse({
-                    "error": "Insufficient credits for TTS usage",
-                    "credits_needed": credit_cost,
-                    "credits_balance": balance,
-                    "redirect": "/store",
-                }, status_code=402)
-
-    url = f"{conn['url'].rstrip('/')}/v1/audio/speech"
-    headers = {"Content-Type": "application/json"}
-    if conn.get("api_key"):
-        headers["Authorization"] = f"Bearer {conn['api_key']}"
-    payload = {"input": text, "voice": voice, "model": model}
+    url = "https://api.inworld.ai/tts/v1/voice"
+    headers = {
+        "Authorization": f"Basic {api_key}",
+        "Content-Type": "application/json",
+    }
+    payload = {"text": text, "voiceId": voice_id, "modelId": model_id}
     try:
         async with httpx.AsyncClient(timeout=120) as client:
             resp = await client.post(url, headers=headers, json=payload)
             resp.raise_for_status()
-
-        # ── Deduct credits for platform-hosted Edge-TTS ──
-        if is_platform and user and credit_cost > 0:
-            try:
-                deduct_user_credits(user["id"], credit_cost, f"tts:edge-tts:{char_count}chars")
-            except Exception as exc:
-                log.warning("[credits] Edge-TTS credit deduction failed: %s", exc)
-
-        return Response(content=resp.content, media_type="audio/mpeg",
-                        headers={"X-TTS-Characters": str(char_count), "X-TTS-Provider": "edge-tts"})
+        data = resp.json()
+        audio_bytes = _b64.b64decode(data.get("audioContent", ""))
+        return Response(content=audio_bytes, media_type="audio/mpeg",
+                        headers={"X-TTS-Characters": str(char_count), "X-TTS-Provider": "inworld"})
     except httpx.HTTPStatusError as e:
         detail = str(e)
         try: detail = e.response.text[:300]
         except Exception: pass
-        log.error("[tts] Edge-TTS HTTP error: %s", detail)
-        return JSONResponse({"error": f"Edge-TTS error: {detail}"}, 502)
+        log.error("[tts] Inworld TTS HTTP error: %s", detail)
+        return JSONResponse({"error": f"Inworld TTS error: {detail}"}, 502)
     except Exception as e:
-        log.error("[tts] Edge-TTS exception: %s", e)
+        log.error("[tts] Inworld TTS exception: %s", e)
         return JSONResponse({"error": str(e)}, 500)
 
 
-@app.get("/api/tts/edge/voices")
-async def api_tts_edge_voices():
-    """Fetch available voices from local Edge-TTS container."""
-    conn = _get_edge_tts_conn()
-    if not conn:
-        return JSONResponse({"voices": []})
-    base_url = conn['url'].rstrip('/')
-    headers = {}
-    if conn.get("api_key"):
-        headers["Authorization"] = f"Bearer {conn['api_key']}"
-    VOICE_ENGINE_MAP = {
-        "tts-1": {"engine": "piper", "label": "Piper (CPU · fast)"},
-        "tts-1-hd": {"engine": "xtts", "label": "XTTS v2 (GPU · HD)"},
-    }
-    default_voices = {
-        "tts-1": ["alloy", "echo", "echo-alt", "fable", "onyx", "nova", "shimmer"],
-        "tts-1-hd": ["alloy", "alloy-alt", "echo", "fable", "onyx", "nova", "shimmer"],
-    }
+@app.get("/api/tts/inworld/voices")
+async def api_tts_inworld_voices():
+    """Fetch available voices from Inworld TTS API."""
+    api_key = _get_inworld_api_key()
+    if not api_key:
+        return JSONResponse({"voices": [], "error": "No Inworld API key configured"})
+    url = "https://api.inworld.ai/tts/v1/voices?filter=language%3Den"
+    headers = {"Authorization": f"Basic {api_key}"}
     try:
         async with httpx.AsyncClient(timeout=15) as client:
-            resp = await client.get(f"{base_url}/v1/models", headers=headers)
+            resp = await client.get(url, headers=headers)
             resp.raise_for_status()
-            models_data = resp.json()
+        data = resp.json()
         voices = []
-        for m in models_data.get("data", []):
-            mid = m["id"]
-            ei = VOICE_ENGINE_MAP.get(mid, {"engine": "unknown", "label": mid})
-            for vn in default_voices.get(mid, []):
-                voices.append({"voice_id": vn, "name": vn, "model": mid, "engine": ei["engine"], "engine_label": ei["label"]})
+        for v in data.get("voices", []):
+            voices.append({
+                "voice_id": v.get("voiceId", ""),
+                "name": v.get("displayName", v.get("voiceId", "")),
+                "description": v.get("description", ""),
+                "tags": v.get("tags", []),
+            })
         return JSONResponse({"voices": voices})
     except Exception as e:
+        log.error("[tts] Inworld voices fetch error: %s", e)
         return JSONResponse({"voices": [], "error": str(e)})
 
 
@@ -6232,6 +6202,7 @@ async def api_save_api_keys(request: Request):
         "google_gemini": body.get("google_gemini", ""),
         "openrouter":    body.get("openrouter", ""),
         "ollama_url":    ollama_url,
+        "inworld":       body.get("inworld", ""),
     }
     _save_settings(settings)
     return JSONResponse({"status": "ok"})

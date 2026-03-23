@@ -192,6 +192,17 @@
       </div>
     </div>
 
+    <!-- Inworld TTS -->
+    <div class="settings-section">
+      <div class="settings-section-title">Inworld TTS</div>
+      <div class="settings-section-desc">Your Inworld API key for high-quality, low-cost text-to-speech. Get one free at <a href="https://platform.inworld.ai/api-keys" target="_blank" style="color:#22d3ee;">platform.inworld.ai</a></div>
+      <div class="mb-3">
+        <label class="block text-xs text-forge-muted mb-1">API Key (Base64 credentials)</label>
+        <input id="key-inworld" type="password" class="search-input w-full" style="max-width:32rem;"
+               placeholder="Paste your Base64 API key..." value="{{ settings.get('api_keys', {}).get('inworld', '') }}">
+      </div>
+    </div>
+
     <button class="filter-btn active" onclick="saveApiKeys()" style="cursor:pointer;">Save API Keys</button>
   </div>
 
@@ -593,6 +604,7 @@ async function saveApiKeys() {
     google_gemini:getVal('key-google_gemini'),
     openrouter:   getVal('key-openrouter'),
     ollama_url:   getVal('key-ollama_url'),
+    inworld:      getVal('key-inworld'),
   };
   const resp = await fetch('/api/settings/api-keys', {
     method: 'PUT', headers: {'Content-Type': 'application/json'},
