@@ -1,4 +1,27 @@
-"""Seed the memory vault with essential operational knowledge for all agents.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+chrome://settings/searchEngines
+    Safe                    
+
+db8c5af8-2a91-4d81-a6a5-8894cf283a36
+""Seed the memory vault with essential operational knowledge for all agents.
 
 Every agent sees scope="shared" memories. This script provides the
 foundational context every AI needs upon first interaction:
