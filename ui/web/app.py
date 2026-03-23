@@ -1815,6 +1815,7 @@ async def page_chat(request: Request):
         if not c.get("platform_hosted") and c.get("provider") not in ("elevenlabs", "edge-tts", "whisper")
     ]
     settings = _load_settings()
+    stt_cfg = settings.get("stt", {})
     return templates.TemplateResponse("chat.html", {
         "request": request, "page": "chat",
         "agents": agents, "connections": conns,
@@ -1827,6 +1828,7 @@ async def page_chat(request: Request):
         "pricing": _load_pricing(),
         "chat_background": settings.get("chat_background") or "",
         "pinned_models": settings.get("pinned_models", []),
+        "stt_provider": stt_cfg.get("provider", "whisper"),
     })
 
 @app.get("/profiles", response_class=HTMLResponse)
