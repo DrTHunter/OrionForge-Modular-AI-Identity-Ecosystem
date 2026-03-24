@@ -111,7 +111,7 @@ def _get_agent_note_config(agent_name: str) -> dict:
 def collect_notes(
     agent_name: str,
     query: Optional[str] = None,
-    top_k: int = 12,
+    top_k: Optional[int] = None,
 ) -> Tuple[str, str]:
     """Collect notes for an agent, split by mode.
 
@@ -119,7 +119,8 @@ def collect_notes(
         agent_name: Agent profile name.
         query:      Current stimulus / user message for directive FAISS search.
                     If None or empty, directive search is skipped.
-        top_k:      Max directive chunks to retrieve.
+        top_k:      Max directive chunks to retrieve.  If None, read from
+                    the agent's identity FAISS profile (retrieval_policy.top_k).
 
     Returns
     -------
@@ -128,6 +129,12 @@ def collect_notes(
         *directive_block*: Markdown block with semantically retrieved soul
             script sections.  Empty string if no query or no index.
     """
+    if top_k is None:
+        try:
+            from src.memory.profile_resolver import get_retrieval_policy
+            top_k = get_retrieval_policy(agent_name).get("top_k", 12)
+        except Exception:
+            top_k = 12
     agent_cfg = _get_agent_note_config(agent_name)
 
     always_parts: List[str] = []
