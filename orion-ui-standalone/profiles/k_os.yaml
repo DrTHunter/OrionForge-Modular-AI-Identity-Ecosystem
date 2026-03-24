@@ -16,7 +16,7 @@ directives:
   scopes:
   - shared
   - k_os
-inworld_voice: Alex
+inworld_voice: Dominus
 identity_faiss_profile: __default__
 memory:
   enabled: true

@@ -16,7 +16,7 @@ directives:
   scopes:
   - shared
   - astra
-inworld_voice: Ashley
+inworld_voice: Miranda
 identity_faiss_profile: __default__
 memory:
   enabled: true

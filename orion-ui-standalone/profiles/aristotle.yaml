@@ -15,7 +15,7 @@ directives:
   scopes:
   - shared
   - aristotle
-inworld_voice: Dennis
+inworld_voice: Theodore
 identity_faiss_profile: __default__
 memory:
   enabled: true

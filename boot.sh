@@ -96,8 +96,10 @@ ln -sfn "$PERSIST_CONFIG" "$APP_CONFIG"
 echo "[boot] Config linked to persistent volume."
 
 # ── PROFILES PERSISTENCE ───────────────────────────────
-# Persist agent profile YAMLs (voice_id, edge_voice, model, etc.)
-# so voice assignments survive across deploys.
+# Agent profile YAMLs define the shipped defaults (voice, model, tools, etc.).
+# Always overwrite from bundled copy so new defaults take effect.
+# User customizations are stored in settings.json agent_configs (which takes
+# priority at render time), so overwriting profiles is safe.
 PERSIST_PROFILES="/persist/profiles"
 APP_PROFILES="/app/app/profiles"
 BUNDLED_PROFILES="/app/_bundled_profiles"
@@ -105,14 +107,8 @@ BUNDLED_PROFILES="/app/_bundled_profiles"
 mkdir -p "$PERSIST_PROFILES"
 
 if [ -d "$BUNDLED_PROFILES" ]; then
-    if [ ! -f "$PERSIST_PROFILES/orion.yaml" ]; then
-        echo "[boot] First deploy — seeding bundled profiles."
-        cp -a "$BUNDLED_PROFILES"/* "$PERSIST_PROFILES/" 2>/dev/null || true
-    else
-        echo "[boot] Persistent profiles exist — preserving voice assignments."
-        # Add new agent profiles shipped in the image (no-clobber)
-        cp -n "$BUNDLED_PROFILES"/* "$PERSIST_PROFILES/" 2>/dev/null || true
-    fi
+    echo "[boot] Syncing bundled profiles to persistent volume."
+    cp -a "$BUNDLED_PROFILES"/* "$PERSIST_PROFILES/" 2>/dev/null || true
 fi
 
 if [ -L "$APP_PROFILES" ]; then
