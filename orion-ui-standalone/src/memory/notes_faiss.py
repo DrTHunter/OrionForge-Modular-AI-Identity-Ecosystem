@@ -24,6 +24,7 @@ Usage
                           note_ids={"abc123"})
 """
 
+import fcntl
 import json
 import logging
 import os
@@ -174,16 +175,22 @@ class NotesFAISS:
         """Save index + metadata to disk."""
         idx_path = self.faiss_dir / _INDEX_FILE
         meta_path = self.faiss_dir / _META_FILE
+        lock_path = self.faiss_dir / ".notes.lock"
 
-        if self.index is not None:
-            faiss.write_index(self.index, str(idx_path))
+        with open(lock_path, "w") as lf:
+            fcntl.flock(lf, fcntl.LOCK_EX)
+            try:
+                if self.index is not None:
+                    faiss.write_index(self.index, str(idx_path))
 
-        with open(meta_path, "w", encoding="utf-8") as f:
-            json.dump({
-                "model_name": self.model_name,
-                "total_chunks": len(self._chunks),
-                "chunks": self._chunks,
-            }, f, indent=2, default=str)
+                with open(meta_path, "w", encoding="utf-8") as f:
+                    json.dump({
+                        "model_name": self.model_name,
+                        "total_chunks": len(self._chunks),
+                        "chunks": self._chunks,
+                    }, f, indent=2, default=str)
+            finally:
+                fcntl.flock(lf, fcntl.LOCK_UN)
 
         log.info("[notes_faiss] Saved to %s (%d chunks)", self.faiss_dir, len(self._chunks))
 

@@ -10,6 +10,7 @@ for semantic search and embedding management.  This module handles only
 persistence, versioning, and compaction.
 """
 
+import fcntl
 import json
 import os
 import uuid
@@ -424,7 +425,12 @@ class VaultStore:
                 self._batch_resolve_cache[mem.id] = mem
         else:
             with open(self.path, "a", encoding="utf-8") as f:
-                f.write(line)
+                fcntl.flock(f, fcntl.LOCK_EX)
+                try:
+                    f.write(line)
+                    f.flush()
+                finally:
+                    fcntl.flock(f, fcntl.LOCK_UN)
 
 
 # Backward-compat alias so existing `from src.memory.vault import MemoryVault`
