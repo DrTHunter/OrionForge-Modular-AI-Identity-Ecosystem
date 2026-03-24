@@ -16,7 +16,7 @@ directives:
   scopes:
   - shared
   - janus
-edge_voice: fable
+inworld_voice: Alex
 identity_faiss_profile: __default__
 memory:
   enabled: true
