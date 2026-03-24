@@ -2990,7 +2990,8 @@ async def _execute_agi_tick(agent: str, stimulus: str, agi_config: dict) -> dict
                     usage, provider=conn.get("provider", "openai"), model=model,
                 )
                 total_cost += metering.cost.total_cost
-                log_cost_event(metering, agent=agent, chat_id=chat_id)
+                _tool_source = "platform" if conn.get("platform_hosted") else "user"
+                log_cost_event(metering, agent=agent, chat_id=chat_id, source=_tool_source)
             except Exception:
                 pass
 
@@ -3719,11 +3720,12 @@ async def api_chat_send(req: ChatRequest, request: Request):
 
         # ── Cost metering (every round) ──
         provider = conn.get("provider", "openai")
+        _cost_source = "platform" if conn.get("platform_hosted") else "user"
         try:
             from src.observability.metering import meter_from_raw_usage, log_cost_event
             metering = meter_from_raw_usage(usage, provider=provider, model=model)
             cost_data = metering.cost.to_dict()
-            log_cost_event(metering, agent=req.agent, chat_id=chat_data["id"])
+            log_cost_event(metering, agent=req.agent, chat_id=chat_data["id"], source=_cost_source)
         except Exception as exc:
             log.warning("[metering] cost computation failed: %s", exc)
 
@@ -4163,11 +4165,12 @@ async def _stream_chat_generator(req: ChatRequest, request: Request, user, conn,
 
         # ── Cost metering ──
         provider = conn.get("provider", "openai")
+        _cost_source = "platform" if conn.get("platform_hosted") else "user"
         try:
             from src.observability.metering import meter_from_raw_usage, log_cost_event
             metering = meter_from_raw_usage(total_usage, provider=provider, model=model)
             cost_data = metering.cost.to_dict()
-            log_cost_event(metering, agent=req.agent, chat_id=chat_data["id"])
+            log_cost_event(metering, agent=req.agent, chat_id=chat_data["id"], source=_cost_source)
         except Exception:
             pass
 
@@ -5683,7 +5686,7 @@ async def api_pricing_all_models():
     return {"models": result}
 
 @app.get("/api/pricing/cost-summary")
-async def api_pricing_cost_summary(agent: str = "", period: str = "all"):
+async def api_pricing_cost_summary(agent: str = "", period: str = "all", source: str = ""):
     """Return aggregated cost stats."""
     try:
         from src.observability.metering import read_cost_log, aggregate_costs
@@ -5692,6 +5695,8 @@ async def api_pricing_cost_summary(agent: str = "", period: str = "all"):
         kwargs = {}
         if agent:
             kwargs["agent"] = agent
+        if source:
+            kwargs["source"] = source
         if period == "today":
             kwargs["since"] = now_utc.replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
         elif period == "week":
@@ -5704,8 +5709,11 @@ async def api_pricing_cost_summary(agent: str = "", period: str = "all"):
         return {"error": str(exc)}
 
 @app.get("/api/pricing/cost-log")
-async def api_pricing_cost_log(agent: str = "", since: str = "", limit: int = 100):
-    """Return recent cost log entries."""
+async def api_pricing_cost_log(
+    agent: str = "", since: str = "", until: str = "",
+    source: str = "", limit: int = 100,
+):
+    """Return recent cost log entries with optional date-range and source filtering."""
     try:
         from src.observability.metering import read_cost_log
         kwargs = {"limit": limit}
@@ -5713,6 +5721,10 @@ async def api_pricing_cost_log(agent: str = "", since: str = "", limit: int = 10
             kwargs["agent"] = agent
         if since:
             kwargs["since"] = since
+        if until:
+            kwargs["until"] = until
+        if source:
+            kwargs["source"] = source
         return {"events": read_cost_log(**kwargs)}
     except Exception as exc:
         return {"error": str(exc)}
@@ -6013,8 +6025,26 @@ async def api_stt_elevenlabs(request: Request):
 # ═══════════════════════════════════════════════════════════════════
 
 @app.post("/api/chat/run")
-async def api_chat_run(req: ChatRequest):
+async def api_chat_run(req: ChatRequest, request: Request):
     """Launch a burst session and return the session ID."""
+    user = getattr(request.state, "user", None)
+
+    # Resolve connection to check platform_hosted status
+    conn = _resolve_connection(req.connection_id, req.agent)
+    is_platform = conn.get("platform_hosted", False) if conn else False
+
+    # ── Pre-flight credit check for platform-hosted keys ──
+    if is_platform:
+        if not user:
+            return JSONResponse({"error": "Login required for platform-hosted AGI loop."}, 401)
+        balance = get_user_credits(user["id"])
+        if balance <= 0:
+            return JSONResponse({
+                "error": "Insufficient credits. Purchase more in the Store.",
+                "credits_balance": 0,
+                "redirect": "/store",
+            }, status_code=402)
+
     session_id = str(uuid.uuid4())[:8]
     chat_id = req.chat_id
     if not chat_id:
@@ -6041,6 +6071,8 @@ async def api_chat_run(req: ChatRequest):
         "--stimulus", req.stimulus,
     ]
     env = os.environ.copy()
+    # Tell the engine subprocess what cost source to tag events with
+    env["ORION_COST_SOURCE"] = "platform" if is_platform else "user"
     if req.connection_id:
         for c in _load_connections().get("connections", []):
             if c["id"] == req.connection_id:
@@ -6050,6 +6082,7 @@ async def api_chat_run(req: ChatRequest):
     if req.model_override:
         env["AGENT_MODEL_OVERRIDE"] = req.model_override
 
+    started_ts = datetime.now(timezone.utc).isoformat()
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                 text=True, cwd=str(_PROJECT_ROOT), env=env)
@@ -6067,8 +6100,11 @@ async def api_chat_run(req: ChatRequest):
         _chat_sessions[session_id] = {
             "process": proc, "queue": q, "chat_id": chat_id,
             "agent": req.agent, "mode": req.mode, "stimulus": req.stimulus,
-            "started": datetime.now(timezone.utc).isoformat(),
+            "started": started_ts,
             "output_lines": [], "status": "running",
+            "platform_hosted": is_platform,
+            "user_id": user["id"] if user else None,
+            "credits_deducted": False,
         }
         return JSONResponse({"session_id": session_id, "chat_id": chat_id, "status": "started"})
     except Exception as e:
@@ -6093,6 +6129,36 @@ async def api_chat_status(session_id: str):
     retcode = proc.poll()
     if retcode is not None:
         session["status"] = "completed" if retcode == 0 else "error"
+
+        # ── Post-burst credit deduction for platform-hosted keys ──
+        if (
+            session.get("platform_hosted")
+            and session.get("user_id")
+            and not session.get("credits_deducted")
+        ):
+            session["credits_deducted"] = True
+            try:
+                from src.observability.metering import read_cost_log
+                events = read_cost_log(
+                    since=session["started"],
+                    source="platform",
+                    limit=100000,
+                )
+                # Only charge for events belonging to this chat
+                chat_events = [e for e in events if e.get("chat_id") == session["chat_id"]]
+                total_usd = sum(e.get("cost", {}).get("total_cost", 0.0) for e in chat_events)
+                if total_usd > 0:
+                    credit_cost = estimate_llm_credit_cost(total_usd)
+                    if credit_cost > 0:
+                        deduct_user_credits(
+                            session["user_id"],
+                            credit_cost,
+                            f"agi_burst:{session.get('agent', '')}:{len(chat_events)}calls",
+                        )
+                        log.info("[credits] Burst deduction: %d credits for session %s", credit_cost, session_id)
+            except Exception as exc:
+                log.warning("[credits] Burst credit deduction failed: %s", exc)
+
     return JSONResponse({
         "session_id": session_id, "status": session["status"],
         "new_lines": new_lines, "total_lines": len(session["output_lines"]),
