@@ -74,7 +74,7 @@ Covers:
     cheap_cloud, budget remaining in RoutingDecision)
   - ModelRouterTool budget action (5 actions including budget, resolve with
     new ModelRouter.from_config path)
-  - Sidecar service wiring (_get_edge_tts_conn env fallback, _get_whisper_conn
+  - Sidecar service wiring (_get_elevenlabs_conn fallback, _seed_platform_keys_from_env,
     env fallback, SEARXNG_URL env override, connections.json fallback,
     platform_hosted flag, Whisper server.py structure, SearXNG settings.yml,
     service Dockerfiles, fly.toml configs)
@@ -120,6 +120,25 @@ Covers:
     get_auth_config dict shape, extract_user_from_token, empty payload defaults)
   - Tier info structure (TIER_INFO free/pro, features sorted, limits, price,
     FREE_TIER_FEATURES/PRO_TIER_FEATURES sets, pro superset of free)
+  - RuntimeInfoTool (definition, execute, diff tracking, set_context,
+    reset, REQUIRED_FIELDS, base_url redaction, policy snapshot,
+    _diff_snapshots helper: change/add/remove/empty)
+  - Admin Voices API (PUT save allowlist validation, empty lists, invalid types,
+    GET page render, GET voices/all, settings persistence)
+  - Admin Voices template (page structure, control buttons, search, voice grid,
+    premium toggle, JS state vars, API fetch calls, stats, toast, escHtml XSS)
+  - Admin User Management API (list users, wipe by email validation,
+    wipe unknown email, purge inactive, delete user)
+  - Connections CRUD API (list empty, create, update, delete, Ollama URL
+    normalization, persistence verification)
+  - Pricing CRUD API (get empty, full replace, single model set/delete,
+    new provider, cost-summary, cost-log)
+  - TTS Voices filter logic (no allowlist passthrough, allowlist filter,
+    premium marking, empty allowlist)
+  - Inworld API key helper (_get_inworld_api_key: missing, empty, valid,
+    other keys only)
+  - _check_admin helper (no user, admin email, non-admin, case-insensitive,
+    empty email, missing email key)
 """
 
 import json
@@ -6541,63 +6560,103 @@ def test_model_router_tool_budget():
 # ═════════════════════════════════════════════
 
 def test_edge_tts_conn_env_fallback():
-    """_get_edge_tts_conn returns Flycast connection when TTS_URL is set."""
-    print("\n── _get_edge_tts_conn env fallback ──")
-    from web.app import _get_edge_tts_conn
+    """_get_elevenlabs_conn returns the first enabled ElevenLabs connection."""
+    print("\n-- _get_elevenlabs_conn fallback --")
+    from pathlib import Path
+    from web.app import _get_elevenlabs_conn
+    import web.app as _app
 
-    # ── 1. With TTS_URL env set ──
-    os.environ["TTS_URL"] = "http://orionforge-engine-tts.flycast:8000"
-    conn = _get_edge_tts_conn()
-    check("env conn not None", conn is not None)
-    check("env conn id", conn["id"] == "fly-tts")
-    check("env conn provider", conn["provider"] == "edge-tts")
-    check("env conn url", conn["url"] == "http://orionforge-engine-tts.flycast:8000")
-    check("env conn platform_hosted", conn["platform_hosted"] is True)
-    check("env conn enabled", conn["enabled"] is True)
-    check("env conn api_key empty", conn["api_key"] == "")
-    del os.environ["TTS_URL"]
+    tmp = tempfile.mkdtemp()
+    try:
+        orig_connections = _app.CONNECTIONS_FILE
+        tmp_connections = Path(tmp) / "config" / "connections.json"
+        tmp_connections.parent.mkdir(parents=True, exist_ok=True)
 
-    # ── 2. Without TTS_URL, no matching connection → None ──
-    conn2 = _get_edge_tts_conn()
-    # Could be None (if connections.json has no edge-tts entry) — valid
-    check("no env fallback returns conn or None", conn2 is None or isinstance(conn2, dict))
+        # ── 1. No ElevenLabs connection → None ──
+        tmp_connections.write_text(json.dumps({
+            "connections": [
+                {"id": "openai-1", "provider": "openai", "enabled": True, "api_key": "sk"}
+            ], "agent_connections": {}
+        }), encoding="utf-8")
+        _app.CONNECTIONS_FILE = tmp_connections
+        conn = _get_elevenlabs_conn()
+        check("no elevenlabs conn -> None", conn is None)
 
-    # ── 3. Env var takes priority over connections.json ──
-    os.environ["TTS_URL"] = "http://custom-tts.local:9000"
-    conn3 = _get_edge_tts_conn()
-    check("custom env url", conn3["url"] == "http://custom-tts.local:9000")
-    check("custom env still platform_hosted", conn3["platform_hosted"] is True)
-    del os.environ["TTS_URL"]
+        # ── 2. With ElevenLabs connection ──
+        tmp_connections.write_text(json.dumps({
+            "connections": [
+                {"id": "el-1", "provider": "elevenlabs", "url": "https://api.elevenlabs.io",
+                 "api_key": "el-key", "enabled": True, "platform_hosted": True}
+            ], "agent_connections": {}
+        }), encoding="utf-8")
+        conn2 = _get_elevenlabs_conn()
+        check("el conn found", conn2 is not None)
+        check("el conn id", conn2["id"] == "el-1")
+        check("el conn provider", conn2["provider"] == "elevenlabs")
+
+        # ── 3. Disabled ElevenLabs connection → None ──
+        tmp_connections.write_text(json.dumps({
+            "connections": [
+                {"id": "el-2", "provider": "elevenlabs", "enabled": False, "api_key": "key"}
+            ], "agent_connections": {}
+        }), encoding="utf-8")
+        conn3 = _get_elevenlabs_conn()
+        check("disabled el conn -> None", conn3 is None)
+
+    finally:
+        _app.CONNECTIONS_FILE = orig_connections
+        shutil.rmtree(tmp, ignore_errors=True)
 
 
 def test_whisper_conn_env_fallback():
-    """_get_whisper_conn returns Flycast connection when WHISPER_URL is set."""
-    print("\n── _get_whisper_conn env fallback ──")
-    from web.app import _get_whisper_conn
+    """_seed_platform_keys_from_env creates connections from env vars."""
+    print("\n-- _seed_platform_keys_from_env --")
+    from pathlib import Path
+    import web.app as _app
 
-    # ── 1. With WHISPER_URL env set ──
-    os.environ["WHISPER_URL"] = "http://orionforge-engine-whisper.flycast:8000"
-    conn = _get_whisper_conn()
-    check("whisper env conn not None", conn is not None)
-    check("whisper env conn id", conn["id"] == "fly-whisper")
-    check("whisper env conn provider", conn["provider"] == "whisper")
-    check("whisper env conn url",
-          conn["url"] == "http://orionforge-engine-whisper.flycast:8000")
-    check("whisper env conn platform_hosted", conn["platform_hosted"] is True)
-    check("whisper env conn enabled", conn["enabled"] is True)
-    check("whisper env conn api_key empty", conn["api_key"] == "")
-    del os.environ["WHISPER_URL"]
+    tmp = tempfile.mkdtemp()
+    try:
+        orig_connections = _app.CONNECTIONS_FILE
+        tmp_connections = Path(tmp) / "config" / "connections.json"
+        tmp_connections.parent.mkdir(parents=True, exist_ok=True)
 
-    # ── 2. Without WHISPER_URL → falls through to connections.json ──
-    conn2 = _get_whisper_conn()
-    check("whisper no env returns conn or None",
-          conn2 is None or isinstance(conn2, dict))
+        # ── 1. No relevant env vars → no changes ──
+        tmp_connections.write_text(json.dumps({
+            "connections": [], "agent_connections": {}
+        }), encoding="utf-8")
+        _app.CONNECTIONS_FILE = tmp_connections
+        old_or = os.environ.pop("OPENROUTER_API_KEY", None)
+        old_el = os.environ.pop("ELEVENLABS_API_KEY", None)
+        try:
+            _app._seed_platform_keys_from_env()
+            data = _app._load_connections()
+            check("no env vars -> empty conns", len(data["connections"]) == 0)
 
-    # ── 3. Arbitrary URL via env ──
-    os.environ["WHISPER_URL"] = "http://my-whisper:5000"
-    conn3 = _get_whisper_conn()
-    check("whisper custom url", conn3["url"] == "http://my-whisper:5000")
-    del os.environ["WHISPER_URL"]
+            # ── 2. With ELEVENLABS_API_KEY → creates connection ──
+            os.environ["ELEVENLABS_API_KEY"] = "test-el-key"
+            _app._seed_platform_keys_from_env()
+            data2 = _app._load_connections()
+            check("el key seeded", len(data2["connections"]) == 1)
+            el = data2["connections"][0]
+            check("el provider is elevenlabs", el["provider"] == "elevenlabs")
+            check("el is platform_hosted", el["platform_hosted"] is True)
+            check("el api_key set", el["api_key"] == "test-el-key")
+
+            # ── 3. Re-run with same key → no duplicate ──
+            _app._seed_platform_keys_from_env()
+            data3 = _app._load_connections()
+            check("no duplicate after re-seed", len(data3["connections"]) == 1)
+        finally:
+            os.environ.pop("OPENROUTER_API_KEY", None)
+            os.environ.pop("ELEVENLABS_API_KEY", None)
+            if old_or:
+                os.environ["OPENROUTER_API_KEY"] = old_or
+            if old_el:
+                os.environ["ELEVENLABS_API_KEY"] = old_el
+
+    finally:
+        _app.CONNECTIONS_FILE = orig_connections
+        shutil.rmtree(tmp, ignore_errors=True)
 
 
 def test_searxng_url_env_override():
@@ -6623,109 +6682,136 @@ def test_searxng_url_env_override():
 
 
 def test_connections_json_tts_fallback():
-    """_get_edge_tts_conn reads connections.json when no env var."""
-    print("\n── connections.json TTS fallback ──")
-    from web.app import _get_edge_tts_conn, _load_connections, CONNECTIONS_FILE
+    """_get_elevenlabs_conn picks first enabled ElevenLabs from connections.json."""
+    print("\n-- connections.json ElevenLabs fallback --")
+    from pathlib import Path
+    from web.app import _get_elevenlabs_conn
+    import web.app as _app
 
-    # Remove env var to force connections.json path
-    old_env = os.environ.pop("TTS_URL", None)
+    tmp = tempfile.mkdtemp()
     try:
-        # Save current connections.json
-        import json as _json
-        backup = None
-        if os.path.exists(CONNECTIONS_FILE):
-            with open(CONNECTIONS_FILE, "r") as f:
-                backup = f.read()
+        orig_connections = _app.CONNECTIONS_FILE
+        tmp_connections = Path(tmp) / "config" / "connections.json"
+        tmp_connections.parent.mkdir(parents=True, exist_ok=True)
 
-        # Write a fake edge-tts connection
-        test_data = {
+        # ── 1. With enabled ElevenLabs connection ──
+        tmp_connections.write_text(json.dumps({
             "connections": [
-                {"id": "test-tts", "provider": "edge-tts",
-                 "url": "http://test-local:8000", "api_key": "testkey",
-                 "enabled": True, "platform_hosted": False}
-            ],
-            "agent_connections": {}
-        }
-        with open(CONNECTIONS_FILE, "w") as f:
-            _json.dump(test_data, f)
+                {"id": "test-el", "provider": "elevenlabs",
+                 "url": "https://api.elevenlabs.io", "api_key": "testkey",
+                 "enabled": True, "platform_hosted": True}
+            ], "agent_connections": {}
+        }), encoding="utf-8")
+        _app.CONNECTIONS_FILE = tmp_connections
 
-        conn = _get_edge_tts_conn()
+        conn = _get_elevenlabs_conn()
         check("json fallback finds conn", conn is not None)
-        check("json fallback correct id", conn["id"] == "test-tts")
-        check("json fallback correct url", conn["url"] == "http://test-local:8000")
-        check("json fallback correct provider", conn["provider"] == "edge-tts")
+        check("json fallback correct id", conn["id"] == "test-el")
+        check("json fallback correct provider", conn["provider"] == "elevenlabs")
 
-        # Write disabled connection
-        test_data["connections"][0]["enabled"] = False
-        with open(CONNECTIONS_FILE, "w") as f:
-            _json.dump(test_data, f)
-        conn2 = _get_edge_tts_conn()
+        # ── 2. Disabled connection → None ──
+        tmp_connections.write_text(json.dumps({
+            "connections": [
+                {"id": "test-el", "provider": "elevenlabs",
+                 "url": "https://api.elevenlabs.io", "api_key": "testkey",
+                 "enabled": False}
+            ], "agent_connections": {}
+        }), encoding="utf-8")
+        conn2 = _get_elevenlabs_conn()
         check("disabled conn returns None", conn2 is None)
 
-        # Write wrong provider
-        test_data["connections"][0]["enabled"] = True
-        test_data["connections"][0]["provider"] = "openai"
-        with open(CONNECTIONS_FILE, "w") as f:
-            _json.dump(test_data, f)
-        conn3 = _get_edge_tts_conn()
+        # ── 3. Wrong provider → None ──
+        tmp_connections.write_text(json.dumps({
+            "connections": [
+                {"id": "test-openai", "provider": "openai",
+                 "url": "https://api.openai.com/v1", "api_key": "sk-test",
+                 "enabled": True}
+            ], "agent_connections": {}
+        }), encoding="utf-8")
+        conn3 = _get_elevenlabs_conn()
         check("wrong provider returns None", conn3 is None)
 
+        # ── 4. Empty connections → None ──
+        tmp_connections.write_text(json.dumps({
+            "connections": [], "agent_connections": {}
+        }), encoding="utf-8")
+        conn4 = _get_elevenlabs_conn()
+        check("empty connections returns None", conn4 is None)
+
     finally:
-        # Restore original connections.json
-        if backup is not None:
-            with open(CONNECTIONS_FILE, "w") as f:
-                f.write(backup)
-        elif os.path.exists(CONNECTIONS_FILE):
-            with open(CONNECTIONS_FILE, "w") as f:
-                _json.dump({"connections": [], "agent_connections": {}}, f)
-        if old_env is not None:
-            os.environ["TTS_URL"] = old_env
+        _app.CONNECTIONS_FILE = orig_connections
+        shutil.rmtree(tmp, ignore_errors=True)
 
 
 def test_connections_json_whisper_fallback():
-    """_get_whisper_conn reads connections.json when no env var."""
-    print("\n── connections.json Whisper fallback ──")
-    from web.app import _get_whisper_conn, CONNECTIONS_FILE
+    """_resolve_connection picks best connection for an agent."""
+    print("\n-- _resolve_connection fallback --")
+    from pathlib import Path
+    import web.app as _app
 
-    old_env = os.environ.pop("WHISPER_URL", None)
+    tmp = tempfile.mkdtemp()
     try:
-        import json as _json
-        backup = None
-        if os.path.exists(CONNECTIONS_FILE):
-            with open(CONNECTIONS_FILE, "r") as f:
-                backup = f.read()
+        orig_connections = _app.CONNECTIONS_FILE
+        orig_settings = _app.SETTINGS_FILE
+        tmp_connections = Path(tmp) / "config" / "connections.json"
+        tmp_settings = Path(tmp) / "config" / "settings.json"
+        tmp_connections.parent.mkdir(parents=True, exist_ok=True)
+        tmp_settings.write_text("{}", encoding="utf-8")
+        _app.SETTINGS_FILE = tmp_settings
 
-        test_data = {
+        # ── 1. Empty connections → None ──
+        tmp_connections.write_text(json.dumps({
+            "connections": [], "agent_connections": {}
+        }), encoding="utf-8")
+        _app.CONNECTIONS_FILE = tmp_connections
+        conn = _app._resolve_connection(None, "orion")
+        check("empty connections -> None", conn is None)
+
+        # ── 2. With explicit connection_id ──
+        tmp_connections.write_text(json.dumps({
             "connections": [
-                {"id": "test-whisper", "provider": "whisper",
-                 "url": "http://test-whisper:8000", "api_key": "",
-                 "enabled": True, "platform_hosted": True}
-            ],
-            "agent_connections": {}
-        }
-        with open(CONNECTIONS_FILE, "w") as f:
-            _json.dump(test_data, f)
+                {"id": "c1", "provider": "openai", "url": "https://api.openai.com/v1",
+                 "api_key": "sk-test", "enabled": True, "type": "external"},
+            ], "agent_connections": {}
+        }), encoding="utf-8")
+        conn2 = _app._resolve_connection("c1", "orion")
+        check("explicit conn_id found", conn2 is not None)
+        check("explicit conn_id correct", conn2["id"] == "c1")
 
-        conn = _get_whisper_conn()
-        check("whisper json finds conn", conn is not None)
-        check("whisper json correct id", conn["id"] == "test-whisper")
-        check("whisper json platform_hosted", conn.get("platform_hosted") is True)
+        # ── 3. Disabled connection_id → None ──
+        tmp_connections.write_text(json.dumps({
+            "connections": [
+                {"id": "c1", "provider": "openai", "enabled": False, "type": "external"},
+            ], "agent_connections": {}
+        }), encoding="utf-8")
+        conn3 = _app._resolve_connection("c1", "orion")
+        check("disabled explicit conn -> None", conn3 is None)
 
-        # Empty connections list
-        with open(CONNECTIONS_FILE, "w") as f:
-            _json.dump({"connections": [], "agent_connections": {}}, f)
-        conn2 = _get_whisper_conn()
-        check("empty connections returns None", conn2 is None)
+        # ── 4. Agent-mapped connection ──
+        tmp_connections.write_text(json.dumps({
+            "connections": [
+                {"id": "c1", "provider": "openai", "enabled": True, "type": "external"},
+            ], "agent_connections": {"orion": "c1"}
+        }), encoding="utf-8")
+        conn4 = _app._resolve_connection(None, "orion")
+        check("agent-mapped conn found", conn4 is not None)
+        check("agent-mapped conn correct", conn4["id"] == "c1")
+
+        # ── 5. Platform fallback ──
+        tmp_connections.write_text(json.dumps({
+            "connections": [
+                {"id": "plat1", "provider": "openrouter", "enabled": True,
+                 "type": "external", "platform_hosted": True, "api_key": "or-key"},
+            ], "agent_connections": {}
+        }), encoding="utf-8")
+        conn5 = _app._resolve_connection(None, "orion")
+        check("platform fallback found", conn5 is not None)
+        check("platform fallback correct", conn5["id"] == "plat1")
 
     finally:
-        if backup is not None:
-            with open(CONNECTIONS_FILE, "w") as f:
-                f.write(backup)
-        elif os.path.exists(CONNECTIONS_FILE):
-            with open(CONNECTIONS_FILE, "w") as f:
-                _json.dump({"connections": [], "agent_connections": {}}, f)
-        if old_env is not None:
-            os.environ["WHISPER_URL"] = old_env
+        _app.CONNECTIONS_FILE = orig_connections
+        _app.SETTINGS_FILE = orig_settings
+        shutil.rmtree(tmp, ignore_errors=True)
 
 
 def test_whisper_server_structure():
@@ -6863,61 +6949,55 @@ def test_service_fly_tomls():
 
 
 def test_env_priority_over_connections():
-    """Env var always wins over connections.json for both TTS and Whisper."""
-    print("\n── Env var priority over connections.json ──")
-    from web.app import _get_edge_tts_conn, _get_whisper_conn, CONNECTIONS_FILE
+    """_seed_platform_keys_from_env updates existing connections if key changes."""
+    print("\n-- Env priority over connections --")
+    from pathlib import Path
+    import web.app as _app
 
-    import json as _json
-    backup = None
-    if os.path.exists(CONNECTIONS_FILE):
-        with open(CONNECTIONS_FILE, "r") as f:
-            backup = f.read()
-
-    old_tts = os.environ.pop("TTS_URL", None)
-    old_whisper = os.environ.pop("WHISPER_URL", None)
+    tmp = tempfile.mkdtemp()
     try:
-        # Seed connections.json with both providers
-        test_data = {
+        orig_connections = _app.CONNECTIONS_FILE
+        tmp_connections = Path(tmp) / "config" / "connections.json"
+        tmp_connections.parent.mkdir(parents=True, exist_ok=True)
+
+        # Seed with an existing platform_elevenlabs connection with old key
+        tmp_connections.write_text(json.dumps({
             "connections": [
-                {"id": "local-tts", "provider": "edge-tts",
-                 "url": "http://local-tts:8000", "api_key": "", "enabled": True},
-                {"id": "local-whisper", "provider": "whisper",
-                 "url": "http://local-whisper:8000", "api_key": "", "enabled": True},
-            ],
-            "agent_connections": {}
-        }
-        with open(CONNECTIONS_FILE, "w") as f:
-            _json.dump(test_data, f)
+                {"id": "platform_elevenlabs", "provider": "elevenlabs",
+                 "url": "https://api.elevenlabs.io", "api_key": "old-key",
+                 "enabled": True, "platform_hosted": True,
+                 "name": "Platform -- Elevenlabs"},
+            ], "agent_connections": {}
+        }), encoding="utf-8")
+        _app.CONNECTIONS_FILE = tmp_connections
 
-        # Without env → connections.json wins
-        conn_tts = _get_edge_tts_conn()
-        check("no env: tts from json", conn_tts["id"] == "local-tts")
-        conn_w = _get_whisper_conn()
-        check("no env: whisper from json", conn_w["id"] == "local-whisper")
+        old_el = os.environ.pop("ELEVENLABS_API_KEY", None)
+        old_or = os.environ.pop("OPENROUTER_API_KEY", None)
+        try:
+            # Set new key
+            os.environ["ELEVENLABS_API_KEY"] = "new-key"
+            _app._seed_platform_keys_from_env()
+            data = _app._load_connections()
+            check("still 1 connection", len(data["connections"]) == 1)
+            check("key updated", data["connections"][0]["api_key"] == "new-key")
+            check("platform_hosted preserved", data["connections"][0]["platform_hosted"] is True)
 
-        # With env → env wins
-        os.environ["TTS_URL"] = "http://flycast-tts:8000"
-        os.environ["WHISPER_URL"] = "http://flycast-whisper:8000"
-        conn_tts2 = _get_edge_tts_conn()
-        check("env set: tts from env", conn_tts2["id"] == "fly-tts")
-        check("env set: tts url is flycast", conn_tts2["url"] == "http://flycast-tts:8000")
-        conn_w2 = _get_whisper_conn()
-        check("env set: whisper from env", conn_w2["id"] == "fly-whisper")
-        check("env set: whisper url is flycast",
-              conn_w2["url"] == "http://flycast-whisper:8000")
+            # No env → no change
+            del os.environ["ELEVENLABS_API_KEY"]
+            _app._seed_platform_keys_from_env()
+            data2 = _app._load_connections()
+            check("without env: key unchanged", data2["connections"][0]["api_key"] == "new-key")
+        finally:
+            os.environ.pop("ELEVENLABS_API_KEY", None)
+            os.environ.pop("OPENROUTER_API_KEY", None)
+            if old_el:
+                os.environ["ELEVENLABS_API_KEY"] = old_el
+            if old_or:
+                os.environ["OPENROUTER_API_KEY"] = old_or
+
     finally:
-        if backup is not None:
-            with open(CONNECTIONS_FILE, "w") as f:
-                f.write(backup)
-        elif os.path.exists(CONNECTIONS_FILE):
-            with open(CONNECTIONS_FILE, "w") as f:
-                _json.dump({"connections": [], "agent_connections": {}}, f)
-        os.environ.pop("TTS_URL", None)
-        os.environ.pop("WHISPER_URL", None)
-        if old_tts is not None:
-            os.environ["TTS_URL"] = old_tts
-        if old_whisper is not None:
-            os.environ["WHISPER_URL"] = old_whisper
+        _app.CONNECTIONS_FILE = orig_connections
+        shutil.rmtree(tmp, ignore_errors=True)
 
 
 # ═════════════════════════════════════════════
@@ -9084,6 +9164,716 @@ def test_tier_info_structure():
 
 
 # ═════════════════════════════════════════════
+# RuntimeInfoTool — definition, execute, diff, set_context, reset
+# ═════════════════════════════════════════════
+def test_runtime_info_tool():
+    """Test RuntimeInfoTool: definition, execute, diff tracking, context injection, reset."""
+    print("\n=== TORTURE: RuntimeInfoTool ===")
+    from src.tools.runtime_info import RuntimeInfoTool, _diff_snapshots
+    from src.runtime_policy import RuntimePolicy
+
+    # ── 0. Reset for clean state ──
+    RuntimeInfoTool.reset()
+
+    # ── 1. definition() structure ──
+    defn = RuntimeInfoTool.definition()
+    check("defn has name", defn["name"] == "runtime_info")
+    check("defn has description", len(defn["description"]) > 20)
+    check("defn has parameters", "parameters" in defn)
+    check("defn parameters has properties", "properties" in defn["parameters"])
+
+    # ── 2. execute() with no context (defaults) ──
+    raw = RuntimeInfoTool.execute({})
+    snap = json.loads(raw)
+    check("snap is dict", isinstance(snap, dict))
+    check("snap has agent key", "agent" in snap)
+    check("snap default agent is unknown", snap["agent"] == "unknown")
+    check("snap has diff key", "diff" in snap)
+    check("snap has diff_count", "diff_count" in snap)
+    check("first call diff is empty", snap["diff_count"] == 0)
+
+    # ── 3. REQUIRED_FIELDS all present ──
+    for field in RuntimeInfoTool.REQUIRED_FIELDS:
+        check(f"required field '{field}' present", field in snap)
+
+    # ── 4. set_context ──
+    profile = {
+        "name": "orion",
+        "provider": "openai",
+        "model": "gpt-4o",
+        "base_url": "https://api.openai.com/v1",
+        "temperature": 0.5,
+        "allowed_tools": ["memory", "web_search"],
+        "memory": {"scope": "orion"},
+        "directives": {"scope": "orion"},
+        "window_size": 100,
+    }
+    policy = RuntimePolicy()
+    RuntimeInfoTool.set_context(profile, policy, execution_mode="burst")
+
+    raw2 = RuntimeInfoTool.execute({})
+    snap2 = json.loads(raw2)
+    check("after set_context: agent=orion", snap2["agent"] == "orion")
+    check("after set_context: provider=openai", snap2["provider"] == "openai")
+    check("after set_context: model=gpt-4o", snap2["model"] == "gpt-4o")
+    check("after set_context: execution_mode=burst", snap2["execution_mode"] == "burst")
+    check("after set_context: temperature=0.5", snap2["temperature"] == 0.5)
+    check("after set_context: allowed_tools list", snap2["allowed_tools"] == ["memory", "web_search"])
+    check("after set_context: window_size=100", snap2["window_size"] == 100)
+
+    # ── 5. diff detection on second call ──
+    # Change profile
+    RuntimeInfoTool.set_context({**profile, "model": "gpt-4o-mini"}, policy)
+    raw3 = RuntimeInfoTool.execute({})
+    snap3 = json.loads(raw3)
+    check("diff detected after model change", snap3["diff_count"] > 0)
+    model_diff = [d for d in snap3["diff"] if d["field"] == "model"]
+    check("model diff found", len(model_diff) == 1)
+    if model_diff:
+        check("model diff old contains gpt-4o", "gpt-4o" in model_diff[0]["old"])
+        check("model diff new contains gpt-4o-mini", "gpt-4o-mini" in model_diff[0]["new"])
+
+    # ── 6. No diff when nothing changes ──
+    raw4 = RuntimeInfoTool.execute({})
+    snap4 = json.loads(raw4)
+    check("no diff when unchanged", snap4["diff_count"] == 0)
+
+    # ── 7. _diff_snapshots helper ──
+    d1 = _diff_snapshots({"a": 1, "b": 2}, {"a": 1, "b": 3, "c": 4})
+    check("_diff_snapshots finds b changed", any(d["field"] == "b" for d in d1))
+    check("_diff_snapshots finds c added", any(d["field"] == "c" for d in d1))
+    check("_diff_snapshots no diff for a", not any(d["field"] == "a" for d in d1))
+
+    d2 = _diff_snapshots({"x": 1}, {})
+    check("_diff_snapshots finds x removed", any(d["field"] == "x" for d in d2))
+
+    d3 = _diff_snapshots({}, {})
+    check("_diff_snapshots empty → empty", len(d3) == 0)
+
+    # ── 8. base_url redaction ──
+    check("base_url_host redacted to host", snap2["base_url_host"] == "api.openai.com")
+
+    # ── 9. policy snapshot ──
+    check("policy is dict", isinstance(snap2["policy"], dict))
+    check("policy has max_iterations", "max_iterations" in snap2["policy"])
+    check("policy has stasis_mode", "stasis_mode" in snap2["policy"])
+
+    # ── 10. reset clears state ──
+    RuntimeInfoTool.reset()
+    raw5 = RuntimeInfoTool.execute({})
+    snap5 = json.loads(raw5)
+    check("reset: agent is unknown", snap5["agent"] == "unknown")
+    check("reset: execution_mode is interactive", snap5["execution_mode"] == "interactive")
+
+
+# ═════════════════════════════════════════════
+# Admin Voices API — page + voices/all + save allowlist
+# ═════════════════════════════════════════════
+def test_admin_voices_api():
+    """Test admin voices endpoints: page render, save allowlist, validation."""
+    print("\n=== TORTURE: Admin Voices API ===")
+    from pathlib import Path
+
+    tmp = tempfile.mkdtemp()
+    try:
+        import web.app as _app
+
+        orig_settings = _app.SETTINGS_FILE
+        orig_connections = _app.CONNECTIONS_FILE
+        tmp_settings = Path(tmp) / "config" / "settings.json"
+        tmp_connections = Path(tmp) / "config" / "connections.json"
+        tmp_settings.parent.mkdir(parents=True, exist_ok=True)
+        tmp_settings.write_text("{}", encoding="utf-8")
+        tmp_connections.write_text(json.dumps({
+            "connections": [
+                {"id": "platform_elevenlabs", "provider": "elevenlabs",
+                 "url": "https://api.elevenlabs.io", "api_key": "test-key",
+                 "enabled": True, "platform_hosted": True, "name": "ElevenLabs"},
+            ],
+            "agent_connections": {},
+        }), encoding="utf-8")
+        _app.SETTINGS_FILE = tmp_settings
+        _app.CONNECTIONS_FILE = tmp_connections
+
+        try:
+            from httpx import ASGITransport, AsyncClient
+            import asyncio
+            from web.app import app as _test_app
+
+            async def _run():
+                transport = ASGITransport(app=_test_app)
+                async with AsyncClient(transport=transport, base_url="http://test") as client:
+                    # ── 1. PUT save allowlist — valid ──
+                    r = await client.put("/api/admin/voices/allowed", json={
+                        "allowed_voices": ["voice_1", "voice_2", "voice_3"],
+                        "premium_voices": ["voice_3"],
+                    })
+                    check("PUT allowed voices → 200", r.status_code == 200)
+                    body = r.json()
+                    check("save count=3", body.get("count") == 3)
+                    check("save premium_count=1", body.get("premium_count") == 1)
+
+                    # ── 2. Verify persisted in settings.json ──
+                    s = json.loads(tmp_settings.read_text(encoding="utf-8"))
+                    check("allowed persisted", s.get("allowed_voices") == ["voice_1", "voice_2", "voice_3"])
+                    check("premium persisted", s.get("premium_voices") == ["voice_3"])
+
+                    # ── 3. PUT with empty lists ──
+                    r2 = await client.put("/api/admin/voices/allowed", json={
+                        "allowed_voices": [],
+                        "premium_voices": [],
+                    })
+                    check("PUT empty lists → 200", r2.status_code == 200)
+                    check("empty count=0", r2.json().get("count") == 0)
+
+                    # ── 4. PUT with invalid allowed_voices type ──
+                    r3 = await client.put("/api/admin/voices/allowed", json={
+                        "allowed_voices": "not-a-list",
+                        "premium_voices": [],
+                    })
+                    check("invalid allowed_voices → 400", r3.status_code == 400)
+                    check("error message about list", "list" in r3.json().get("error", "").lower())
+
+                    # ── 5. PUT with invalid premium_voices type ──
+                    r4 = await client.put("/api/admin/voices/allowed", json={
+                        "allowed_voices": [],
+                        "premium_voices": "not-a-list",
+                    })
+                    check("invalid premium_voices → 400", r4.status_code == 400)
+
+                    # ── 6. GET admin voices page ──
+                    r5 = await client.get("/admin/voices")
+                    check("GET /admin/voices → 200", r5.status_code == 200)
+                    check("admin voices page has content", len(r5.text) > 100)
+                    check("page contains Voice Allowlist", "Voice Allowlist" in r5.text)
+
+                    # ── 7. GET /api/admin/voices/all (will fail because elevenlabs is mocked) ──
+                    r6 = await client.get("/api/admin/voices/all")
+                    check("GET voices/all returns JSON", "voices" in r6.json())
+
+            # Disable auth for testing + inject admin
+            import web.app as _app_auth_v
+            _orig_gac_v = _app_auth_v.get_auth_config
+            _app_auth_v.get_auth_config = lambda: {"auth_enabled": False}
+            _orig_admin = _app_auth_v.ADMIN_EMAILS
+            _app_auth_v.ADMIN_EMAILS = {"test@example.com"}
+            # Patch _check_admin to always return True for tests
+            _orig_check = _app_auth_v._check_admin
+            _app_auth_v._check_admin = lambda request: True
+            try:
+                asyncio.run(_run())
+            finally:
+                _app_auth_v.get_auth_config = _orig_gac_v
+                _app_auth_v.ADMIN_EMAILS = _orig_admin
+                _app_auth_v._check_admin = _orig_check
+
+        except ImportError:
+            check("httpx not available — skipped", True)
+
+    finally:
+        _app.SETTINGS_FILE = orig_settings
+        _app.CONNECTIONS_FILE = orig_connections
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ═════════════════════════════════════════════
+# Admin Voices Template — structure validation
+# ═════════════════════════════════════════════
+def test_admin_voices_template():
+    """Validate admin_voices.html contains required UI elements and JS functions."""
+    print("\n=== TORTURE: Admin Voices Template ===")
+
+    template_path = os.path.join(os.path.dirname(__file__), "..", "web", "templates", "admin_voices.html")
+    with open(template_path, encoding="utf-8") as f:
+        html = f.read()
+
+    # ── 1. Page structure ──
+    check("extends base.html", "extends" in html and "base.html" in html)
+    check("Voice Allowlist title", "Voice Allowlist" in html)
+    check("back link to admin/keys", "/admin/keys" in html)
+
+    # ── 2. Control buttons ──
+    check("fetch voices button", "fetchVoices" in html)
+    check("save allowlist button", "saveAllowlist" in html)
+    check("clear all button", "clearAll" in html)
+
+    # ── 3. Search box ──
+    check("search input exists", "voice-search" in html)
+    check("filterVoices function", "filterVoices" in html)
+
+    # ── 4. Voice grid ──
+    check("voice-grid class", "voice-grid" in html)
+    check("voice-card class", "voice-card" in html)
+    check("voice-check class", "voice-check" in html)
+    check("voice-name class", "voice-name" in html)
+    check("voice-id class", "voice-id" in html)
+
+    # ── 5. Premium toggle ──
+    check("premium-toggle class", "premium-toggle" in html)
+    check("togglePremium function", "togglePremium" in html)
+    check("premium-badge class", "premium-badge" in html)
+    check("PREMIUM badge text", "PREMIUM" in html)
+
+    # ── 6. JS state variables ──
+    check("_savedAllowed variable", "_savedAllowed" in html)
+    check("_savedPremium variable", "_savedPremium" in html)
+    check("_allVoices variable", "_allVoices" in html)
+    check("_selected Set", "_selected" in html)
+    check("_premiumSet Set", "_premiumSet" in html)
+
+    # ── 7. API fetch calls ──
+    check("fetches /api/admin/voices/all", "/api/admin/voices/all" in html)
+    check("PUTs to /api/admin/voices/allowed", "/api/admin/voices/allowed" in html)
+
+    # ── 8. Stats display ──
+    check("updateStats function", "updateStats" in html)
+    check("stats element", 'id="stats"' in html)
+
+    # ── 9. Toast notifications ──
+    check("toast element", 'id="toast"' in html)
+    check("toast function in JS", "toast(" in html)
+
+    # ── 10. escHtml XSS protection ──
+    check("escHtml function", "escHtml" in html)
+
+
+# ═════════════════════════════════════════════
+# Admin User Management API — list, wipe, wipe-by-email, purge
+# ═════════════════════════════════════════════
+def test_admin_user_management_api():
+    """Test admin user management endpoints via ASGI transport."""
+    print("\n=== TORTURE: Admin User Management API ===")
+    from pathlib import Path
+
+    tmp = tempfile.mkdtemp()
+    try:
+        import web.app as _app
+
+        orig_settings = _app.SETTINGS_FILE
+        tmp_settings = Path(tmp) / "config" / "settings.json"
+        tmp_settings.parent.mkdir(parents=True, exist_ok=True)
+        tmp_settings.write_text("{}", encoding="utf-8")
+        _app.SETTINGS_FILE = tmp_settings
+
+        try:
+            from httpx import ASGITransport, AsyncClient
+            import asyncio
+            from web.app import app as _test_app
+
+            async def _run():
+                transport = ASGITransport(app=_test_app)
+                async with AsyncClient(transport=transport, base_url="http://test") as client:
+                    # ── 1. GET /api/admin/users ──
+                    r = await client.get("/api/admin/users")
+                    check("GET admin users → 200", r.status_code == 200)
+                    data = r.json()
+                    check("users list in response", "users" in data)
+                    check("users is list", isinstance(data["users"], list))
+
+                    # ── 2. POST /api/admin/users/wipe-by-email with missing email ──
+                    r2 = await client.post("/api/admin/users/wipe-by-email", json={})
+                    check("wipe-by-email no email → 400", r2.status_code == 400)
+
+                    # ── 3. POST /api/admin/users/wipe-by-email with non-existent email ──
+                    r3 = await client.post("/api/admin/users/wipe-by-email",
+                                           json={"email": "nobody@example.com"})
+                    check("wipe-by-email unknown → 200", r3.status_code == 200)
+
+                    # ── 4. POST /api/admin/users/purge-inactive ──
+                    r4 = await client.post("/api/admin/users/purge-inactive",
+                                           json={"days": 9999})
+                    check("purge-inactive → 200", r4.status_code == 200)
+
+                    # ── 5. DELETE /api/admin/users/fake-user-id ──
+                    r5 = await client.delete("/api/admin/users/fake-user-id")
+                    check("delete user → 200", r5.status_code == 200)
+
+            import web.app as _app_auth_um
+            _orig_gac_um = _app_auth_um.get_auth_config
+            _app_auth_um.get_auth_config = lambda: {"auth_enabled": False}
+            _orig_check_um = _app_auth_um._check_admin
+            _app_auth_um._check_admin = lambda request: True
+            try:
+                asyncio.run(_run())
+            finally:
+                _app_auth_um.get_auth_config = _orig_gac_um
+                _app_auth_um._check_admin = _orig_check_um
+
+        except ImportError:
+            check("httpx not available — skipped", True)
+
+    finally:
+        _app.SETTINGS_FILE = orig_settings
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ═════════════════════════════════════════════
+# Connections CRUD API — create, update, delete
+# ═════════════════════════════════════════════
+def test_connections_crud_api():
+    """Test connections API endpoints: create, update, delete, list."""
+    print("\n=== TORTURE: Connections CRUD API ===")
+    from pathlib import Path
+
+    tmp = tempfile.mkdtemp()
+    try:
+        import web.app as _app
+
+        orig_connections = _app.CONNECTIONS_FILE
+        tmp_connections = Path(tmp) / "config" / "connections.json"
+        tmp_connections.parent.mkdir(parents=True, exist_ok=True)
+        tmp_connections.write_text(json.dumps({
+            "connections": [],
+            "agent_connections": {},
+        }), encoding="utf-8")
+        _app.CONNECTIONS_FILE = tmp_connections
+
+        try:
+            from httpx import ASGITransport, AsyncClient
+            import asyncio
+            from web.app import app as _test_app
+
+            async def _run():
+                transport = ASGITransport(app=_test_app)
+                async with AsyncClient(transport=transport, base_url="http://test") as client:
+                    # ── 1. GET /api/connections — initially empty ──
+                    r = await client.get("/api/connections")
+                    check("GET connections → 200", r.status_code == 200)
+                    check("initially empty", len(r.json()) == 0)
+
+                    # ── 2. POST /api/connections — create ──
+                    r2 = await client.post("/api/connections", json={
+                        "name": "Test OpenAI",
+                        "provider": "openai",
+                        "url": "https://api.openai.com/v1",
+                        "api_key": "sk-test-123",
+                        "models": ["gpt-4o"],
+                    })
+                    check("POST create → 200", r2.status_code == 200)
+                    created = r2.json()
+                    check("created has id", "id" in created)
+                    check("created name", created["name"] == "Test OpenAI")
+                    check("created provider", created["provider"] == "openai")
+                    conn_id = created["id"]
+
+                    # ── 3. GET after create — should have 1 ──
+                    r3 = await client.get("/api/connections")
+                    check("1 connection after create", len(r3.json()) == 1)
+
+                    # ── 4. PUT /api/connections/{id} — update ──
+                    r4 = await client.put(f"/api/connections/{conn_id}", json={
+                        "name": "Updated OpenAI",
+                        "models": ["gpt-4o", "gpt-4o-mini"],
+                    })
+                    check("PUT update → 200", r4.status_code == 200)
+                    check("update returned ok", r4.json().get("ok") is True)
+
+                    # Verify update persisted
+                    r5 = await client.get("/api/connections")
+                    updated_conn = r5.json()[0]
+                    check("name updated", updated_conn["name"] == "Updated OpenAI")
+                    check("models updated", len(updated_conn["models"]) == 2)
+
+                    # ── 5. POST create Ollama — URL normalization ──
+                    r6 = await client.post("/api/connections", json={
+                        "name": "Local Ollama",
+                        "provider": "ollama",
+                        "url": "http://localhost:11434",
+                    })
+                    check("ollama create → 200", r6.status_code == 200)
+                    ollama_conn = r6.json()
+                    # localhost gets normalized to platform URL
+                    check("ollama URL normalized", "localhost" not in ollama_conn.get("url", "localhost"))
+
+                    # ── 6. DELETE /api/connections/{id} ──
+                    r7 = await client.delete(f"/api/connections/{conn_id}")
+                    check("DELETE → 200", r7.status_code == 200)
+
+                    # Verify deletion
+                    r8 = await client.get("/api/connections")
+                    remaining_ids = [c["id"] for c in r8.json()]
+                    check("deleted conn gone", conn_id not in remaining_ids)
+                    check("ollama conn remains", len(r8.json()) == 1)
+
+            import web.app as _app_auth_c
+            _orig_gac_c = _app_auth_c.get_auth_config
+            _app_auth_c.get_auth_config = lambda: {"auth_enabled": False}
+            try:
+                asyncio.run(_run())
+            finally:
+                _app_auth_c.get_auth_config = _orig_gac_c
+
+        except ImportError:
+            check("httpx not available — skipped", True)
+
+    finally:
+        _app.CONNECTIONS_FILE = orig_connections
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ═════════════════════════════════════════════
+# Pricing CRUD API — get, update, set-model, delete-model
+# ═════════════════════════════════════════════
+def test_pricing_crud_api():
+    """Test pricing API endpoints: get, full replace, single model set/delete."""
+    print("\n=== TORTURE: Pricing CRUD API ===")
+    from pathlib import Path
+
+    tmp = tempfile.mkdtemp()
+    try:
+        import web.app as _app
+
+        orig_pricing = _app.PRICING_FILE
+        tmp_pricing = Path(tmp) / "config" / "pricing.yaml"
+        tmp_pricing.parent.mkdir(parents=True, exist_ok=True)
+        # Start with empty pricing
+        tmp_pricing.write_text("", encoding="utf-8")
+        _app.PRICING_FILE = tmp_pricing
+
+        try:
+            from httpx import ASGITransport, AsyncClient
+            import asyncio
+            from web.app import app as _test_app
+
+            async def _run():
+                transport = ASGITransport(app=_test_app)
+                async with AsyncClient(transport=transport, base_url="http://test") as client:
+                    # ── 1. GET /api/pricing — initially empty ──
+                    r = await client.get("/api/pricing")
+                    check("GET pricing → 200", r.status_code == 200)
+
+                    # ── 2. PUT /api/pricing — full replace ──
+                    pricing_data = {
+                        "openai": {
+                            "gpt-4o": {"input_per_1m": 2.5, "output_per_1m": 10.0},
+                            "gpt-4o-mini": {"input_per_1m": 0.15, "output_per_1m": 0.6},
+                        }
+                    }
+                    r2 = await client.put("/api/pricing", json=pricing_data)
+                    check("PUT pricing → 200", r2.status_code == 200)
+                    check("PUT pricing ok", r2.json().get("ok") is True)
+
+                    # Verify persisted
+                    r3 = await client.get("/api/pricing")
+                    check("pricing has openai", "openai" in r3.json())
+
+                    # ── 3. PUT /api/pricing/{provider}/{model} — single model ──
+                    r4 = await client.put("/api/pricing/openai/gpt-4o", json={
+                        "input_per_1m": 3.0,
+                        "output_per_1m": 12.0,
+                    })
+                    check("PUT single model → 200", r4.status_code == 200)
+                    check("updated pricing returned", r4.json().get("pricing", {}).get("input_per_1m") == 3.0)
+
+                    # ── 4. PUT new provider/model ──
+                    r5 = await client.put("/api/pricing/anthropic/claude-3-5-sonnet", json={
+                        "input_per_1m": 3.0,
+                        "output_per_1m": 15.0,
+                    })
+                    check("PUT new provider → 200", r5.status_code == 200)
+
+                    # ── 5. DELETE /api/pricing/{provider}/{model} ──
+                    r6 = await client.delete("/api/pricing/openai/gpt-4o-mini")
+                    check("DELETE model → 200", r6.status_code == 200)
+
+                    # Verify deletion
+                    r7 = await client.get("/api/pricing")
+                    openai_models = r7.json().get("openai", {})
+                    check("deleted model gone", "gpt-4o-mini" not in openai_models)
+                    check("other model remains", "gpt-4o" in openai_models)
+
+                    # ── 6. GET /api/pricing/cost-summary ──
+                    r8 = await client.get("/api/pricing/cost-summary")
+                    check("cost-summary → 200", r8.status_code == 200)
+
+                    # ── 7. GET /api/pricing/cost-log ──
+                    r9 = await client.get("/api/pricing/cost-log?limit=10")
+                    check("cost-log → 200", r9.status_code == 200)
+
+            import web.app as _app_auth_p
+            _orig_gac_p = _app_auth_p.get_auth_config
+            _app_auth_p.get_auth_config = lambda: {"auth_enabled": False}
+            _orig_check_p = _app_auth_p._check_admin
+            _app_auth_p._check_admin = lambda request: True
+            try:
+                asyncio.run(_run())
+            finally:
+                _app_auth_p.get_auth_config = _orig_gac_p
+                _app_auth_p._check_admin = _orig_check_p
+
+        except ImportError:
+            check("httpx not available — skipped", True)
+
+    finally:
+        _app.PRICING_FILE = orig_pricing
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ═════════════════════════════════════════════
+# TTS Voices filter logic — allowlist + premium marking
+# ═════════════════════════════════════════════
+def test_tts_voices_filter_logic():
+    """Test TTS voice filtering with allowlist and premium marking logic."""
+    print("\n=== TORTURE: TTS Voices Filter Logic ===")
+    from pathlib import Path
+
+    tmp = tempfile.mkdtemp()
+    try:
+        import web.app as _app
+
+        orig_settings = _app.SETTINGS_FILE
+        tmp_settings = Path(tmp) / "config" / "settings.json"
+        tmp_settings.parent.mkdir(parents=True, exist_ok=True)
+
+        # ── 1. No allowlist → all voices pass through ──
+        tmp_settings.write_text(json.dumps({}), encoding="utf-8")
+        _app.SETTINGS_FILE = tmp_settings
+        settings = _app._load_settings()
+        allowed = settings.get("allowed_voices", [])
+        check("no allowlist → empty list", allowed == [])
+
+        # ── 2. With allowlist — filter logic ──
+        tmp_settings.write_text(json.dumps({
+            "allowed_voices": ["voice_a", "voice_b"],
+            "premium_voices": ["voice_b"],
+        }), encoding="utf-8")
+        settings2 = _app._load_settings()
+        allowed2 = settings2.get("allowed_voices", [])
+        premium2 = set(settings2.get("premium_voices", []))
+        check("allowlist has 2 entries", len(allowed2) == 2)
+        check("premium has 1 entry", len(premium2) == 1)
+        check("voice_b is premium", "voice_b" in premium2)
+        check("voice_a not premium", "voice_a" not in premium2)
+
+        # Simulate filtering
+        all_voices = [
+            {"voice_id": "voice_a", "name": "Alice"},
+            {"voice_id": "voice_b", "name": "Bob"},
+            {"voice_id": "voice_c", "name": "Charlie"},
+        ]
+        allowed_set = set(allowed2)
+        filtered = [v for v in all_voices if v["voice_id"] in allowed_set]
+        check("filter keeps 2", len(filtered) == 2)
+        check("filter excludes voice_c", all(v["voice_id"] != "voice_c" for v in filtered))
+
+        # Premium marking
+        for v in filtered:
+            v["premium"] = v["voice_id"] in premium2
+        check("voice_a not marked premium", not filtered[0]["premium"])
+        check("voice_b marked premium", filtered[1]["premium"])
+
+        # ── 3. Empty allowlist → no filter ──
+        tmp_settings.write_text(json.dumps({
+            "allowed_voices": [],
+            "premium_voices": [],
+        }), encoding="utf-8")
+        settings3 = _app._load_settings()
+        allowed3 = settings3.get("allowed_voices", [])
+        check("empty allowlist → show all", len(allowed3) == 0)
+
+    finally:
+        _app.SETTINGS_FILE = orig_settings
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ═════════════════════════════════════════════
+# Inworld API key helper
+# ═════════════════════════════════════════════
+def test_inworld_api_key_helper():
+    """Test _get_inworld_api_key returns the key from settings or None."""
+    print("\n=== TORTURE: Inworld API Key Helper ===")
+    from pathlib import Path
+
+    tmp = tempfile.mkdtemp()
+    try:
+        import web.app as _app
+
+        orig_settings = _app.SETTINGS_FILE
+        tmp_settings = Path(tmp) / "config" / "settings.json"
+        tmp_settings.parent.mkdir(parents=True, exist_ok=True)
+
+        # ── 1. No api_keys → None ──
+        tmp_settings.write_text(json.dumps({}), encoding="utf-8")
+        _app.SETTINGS_FILE = tmp_settings
+        result = _app._get_inworld_api_key()
+        check("no api_keys → None", result is None)
+
+        # ── 2. Empty inworld key → None ──
+        tmp_settings.write_text(json.dumps({"api_keys": {"inworld": ""}}), encoding="utf-8")
+        result2 = _app._get_inworld_api_key()
+        check("empty inworld key → None", result2 is None)
+
+        # ── 3. Valid key → returned ──
+        tmp_settings.write_text(json.dumps({"api_keys": {"inworld": "my-secret-key"}}), encoding="utf-8")
+        result3 = _app._get_inworld_api_key()
+        check("valid key returned", result3 == "my-secret-key")
+
+        # ── 4. Other keys present, no inworld → None ──
+        tmp_settings.write_text(json.dumps({"api_keys": {"openai": "sk-abc"}}), encoding="utf-8")
+        result4 = _app._get_inworld_api_key()
+        check("no inworld key → None", result4 is None)
+
+    finally:
+        _app.SETTINGS_FILE = orig_settings
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ═════════════════════════════════════════════
+# _check_admin helper — admin email check
+# ═════════════════════════════════════════════
+def test_check_admin_helper():
+    """Test _check_admin validates email against ADMIN_EMAILS."""
+    print("\n=== TORTURE: _check_admin helper ===")
+    import web.app as _app
+
+    # Save original
+    orig_admin = _app.ADMIN_EMAILS
+    orig_check = _app._check_admin
+
+    try:
+        _app.ADMIN_EMAILS = {"admin@example.com", "boss@test.org"}
+
+        # ── 1. No user on request → False ──
+        class FakeRequest:
+            class state:
+                pass
+        check("no user → False", _app._check_admin(FakeRequest()) is False)
+
+        # ── 2. User with admin email → True ──
+        class AdminRequest:
+            class state:
+                user = {"email": "admin@example.com"}
+        check("admin email → True", _app._check_admin(AdminRequest()) is True)
+
+        # ── 3. User with non-admin email → False ──
+        class NonAdminRequest:
+            class state:
+                user = {"email": "user@example.com"}
+        check("non-admin email → False", _app._check_admin(NonAdminRequest()) is False)
+
+        # ── 4. Case-insensitive ──
+        class UpperCaseRequest:
+            class state:
+                user = {"email": "ADMIN@EXAMPLE.COM"}
+        check("case-insensitive match", _app._check_admin(UpperCaseRequest()) is True)
+
+        # ── 5. Empty email → False ──
+        class EmptyEmailRequest:
+            class state:
+                user = {"email": ""}
+        check("empty email → False", _app._check_admin(EmptyEmailRequest()) is False)
+
+        # ── 6. Missing email key → False ──
+        class NoEmailRequest:
+            class state:
+                user = {}
+        check("missing email key → False", _app._check_admin(NoEmailRequest()) is False)
+
+    finally:
+        _app.ADMIN_EMAILS = orig_admin
+
+
+# ═════════════════════════════════════════════
 if __name__ == "__main__":
     test_boundary_policy()
     test_pii_guard_extended()
@@ -9201,6 +9991,15 @@ if __name__ == "__main__":
     test_soul_script_faiss_indexing()
     test_collect_notes_soul_script()
     test_profiles_template_collapsible()
+    test_runtime_info_tool()
+    test_admin_voices_api()
+    test_admin_voices_template()
+    test_admin_user_management_api()
+    test_connections_crud_api()
+    test_pricing_crud_api()
+    test_tts_voices_filter_logic()
+    test_inworld_api_key_helper()
+    test_check_admin_helper()
 
     print(f"\n{'='*40}")
     print(f"Results: {PASS} passed, {FAIL} failed")

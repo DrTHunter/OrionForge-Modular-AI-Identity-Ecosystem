@@ -23,11 +23,20 @@ _jwks_cache: dict | None = None
 
 
 def _load_auth_config() -> dict:
-    """Load auth.json configuration."""
+    """Load auth.json configuration, with env-var overrides for secrets."""
+    cfg: dict = {}
     if _AUTH_FILE.exists():
         with open(_AUTH_FILE, "r", encoding="utf-8-sig") as f:
-            return json.load(f)
-    return {"auth_enabled": False}
+            cfg = json.load(f)
+    # Env vars take priority over file values
+    import os
+    if os.environ.get("SUPABASE_URL"):
+        cfg["supabase_url"] = os.environ["SUPABASE_URL"]
+    if os.environ.get("SUPABASE_ANON_KEY"):
+        cfg["supabase_anon_key"] = os.environ["SUPABASE_ANON_KEY"]
+    if not cfg:
+        return {"auth_enabled": False}
+    return cfg
 
 
 def get_auth_config() -> dict:
