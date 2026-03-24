@@ -95,6 +95,35 @@ ln -sfn "$PERSIST_CONFIG" "$APP_CONFIG"
 
 echo "[boot] Config linked to persistent volume."
 
+# ── PROFILES PERSISTENCE ───────────────────────────────
+# Persist agent profile YAMLs (voice_id, edge_voice, model, etc.)
+# so voice assignments survive across deploys.
+PERSIST_PROFILES="/persist/profiles"
+APP_PROFILES="/app/app/profiles"
+BUNDLED_PROFILES="/app/_bundled_profiles"
+
+mkdir -p "$PERSIST_PROFILES"
+
+if [ -d "$BUNDLED_PROFILES" ]; then
+    if [ ! -f "$PERSIST_PROFILES/orion.yaml" ]; then
+        echo "[boot] First deploy — seeding bundled profiles."
+        cp -a "$BUNDLED_PROFILES"/* "$PERSIST_PROFILES/" 2>/dev/null || true
+    else
+        echo "[boot] Persistent profiles exist — preserving voice assignments."
+        # Add new agent profiles shipped in the image (no-clobber)
+        cp -n "$BUNDLED_PROFILES"/* "$PERSIST_PROFILES/" 2>/dev/null || true
+    fi
+fi
+
+if [ -L "$APP_PROFILES" ]; then
+    rm "$APP_PROFILES"
+elif [ -d "$APP_PROFILES" ]; then
+    rm -rf "$APP_PROFILES"
+fi
+ln -sfn "$PERSIST_PROFILES" "$APP_PROFILES"
+
+echo "[boot] Profiles linked to persistent volume."
+
 # ── USER NOTES PERSISTENCE ─────────────────────────────
 # 10. Create persistent user_notes dir if it doesn't exist
 mkdir -p "$PERSIST_NOTES"
