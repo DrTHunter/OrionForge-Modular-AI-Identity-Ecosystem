@@ -6126,8 +6126,50 @@ async def api_chat_status(session_id: str):
         if line is None: break
         new_lines.append(line)
         session["output_lines"].append(line)
+
+    # ── Rolling credit enforcement for platform-hosted burst sessions ──
+    # On every poll while the process is still running, check accumulated
+    # cost against the user's remaining balance and kill if exceeded.
+    _burst_killed = False
+    if (
+        proc.poll() is None
+        and session.get("platform_hosted")
+        and session.get("user_id")
+    ):
+        try:
+            from src.observability.metering import read_cost_log
+            events = read_cost_log(
+                since=session["started"],
+                source="platform",
+                limit=100000,
+            )
+            chat_events = [e for e in events if e.get("chat_id") == session["chat_id"]]
+            total_usd = sum(e.get("cost", {}).get("total_cost", 0.0) for e in chat_events)
+            if total_usd > 0:
+                credit_cost = estimate_llm_credit_cost(total_usd)
+                balance = get_user_credits(session["user_id"])
+                if credit_cost >= balance:
+                    # Kill the subprocess — user can't afford more calls
+                    proc.terminate()
+                    session["status"] = "stopped"
+                    _burst_killed = True
+                    log.warning(
+                        "[credits] Burst killed — credits exhausted. "
+                        "cost=%d credits, balance=%d, session=%s",
+                        credit_cost, balance, session_id,
+                    )
+                    # Immediately deduct what was accumulated
+                    session["credits_deducted"] = True
+                    deduct_user_credits(
+                        session["user_id"],
+                        min(credit_cost, balance),
+                        f"agi_burst:{session.get('agent', '')}:{len(chat_events)}calls:killed",
+                    )
+        except Exception as exc:
+            log.warning("[credits] Rolling burst credit check failed: %s", exc)
+
     retcode = proc.poll()
-    if retcode is not None:
+    if retcode is not None and not _burst_killed:
         session["status"] = "completed" if retcode == 0 else "error"
 
         # ── Post-burst credit deduction for platform-hosted keys ──
