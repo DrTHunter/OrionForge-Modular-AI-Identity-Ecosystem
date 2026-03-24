@@ -401,12 +401,14 @@ def test_cost_log():
         )
 
         # Write events
-        ev1 = log_cost_event(m1, agent="astraea", chat_id="chat_001")
+        ev1 = log_cost_event(m1, agent="astraea", chat_id="chat_001", source="platform")
         check("event has ts", "ts" in ev1)
         check("event has agent", ev1["agent"] == "astraea")
         check("event has chat_id", ev1["chat_id"] == "chat_001")
+        check("event has source", ev1["source"] == "platform")
 
-        ev2 = log_cost_event(m2, agent="callum", chat_id="chat_002")
+        ev2 = log_cost_event(m2, agent="callum", chat_id="chat_002", source="user")
+        check("event source user", ev2["source"] == "user")
 
         # Read all
         events = read_cost_log()
@@ -417,6 +419,30 @@ def test_cost_log():
         check("filter by agent", len(astraea_events) == 1)
         check("correct agent", astraea_events[0]["agent"] == "astraea")
 
+        # Filter by source
+        platform_events = read_cost_log(source="platform")
+        check("filter source=platform", len(platform_events) == 1)
+        check("source=platform correct agent", platform_events[0]["agent"] == "astraea")
+
+        user_events = read_cost_log(source="user")
+        check("filter source=user", len(user_events) == 1)
+        check("source=user correct agent", user_events[0]["agent"] == "callum")
+
+        # Filter by until
+        until_events = read_cost_log(until="2000-01-01T00:00:00+00:00")
+        check("until past → empty", len(until_events) == 0)
+
+        until_future = read_cost_log(until="2099-01-01T00:00:00+00:00")
+        check("until future → all", len(until_future) == 2)
+
+        # Combined filters: source + agent
+        combined = read_cost_log(source="platform", agent="astraea")
+        check("combined source+agent", len(combined) == 1)
+
+        # Combined filters: source + agent mismatch
+        mismatch = read_cost_log(source="user", agent="astraea")
+        check("source+agent mismatch → empty", len(mismatch) == 0)
+
         # Filter by since (future → nothing)
         future_events = read_cost_log(since="2099-01-01T00:00:00+00:00")
         check("since future → empty", len(future_events) == 0)
@@ -425,10 +451,30 @@ def test_cost_log():
         limited = read_cost_log(limit=1)
         check("limit=1 works", len(limited) == 1)
 
+        # Source from env var fallback
+        os.environ["ORION_COST_SOURCE"] = "platform"
+        try:
+            ev3 = log_cost_event(m1, agent="env_test")
+            check("env var source fallback", ev3["source"] == "platform")
+        finally:
+            del os.environ["ORION_COST_SOURCE"]
+
+        # Explicit source overrides env var
+        os.environ["ORION_COST_SOURCE"] = "platform"
+        try:
+            ev4 = log_cost_event(m1, agent="override_test", source="user")
+            check("explicit source overrides env", ev4["source"] == "user")
+        finally:
+            del os.environ["ORION_COST_SOURCE"]
+
+        # No source → empty string
+        ev5 = log_cost_event(m1, agent="no_source_test")
+        check("no source → empty string", ev5["source"] == "")
+
         # JSONL format valid
         with open(log_path, "r") as f:
             lines = f.readlines()
-        check("JSONL line count", len(lines) == 2)
+        check("JSONL line count", len(lines) == 5, f"got {len(lines)}")
         for i, line in enumerate(lines):
             try:
                 json.loads(line)
@@ -476,10 +522,43 @@ def test_aggregate_costs():
     check("by_model has gpt-4", "gpt-4" in agg["by_model"])
     check("by_agent has astraea", "astraea" in agg["by_agent"])
     check("by_agent has callum", "callum" in agg["by_agent"])
+    check("by_source present", "by_source" in agg)
+    check("by_source has unknown", "unknown" in agg["by_source"],
+          f"got {agg['by_source']}")
+
+    # Aggregate with source field
+    events_with_source = [
+        {
+            "agent": "a", "model": "gpt-4", "provider": "openai",
+            "source": "platform",
+            "usage": {"prompt_tokens": 100, "completion_tokens": 50},
+            "cost": {"total_cost": 0.01},
+        },
+        {
+            "agent": "b", "model": "gpt-4", "provider": "openai",
+            "source": "user",
+            "usage": {"prompt_tokens": 100, "completion_tokens": 50},
+            "cost": {"total_cost": 0.02},
+        },
+        {
+            "agent": "c", "model": "gpt-4", "provider": "openai",
+            "source": "platform",
+            "usage": {"prompt_tokens": 100, "completion_tokens": 50},
+            "cost": {"total_cost": 0.03},
+        },
+    ]
+    agg2 = aggregate_costs(events_with_source)
+    check("by_source has platform", "platform" in agg2["by_source"])
+    check("by_source has user", "user" in agg2["by_source"])
+    check("by_source platform total", abs(agg2["by_source"]["platform"] - 0.04) < 0.001)
+    check("by_source user total", abs(agg2["by_source"]["user"] - 0.02) < 0.001)
+    check("by_source sorted desc",
+          list(agg2["by_source"].keys()) == ["platform", "user"])
 
     # Empty events
     empty_agg = aggregate_costs([])
     check("empty → zero", empty_agg["total_cost"] == 0.0 and empty_agg["num_calls"] == 0)
+    check("empty → by_source empty", empty_agg["by_source"] == {})
 
 
 # ─────────────────────────────────────────────

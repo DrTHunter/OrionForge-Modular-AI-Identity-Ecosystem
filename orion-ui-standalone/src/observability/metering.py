@@ -395,19 +395,26 @@ def log_cost_event(
     metering: Metering,
     agent: str = "",
     chat_id: str = "",
+    source: str = "",
 ) -> Dict[str, Any]:
     """Persist a cost event to the append-only JSONL log.
+
+    *source* is ``"platform"`` for platform-hosted keys or ``"user"``
+    for user-provided (BYOK) keys.  Falls back to the
+    ``ORION_COST_SOURCE`` environment variable when not provided.
 
     Returns the event dict that was written.
     """
     path = _get_cost_log_path()
     os.makedirs(os.path.dirname(path), exist_ok=True)
+    resolved_source = source or os.environ.get("ORION_COST_SOURCE", "")
     event = {
         "ts": datetime.now(_tz.utc).isoformat(),
         "agent": agent,
         "chat_id": chat_id,
         "model": metering.model,
         "provider": metering.provider,
+        "source": resolved_source,
         "usage": metering.usage.to_dict(),
         "cost": metering.cost.to_dict(),
     }
@@ -418,12 +425,15 @@ def log_cost_event(
 
 def read_cost_log(
     since: Optional[str] = None,
+    until: Optional[str] = None,
     agent: Optional[str] = None,
+    source: Optional[str] = None,
     limit: int = 1000,
 ) -> List[Dict[str, Any]]:
     """Read cost events from the JSONL log.
 
-    *since* is an ISO timestamp; only events after it are returned.
+    *since* / *until* are ISO timestamps for date-range filtering.
+    *source* filters by ``"platform"`` or ``"user"``.
     """
     path = _get_cost_log_path()
     if not os.path.isfile(path):
@@ -438,9 +448,14 @@ def read_cost_log(
                 ev = json.loads(line)
             except json.JSONDecodeError:
                 continue
-            if since and ev.get("ts", "") < since:
+            ts = ev.get("ts", "")
+            if since and ts < since:
+                continue
+            if until and ts > until:
                 continue
             if agent and ev.get("agent", "") != agent:
+                continue
+            if source and ev.get("source", "") != source:
                 continue
             events.append(ev)
             if len(events) >= limit:
@@ -459,6 +474,7 @@ def aggregate_costs(events: List[Dict[str, Any]]) -> Dict[str, Any]:
     total_completion_tokens = 0
     by_model: Dict[str, float] = {}
     by_agent: Dict[str, float] = {}
+    by_source: Dict[str, float] = {}
 
     for ev in events:
         cost = ev.get("cost", {})
@@ -475,6 +491,8 @@ def aggregate_costs(events: List[Dict[str, Any]]) -> Dict[str, Any]:
         by_model[model] = by_model.get(model, 0.0) + tc
         agent = ev.get("agent", "unknown")
         by_agent[agent] = by_agent.get(agent, 0.0) + tc
+        src = ev.get("source", "") or "unknown"
+        by_source[src] = by_source.get(src, 0.0) + tc
 
     return {
         "total_cost": round(total_cost, 6),
@@ -488,4 +506,5 @@ def aggregate_costs(events: List[Dict[str, Any]]) -> Dict[str, Any]:
         "num_calls": len(events),
         "by_model": dict(sorted(by_model.items(), key=lambda x: -x[1])),
         "by_agent": dict(sorted(by_agent.items(), key=lambda x: -x[1])),
+        "by_source": dict(sorted(by_source.items(), key=lambda x: -x[1])),
     }
