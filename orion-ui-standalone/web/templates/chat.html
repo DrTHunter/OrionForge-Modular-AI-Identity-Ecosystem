@@ -618,6 +618,7 @@
   .layer-num-3 { background:linear-gradient(135deg,#10b981,#34d399); }
   .layer-num-4 { background:linear-gradient(135deg,#22d3ee,#67e8f9); }
   .layer-num-5 { background:linear-gradient(135deg,#71717a,#a1a1aa); }
+  .layer-num-6 { background:linear-gradient(135deg,#f59e0b,#fbbf24); }
   .layer-info { flex:1; min-width:0; }
   .layer-label { font-size:0.75rem; font-weight:700; color:#e4e4e7; }
   .layer-stat { font-size:0.6875rem; color:#71717a; margin-left:0.5rem; font-weight:400; }
@@ -637,6 +638,7 @@
   .layer-bar-3 { background:#10b981; }
   .layer-bar-4 { background:#22d3ee; }
   .layer-bar-5 { background:#71717a; }
+  .layer-bar-6 { background:#f59e0b; }
 
   /* Tool call badge */
   .tool-calls-badge {
@@ -2137,8 +2139,9 @@ function _renderEntry(role, text, data, timeStr, layers) {
       let layersHtml = '';
       if (layers) {
         const layerId = 'layers-' + Date.now() + Math.random().toString(36).slice(2,6);
+        const toolChars = (layers.tools?.names||[]).reduce((s,n) => s + n.length + 20, 0) * (layers.tools?.count||0 ? 1 : 0);
         const total = (layers.base_prompt?.chars||0) + (layers.soul_script?.chars||0)
-                    + (layers.always_on?.chars||0) + (layers.vault?.chars||0) + (layers.conversation?.chars||0);
+                    + (layers.always_on?.chars||0) + (layers.vault?.chars||0) + (layers.conversation?.chars||0) + toolChars;
         const pct = (c) => total > 0 ? Math.max(2, Math.round(c / total * 100)) : 0;
         layersHtml = `
           <button class="layers-toggle" onclick="toggleLayers('${layerId}', this)">◇ Prompt Layers</button>
@@ -2148,6 +2151,7 @@ function _renderEntry(role, text, data, timeStr, layers) {
             <div class="layer-bar-seg layer-bar-3" style="width:${pct(layers.always_on?.chars||0)}%"></div>
             <div class="layer-bar-seg layer-bar-4" style="width:${pct(layers.vault?.chars||0)}%"></div>
             <div class="layer-bar-seg layer-bar-5" style="width:${pct(layers.conversation?.chars||0)}%"></div>
+            <div class="layer-bar-seg layer-bar-6" style="width:${pct(toolChars)}%"></div>
           </div>
           <div class="layers-panel" id="${layerId}">
             ${renderLayerRow(1, 'Base Prompt', layers.base_prompt?.chars + ' chars', layers.base_prompt?.preview)}
@@ -2155,6 +2159,7 @@ function _renderEntry(role, text, data, timeStr, layers) {
             ${renderLayerRow(3, 'Always-On Knowledge', layers.always_on?.chunks + ' notes · ' + layers.always_on?.chars + ' chars', layers.always_on?.preview)}
             ${renderLayerRow(4, 'Memory Vault', layers.vault?.memories + ' memories · ' + layers.vault?.chars + ' chars', (layers.vault?.snippets||[]).join('\\n---\\n'))}
             ${renderLayerRow(5, 'Conversation', layers.conversation?.turns + ' turns · ' + layers.conversation?.chars + ' chars', '')}
+            ${renderLayerRow(6, 'Tool Registry', layers.tools?.count + ' tools', (layers.tools?.names||[]).join(', '))}
           </div>`;
       }
 
@@ -2777,8 +2782,9 @@ async function sendChatMsg() {
     if (d.layers) {
       const layerId = 'layers-' + Date.now() + Math.random().toString(36).slice(2,6);
       const layers = d.layers;
+      const toolChars = (layers.tools?.names||[]).reduce((s,n) => s + n.length + 20, 0) * (layers.tools?.count||0 ? 1 : 0);
       const total = (layers.base_prompt?.chars||0) + (layers.soul_script?.chars||0)
-                  + (layers.always_on?.chars||0) + (layers.vault?.chars||0) + (layers.conversation?.chars||0);
+                  + (layers.always_on?.chars||0) + (layers.vault?.chars||0) + (layers.conversation?.chars||0) + toolChars;
       const pct = (c) => total > 0 ? Math.max(2, Math.round(c / total * 100)) : 0;
       const lDiv = document.createElement('div');
       lDiv.innerHTML = `<button class="layers-toggle" onclick="toggleLayers('${layerId}', this)">◇ Prompt Layers</button>
@@ -2788,6 +2794,7 @@ async function sendChatMsg() {
           <div class="layer-bar-seg layer-bar-3" style="width:${pct(layers.always_on?.chars||0)}%"></div>
           <div class="layer-bar-seg layer-bar-4" style="width:${pct(layers.vault?.chars||0)}%"></div>
           <div class="layer-bar-seg layer-bar-5" style="width:${pct(layers.conversation?.chars||0)}%"></div>
+          <div class="layer-bar-seg layer-bar-6" style="width:${pct(toolChars)}%"></div>
         </div>
         <div class="layers-panel" id="${layerId}">
           ${renderLayerRow(1, 'Base Prompt', layers.base_prompt?.chars + ' chars', layers.base_prompt?.preview)}
@@ -2795,6 +2802,7 @@ async function sendChatMsg() {
           ${renderLayerRow(3, 'Always-On Knowledge', layers.always_on?.chunks + ' notes · ' + layers.always_on?.chars + ' chars', layers.always_on?.preview)}
           ${renderLayerRow(4, 'Memory Vault', layers.vault?.memories + ' memories · ' + layers.vault?.chars + ' chars', (layers.vault?.snippets||[]).join('\\n---\\n'))}
           ${renderLayerRow(5, 'Conversation', layers.conversation?.turns + ' turns · ' + layers.conversation?.chars + ' chars', '')}
+          ${renderLayerRow(6, 'Tool Registry', layers.tools?.count + ' tools', (layers.tools?.names||[]).join(', '))}
         </div>`;
       el.appendChild(lDiv);
     }
