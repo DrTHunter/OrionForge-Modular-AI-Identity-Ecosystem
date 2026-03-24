@@ -92,7 +92,7 @@ from contextlib import asynccontextmanager
 
 @asynccontextmanager
 async def _lifespan(application: FastAPI):
-    """Build NotesFAISS on startup so Soul Script retrieval works immediately."""
+    """Build NotesFAISS in background so Soul Script retrieval works soon after boot."""
     try:
         _seed_platform_keys_from_env()
     except Exception as exc:
@@ -103,12 +103,17 @@ async def _lifespan(application: FastAPI):
         log.info("[startup] OpenRouter pricing sync: %s", result)
     except Exception as exc:
         log.warning("[startup] OpenRouter pricing sync failed: %s", exc)
-    try:
-        _rebuild_notes_faiss()
-        from src.storage.note_collector import invalidate_notes_faiss
-        invalidate_notes_faiss()          # force singleton to reload fresh index
-    except Exception as exc:
-        log.warning("[startup] NotesFAISS build skipped: %s", exc)
+    # Build FAISS index in background thread so health check passes quickly
+    import threading
+    def _bg_faiss():
+        try:
+            _rebuild_notes_faiss()
+            from src.storage.note_collector import invalidate_notes_faiss
+            invalidate_notes_faiss()
+            log.info("[startup] NotesFAISS build completed (background)")
+        except Exception as exc:
+            log.warning("[startup] NotesFAISS build skipped: %s", exc)
+    threading.Thread(target=_bg_faiss, daemon=True).start()
     # Auto-purge inactive accounts (>90 days)
     try:
         result = purge_inactive_users()
