@@ -1,25 +1,25 @@
 # tests/
 
-Comprehensive test suite for the OrionForge agent runtime. **272 test functions, ~4,022 assertions** across 11 test files.
+Comprehensive test suite for the OrionForge agent runtime. **276 test functions, ~4,129 assertions** across 11 test files.
 
 ## Test Files
 
 | File | Functions | Checks | What It Tests |
 |------|-----------|--------|---------------|
-| `test_torture.py` | 125 | ~3,104 | Deep torture of every code path — memory tool (13 actions), vault sort (8 modes, dict & object), max memory limits, utilization calc, template rendering (vault, tools, profiles, skins, about, admin_voices), boundary policy, PII guard, runtime policy, manifest system, directive parser/store/injector, tool registry, EmailTool, WebSearchTool, InboxTool, cost tracker, metering, LLM client factory, dynamic scopes, category policy, saved profiles, 6-tier model router, coding tiers, escalation chains, budget tracking, **sidecar service wiring** (SearXNG, TTS, Whisper — env-var override, URL normalization, fallback behavior, timeout config), **soul script helpers** (_load/_save round-trip, dir creation, unicode), **soul script API** (config endpoint save/update/empty/combined), **soul script FAISS indexing** (rebuild, doc_id format, agent discovery), **note collector soul script injection**, **profiles template collapsible sections** (toggleCollapse, FAISS badge, soul-script textarea), admin keys, **admin voices API & template** (save allowlist, get all voices, HTML structure, premium toggle, escHtml XSS protection), **admin user management** (list users, wipe by email, purge inactive, delete), **connections CRUD** (list, create, update, delete, Ollama URL normalization), **pricing CRUD** (get, full replace, single model update, delete, cost-summary, cost-log), chat 3-mode selector, user model catalog, `__userkey_` dynamic connections, Stripe state persistence, store catalog structure, tier & trial system, credit system, credit cost estimators, purchase flows (tool/skin/agent), agent ownership, user activity tracking, wipe user data, purge inactive, list all users, auth helpers, tier info structure, **runtime info tool** (definition, execute, diff tracking, set_context, reset, REQUIRED_FIELDS, base_url redaction), **TTS voice filter logic** (allowlist filtering, premium marking, empty allowlist passthrough), **ElevenLabs/inworld connection helpers** (_get_elevenlabs_conn, _seed_platform_keys_from_env, _resolve_connection, _get_inworld_api_key), **_check_admin helper** (admin email, non-admin, case-insensitive, empty/missing) |
+| `test_torture.py` | 129 | ~3,188 | Deep torture of every code path — memory tool (13 actions), vault sort (8 modes, dict & object), max memory limits, utilization calc, template rendering (vault, tools, profiles, skins, about, admin_voices), boundary policy, PII guard, runtime policy, manifest system, directive parser/store/injector, tool registry, EmailTool, WebSearchTool, InboxTool, cost tracker, metering, LLM client factory, dynamic scopes, category policy, saved profiles, 6-tier model router, coding tiers, escalation chains, budget tracking, **sidecar service wiring** (SearXNG, TTS, Whisper — env-var override, URL normalization, fallback behavior, timeout config), **soul script helpers** (_load/_save round-trip, dir creation, unicode), **soul script API** (config endpoint save/update/empty/combined), **soul script FAISS indexing** (rebuild, doc_id format, agent discovery), **note collector soul script injection**, **profiles template collapsible sections** (toggleCollapse, FAISS badge, soul-script textarea), admin keys, **admin voices API & template** (save allowlist, get all voices, HTML structure, premium toggle, escHtml XSS protection), **admin user management** (list users, wipe by email, purge inactive, delete), **connections CRUD** (list, create, update, delete, Ollama URL normalization), **pricing CRUD** (get, full replace, single model update, delete, cost-summary, cost-log), chat 3-mode selector, user model catalog, `__userkey_` dynamic connections, Stripe state persistence, store catalog structure, tier & trial system, credit system, credit cost estimators, purchase flows (tool/skin/agent), agent ownership, user activity tracking, wipe user data, purge inactive, list all users, auth helpers, tier info structure, **runtime info tool** (definition, execute, diff tracking, set_context, reset, REQUIRED_FIELDS, base_url redaction), **TTS voice filter logic** (allowlist filtering, premium marking, empty allowlist passthrough), **ElevenLabs/inworld connection helpers** (_get_elevenlabs_conn, _seed_platform_keys_from_env, _resolve_connection, _get_inworld_api_key), **_check_admin helper** (admin email, non-admin, case-insensitive, empty/missing) |
 | `test_memory.py` | 23 | 155 | VaultStore CRUD, scoping, PII guard, bulk delete, versioning, resolve_latest, compact, stats, Memory dataclass, taxonomy constants, tiers & topics, tags & source, JSONL format |
 | `test_stress.py` | 29 | 238 | Rapid-fire operations, concurrent access, boundary conditions, cross-module integration, router presets, coding tier routing |
 | `test_directives.py` | 14 | 108 | Parser, store search, store list/get, scoping, injector, directives tool, scoring, manifest generation, save/load, helpers, diff, audit, changes action |
 | `test_registry_and_tools.py` | 17 | 86 | Tool registry dispatch, resolution, listing, error paths, cost tracker, web search tool |
 | `test_governance.py` | 16 | 74 | ActiveDirectives (record/list/ids/summary/reset), validate_manifest (schema/enums/duplicates/SHA-256 drift) |
 | `test_chunker_injector.py` | 14 | 51 | Pure chunking logic, merge/split, formatting helpers |
-| `test_metering.py` | 11 | 92 | Token accounting, cost computation, log persistence, aggregation |
+| `test_metering.py` | 11 | 115 | Token accounting, cost computation, log persistence, aggregation, source tracking (platform/user), date-range filtering, by_source aggregation |
 | `test_storage_and_llm.py` | 14 | 45 | HTML stripping, note loading, LLMResponse dataclass |
 | `test_data_paths.py` | 5 | 31 | Canonical data directory layout, auto-creation, isolation, edge cases |
 | `test_tools.py` | 4 | 38 | EchoTool, ContinuationUpdateTool, EmailTool, RuntimePolicy |
 | `run_all.py` | — | — | Master runner — executes all suites in dependency order, consolidates results |
 
-**Total: 272 functions, ~4,022 checks across 11 test suites**
+**Total: 276 functions, ~4,129 checks across 11 test suites**
 
 ## Running Tests
 
@@ -68,6 +68,7 @@ The `test_torture.py` suite alone covers the most code paths and is the best sin
 - Boundary policy, PII guard, runtime policy clamping
 - Manifest validation, audit, diff
 - LLM client factory, metering helpers, data paths
+- **Metering source filtering** — `log_cost_event` source param, `read_cost_log` source/until filters, `aggregate_costs` by_source bucketing, `ORION_COST_SOURCE` env var fallback, CostTrackerTool source tabs
 - **Soul script helpers** — `_load_soul_script` / `_save_soul_script` round-trip, directory auto-creation, unicode, overwrite, empty save
 - **Soul script API** — `PUT /api/profiles/{name}/config` with `soul_script_text`: save, update, empty, combined with system_prompt, preservation when omitted
 - **Soul script FAISS indexing** — `_rebuild_notes_faiss()` indexes soul scripts with `__soul_script__{agent}` doc_ids, empty scripts skipped, agent discovery
