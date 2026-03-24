@@ -46,7 +46,7 @@ class NotesFAISS:
     def __init__(
         self,
         faiss_dir: str,
-        model_name: str = "all-mpnet-base-v2",
+        model_name: str = "all-MiniLM-L6-v2",
     ):
         self.faiss_dir = Path(faiss_dir)
         self.faiss_dir.mkdir(parents=True, exist_ok=True)
@@ -188,7 +188,7 @@ class NotesFAISS:
         log.info("[notes_faiss] Saved to %s (%d chunks)", self.faiss_dir, len(self._chunks))
 
     @classmethod
-    def load(cls, faiss_dir: str, model_name: str = "all-mpnet-base-v2") -> Optional["NotesFAISS"]:
+    def load(cls, faiss_dir: str, model_name: str = "all-MiniLM-L6-v2") -> Optional["NotesFAISS"]:
         """Load a cached notes index from disk.  Returns None if not found."""
         d = Path(faiss_dir)
         idx_path = d / _INDEX_FILE
@@ -200,6 +200,11 @@ class NotesFAISS:
         try:
             obj = cls(faiss_dir, model_name=model_name)
             obj.index = faiss.read_index(str(idx_path))
+            # Validate dimension matches the model
+            if obj.index.d != obj.embedding_dim:
+                log.warning("[notes_faiss] Dimension mismatch (index=%d, model=%d), discarding cache",
+                            obj.index.d, obj.embedding_dim)
+                return None
             with open(meta_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
             obj._chunks = data.get("chunks", [])
