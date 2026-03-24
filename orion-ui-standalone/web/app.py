@@ -5751,11 +5751,10 @@ async def api_tts_speak(request: Request):
     # ── Check if voice is premium ──
     is_premium = voice_id in set(_load_settings().get("premium_voices", []))
 
-    # ── Pre-flight credit check for platform-hosted keys ──
-    is_platform = el_conn.get("platform_hosted", False)
+    # ── Pre-flight credit check (always metered at 2× cost) ──
     char_count_est = len(text)
     credit_cost = 0
-    if is_platform and user:
+    if user:
         credit_cost = estimate_tts_credit_cost(char_count_est, provider="elevenlabs", premium=is_premium)
         if credit_cost > 0:
             balance = get_user_credits(user["id"])
@@ -5766,6 +5765,8 @@ async def api_tts_speak(request: Request):
                     "credits_balance": balance,
                     "redirect": "/store",
                 }, status_code=402)
+    elif not user:
+        return JSONResponse({"error": "Login required for TTS.", "redirect": "/login"}, 401)
 
     url = f"{el_conn['url'].rstrip('/')}/v1/text-to-speech/{voice_id}"
     headers = {
@@ -5784,8 +5785,8 @@ async def api_tts_speak(request: Request):
             resp.raise_for_status()
         char_count = int(resp.headers.get("x-character-count", len(text)))
 
-        # ── Deduct credits for platform-hosted ElevenLabs ──
-        if is_platform and user and credit_cost > 0:
+        # ── Deduct credits (always metered at 2× cost) ──
+        if user and credit_cost > 0:
             try:
                 # Recalculate with actual char count from response
                 actual_cost = estimate_tts_credit_cost(char_count, provider="elevenlabs", premium=is_premium)
@@ -5955,11 +5956,10 @@ async def api_stt_elevenlabs(request: Request):
     audio_bytes = await audio_file.read()
     filename = getattr(audio_file, 'filename', 'audio.webm') or 'audio.webm'
 
-    # ── Pre-flight credit check for platform-hosted keys ──
-    is_platform = conn.get("platform_hosted", False)
+    # ── Pre-flight credit check (always metered at 2× cost) ──
     estimated_seconds = max(len(audio_bytes) / (16 * 1024), 1.0)
     credit_cost = 0
-    if is_platform and user:
+    if user:
         credit_cost = estimate_stt_credit_cost(estimated_seconds, provider="elevenlabs")
         if credit_cost > 0:
             balance = get_user_credits(user["id"])
@@ -5970,6 +5970,8 @@ async def api_stt_elevenlabs(request: Request):
                     "credits_balance": balance,
                     "redirect": "/store",
                 }, status_code=402)
+    elif not user:
+        return JSONResponse({"error": "Login required for STT.", "redirect": "/login"}, 401)
 
     url = f"{conn['url'].rstrip('/')}/v1/speech-to-text"
     headers = {"xi-api-key": conn["api_key"]}
@@ -5986,8 +5988,8 @@ async def api_stt_elevenlabs(request: Request):
 
         text = data.get("text", "").strip()
 
-        # ── Deduct credits for platform-hosted ElevenLabs STT ──
-        if is_platform and user and credit_cost > 0:
+        # ── Deduct credits (always metered at 2× cost) ──
+        if user and credit_cost > 0:
             try:
                 deduct_user_credits(user["id"], credit_cost, f"stt:elevenlabs:{int(estimated_seconds)}s")
             except Exception as exc:

@@ -375,8 +375,9 @@ TTS_PREMIUM_SURCHARGE_PER_1K = 0.20
 
 # STT cost per minute of audio by provider
 STT_COST_PER_MINUTE = {
-    "whisper": 0.006,      # OpenAI Whisper pricing
-    "default": 0.006,
+    "whisper":     0.006,   # OpenAI Whisper pricing
+    "elevenlabs":  0.007,   # ElevenLabs Scribe (~$0.42/hr)
+    "default":     0.006,
 }
 
 # ══════════════════════════════════════════════════════════════════
