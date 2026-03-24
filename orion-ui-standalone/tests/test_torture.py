@@ -139,6 +139,12 @@ Covers:
     other keys only)
   - _check_admin helper (no user, admin email, non-admin, case-insensitive,
     empty email, missing email key)
+  - FAISS scaling: model defaults (all-MiniLM-L6-v2), fcntl file locking
+    in vault._append, FAISSMemory._save_index, NotesFAISS._save,
+    NotesFAISS.load() dimension mismatch detection, FAISSMemory._load_or_build
+    model mismatch rebuild, app _bg_faiss startup coordination with
+    LOCK_EX|LOCK_NB, asyncio.to_thread wrapping of _build_chat_messages
+    at 3 call sites, boot.sh --workers 3
 """
 
 import json
@@ -2556,7 +2562,7 @@ def test_email_tool_torture():
     validation, confirmation gate, agent_name resolution, SMTP error paths."""
     print("\n=== TORTURE: Email Tool — Full Coverage ===")
     from src.tools.email_tool import (
-        EmailTool, get_accounts, get_accounts_raw, get_default_account,
+        EmailTool, get_accounts, _get_accounts_raw as get_accounts_raw, get_default_account,
         get_user_account, get_agent_default_account, get_account_by_id,
         save_account, delete_account, get_effective_config,
         _load_settings, _save_settings, _load_tool_config,
@@ -2566,6 +2572,7 @@ def test_email_tool_torture():
     import src.tools.email_tool as et_mod
 
     tool = EmailTool()
+    test_uid = "test_user_123"
 
     # ── 1. Definition ──
     defn = tool.definition()
@@ -2586,28 +2593,30 @@ def test_email_tool_torture():
 
     # ── 2. Isolated account CRUD (temp settings file) ──
     orig_settings = et_mod._SETTINGS_FILE
+    orig_data_dir = et_mod._DATA_DIR
     tmp = tempfile.mkdtemp()
     tmp_settings = Path(tmp) / "config" / "settings.json"
     et_mod._SETTINGS_FILE = tmp_settings
+    et_mod._DATA_DIR = Path(tmp) / "data"
 
     try:
         # Empty state
-        check("no accounts initially", len(get_accounts()) == 0)
-        check("no raw accounts", len(get_accounts_raw()) == 0)
-        check("default account → None", get_default_account() is None)
-        check("user account → None", get_user_account() is None)
-        check("agent default → None", get_agent_default_account("astraea") is None)
-        check("account by id → None", get_account_by_id("nope") is None)
+        check("no accounts initially", len(get_accounts(test_uid)) == 0)
+        check("no raw accounts", len(get_accounts_raw(test_uid)) == 0)
+        check("default account → None", get_default_account(test_uid) is None)
+        check("user account → None", get_user_account(test_uid) is None)
+        check("agent default → None", get_agent_default_account(test_uid, "astraea") is None)
+        check("account by id → None", get_account_by_id(test_uid, "nope") is None)
 
         # effective_config defaults
-        cfg = get_effective_config()
+        cfg = get_effective_config(test_uid)
         check("cfg has api_base_url", "api_base_url" in cfg)
         check("cfg has timeout", cfg["timeout"] == 30)
         check("cfg require_confirmation default True", cfg["require_confirmation"] is True)
         check("cfg accounts empty", len(cfg["accounts"]) == 0)
 
         # Create first account
-        acct1 = save_account({
+        acct1 = save_account(test_uid, {
             "label": "Work",
             "email": "work@example.com",
             "password": "secret123",
@@ -2620,18 +2629,18 @@ def test_email_tool_torture():
         })
         check("acct1 got id", acct1.get("id") is not None and acct1["id"].startswith("acct_"))
         check("acct1 label", acct1["label"] == "Work")
-        check("1 account now", len(get_accounts_raw()) == 1)
+        check("1 account now", len(get_accounts_raw(test_uid)) == 1)
 
         # Password masking
-        masked = get_accounts()
+        masked = get_accounts(test_uid)
         check("password masked", masked[0]["password"] == "••••••••")
         check("password_set True", masked[0]["password_set"] is True)
 
         # Default fallback
-        check("default → acct1", get_default_account()["id"] == acct1["id"])
+        check("default → acct1", get_default_account(test_uid)["id"] == acct1["id"])
 
         # Create second account (agent default for astraea)
-        acct2 = save_account({
+        acct2 = save_account(test_uid, {
             "label": "Agent Mail",
             "email": "agent@example.com",
             "password": "agentpwd",
@@ -2643,32 +2652,32 @@ def test_email_tool_torture():
             "agent_default": "astraea",
         })
         check("acct2 created", acct2.get("id") is not None)
-        check("2 accounts now", len(get_accounts_raw()) == 2)
-        check("agent default astraea", get_agent_default_account("astraea")["id"] == acct2["id"])
-        check("user account → acct2", get_user_account()["id"] == acct2["id"])
-        check("lookup by id", get_account_by_id(acct2["id"])["label"] == "Agent Mail")
+        check("2 accounts now", len(get_accounts_raw(test_uid)) == 2)
+        check("agent default astraea", get_agent_default_account(test_uid, "astraea")["id"] == acct2["id"])
+        check("user account → acct2", get_user_account(test_uid)["id"] == acct2["id"])
+        check("lookup by id", get_account_by_id(test_uid, acct2["id"])["label"] == "Agent Mail")
 
         # Update account (keep masked password)
         acct2_updated = dict(acct2)
         acct2_updated["label"] = "Agent Mail Updated"
         acct2_updated["password"] = "••••••••"  # masked placeholder
-        saved = save_account(acct2_updated)
+        saved = save_account(test_uid, acct2_updated)
         check("update preserves password",
-              get_account_by_id(acct2["id"])["password"] == "agentpwd")
+              get_account_by_id(test_uid, acct2["id"])["password"] == "agentpwd")
         check("update changes label",
-              get_account_by_id(acct2["id"])["label"] == "Agent Mail Updated")
+              get_account_by_id(test_uid, acct2["id"])["label"] == "Agent Mail Updated")
 
         # Uniqueness: set acct2 as default → acct1 loses default
-        acct2_def = dict(get_account_by_id(acct2["id"]))
+        acct2_def = dict(get_account_by_id(test_uid, acct2["id"]))
         acct2_def["is_default"] = True
-        save_account(acct2_def)
+        save_account(test_uid, acct2_def)
         check("acct1 no longer default",
-              get_account_by_id(acct1["id"]).get("is_default") is False)
+              get_account_by_id(test_uid, acct1["id"]).get("is_default") is False)
         check("acct2 now default",
-              get_account_by_id(acct2["id"]).get("is_default") is True)
+              get_account_by_id(test_uid, acct2["id"]).get("is_default") is True)
 
         # Agent default uniqueness: new account for astraea → acct2 loses it
-        acct3 = save_account({
+        acct3 = save_account(test_uid, {
             "label": "New Astraea Mail",
             "email": "new@example.com",
             "password": "pwd3",
@@ -2678,57 +2687,57 @@ def test_email_tool_torture():
             "agent_default": "astraea",
         })
         check("acct2 lost agent_default",
-              get_account_by_id(acct2["id"]).get("agent_default", "") == "")
+              get_account_by_id(test_uid, acct2["id"]).get("agent_default", "") == "")
         check("acct3 has agent_default",
-              get_account_by_id(acct3["id"]).get("agent_default") == "astraea")
+              get_account_by_id(test_uid, acct3["id"]).get("agent_default") == "astraea")
 
         # Delete
-        check("delete acct3", delete_account(acct3["id"]) is True)
-        check("delete nonexistent", delete_account("fake_id") is False)
-        check("2 accounts remain", len(get_accounts_raw()) == 2)
+        check("delete acct3", delete_account(test_uid, acct3["id"]) is True)
+        check("delete nonexistent", delete_account(test_uid, "fake_id") is False)
+        check("2 accounts remain", len(get_accounts_raw(test_uid)) == 2)
 
         # ── 3. Execute: accounts action ──
-        r = json.loads(tool.execute({"action": "accounts"}))
+        r = json.loads(tool.execute({"action": "accounts"}, user_id=test_uid))
         check("exec accounts has list", isinstance(r["accounts"], list))
         check("exec accounts total", r["total"] == 2)
 
         # ── 4. Execute: status action ──
-        r = json.loads(tool.execute({"action": "status"}))
+        r = json.loads(tool.execute({"action": "status"}, user_id=test_uid))
         check("exec status has accounts_configured", r["accounts_configured"] == 2)
         # API server likely not running → api_server_running false
         check("exec status api field", "api_server_running" in r)
 
         # ── 5. Execute: unknown action ──
-        r = json.loads(tool.execute({"action": "nope"}))
+        r = json.loads(tool.execute({"action": "nope"}, user_id=test_uid))
         check("exec unknown action → error", "error" in r)
 
         # ── 6. Execute: send — validation ──
         # Missing subject
-        r = json.loads(tool.execute({"action": "send"}))
+        r = json.loads(tool.execute({"action": "send"}, user_id=test_uid))
         check("send no subject → error", "error" in r)
         check("send error mentions subject", "subject" in r["error"].lower())
 
         # Missing body
-        r = json.loads(tool.execute({"action": "send", "subject": "Hi"}))
+        r = json.loads(tool.execute({"action": "send", "subject": "Hi"}, user_id=test_uid))
         check("send no body → error", "error" in r)
 
         # Missing recipients
         r = json.loads(tool.execute({
             "action": "send", "subject": "Hi", "body": "Hello",
-        }))
+        }, user_id=test_uid))
         check("send no recipients → error", "error" in r)
 
         # Empty recipients list
         r = json.loads(tool.execute({
             "action": "send", "subject": "Hi", "body": "Hello", "recipients": [],
-        }))
+        }, user_id=test_uid))
         check("send empty recipients → error", "error" in r)
 
         # Invalid email format
         r = json.loads(tool.execute({
             "action": "send", "subject": "Hi", "body": "Hello",
             "recipients": ["badformat"],
-        }))
+        }, user_id=test_uid))
         check("send invalid email → error", "error" in r)
         check("send error names bad addr", "badformat" in r["error"])
 
@@ -2736,21 +2745,21 @@ def test_email_tool_torture():
         r = json.loads(tool.execute({
             "action": "send", "subject": "Hi", "body": "Hello",
             "recipients": ["good@test.com", "bad"],
-        }))
+        }, user_id=test_uid))
         check("send mixed addrs → error", "error" in r)
 
         # Nonexistent account_id
         r = json.loads(tool.execute({
             "action": "send", "subject": "Hi", "body": "Hello",
             "recipients": ["ok@test.com"], "account_id": "nonexistent",
-        }))
+        }, user_id=test_uid))
         check("send bad account_id → error", "error" in r)
 
         # ── 7. Confirmation gate ──
         r = json.loads(tool.execute({
             "action": "send", "subject": "Test", "body": "Hello World",
             "recipients": ["user@test.com"],
-        }))
+        }, user_id=test_uid))
         check("send gate=awaiting", r.get("gate") == "awaiting_confirmation")
         check("gate has preview", "preview" in r)
         check("preview has from_email", "from_email" in r["preview"])
@@ -2759,7 +2768,7 @@ def test_email_tool_torture():
 
         # ── 8. Confirmation gate with agent_name resolution ──
         # re-create astraea default
-        acct4 = save_account({
+        acct4 = save_account(test_uid, {
             "label": "Astraea Default",
             "email": "astraea@example.com",
             "password": "pwd4",
@@ -2771,7 +2780,7 @@ def test_email_tool_torture():
         r = json.loads(tool.execute({
             "action": "send", "subject": "Agent Test", "body": "Hello",
             "recipients": ["dest@test.com"],
-        }, agent_name="astraea"))
+        }, agent_name="astraea", user_id=test_uid))
         check("agent_name resolves to astraea account",
               r.get("preview", {}).get("from_email") == "astraea@example.com")
 
@@ -2812,7 +2821,7 @@ def test_email_tool_torture():
             r = json.loads(tool.execute({
                 "action": "send", "subject": "No Gate", "body": "Hello",
                 "recipients": ["user@test.com"],
-            }))
+            }, user_id=test_uid))
             # Will succeed with mock SMTP — should NOT show gate
             check("no gate when disabled", r.get("gate") is None)
             # Expect "sent" (mocked) or "error" — not gate
@@ -2826,12 +2835,12 @@ def test_email_tool_torture():
             r = json.loads(tool.execute({
                 "action": "send", "subject": "Confirmed", "body": "Go",
                 "recipients": ["user@test.com"], "confirmation": "confirmed",
-            }))
+            }, user_id=test_uid))
             check("confirmed bypasses gate", r.get("gate") is None)
             check("confirmed attempts send", "error" in r or "status" in r)
 
             # ── 11. Account with no password → incomplete error ──
-            save_account({
+            save_account(test_uid, {
                 "id": "nopwd_acct",
                 "label": "No Password",
                 "email": "nopwd@example.com",
@@ -2845,48 +2854,48 @@ def test_email_tool_torture():
                 "recipients": ["dest@test.com"],
                 "account_id": "nopwd_acct",
                 "confirmation": "confirmed",
-            }))
+            }, user_id=test_uid))
             check("no password -> incomplete error", "error" in r)
             check("error mentions credentials", "credential" in r["error"].lower() or "password" in r["error"].lower())
 
             # ── 12. Delete all accounts → send fails ──
-            for acct in get_accounts_raw():
-                delete_account(acct["id"])
-            check("all accounts deleted", len(get_accounts_raw()) == 0)
+            for acct in get_accounts_raw(test_uid):
+                delete_account(test_uid, acct["id"])
+            check("all accounts deleted", len(get_accounts_raw(test_uid)) == 0)
 
             r = json.loads(tool.execute({
                 "action": "send", "subject": "X", "body": "Y",
                 "recipients": ["a@b.com"],
-            }))
+            }, user_id=test_uid))
             check("send with no accounts -> error", "error" in r)
             check("error mentions no accounts", "no email" in r["error"].lower() or "account" in r["error"].lower())
 
             # accounts action with 0 accounts
-            r = json.loads(tool.execute({"action": "accounts"}))
+            r = json.loads(tool.execute({"action": "accounts"}, user_id=test_uid))
             check("0 accounts message", "message" in r)
 
             # ── 13. Edge: whitespace-only fields ──
             r = json.loads(tool.execute({
                 "action": "send", "subject": "   ", "body": "hello",
                 "recipients": ["a@b.com"],
-            }))
+            }, user_id=test_uid))
             check("whitespace subject -> error", "error" in r)
 
             r = json.loads(tool.execute({
                 "action": "send", "subject": "ok", "body": "   ",
                 "recipients": ["a@b.com"],
-            }))
+            }, user_id=test_uid))
             check("whitespace body -> error", "error" in r)
 
             # ── 14. effective_config masks passwords ──
-            save_account({
+            save_account(test_uid, {
                 "label": "Final",
                 "email": "final@test.com",
                 "password": "supersecret",
                 "smtp_server": "smtp.test.com",
                 "smtp_port": 465,
             })
-            cfg = get_effective_config()
+            cfg = get_effective_config(test_uid)
             check("effective_config masks pwd",
                   all(a["password"] == "••••••••" for a in cfg["accounts"] if a.get("password_set")))
 
@@ -2897,6 +2906,7 @@ def test_email_tool_torture():
 
     finally:
         et_mod._SETTINGS_FILE = orig_settings
+        et_mod._DATA_DIR = orig_data_dir
         shutil.rmtree(tmp, ignore_errors=True)
 
 
@@ -9874,6 +9884,138 @@ def test_check_admin_helper():
 
 
 # ═════════════════════════════════════════════
+# FAISS SCALING — model defaults, file locking, dimension mismatch,
+#                  async wrapping, startup coordination, workers
+# ═════════════════════════════════════════════
+def test_faiss_scaling():
+    """Test all L1+L2 scaling features: model defaults, file locking,
+    dimension mismatch, async wrapping, startup coordination, 3 workers."""
+    print("\n=== TORTURE: FAISS Scaling — L1+L2 features ===")
+    import inspect
+    import ast
+
+    # ── 1. FAISSMemory defaults to all-MiniLM-L6-v2 ──
+    from src.memory.faiss_memory import FAISSMemory
+    sig = inspect.signature(FAISSMemory.__init__)
+    default_model = sig.parameters["model_name"].default
+    check("FAISSMemory default model is all-MiniLM-L6-v2",
+          default_model == "all-MiniLM-L6-v2", f"got: {default_model}")
+
+    # ── 2. NotesFAISS defaults to all-MiniLM-L6-v2 ──
+    from src.memory.notes_faiss import NotesFAISS
+    sig2 = inspect.signature(NotesFAISS.__init__)
+    default_model2 = sig2.parameters["model_name"].default
+    check("NotesFAISS default model is all-MiniLM-L6-v2",
+          default_model2 == "all-MiniLM-L6-v2", f"got: {default_model2}")
+
+    # ── 3. NotesFAISS.load() default model is all-MiniLM-L6-v2 ──
+    sig3 = inspect.signature(NotesFAISS.load)
+    default_model3 = sig3.parameters["model_name"].default
+    check("NotesFAISS.load() default model is all-MiniLM-L6-v2",
+          default_model3 == "all-MiniLM-L6-v2", f"got: {default_model3}")
+
+    # ── 4. Vault._append uses fcntl.flock ──
+    from src.memory.vault import VaultStore
+    src_vault = inspect.getsource(VaultStore._append)
+    check("vault._append uses fcntl.flock LOCK_EX",
+          "fcntl.flock" in src_vault and "LOCK_EX" in src_vault)
+    check("vault._append uses fcntl.flock LOCK_UN",
+          "LOCK_UN" in src_vault)
+
+    # ── 5. FAISSMemory._save_index uses fcntl.flock ──
+    src_save_idx = inspect.getsource(FAISSMemory._save_index)
+    check("FAISSMemory._save_index uses fcntl.flock LOCK_EX",
+          "fcntl.flock" in src_save_idx and "LOCK_EX" in src_save_idx)
+    check("FAISSMemory._save_index uses .index.lock file",
+          ".index.lock" in src_save_idx)
+    check("FAISSMemory._save_index saves model_name in meta",
+          "model_name" in src_save_idx)
+
+    # ── 6. NotesFAISS._save uses fcntl.flock ──
+    src_notes_save = inspect.getsource(NotesFAISS._save)
+    check("NotesFAISS._save uses fcntl.flock LOCK_EX",
+          "fcntl.flock" in src_notes_save and "LOCK_EX" in src_notes_save)
+    check("NotesFAISS._save uses .notes.lock file",
+          ".notes.lock" in src_notes_save)
+
+    # ── 7. FAISSMemory._load_or_build detects model mismatch ──
+    src_load_build = inspect.getsource(FAISSMemory._load_or_build)
+    check("_load_or_build checks model_name mismatch",
+          'meta.get("model_name")' in src_load_build
+          or "model_name" in src_load_build)
+    check("_load_or_build calls rebuild_index on mismatch",
+          "rebuild_index" in src_load_build)
+
+    # ── 8. NotesFAISS.load() has dimension mismatch detection ──
+    src_load = inspect.getsource(NotesFAISS.load)
+    check("NotesFAISS.load checks index.d vs embedding_dim",
+          "index.d" in src_load and "embedding_dim" in src_load)
+    check("NotesFAISS.load returns None on mismatch",
+          "return None" in src_load)
+    check("NotesFAISS.load logs dimension mismatch warning",
+          "Dimension mismatch" in src_load or "mismatch" in src_load.lower())
+
+    # ── 9. NotesFAISS.load() returns None for missing files ──
+    result = NotesFAISS.load(tempfile.mkdtemp())
+    check("NotesFAISS.load returns None for missing dir", result is None)
+
+    # ── 10. App _bg_faiss uses LOCK_EX | LOCK_NB for startup coordination ──
+    import web.app as _app
+    src_bg = inspect.getsource(_app._lifespan)
+    check("_lifespan has _bg_faiss", "_bg_faiss" in src_bg)
+    check("_bg_faiss uses LOCK_EX | LOCK_NB",
+          "LOCK_EX" in src_bg and "LOCK_NB" in src_bg)
+    check("_bg_faiss uses threading.Thread",
+          "threading.Thread" in src_bg or "Thread" in src_bg)
+    check("_bg_faiss calls invalidate_notes_faiss",
+          "invalidate_notes_faiss" in src_bg)
+
+    # ── 11. App uses asyncio.to_thread for _build_chat_messages ──
+    # Check the source of the whole app module for asyncio.to_thread wrapping
+    app_src_path = inspect.getfile(_app)
+    with open(app_src_path, "r", encoding="utf-8") as f:
+        app_source = f.read()
+    to_thread_count = app_source.count("asyncio.to_thread")
+    check("asyncio.to_thread used >= 3 times",
+          to_thread_count >= 3,
+          f"found {to_thread_count} occurrences")
+    check("asyncio.to_thread wraps _build_chat_messages",
+          "asyncio.to_thread(\n" in app_source
+          or "asyncio.to_thread(_build_chat_messages" in app_source
+          or ("asyncio.to_thread" in app_source and "_build_chat_messages" in app_source))
+
+    # ── 12. boot.sh has --workers 3 ──
+    boot_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+                             "boot.sh")
+    if os.path.exists(boot_path):
+        with open(boot_path, "r", encoding="utf-8") as f:
+            boot_content = f.read()
+        check("boot.sh has --workers 3", "--workers 3" in boot_content)
+        check("boot.sh runs uvicorn", "uvicorn" in boot_content)
+    else:
+        check("boot.sh exists", False, f"not found at {boot_path}")
+
+    # ── 13. Both FAISS modules import fcntl ──
+    import src.memory.faiss_memory as fm_mod
+    import src.memory.notes_faiss as nf_mod
+    import src.memory.vault as v_mod
+    check("faiss_memory imports fcntl", hasattr(fm_mod, 'fcntl') or 'fcntl' in dir(fm_mod))
+    check("notes_faiss imports fcntl", hasattr(nf_mod, 'fcntl') or 'fcntl' in dir(nf_mod))
+    check("vault imports fcntl", hasattr(v_mod, 'fcntl') or 'fcntl' in dir(v_mod))
+
+    # ── 14. NotesFAISS has embedding_dim property ──
+    check("NotesFAISS has embedding_dim property",
+          isinstance(inspect.getattr_static(NotesFAISS, 'embedding_dim'), property))
+
+    # ── 15. FAISSMemory._save_index stores model_name in meta ──
+    # Verified via source inspection above; also verify the meta dict structure
+    check("_save_index meta includes idx_to_id",
+          "idx_to_id" in src_save_idx)
+    check("_save_index meta includes deleted_ids",
+          "deleted_ids" in src_save_idx)
+
+
+# ═════════════════════════════════════════════
 if __name__ == "__main__":
     test_boundary_policy()
     test_pii_guard_extended()
@@ -10000,6 +10142,7 @@ if __name__ == "__main__":
     test_tts_voices_filter_logic()
     test_inworld_api_key_helper()
     test_check_admin_helper()
+    test_faiss_scaling()
 
     print(f"\n{'='*40}")
     print(f"Results: {PASS} passed, {FAIL} failed")

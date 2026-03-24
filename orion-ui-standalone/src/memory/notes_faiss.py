@@ -24,7 +24,10 @@ Usage
                           note_ids={"abc123"})
 """
 
-import fcntl
+try:
+    import fcntl
+except ImportError:  # Windows
+    fcntl = None
 import json
 import logging
 import os
@@ -178,7 +181,8 @@ class NotesFAISS:
         lock_path = self.faiss_dir / ".notes.lock"
 
         with open(lock_path, "w") as lf:
-            fcntl.flock(lf, fcntl.LOCK_EX)
+            if fcntl:
+                fcntl.flock(lf, fcntl.LOCK_EX)
             try:
                 if self.index is not None:
                     faiss.write_index(self.index, str(idx_path))
@@ -190,7 +194,8 @@ class NotesFAISS:
                         "chunks": self._chunks,
                     }, f, indent=2, default=str)
             finally:
-                fcntl.flock(lf, fcntl.LOCK_UN)
+                if fcntl:
+                    fcntl.flock(lf, fcntl.LOCK_UN)
 
         log.info("[notes_faiss] Saved to %s (%d chunks)", self.faiss_dir, len(self._chunks))
 

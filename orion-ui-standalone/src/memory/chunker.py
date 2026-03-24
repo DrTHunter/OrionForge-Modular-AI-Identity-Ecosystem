@@ -254,6 +254,8 @@ def chunk_soul_script(
     title: str,
     emoji: str,
     metadata: Optional[Dict] = None,
+    min_chunk_size: int = 200,
+    max_chunk_size: int = 2500,
 ) -> List[Dict[str, Any]]:
     """Convenience function to chunk a Soul Script note.
     
@@ -263,11 +265,13 @@ def chunk_soul_script(
         title: Note title
         emoji: Note emoji
         metadata: Additional metadata
+        min_chunk_size: Min characters per chunk (default 200)
+        max_chunk_size: Max characters per chunk (default 2500)
         
     Returns:
         List of chunk dicts ready for FAISS ingestion
     """
-    chunker = SemanticChunker(min_chunk_size=200, max_chunk_size=2500)
+    chunker = SemanticChunker(min_chunk_size=min_chunk_size, max_chunk_size=max_chunk_size)
     
     base_metadata = {
         'emoji': emoji,

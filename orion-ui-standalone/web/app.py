@@ -106,10 +106,21 @@ async def _lifespan(application: FastAPI):
     # Build FAISS index in background thread so health check passes quickly.
     # Use a lock file so only one worker rebuilds; others wait then load.
     import threading
-    import fcntl
+    try:
+        import fcntl
+    except ImportError:
+        fcntl = None
     def _bg_faiss():
         lock_path = Path("data/memory/faiss/.rebuild.lock")
         lock_path.parent.mkdir(parents=True, exist_ok=True)
+        if not fcntl:
+            # No file locking on Windows — just rebuild directly
+            try:
+                _rebuild_notes_faiss()
+                log.info("[startup] NotesFAISS build completed (background)")
+            except Exception as exc:
+                log.warning("[startup] NotesFAISS build skipped: %s", exc)
+            return
         with open(lock_path, "w") as lf:
             got_lock = False
             try:
@@ -4673,12 +4684,19 @@ def _rebuild_notes_faiss():
     Uses semantic chunking (split on ### headers) with overlapping fallback
     for long headerless content.  Each chunk carries ``document_id`` so the
     search filter in NotesFAISS matches correctly.
+
+    Chunk size and overlap are read from the identity FAISS profile
+    (config/identity_profile.json) so they respond to UI changes.
     """
     from src.memory.notes_faiss import NotesFAISS
     from src.storage.user_notes_loader import strip_html
+    from src.memory.profile_resolver import get_indexing_policy
 
-    CHUNK_TARGET = 600   # chars per chunk (sweet spot for mpnet)
-    CHUNK_OVERLAP = 150  # overlap between consecutive chunks
+    # Read from identity profile — falls back to safe defaults
+    _idx = get_indexing_policy()
+    # Profile stores token counts; approximate to chars (≈4 chars/token)
+    CHUNK_TARGET = int(_idx.get("chunk_size_tokens", 400) * 1.5)
+    CHUNK_OVERLAP = int(_idx.get("chunk_overlap_tokens", 80) * 1.5)
 
     def _chunk_text(text: str, doc_id: str, title: str) -> list[dict]:
         """Split text into overlapping chunks, preferring ### boundaries."""

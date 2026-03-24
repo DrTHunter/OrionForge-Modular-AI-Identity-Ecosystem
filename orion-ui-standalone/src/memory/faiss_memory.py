@@ -20,7 +20,10 @@ Usage
     results = mem.search("what does Creator like?")
 """
 
-import fcntl
+try:
+    import fcntl
+except ImportError:  # Windows
+    fcntl = None
 import json
 import logging
 import os
@@ -418,7 +421,8 @@ class FAISSMemory:
         lock_path = self.faiss_dir / ".index.lock"
 
         with open(lock_path, "w") as lf:
-            fcntl.flock(lf, fcntl.LOCK_EX)
+            if fcntl:
+                fcntl.flock(lf, fcntl.LOCK_EX)
             try:
                 faiss.write_index(self.index, str(index_path))
 
@@ -430,7 +434,8 @@ class FAISSMemory:
                 with open(meta_path, "w") as f:
                     json.dump(meta, f)
             finally:
-                fcntl.flock(lf, fcntl.LOCK_UN)
+                if fcntl:
+                    fcntl.flock(lf, fcntl.LOCK_UN)
 
     def _load_or_build(self) -> None:
         """Try loading cached FAISS index, otherwise build from vault."""
