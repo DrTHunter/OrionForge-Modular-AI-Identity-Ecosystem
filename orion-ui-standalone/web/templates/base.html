@@ -4,30 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}SoulScript Engine{% endblock %}</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            forge: {
-              bg:      '#0f0f14',
-              card:    '#1a1a24',
-              border:  '#2a2a3a',
-              accent:  '#6366f1',
-              accent2: '#818cf8',
-              highlight:'#22d3ee',
-              warn:    '#f59e0b',
-              danger:  '#ef4444',
-              success: '#10b981',
-              muted:   '#71717a',
-            }
-          }
-        }
-      }
-    }
-  </script>
+  <link rel="stylesheet" href="/static/tailwind.css">
   <link rel="stylesheet" href="/static/style.css">
   <!-- Markdown + Syntax highlighting -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
@@ -525,11 +502,6 @@ select optgroup{color:${tm}!important}
 .msg-body hr{border-color:${c.border}!important}
 .msg-body img{border-color:${c.border}!important}
         `;
-        if (typeof tailwind !== 'undefined' && tailwind.config) {
-          const f = tailwind.config.theme.extend.colors.forge;
-          f.bg = c.bg; f.card = c.card; f.border = c.border;
-          f.accent = c.accent; f.accent2 = c.accent2; f.highlight = c.highlight;
-        }
       }
 
       // Expose globally so skins.html can call the same comprehensive overrides
