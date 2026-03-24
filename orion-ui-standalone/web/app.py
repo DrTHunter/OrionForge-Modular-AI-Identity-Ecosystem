@@ -1253,8 +1253,7 @@ def _strip_memory_tags(text: str) -> str:
 async def page_login(request: Request):
     """Login / signup page."""
     auth_cfg = get_auth_config()
-    return templates.TemplateResponse("login.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "login.html", {
         "auth_config": auth_cfg,
     })
 
@@ -1505,8 +1504,7 @@ async def page_store(request: Request):
     purchases = get_user_purchases(user["id"]) if user else {"tools": [], "skins": ["default"]}
     auth_cfg = get_auth_config()
     packs_list = [{"id": k, **v} for k, v in CREDIT_PACKS.items()]
-    return templates.TemplateResponse("store.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "store.html", {
         "page": "store",
         "user": user,
         "credits": credits,
@@ -1783,8 +1781,7 @@ async def page_plans(request: Request):
     auth_cfg = get_auth_config()
     credits = get_user_credits(user["id"]) if user else 0
     trial = get_trial_status(user["id"]) if user else {"active": False, "days_left": 0}
-    return templates.TemplateResponse("plans.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "plans.html", {
         "page": "plans",
         "user": user,
         "subscription": sub_info,
@@ -1836,8 +1833,8 @@ async def page_chat(request: Request):
             entry["voice_id"] = prof["voice_id"]
         avatar_map[agent_name] = entry
 
-    return templates.TemplateResponse("chat.html", {
-        "request": request, "page": "chat",
+    return templates.TemplateResponse(request, "chat.html", {
+        "page": "chat",
         "agents": agents, "connections": conns,
         "platform_connections": platform_conns,
         "user_connections": user_conns,
@@ -1902,8 +1899,8 @@ async def page_profiles(request: Request):
     for tn in all_tool_names:
         if tn not in tool_display:
             tool_display[tn] = {"icon": "🔧", "display_name": tn, "description": "", "status": "ready"}
-    return templates.TemplateResponse("profiles.html", {
-        "request": request, "page": "profiles",
+    return templates.TemplateResponse(request, "profiles.html", {
+        "page": "profiles",
         "agents": agents, "agent_data": agent_data,
         "all_models": all_models, "notes": notes,
         "avatar_map": settings.get("agent_avatars", {}),
@@ -2005,8 +2002,8 @@ async def page_vault(request: Request, q: str = "", scope: str = "", category: s
         reverse = True
     memories = sorted(memories, key=_sort_key, reverse=reverse)
 
-    return templates.TemplateResponse("vault.html", {
-        "request": request, "page": "vault",
+    return templates.TemplateResponse(request, "vault.html", {
+        "page": "vault",
         "memories": memories, "stats": stats,
         "scopes": scopes, "categories": categories,
         "search_query": q, "current_scope": scope, "current_category": category,
@@ -2017,8 +2014,8 @@ async def page_vault(request: Request, q: str = "", scope: str = "", category: s
 async def page_knowledge(request: Request):
     notes = [n for n in _load_notes_index() if not n.get("trashed")]
     folders = _load_folders()
-    return templates.TemplateResponse("knowledge.html", {
-        "request": request, "page": "knowledge", "notes": notes,
+    return templates.TemplateResponse(request, "knowledge.html", {
+        "page": "knowledge", "notes": notes,
         "folders": folders,
     })
 
@@ -2028,16 +2025,16 @@ async def page_knowledge_edit(request: Request, note_id: str):
     if not note:
         return RedirectResponse(url="/knowledge", status_code=302)
     folders = _load_folders()
-    return templates.TemplateResponse("knowledge_edit.html", {
-        "request": request, "page": "knowledge", "note": note,
+    return templates.TemplateResponse(request, "knowledge_edit.html", {
+        "page": "knowledge", "note": note,
         "folders": folders,
     })
 
 @app.get("/settings", response_class=HTMLResponse)
 async def page_settings(request: Request, tab: str = "api_keys"):
     store = _load_connections()
-    return templates.TemplateResponse("settings.html", {
-        "request": request, "page": "settings",
+    return templates.TemplateResponse(request, "settings.html", {
+        "page": "settings",
         "connections": store.get("connections", []),
         "settings": _load_settings(), "tab": tab,
     })
@@ -2057,8 +2054,8 @@ async def page_skins(request: Request):
     user = getattr(request.state, "user", None)
     purchases = get_user_purchases(user["id"]) if user else {"tools": [], "skins": ["default"]}
     credits = get_user_credits(user["id"]) if user else 0
-    return templates.TemplateResponse("skins.html", {
-        "request": request, "page": "skins",
+    return templates.TemplateResponse(request, "skins.html", {
+        "page": "skins",
         "active_skin": active_skin,
         "owned_skins": purchases.get("skins", ["default"]),
         "skin_prices": SKIN_PRICES,
@@ -2342,8 +2339,7 @@ async def page_tools(request: Request):
         email_config = _email_cfg(user_id=_tools_uid)
     except Exception:
         email_config = {"api_base_url": "http://127.0.0.1:8000", "timeout": 30, "require_confirmation": True, "accounts": []}
-    return templates.TemplateResponse("tools.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "tools.html", {
         "page": "tools",
         "tools": _TOOL_CATALOGUE,
         "agents": agents,
@@ -2784,8 +2780,8 @@ async def page_agi_loop(request: Request):
     except Exception:
         loop_status = {"running": False, "paused": False, "total_ticks": 0}
     router_config = _load_model_router_config()
-    return templates.TemplateResponse("agi_loop.html", {
-        "request": request, "page": "agi-loop",
+    return templates.TemplateResponse(request, "agi_loop.html", {
+        "page": "agi-loop",
         "agents": agents, "config": config,
         "connections": connections,
         "loop_status": loop_status,
@@ -3509,8 +3505,8 @@ def _load_wiki_articles() -> dict:
 async def page_about(request: Request):
     about = _load_about()
     wiki_articles = _load_wiki_articles()
-    return templates.TemplateResponse("about.html", {
-        "request": request, "page": "about",
+    return templates.TemplateResponse(request, "about.html", {
+        "page": "about",
         "about_text": about.get("text", ""),
         "wiki_articles": wiki_articles,
     })
@@ -5016,8 +5012,7 @@ async def page_admin_keys(request: Request):
                     "url": env_val, "api_key": "", "enabled": True,
                     "platform_hosted": True, "name": f"Platform — {label}",
                 })
-    return templates.TemplateResponse("admin_keys.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "admin_keys.html", {
         "page": "admin",
         "platform_connections": platform_conns,
     })
@@ -5239,8 +5234,7 @@ async def page_admin_voices(request: Request):
     if not _check_admin(request):
         return JSONResponse({"error": "Unauthorized"}, status_code=403)
     settings = _load_settings()
-    return templates.TemplateResponse("admin_voices.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "admin_voices.html", {
         "page": "admin",
         "allowed_voices": settings.get("allowed_voices", []),
         "premium_voices": settings.get("premium_voices", []),
