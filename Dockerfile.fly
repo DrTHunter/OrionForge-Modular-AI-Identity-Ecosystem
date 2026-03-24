@@ -34,6 +34,9 @@ RUN cp -a /app/app/data/memory /app/_bundled_memory
 # Stage bundled config so settings persist across deploys
 RUN cp -a /app/app/config /app/_bundled_config
 
+# Stage bundled profiles so voice assignments persist across deploys
+RUN cp -a /app/app/profiles /app/_bundled_profiles
+
 # Copy boot script
 COPY boot.sh /app/boot.sh
 RUN chmod +x /app/boot.sh

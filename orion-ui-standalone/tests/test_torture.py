@@ -8063,6 +8063,117 @@ def test_collect_notes_soul_script():
 
 
 # ═════════════════════════════════════════════
+# IDENTITY PROFILE RESOLVER — resolution chain, per-agent presets,
+#                              fallback to global, hardcoded defaults
+# ═════════════════════════════════════════════
+def test_identity_profile_resolver():
+    """Test the profile_resolver module: resolution chain, accessors, fallbacks."""
+    print("\n=== TORTURE: Identity Profile Resolver ===")
+    import json, tempfile, shutil
+    from pathlib import Path
+
+    # ── 1. Module imports ──
+    from src.memory.profile_resolver import (
+        resolve_identity_profile,
+        get_indexing_policy,
+        get_retrieval_policy,
+        get_source_priority_policy,
+        _HARDCODED_DEFAULTS,
+    )
+    check("resolve_identity_profile callable", callable(resolve_identity_profile))
+    check("get_indexing_policy callable", callable(get_indexing_policy))
+    check("get_retrieval_policy callable", callable(get_retrieval_policy))
+    check("get_source_priority_policy callable", callable(get_source_priority_policy))
+
+    # ── 2. Global profile resolves ──
+    profile = resolve_identity_profile()
+    check("global profile is dict", isinstance(profile, dict))
+    check("global profile has indexing_policy", "indexing_policy" in profile)
+    check("global profile has retrieval_policy", "retrieval_policy" in profile)
+
+    # ── 3. Indexing policy accessor ──
+    idx = get_indexing_policy()
+    check("indexing_policy is dict", isinstance(idx, dict))
+    check("chunk_size_tokens key", "chunk_size_tokens" in idx)
+    check("chunk_overlap_tokens key", "chunk_overlap_tokens" in idx)
+    check("chunk_size_tokens is number", isinstance(idx["chunk_size_tokens"], (int, float)))
+    check("chunk_overlap_tokens is number", isinstance(idx["chunk_overlap_tokens"], (int, float)))
+
+    # ── 4. Retrieval policy accessor ──
+    ret = get_retrieval_policy()
+    check("retrieval_policy is dict", isinstance(ret, dict))
+    check("top_k key", "top_k" in ret)
+    check("top_k is number", isinstance(ret["top_k"], (int, float)))
+
+    # ── 5. Source priority accessor ──
+    src_p = get_source_priority_policy()
+    check("source_priority_policy is dict", isinstance(src_p, dict))
+
+    # ── 6. Agent-specific resolution (existing agent → __default__ → global) ──
+    agent_profile = resolve_identity_profile("orion")
+    check("agent profile resolves", isinstance(agent_profile, dict))
+    # __default__ should fall through to global profile
+    check("agent profile has indexing_policy", "indexing_policy" in agent_profile)
+
+    # ── 7. Non-existent agent falls back to global ──
+    ghost_profile = resolve_identity_profile("totally_nonexistent_agent_9999")
+    check("ghost agent fallback is dict", isinstance(ghost_profile, dict))
+    check("ghost agent has indexing_policy", "indexing_policy" in ghost_profile)
+
+    # ── 8. Hardcoded defaults structure ──
+    check("hardcoded defaults has indexing_policy", "indexing_policy" in _HARDCODED_DEFAULTS)
+    check("hardcoded defaults has retrieval_policy", "retrieval_policy" in _HARDCODED_DEFAULTS)
+    check("hardcoded chunk_size_tokens = 400",
+          _HARDCODED_DEFAULTS["indexing_policy"]["chunk_size_tokens"] == 400)
+    check("hardcoded top_k = 10",
+          _HARDCODED_DEFAULTS["retrieval_policy"]["top_k"] == 10)
+
+    # ── 9. collect_notes now reads top_k from profile ──
+    import inspect
+    from src.storage.note_collector import collect_notes
+    sig = inspect.signature(collect_notes)
+    top_k_param = sig.parameters.get("top_k")
+    check("collect_notes top_k default is None (profile-driven)",
+          top_k_param is not None and top_k_param.default is None)
+
+    # ── 10. chunk_soul_script accepts size params ──
+    from src.memory.chunker import chunk_soul_script
+    sig2 = inspect.signature(chunk_soul_script)
+    check("chunk_soul_script has min_chunk_size param",
+          "min_chunk_size" in sig2.parameters)
+    check("chunk_soul_script has max_chunk_size param",
+          "max_chunk_size" in sig2.parameters)
+    # Verify default values
+    check("min_chunk_size default is 200",
+          sig2.parameters["min_chunk_size"].default == 200)
+    check("max_chunk_size default is 2500",
+          sig2.parameters["max_chunk_size"].default == 2500)
+
+    # ── 11. chunk_soul_script with custom sizes ──
+    soul = "### Core\nI am helpful.\n\n### Values\nBe honest.\n"
+    chunks_default = chunk_soul_script(soul, "s1", "Soul", "🧠")
+    chunks_custom = chunk_soul_script(soul, "s1", "Soul", "🧠",
+                                       min_chunk_size=10, max_chunk_size=500)
+    check("default chunking works", len(chunks_default) > 0)
+    check("custom size chunking works", len(chunks_custom) > 0)
+
+    # ── 12. _rebuild_notes_faiss reads from profile (source inspection) ──
+    import importlib, sys
+    app_mod_name = "web.app"
+    if app_mod_name in sys.modules:
+        app_src = inspect.getsource(sys.modules[app_mod_name])
+    else:
+        app_path = Path(__file__).resolve().parent.parent / "web" / "app.py"
+        app_src = app_path.read_text(encoding="utf-8")
+    check("app.py imports get_indexing_policy",
+          "get_indexing_policy" in app_src)
+    check("app.py uses chunk_size_tokens from profile",
+          "chunk_size_tokens" in app_src)
+    check("app.py no longer has hardcoded CHUNK_TARGET = 600",
+          "CHUNK_TARGET = 600" not in app_src)
+
+
+# ═════════════════════════════════════════════
 # PROFILES TEMPLATE — collapsible sections, soul script, FAISS badge
 # ═════════════════════════════════════════════
 def test_profiles_template_collapsible():
@@ -10132,6 +10243,7 @@ if __name__ == "__main__":
     test_soul_script_api()
     test_soul_script_faiss_indexing()
     test_collect_notes_soul_script()
+    test_identity_profile_resolver()
     test_profiles_template_collapsible()
     test_runtime_info_tool()
     test_admin_voices_api()
