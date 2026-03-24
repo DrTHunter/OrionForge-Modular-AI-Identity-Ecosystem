@@ -16,7 +16,7 @@ directives:
   scopes:
   - shared
   - lux_umbra
-inworld_voice: Dennis
+inworld_voice: Pixie
 identity_faiss_profile: __default__
 memory:
   enabled: true

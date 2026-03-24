@@ -16,7 +16,7 @@ directives:
   scopes:
   - shared
   - maris
-inworld_voice: Ashley
+inworld_voice: Pippa
 identity_faiss_profile: __default__
 memory:
   enabled: true
@@ -35,5 +35,5 @@ policy:
 provider: openai
 system_prompt: maris.system.md
 temperature: 0.8
-voice_id: ''
+voice_id: dMyQqiVXTU80dDl2eNK8
 window_size: 50
