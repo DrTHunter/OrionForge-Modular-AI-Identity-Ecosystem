@@ -27,9 +27,10 @@ mkdir -p "$PERSIST_UPLOADS"
 # 2. Sync bundled avatars into persistent storage.
 #    The Dockerfile stages git-tracked uploads to /app/_bundled_uploads
 #    so they're always accessible even after the live dir is symlinked.
-#    cp -n (no-clobber) adds new files without overwriting user-modified ones.
+#    Force-overwrite so updated avatars in the repo always take effect;
+#    user-uploaded files (not in bundled) are unaffected.
 if [ -d "$BUNDLED_UPLOADS" ]; then
-    cp -n "$BUNDLED_UPLOADS"/* "$PERSIST_UPLOADS/" 2>/dev/null || true
+    cp -a "$BUNDLED_UPLOADS"/* "$PERSIST_UPLOADS/" 2>/dev/null || true
 fi
 
 # 3. Remove the real uploads dir (or old symlink) and point to persistent volume
