@@ -37,7 +37,7 @@ engine/src/
 | **LLM Client** | Provider abstraction for OpenAI, Anthropic (native SDK), Ollama, and DeepSeek (OpenAI-compat) |
 | **Directives** | H2-delimited directive parsing, SHA-256 manifest hashing, scoring (token overlap + SequenceMatcher), change control |
 | **Governance** | Session-scoped directive registry, append-only JSONL audit log, drift detection |
-| **Observability** | Per-request token metering, cost computation from `pricing.yaml`, aggregation with `+` operator |
+| **Observability** | Per-request token metering, cost computation from `pricing.yaml`, aggregation with `+` operator, source tracking (platform vs user), date-range filtering, `by_source` cost aggregation |
 | **Policy** | Risk classification (low/med/high), deterministic denial payloads, append-only event logging |
 | **Storage** | Note collection (always-on vs directive modes), HTML stripping, dual note systems, soul script auto-injection into FAISS search |
 | **Tools** | Memory (13 actions), directives (5 actions), web search, email, inbox, cost tracker, model router, agi loop, runtime info, echo, continuation |
@@ -48,4 +48,4 @@ engine/src/
 Code in `engine/` should not be modified for experimental features.  
 New capabilities are developed in `orion-ui-standalone/src/`, tested thoroughly, then promoted here once stable.
 
-Files are synced from `orion-ui-standalone/src/` → `engine/src/` after passing the full test suite (272 functions, ~4,022 assertions).
+Files are synced from `orion-ui-standalone/src/` → `engine/src/` after passing the full test suite (276 functions, ~4,129 assertions).
