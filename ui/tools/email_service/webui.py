@@ -32,12 +32,19 @@ class Tools:
         :param config_path: Path to the .env file containing email configuration.
                             Required for sending emails.
         """
-        if config_path:
+        import os
+        # Prefer environment variables over file-based config
+        if os.environ.get("EMAIL_FROM") and os.environ.get("EMAIL_PASSWORD"):
+            self.valves = ToolsValves(
+                FROM_EMAIL=os.environ["EMAIL_FROM"],
+                PASSWORD=os.environ["EMAIL_PASSWORD"],
+                SMTP_SERVER=os.environ.get("EMAIL_SMTP_SERVER", "smtp.gmail.com"),
+                SMTP_PORT=int(os.environ.get("EMAIL_SMTP_PORT", 465)),
+            )
+            print("Configuration loaded from environment variables")
+        elif config_path:
             self.valves = self._load_config_from_file(config_path)
             print(f"Configuration loaded from {config_path}")
-            print(f"SMTP Server {self.valves.SMTP_SERVER}:{self.valves.SMTP_PORT}")
-            print(f"From Email {self.valves.FROM_EMAIL}")
-            print(f"Password {'*' * len(self.valves.PASSWORD)}")  # Mask password
         else:
             self.valves = ToolsValves()
             print("Warning: No config path provided. Email sending will fail.")

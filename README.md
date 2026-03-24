@@ -91,13 +91,13 @@ OrionForge is organized into four directories — an active development branch, 
 ```
 OrionForge/
 ├── orion-ui-standalone/  # 🔧 Active Development Branch
-│   ├── web/              # FastAPI app (~6,300 lines, 168 routes, 16 templates)
+│   ├── web/              # FastAPI app (~6,500 lines, 172 routes, 17 templates)
 │   │   ├── app.py        # Main application — all page & API routes
-│   │   ├── auth.py       # Supabase OAuth + JWT verification (121 lines)
-│   │   ├── stripe_billing.py  # Stripe subscriptions, credits, trial (1,016 lines)
+│   │   ├── auth.py       # Supabase OAuth + JWT verification (142 lines)
+│   │   ├── stripe_billing.py  # Stripe subscriptions, credits, trial (1,400 lines)
 │   │   ├── image_gen.py  # Image generation (9 providers)
 │   │   ├── static/       # CSS
-│   │   └── templates/    # Jinja2 HTML templates (16 files, 15 pages + base layout)
+│   │   └── templates/    # Jinja2 HTML templates (17 files, 16 pages + base layout)
 │   ├── src/              # Soul Script Engine modules (48 source files)
 │   │   ├── memory/       # FAISS memory, vault, chunker, PII guard, notes FAISS
 │   │   ├── llm_client/   # LLM API clients (OpenAI, Anthropic, Ollama, DeepSeek)
@@ -115,7 +115,7 @@ OrionForge/
 │   ├── directives/       # Agent soul script / directive markdown files
 │   ├── notes/            # Agent note markdown files
 │   ├── scripts/          # Seed scripts (seed_memories.py, seed_ui_knowledge.py)
-│   └── tests/            # Test suite (11 files, 263 functions, ~2,975 checks)
+│   └── tests/            # Test suite (11 files, 272 functions, ~3,104 checks)
 │
 ├── engine/               # ⚙️  Stable Frozen Core
 │   └── src/              # Synced from orion-ui-standalone after testing
@@ -178,7 +178,7 @@ OrionForge uses **Supabase OAuth** for authentication and **Stripe** for billing
 | **LLM markup** | Platform-hosted LLM calls billed at 2× base cost, deducted from credits |
 | **TTS/STT billing** | Per-use billing for platform-hosted voice services (2× markup) |
 | **One-time tool purchases** | Buy individual tool access from the store |
-| **Admin panel** | `/admin/keys` — secured by OAuth email whitelist, manage API keys |
+| **Admin panel** | `/admin/keys` — API key management, `/admin/voices` — ElevenLabs voice allowlist, user management (wipe, purge inactive), secured by OAuth email whitelist |
 | **Tier gating** | Free tier vs Pro tier access control on all API endpoints |
 
 ---
@@ -200,7 +200,8 @@ OrionForge uses **Supabase OAuth** for authentication and **Stripe** for billing
 | **Skins** | `/skins` | 13 UI themes with marketplace-style grid and live preview |
 | **AGI Loop** | `/agi-loop` | Autonomous agent loop configuration (intervals, budgets, steps) |
 | **Wiki** | `/about` | Project wiki with auto-generated articles from READMEs + custom notes editor |
-| **Admin** | `/admin/keys` | Admin panel — API key management, secured by OAuth email whitelist |
+| **Admin Keys** | `/admin/keys` | Admin panel — API key management, secured by OAuth email whitelist |
+| **Admin Voices** | `/admin/voices` | ElevenLabs voice allowlist — search, filter, premium toggle, bulk save |
 
 ---
 
@@ -295,7 +296,7 @@ Sidecar services communicate via Flycast private networking (`.flycast` URLs). T
 
 ## Test Suite
 
-11 test files with **263** test functions and **~3,897** assertions:
+11 test files with **272** test functions and **~4,022** assertions:
 
 ```powershell
 cd orion-ui-standalone
@@ -304,7 +305,7 @@ python tests/run_all.py
 
 | Test File | Functions | Checks | Coverage Area |
 |---|---|---|---|
-| `test_torture.py` | 116 | ~2,979 | Deep torture of all code paths — memory, vault, sort, policy, tools, templates, model router, presets, 6-tier routing, sidecar wiring, soul script helpers, soul script API, soul script FAISS indexing, note collector soul script injection, profiles template collapsible sections, admin keys, chat 3-mode selector, user model catalog, `__userkey_` dynamic connections, Stripe state persistence, store catalog structure, tier & trial system, credit system, credit cost estimators, purchase flows (tool/skin/agent), agent ownership, user activity tracking, wipe user data, purge inactive, list all users, auth helpers, tier info structure |
+| `test_torture.py` | 125 | ~3,104 | Deep torture of all code paths — memory, vault, sort, policy, tools, templates, model router, presets, 6-tier routing, sidecar wiring, soul script helpers, soul script API, soul script FAISS indexing, note collector soul script injection, profiles template collapsible sections, admin keys, admin voices API & template, admin user management, connections CRUD, pricing CRUD, chat 3-mode selector, user model catalog, `__userkey_` dynamic connections, Stripe state persistence, store catalog structure, tier & trial system, credit system, credit cost estimators, purchase flows (tool/skin/agent), agent ownership, user activity tracking, wipe user data, purge inactive, list all users, auth helpers, tier info structure, runtime info tool, TTS voice filter logic, ElevenLabs/inworld connection helpers, `_check_admin` helper |
 | `test_memory.py` | 23 | 155 | VaultStore, MemoryVault, Memory types, PII guard |
 | `test_stress.py` | 29 | 238 | Rapid-fire ops, concurrent access, boundary conditions, router presets, coding tiers |
 | `test_registry_and_tools.py` | 17 | 86 | Tool registry, cost tracker, web search |
@@ -315,7 +316,7 @@ python tests/run_all.py
 | `test_metering.py` | 11 | 92 | Token accounting, cost computation, aggregation |
 | `test_data_paths.py` | 5 | 31 | Data directory layout, auto-creation, isolation |
 | `test_tools.py` | 4 | 38 | EchoTool, ContinuationUpdateTool, EmailTool, RuntimePolicy |
-| **Total** | **263** | **~3,897** | |
+| **Total** | **272** | **~4,022** | |
 
 ---
 
@@ -439,10 +440,10 @@ These run as separate Docker containers via `docker compose` inside their respec
 
 | Technology | Role |
 |---|---|
-| **FastAPI** + **Uvicorn** | Web server & async API (168 routes) |
+| **FastAPI** + **Uvicorn** | Web server & async API (172 routes) |
 | **FAISS** (`faiss-cpu`) | Vector similarity search for memory + soul script retrieval |
 | **sentence-transformers** | Semantic embeddings (`all-mpnet-base-v2`) |
-| **Jinja2** | HTML templates (16 files) |
+| **Jinja2** | HTML templates (17 files) |
 | **Fly.io Volumes** | 1 GB persistent volume (`/persist`) for billing & trial state across deploys |
 | **Supabase** | OAuth authentication + JWT verification |
 | **Stripe** | Subscription billing, credit system, webhook handling |

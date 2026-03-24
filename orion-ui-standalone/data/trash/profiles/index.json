@@ -26,5 +26,33 @@
     "display_name": "new_agent",
     "deleted_at": "2026-03-19T14:58:22.085393+00:00",
     "expires_at": "2026-04-18T14:58:22.086396+00:00"
+  },
+  {
+    "id": "new_agent_db0a179e",
+    "name": "new_agent",
+    "display_name": "new_agent",
+    "deleted_at": "2026-03-24T09:56:01.590096+00:00",
+    "expires_at": "2026-04-23T09:56:01.612507+00:00"
+  },
+  {
+    "id": "new_agent_468bbcc1",
+    "name": "new_agent",
+    "display_name": "new_agent",
+    "deleted_at": "2026-03-24T10:02:13.316280+00:00",
+    "expires_at": "2026-04-23T10:02:13.317856+00:00"
+  },
+  {
+    "id": "new_agent_a8e01095",
+    "name": "new_agent",
+    "display_name": "new_agent",
+    "deleted_at": "2026-03-24T10:18:57.346775+00:00",
+    "expires_at": "2026-04-23T10:18:57.348776+00:00"
+  },
+  {
+    "id": "new_agent_a05df22b",
+    "name": "new_agent",
+    "display_name": "new_agent",
+    "deleted_at": "2026-03-24T10:29:53.542135+00:00",
+    "expires_at": "2026-04-23T10:29:53.545326+00:00"
   }
 ]

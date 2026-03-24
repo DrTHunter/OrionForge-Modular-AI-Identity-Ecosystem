@@ -150,5 +150,21 @@ ln -sfn "$PERSIST_TRASH" "$APP_TRASH"
 
 echo "[boot] Trash linked to persistent volume."
 
+# ── USER DATA PERSISTENCE (per-user email accounts, etc.) ──────
+PERSIST_USERS="/persist/users"
+APP_USERS="/app/app/data/users"
+
+mkdir -p "$PERSIST_USERS"
+
+if [ -L "$APP_USERS" ]; then
+    rm "$APP_USERS"
+elif [ -d "$APP_USERS" ]; then
+    cp -a "$APP_USERS"/* "$PERSIST_USERS/" 2>/dev/null || true
+    rm -rf "$APP_USERS"
+fi
+ln -sfn "$PERSIST_USERS" "$APP_USERS"
+
+echo "[boot] User data linked to persistent volume."
+
 # 13. Start the app
 exec python -m uvicorn web.app:app --host 0.0.0.0 --port 8989 --workers 2

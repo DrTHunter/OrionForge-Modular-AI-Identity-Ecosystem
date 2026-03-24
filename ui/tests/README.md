@@ -1,12 +1,12 @@
 # tests/
 
-Comprehensive test suite for the OrionForge agent runtime. **263 test functions, ~3,897 assertions** across 11 test files.
+Comprehensive test suite for the OrionForge agent runtime. **272 test functions, ~4,022 assertions** across 11 test files.
 
 ## Test Files
 
 | File | Functions | Checks | What It Tests |
 |------|-----------|--------|---------------|
-| `test_torture.py` | 116 | ~2,979 | Deep torture of every code path — memory tool (13 actions), vault sort (8 modes, dict & object), max memory limits, utilization calc, template rendering (vault, tools, profiles, skins, about), boundary policy, PII guard, runtime policy, manifest system, directive parser/store/injector, tool registry, EmailTool, WebSearchTool, InboxTool, cost tracker, metering, LLM client factory, dynamic scopes, category policy, saved profiles, 6-tier model router, coding tiers, escalation chains, budget tracking, **sidecar service wiring** (SearXNG, TTS, Whisper — env-var override, URL normalization, fallback behavior, timeout config), **soul script helpers** (_load/_save round-trip, dir creation, unicode), **soul script API** (config endpoint save/update/empty/combined), **soul script FAISS indexing** (rebuild, doc_id format, agent discovery), **note collector soul script injection**, **profiles template collapsible sections** (toggleCollapse, FAISS badge, soul-script textarea), admin keys, chat 3-mode selector, user model catalog, `__userkey_` dynamic connections, Stripe state persistence, store catalog structure, tier & trial system, credit system, credit cost estimators, purchase flows (tool/skin/agent), agent ownership, user activity tracking, wipe user data, purge inactive, list all users, auth helpers, tier info structure |
+| `test_torture.py` | 125 | ~3,104 | Deep torture of every code path — memory tool (13 actions), vault sort (8 modes, dict & object), max memory limits, utilization calc, template rendering (vault, tools, profiles, skins, about, admin_voices), boundary policy, PII guard, runtime policy, manifest system, directive parser/store/injector, tool registry, EmailTool, WebSearchTool, InboxTool, cost tracker, metering, LLM client factory, dynamic scopes, category policy, saved profiles, 6-tier model router, coding tiers, escalation chains, budget tracking, **sidecar service wiring** (SearXNG, TTS, Whisper — env-var override, URL normalization, fallback behavior, timeout config), **soul script helpers** (_load/_save round-trip, dir creation, unicode), **soul script API** (config endpoint save/update/empty/combined), **soul script FAISS indexing** (rebuild, doc_id format, agent discovery), **note collector soul script injection**, **profiles template collapsible sections** (toggleCollapse, FAISS badge, soul-script textarea), admin keys, **admin voices API & template** (save allowlist, get all voices, HTML structure, premium toggle, escHtml XSS protection), **admin user management** (list users, wipe by email, purge inactive, delete), **connections CRUD** (list, create, update, delete, Ollama URL normalization), **pricing CRUD** (get, full replace, single model update, delete, cost-summary, cost-log), chat 3-mode selector, user model catalog, `__userkey_` dynamic connections, Stripe state persistence, store catalog structure, tier & trial system, credit system, credit cost estimators, purchase flows (tool/skin/agent), agent ownership, user activity tracking, wipe user data, purge inactive, list all users, auth helpers, tier info structure, **runtime info tool** (definition, execute, diff tracking, set_context, reset, REQUIRED_FIELDS, base_url redaction), **TTS voice filter logic** (allowlist filtering, premium marking, empty allowlist passthrough), **ElevenLabs/inworld connection helpers** (_get_elevenlabs_conn, _seed_platform_keys_from_env, _resolve_connection, _get_inworld_api_key), **_check_admin helper** (admin email, non-admin, case-insensitive, empty/missing) |
 | `test_memory.py` | 23 | 155 | VaultStore CRUD, scoping, PII guard, bulk delete, versioning, resolve_latest, compact, stats, Memory dataclass, taxonomy constants, tiers & topics, tags & source, JSONL format |
 | `test_stress.py` | 29 | 238 | Rapid-fire operations, concurrent access, boundary conditions, cross-module integration, router presets, coding tier routing |
 | `test_directives.py` | 14 | 108 | Parser, store search, store list/get, scoping, injector, directives tool, scoring, manifest generation, save/load, helpers, diff, audit, changes action |
@@ -19,7 +19,7 @@ Comprehensive test suite for the OrionForge agent runtime. **263 test functions,
 | `test_tools.py` | 4 | 38 | EchoTool, ContinuationUpdateTool, EmailTool, RuntimePolicy |
 | `run_all.py` | — | — | Master runner — executes all suites in dependency order, consolidates results |
 
-**Total: 263 functions, ~3,897 checks across 11 test suites**
+**Total: 272 functions, ~4,022 checks across 11 test suites**
 
 ## Running Tests
 
@@ -74,8 +74,17 @@ The `test_torture.py` suite alone covers the most code paths and is the best sin
 - **Note collector soul script injection** — `collect_notes()` auto-adds soul script doc_id for active agent
 - **Profiles template collapsible** — toggleCollapse JS, collapsible-header/body, soul-script textarea, FAISS badge, soul_script_text in saveAll
 - **Sidecar service wiring** — SearXNG, openedai-speech TTS, faster-whisper STT: env-var override (`SEARXNG_URL`, `TTS_URL`, `WHISPER_URL`), URL normalization (trailing slash stripping), fallback to `connections.json`, timeout configuration
-- **Auth paywall template checks** — login, plans, store, admin_keys pages render without crash
+- **Auth paywall template checks** — login, plans, store, admin_keys, admin_voices pages render without crash
 - Profile API torture — CRUD, trash cycle, config patching, avatar uploads, user profile, soul script save
 - Skin API and saved-profile CRUD endpoints
+- **Admin voices API** — PUT save allowlist (valid, empty, invalid types), GET page, GET voices/all via ASGI
+- **Admin voices template** — HTML structure (buttons, search, grid, premium toggle, JS vars, API calls, escHtml XSS protection)
+- **Admin user management API** — GET users, POST wipe-by-email, POST purge-inactive, DELETE user via ASGI
+- **Connections CRUD API** — GET list, POST create, PUT update, DELETE, Ollama URL normalization via ASGI
+- **Pricing CRUD API** — GET pricing, PUT full replace, PUT single model, DELETE model, cost-summary, cost-log via ASGI
+- **Runtime info tool** — definition schema, execute output, diff tracking, set_context, reset, REQUIRED_FIELDS, base_url redaction
+- **TTS voice filter logic** — allowlist filtering, premium marking, empty allowlist passthrough
+- **ElevenLabs/inworld connection helpers** — `_get_elevenlabs_conn`, `_seed_platform_keys_from_env`, `_resolve_connection`, `_get_inworld_api_key`
+- **`_check_admin` helper** — admin email match, non-admin rejection, case-insensitive matching, empty/missing email handling
 
 

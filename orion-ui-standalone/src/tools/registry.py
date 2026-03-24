@@ -131,7 +131,7 @@ def get_tool_defs_for_agent(agent: str) -> List[Dict[str, Any]]:
 
 
 def execute_tool(name: str, arguments: Dict[str, Any],
-                 agent_name: str = "") -> str:
+                 agent_name: str = "", user_id: str = "") -> str:
     """Run a tool by name with the given arguments.
 
     **Authorization**: When *agent_name* is provided the tool must appear
@@ -168,10 +168,12 @@ def execute_tool(name: str, arguments: Dict[str, Any],
         if name not in _instances:
             _instances[name] = cls()
         sig = inspect.signature(_instances[name].execute)
+        kwargs: Dict[str, Any] = {}
         if "agent_name" in sig.parameters:
-            result = _instances[name].execute(arguments, agent_name=agent_name)
-        else:
-            result = _instances[name].execute(arguments)
+            kwargs["agent_name"] = agent_name
+        if "user_id" in sig.parameters:
+            kwargs["user_id"] = user_id
+        result = _instances[name].execute(arguments, **kwargs)
     else:
         result = cls.execute(arguments)
 

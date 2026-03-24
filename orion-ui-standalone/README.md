@@ -22,18 +22,19 @@ Open **http://localhost:8989**.
 
 ```
 orion-ui-standalone/
-├── web/                # FastAPI application (~6,300 lines, 168 routes, 16 templates)
+├── web/                # FastAPI application (~6,500 lines, 172 routes, 17 templates)
 │   ├── app.py          # Main application — all page & API routes
-│   ├── auth.py         # Supabase OAuth + JWT verification (121 lines)
-│   ├── stripe_billing.py  # Stripe subscriptions, credits, trial system (1,016 lines)
+│   ├── auth.py         # Supabase OAuth + JWT verification (142 lines)
+│   ├── stripe_billing.py  # Stripe subscriptions, credits, trial system (1,400 lines)
 │   ├── image_gen.py    # Image generation helper (9 providers)
 │   ├── static/         # CSS
-│   └── templates/      # Jinja2 HTML (16 files — 15 pages + base layout)
+│   └── templates/      # Jinja2 HTML (17 files — 16 pages + base layout)
 │       ├── base.html           # Shared layout (nav, sidebar, footer, skin theming, auth state)
 │       ├── login.html          # Supabase OAuth sign-in page
 │       ├── plans.html          # Subscription tier selection (Free vs Pro)
 │       ├── store.html          # Credit packs, one-time tool purchases, usage history
 │       ├── admin_keys.html     # Admin panel — API key management
+│       ├── admin_voices.html   # Admin panel — ElevenLabs voice allowlist management
 │       ├── chat.html           # Real-time agent chat with streaming
 │       ├── profiles.html       # Agent profile manager — collapsible system prompt, soul script editor (FAISS-indexed), knowledge notes, avatar upload
 │       ├── vault.html          # Memory vault browser with 8-field sort
@@ -77,7 +78,7 @@ orion-ui-standalone/
 ├── notes/              # Developer notes per agent
 ├── scripts/            # Seed scripts (seed_memories.py, seed_ui_knowledge.py)
 ├── data/               # Runtime data (chats, memory vault, FAISS indexes, uploads, knowledge notes, agent trash)
-└── tests/              # Test suite — 11 files, 263 functions, ~2,975 checks
+└── tests/              # Test suite — 11 files, 272 functions, ~3,104 checks
 ```
 
 ---
@@ -94,7 +95,7 @@ orion-ui-standalone/
 | **LLM markup** | Platform-hosted calls billed at 2× base cost, deducted from credits |
 | **TTS/STT billing** | Per-use billing for platform-hosted voice services (2× markup) |
 | **One-time purchases** | Buy individual tool access from the store |
-| **Admin panel** | `/admin/keys` — API key management, secured by OAuth email whitelist |
+| **Admin panel** | `/admin/keys` — API key management, `/admin/voices` — ElevenLabs voice allowlist, user management (wipe, purge inactive), secured by OAuth email whitelist |
 | **Tier gating** | Free tier vs Pro tier access control on all API endpoints |
 
 ---
@@ -116,13 +117,14 @@ orion-ui-standalone/
 | **Skins** | `/skins` | 13 UI themes with marketplace-style grid and live preview |
 | **AGI Loop** | `/agi-loop` | Autonomous agent loop configuration (intervals, budgets, steps) |
 | **Wiki** | `/about` | Project wiki with auto-generated articles from READMEs + custom notes editor |
-| **Admin** | `/admin/keys` | Admin panel — API key management, secured by OAuth email whitelist |
+| **Admin Keys** | `/admin/keys` | Admin panel — API key management, secured by OAuth email whitelist |
+| **Admin Voices** | `/admin/voices` | ElevenLabs voice allowlist — search, filter, premium toggle, bulk save |
 
 ---
 
-## API Routes (168 endpoints)
+## API Routes (172 endpoints)
 
-The FastAPI app exposes 168 routes across these domains:
+The FastAPI app exposes 172 routes across these domains:
 
 | Domain | Endpoints | Examples |
 |--------|-----------|---------|
@@ -142,7 +144,7 @@ The FastAPI app exposes 168 routes across these domains:
 | Model Router | ~7 | get/set/reset config, presets CRUD (save/load/delete), 6-tier routing |
 | Image Gen | ~5 | generate, providers, settings |
 | Store | ~4 | credit packs, tool purchases, usage history |
-| Admin | ~3 | API keys CRUD, admin auth |
+| Admin | ~10 | platform keys CRUD, voice allowlist, user management (list/wipe/purge/delete), pricing sync |
 
 ---
 
@@ -194,7 +196,7 @@ $env:PYTHONIOENCODING="utf-8"; python tests/test_torture.py
 
 | Test File | Functions | Checks | Coverage |
 |-----------|-----------|--------|----------|
-| `test_torture.py` | 116 | ~2,979 | Deep torture of all code paths — memory, vault, sort, policy, tools, templates, model router, presets, 6-tier routing, sidecar wiring, soul script helpers, soul script API, soul script FAISS indexing, note collector soul script injection, profiles template collapsible, admin keys, chat 3-mode selector, user model catalog, `__userkey_` dynamic connections, Stripe state persistence, store catalog structure, tier & trial system, credit system, credit cost estimators, purchase flows (tool/skin/agent), agent ownership, user activity tracking, wipe user data, purge inactive, list all users, auth helpers, tier info structure |
+| `test_torture.py` | 125 | ~3,104 | Deep torture of all code paths — memory, vault, sort, policy, tools, templates, model router, presets, 6-tier routing, sidecar wiring, soul script helpers, soul script API, soul script FAISS indexing, note collector soul script injection, profiles template collapsible, admin keys, admin voices API & template, admin user management, connections CRUD, pricing CRUD, chat 3-mode selector, user model catalog, `__userkey_` dynamic connections, Stripe state persistence, store catalog structure, tier & trial system, credit system, credit cost estimators, purchase flows (tool/skin/agent), agent ownership, user activity tracking, wipe user data, purge inactive, list all users, auth helpers, tier info structure, runtime info tool, TTS voice filter logic, ElevenLabs/inworld connection helpers, `_check_admin` helper |
 | `test_memory.py` | 23 | 155 | VaultStore, MemoryVault, Memory types, PII guard |
 | `test_stress.py` | 29 | 238 | Rapid-fire ops, concurrent access, boundary conditions, router presets, coding tiers |
 | `test_registry_and_tools.py` | 17 | 86 | Tool registry, cost tracker, web search |
@@ -205,7 +207,7 @@ $env:PYTHONIOENCODING="utf-8"; python tests/test_torture.py
 | `test_metering.py` | 11 | 92 | Token accounting, cost computation, aggregation |
 | `test_data_paths.py` | 5 | 31 | Data directory layout, auto-creation, isolation |
 | `test_tools.py` | 4 | 38 | EchoTool, ContinuationUpdateTool, EmailTool, RuntimePolicy |
-| **Total** | **263** | **~3,897** | |
+| **Total** | **272** | **~4,022** | |
 
 ---
 
@@ -224,10 +226,10 @@ $env:PYTHONIOENCODING="utf-8"; python tests/test_torture.py
 
 | Technology | Role |
 |------------|------|
-| FastAPI + Uvicorn | Web server & async API (168 routes) |
+| FastAPI + Uvicorn | Web server & async API (172 routes) |
 | FAISS (`faiss-cpu`) | Vector similarity search for memory + soul script retrieval |
 | sentence-transformers | Semantic embeddings (`all-mpnet-base-v2`) |
-| Jinja2 | HTML templates (16 files) |
+| Jinja2 | HTML templates (17 files) |
 | Supabase | OAuth authentication + JWT verification |
 | Stripe | Subscription billing, credit system, webhook handling |
 | Fly.io | Cloud hosting + Flycast private networking for sidecar services |

@@ -1828,6 +1828,8 @@ async def page_chat(request: Request):
     for agent_name in agents:
         prof = _load_profile(agent_name)
         entry = dict(avatar_map.get(agent_name, {}))
+        if prof.get("inworld_voice"):
+            entry["inworld_voice"] = prof["inworld_voice"]
         if prof.get("edge_voice"):
             entry["edge_voice"] = prof["edge_voice"]
         if prof.get("voice_id"):
@@ -1847,6 +1849,7 @@ async def page_chat(request: Request):
         "chat_background": settings.get("chat_background") or "",
         "pinned_models": settings.get("pinned_models", []),
         "stt_provider": stt_cfg.get("provider", "elevenlabs"),
+        "chat_defaults": settings.get("chat_defaults", {}),
     })
 
 @app.get("/profiles", response_class=HTMLResponse)
@@ -2334,7 +2337,9 @@ async def page_tools(request: Request):
     # Email tool config
     try:
         from src.tools.email_tool import get_effective_config as _email_cfg
-        email_config = _email_cfg()
+        _tools_user = getattr(request.state, "user", None)
+        _tools_uid = _tools_user["id"] if _tools_user else ""
+        email_config = _email_cfg(user_id=_tools_uid)
     except Exception:
         email_config = {"api_base_url": "http://127.0.0.1:8000", "timeout": 30, "require_confirmation": True, "accounts": []}
     return templates.TemplateResponse("tools.html", {
@@ -2379,10 +2384,12 @@ async def api_web_search_config_put(request: Request):
 
 # ── Email Tool Config API ──────────────────────────────────────────
 @app.get("/api/tools/email/config", response_class=JSONResponse)
-async def api_email_config_get():
+async def api_email_config_get(request: Request):
     """Return the effective email configuration (passwords masked)."""
+    user = getattr(request.state, "user", None)
+    uid = user["id"] if user else ""
     from src.tools.email_tool import get_effective_config as email_cfg
-    return JSONResponse(email_cfg())
+    return JSONResponse(email_cfg(user_id=uid))
 
 
 @app.put("/api/tools/email/config", response_class=JSONResponse)
@@ -2405,18 +2412,22 @@ async def api_email_config_put(request: Request):
 
 
 @app.get("/api/tools/email/accounts", response_class=JSONResponse)
-async def api_email_accounts_list():
-    """List all email accounts (passwords masked)."""
+async def api_email_accounts_list(request: Request):
+    """List email accounts for the authenticated user (passwords masked)."""
+    user = getattr(request.state, "user", None)
+    uid = user["id"] if user else ""
     from src.tools.email_tool import get_accounts
-    return JSONResponse({"accounts": get_accounts()})
+    return JSONResponse({"accounts": get_accounts(uid)})
 
 
 @app.post("/api/tools/email/accounts", response_class=JSONResponse)
 async def api_email_accounts_save(request: Request):
-    """Create or update an email account."""
+    """Create or update an email account for the authenticated user."""
+    user = getattr(request.state, "user", None)
+    uid = user["id"] if user else ""
     body = await request.json()
     from src.tools.email_tool import save_account
-    saved = save_account(body)
+    saved = save_account(uid, body)
     # Mask password for response
     resp = dict(saved)
     if resp.get("password"):
@@ -2426,24 +2437,28 @@ async def api_email_accounts_save(request: Request):
 
 
 @app.delete("/api/tools/email/accounts/{account_id}", response_class=JSONResponse)
-async def api_email_accounts_delete(account_id: str):
-    """Delete an email account."""
+async def api_email_accounts_delete(account_id: str, request: Request):
+    """Delete an email account for the authenticated user."""
+    user = getattr(request.state, "user", None)
+    uid = user["id"] if user else ""
     from src.tools.email_tool import delete_account
-    if delete_account(account_id):
+    if delete_account(uid, account_id):
         return JSONResponse({"deleted": True, "id": account_id})
     return JSONResponse({"error": "Account not found"}, status_code=404)
 
 
 @app.post("/api/tools/email/test", response_class=JSONResponse)
 async def api_email_test(request: Request):
-    """Send a test email through a specific account."""
+    """Send a test email through a specific account (scoped to user)."""
+    user = getattr(request.state, "user", None)
+    uid = user["id"] if user else ""
     body = await request.json()
     account_id = body.get("account_id", "")
     recipient = body.get("recipient", "")
     if not recipient or "@" not in recipient:
         return JSONResponse({"error": "Valid recipient email required"}, status_code=400)
     from src.tools.email_tool import get_account_by_id, get_default_account, _send_via_smtp
-    account = get_account_by_id(account_id) if account_id else get_default_account()
+    account = get_account_by_id(uid, account_id) if account_id else get_default_account(uid)
     if not account:
         return JSONResponse({"error": "No account found"}, status_code=404)
     import json as _json
@@ -3723,7 +3738,8 @@ async def api_chat_send(req: ChatRequest, request: Request):
                 # Execute (authorization is enforced inside execute_tool)
                 log.info("[tools] Round %d — %s calling %s(%s)", _round + 1, req.agent, fn_name, fn_args)
                 try:
-                    result = execute_tool(fn_name, fn_args, agent_name=req.agent)
+                    _user_id = user["id"] if user else ""
+                    result = execute_tool(fn_name, fn_args, agent_name=req.agent, user_id=_user_id)
                 except PermissionError as exc:
                     result = f"BLOCKED: {exc}"
                     log.warning("[tools] %s blocked for %s: %s", fn_name, req.agent, exc)
@@ -4502,7 +4518,7 @@ async def api_profile_config(name: str, request: Request):
     body = await request.json()
     cfg = _get_agent_config(name)
     for key in ("display_name", "description", "model", "allowed_tools",
-                "voice_id", "edge_voice", "tts_paid_provider", "tts_free_provider",
+                "voice_id", "edge_voice", "inworld_voice", "tts_paid_provider", "tts_free_provider",
                 "identity_faiss_profile", "memory_vault_profile"):
         if key in body:
             cfg[key] = body[key]
@@ -4514,6 +4530,8 @@ async def api_profile_config(name: str, request: Request):
         profile["voice_id"] = body["voice_id"]
     if "edge_voice" in body:
         profile["edge_voice"] = body["edge_voice"]
+    if "inworld_voice" in body:
+        profile["inworld_voice"] = body["inworld_voice"]
     if "allowed_tools" in body:
         profile["allowed_tools"] = body["allowed_tools"]
     if "identity_faiss_profile" in body:
@@ -5212,6 +5230,74 @@ async def api_admin_purge_inactive(request: Request):
 
 
 # ═══════════════════════════════════════════════════════════════════
+#  ADMIN — VOICE ALLOWLIST
+# ═══════════════════════════════════════════════════════════════════
+
+@app.get("/admin/voices", response_class=HTMLResponse)
+async def page_admin_voices(request: Request):
+    """Admin page for managing which ElevenLabs voices users can see."""
+    if not _check_admin(request):
+        return JSONResponse({"error": "Unauthorized"}, status_code=403)
+    settings = _load_settings()
+    return templates.TemplateResponse("admin_voices.html", {
+        "request": request,
+        "page": "admin",
+        "allowed_voices": settings.get("allowed_voices", []),
+        "premium_voices": settings.get("premium_voices", []),
+    })
+
+
+@app.get("/api/admin/voices/all")
+async def api_admin_voices_all(request: Request):
+    """Fetch ALL ElevenLabs voices (admin only, unfiltered)."""
+    if not _check_admin(request):
+        return JSONResponse({"error": "Unauthorized"}, status_code=403)
+    conn_data = _load_connections()
+    el_conn = None
+    for c in conn_data.get("connections", []):
+        if c.get("provider") == "elevenlabs" and c.get("enabled", True):
+            el_conn = c
+            break
+    if not el_conn or not el_conn.get("api_key"):
+        return JSONResponse({"voices": [], "error": "No ElevenLabs connection configured"})
+    url = f"{el_conn['url'].rstrip('/')}/v1/voices"
+    headers = {"xi-api-key": el_conn["api_key"]}
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.get(url, headers=headers)
+            resp.raise_for_status()
+            data = resp.json()
+        voices = [
+            {"voice_id": v["voice_id"], "name": v["name"],
+             "category": v.get("category", ""),
+             "labels": v.get("labels", {})}
+            for v in data.get("voices", [])
+        ]
+        return JSONResponse({"voices": voices})
+    except Exception as e:
+        return JSONResponse({"voices": [], "error": str(e)})
+
+
+@app.put("/api/admin/voices/allowed")
+async def api_admin_save_allowed_voices(request: Request):
+    """Save the admin-curated allowlist of voice IDs."""
+    if not _check_admin(request):
+        return JSONResponse({"error": "Unauthorized"}, status_code=403)
+    body = await request.json()
+    allowed = body.get("allowed_voices", [])
+    if not isinstance(allowed, list):
+        return JSONResponse({"error": "allowed_voices must be a list"}, status_code=400)
+    premium = body.get("premium_voices", [])
+    if not isinstance(premium, list):
+        return JSONResponse({"error": "premium_voices must be a list"}, status_code=400)
+    settings = _load_settings()
+    settings["allowed_voices"] = allowed
+    settings["premium_voices"] = premium
+    _save_settings(settings)
+    return JSONResponse({"status": "ok", "count": len(allowed), "premium_count": len(premium)})
+
+
+# ═══════════════════════════════════════════════════════════════════
 #  CONNECTIONS API
 # ═══════════════════════════════════════════════════════════════════
 
@@ -5622,12 +5708,15 @@ async def api_tts_speak(request: Request):
     if not el_conn or not el_conn.get("api_key"):
         return JSONResponse({"error": "No ElevenLabs connection configured. Add one in Settings → Connections."}, 400)
 
+    # ── Check if voice is premium ──
+    is_premium = voice_id in set(_load_settings().get("premium_voices", []))
+
     # ── Pre-flight credit check for platform-hosted keys ──
     is_platform = el_conn.get("platform_hosted", False)
     char_count_est = len(text)
     credit_cost = 0
     if is_platform and user:
-        credit_cost = estimate_tts_credit_cost(char_count_est, provider="elevenlabs")
+        credit_cost = estimate_tts_credit_cost(char_count_est, provider="elevenlabs", premium=is_premium)
         if credit_cost > 0:
             balance = get_user_credits(user["id"])
             if balance < credit_cost:
@@ -5659,13 +5748,15 @@ async def api_tts_speak(request: Request):
         if is_platform and user and credit_cost > 0:
             try:
                 # Recalculate with actual char count from response
-                actual_cost = estimate_tts_credit_cost(char_count, provider="elevenlabs")
-                deduct_user_credits(user["id"], actual_cost, f"tts:elevenlabs:{char_count}chars")
+                actual_cost = estimate_tts_credit_cost(char_count, provider="elevenlabs", premium=is_premium)
+                label = f"tts:elevenlabs{'_premium' if is_premium else ''}:{char_count}chars"
+                deduct_user_credits(user["id"], actual_cost, label)
             except Exception as exc:
                 log.warning("[credits] TTS credit deduction failed: %s", exc)
 
         return Response(content=resp.content, media_type="audio/mpeg",
-                        headers={"X-TTS-Characters": str(char_count), "X-TTS-Model": model_id})
+                        headers={"X-TTS-Characters": str(char_count), "X-TTS-Model": model_id,
+                                 "X-TTS-Premium": "1" if is_premium else "0"})
     except httpx.HTTPStatusError as e:
         detail = str(e)
         try: detail = e.response.json().get("detail", {}).get("message", str(e))
@@ -5677,7 +5768,7 @@ async def api_tts_speak(request: Request):
 
 @app.get("/api/tts/voices")
 async def api_tts_voices():
-    """Fetch available voices from ElevenLabs."""
+    """Fetch available voices from ElevenLabs, filtered by admin allowlist."""
     conn_data = _load_connections()
     el_conn = None
     for c in conn_data.get("connections", []):
@@ -5695,31 +5786,36 @@ async def api_tts_voices():
             data = resp.json()
         voices = [{"voice_id": v["voice_id"], "name": v["name"], "category": v.get("category", "")}
                   for v in data.get("voices", [])]
+        # Apply admin allowlist filter
+        settings = _load_settings()
+        allowed = settings.get("allowed_voices", [])
+        premium_set = set(settings.get("premium_voices", []))
+        if allowed:
+            allowed_set = set(allowed)
+            voices = [v for v in voices if v["voice_id"] in allowed_set]
+        for v in voices:
+            v["premium"] = v["voice_id"] in premium_set
         return JSONResponse({"voices": voices})
     except Exception as e:
         return JSONResponse({"voices": [], "error": str(e)})
 
 
-def _get_edge_tts_conn():
-    """Return the first enabled edge-tts connection or None."""
-    # Fly.io private-network override via env var
-    env_url = os.environ.get("TTS_URL")
-    if env_url:
-        return {"id": "fly-tts", "provider": "edge-tts", "url": env_url,
-                "api_key": "", "enabled": True, "platform_hosted": True}
-    for c in _load_connections().get("connections", []):
-        if c.get("provider") == "edge-tts" and c.get("enabled", True):
-            return c
-    return None
+def _get_inworld_api_key():
+    """Return the Inworld TTS API key (env var → settings fallback), or None."""
+    key = os.environ.get("INWORLD_API_KEY", "").strip()
+    if key:
+        return key
+    settings = _load_settings()
+    return settings.get("api_keys", {}).get("inworld", "") or None
 
 
-@app.post("/api/tts/edge/speak")
-async def api_tts_edge_speak(request: Request):
-    """Proxy text-to-speech via local Edge-TTS container (Piper / XTTS)."""
+@app.post("/api/tts/inworld/speak")
+async def api_tts_inworld_speak(request: Request):
+    """Synthesise speech via Inworld TTS API (user provides own API key)."""
     body = await request.json()
     text = body.get("text", "").strip()
-    voice = body.get("voice", "alloy")
-    model = body.get("model", "tts-1")
+    voice_id = body.get("voice_id", "Ashley")
+    model_id = body.get("model_id", "inworld-tts-1.5-mini")
     if not text:
         return JSONResponse({"error": "No text provided"}, 400)
 
@@ -5729,87 +5825,60 @@ async def api_tts_edge_speak(request: Request):
         return JSONResponse({"error": "Voice TTS not unlocked. Purchase it in the Store first.",
                              "redirect": "/store"}, 403)
 
-    conn = _get_edge_tts_conn()
-    if not conn:
-        return JSONResponse({"error": "No Edge-TTS connection configured."}, 400)
+    api_key = _get_inworld_api_key()
+    if not api_key:
+        return JSONResponse({"error": "No Inworld API key configured. Add it in Settings → API Keys."}, 400)
 
-    # ── Pre-flight credit check for platform-hosted keys ──
-    is_platform = conn.get("platform_hosted", False)
     char_count = len(text)
-    credit_cost = 0
-    if is_platform and user:
-        credit_cost = estimate_tts_credit_cost(char_count, provider="edge-tts")
-        if credit_cost > 0:
-            balance = get_user_credits(user["id"])
-            if balance < credit_cost:
-                return JSONResponse({
-                    "error": "Insufficient credits for TTS usage",
-                    "credits_needed": credit_cost,
-                    "credits_balance": balance,
-                    "redirect": "/store",
-                }, status_code=402)
-
-    url = f"{conn['url'].rstrip('/')}/v1/audio/speech"
-    headers = {"Content-Type": "application/json"}
-    if conn.get("api_key"):
-        headers["Authorization"] = f"Bearer {conn['api_key']}"
-    payload = {"input": text, "voice": voice, "model": model}
+    url = "https://api.inworld.ai/tts/v1/voice"
+    headers = {
+        "Authorization": f"Basic {api_key}",
+        "Content-Type": "application/json",
+    }
+    payload = {"text": text, "voiceId": voice_id, "modelId": model_id}
     try:
         async with httpx.AsyncClient(timeout=120) as client:
             resp = await client.post(url, headers=headers, json=payload)
             resp.raise_for_status()
-
-        # ── Deduct credits for platform-hosted Edge-TTS ──
-        if is_platform and user and credit_cost > 0:
-            try:
-                deduct_user_credits(user["id"], credit_cost, f"tts:edge-tts:{char_count}chars")
-            except Exception as exc:
-                log.warning("[credits] Edge-TTS credit deduction failed: %s", exc)
-
-        return Response(content=resp.content, media_type="audio/mpeg",
-                        headers={"X-TTS-Characters": str(char_count), "X-TTS-Provider": "edge-tts"})
+        data = resp.json()
+        audio_bytes = _b64.b64decode(data.get("audioContent", ""))
+        return Response(content=audio_bytes, media_type="audio/mpeg",
+                        headers={"X-TTS-Characters": str(char_count), "X-TTS-Provider": "inworld"})
     except httpx.HTTPStatusError as e:
         detail = str(e)
         try: detail = e.response.text[:300]
         except Exception: pass
-        log.error("[tts] Edge-TTS HTTP error: %s", detail)
-        return JSONResponse({"error": f"Edge-TTS error: {detail}"}, 502)
+        log.error("[tts] Inworld TTS HTTP error: %s", detail)
+        return JSONResponse({"error": f"Inworld TTS error: {detail}"}, 502)
     except Exception as e:
-        log.error("[tts] Edge-TTS exception: %s", e)
+        log.error("[tts] Inworld TTS exception: %s", e)
         return JSONResponse({"error": str(e)}, 500)
 
 
-@app.get("/api/tts/edge/voices")
-async def api_tts_edge_voices():
-    """Fetch available voices from local Edge-TTS container."""
-    conn = _get_edge_tts_conn()
-    if not conn:
-        return JSONResponse({"voices": []})
-    base_url = conn['url'].rstrip('/')
-    headers = {}
-    if conn.get("api_key"):
-        headers["Authorization"] = f"Bearer {conn['api_key']}"
-    VOICE_ENGINE_MAP = {
-        "tts-1": {"engine": "piper", "label": "Piper (CPU · fast)"},
-        "tts-1-hd": {"engine": "xtts", "label": "XTTS v2 (GPU · HD)"},
-    }
-    default_voices = {
-        "tts-1": ["alloy", "echo", "echo-alt", "fable", "onyx", "nova", "shimmer"],
-        "tts-1-hd": ["alloy", "alloy-alt", "echo", "fable", "onyx", "nova", "shimmer"],
-    }
+@app.get("/api/tts/inworld/voices")
+async def api_tts_inworld_voices():
+    """Fetch available voices from Inworld TTS API."""
+    api_key = _get_inworld_api_key()
+    if not api_key:
+        return JSONResponse({"voices": [], "error": "No Inworld API key configured"})
+    url = "https://api.inworld.ai/tts/v1/voices?filter=language%3Den"
+    headers = {"Authorization": f"Basic {api_key}"}
     try:
         async with httpx.AsyncClient(timeout=15) as client:
-            resp = await client.get(f"{base_url}/v1/models", headers=headers)
+            resp = await client.get(url, headers=headers)
             resp.raise_for_status()
-            models_data = resp.json()
+        data = resp.json()
         voices = []
-        for m in models_data.get("data", []):
-            mid = m["id"]
-            ei = VOICE_ENGINE_MAP.get(mid, {"engine": "unknown", "label": mid})
-            for vn in default_voices.get(mid, []):
-                voices.append({"voice_id": vn, "name": vn, "model": mid, "engine": ei["engine"], "engine_label": ei["label"]})
+        for v in data.get("voices", []):
+            voices.append({
+                "voice_id": v.get("voiceId", ""),
+                "name": v.get("displayName", v.get("voiceId", "")),
+                "description": v.get("description", ""),
+                "tags": v.get("tags", []),
+            })
         return JSONResponse({"voices": voices})
     except Exception as e:
+        log.error("[tts] Inworld voices fetch error: %s", e)
         return JSONResponse({"voices": [], "error": str(e)})
 
 
@@ -5884,7 +5953,10 @@ async def api_stt_elevenlabs(request: Request):
             except Exception as exc:
                 log.warning("[credits] STT credit deduction failed: %s", exc)
 
-        return JSONResponse({"text": text, "provider": "elevenlabs"})
+        # Estimate USD cost for frontend session tracker (2x markup)
+        stt_usd = (estimated_seconds / 60) * 0.006 * 2
+        return JSONResponse({"text": text, "provider": "elevenlabs",
+                             "stt_cost": round(stt_usd, 6), "audio_seconds": round(estimated_seconds, 1)})
     except httpx.HTTPStatusError as e:
         detail = str(e)
         try: detail = e.response.json().get("detail", {}).get("message", str(e))
@@ -6090,6 +6162,20 @@ async def api_delete_chat_background():
     return JSONResponse({"status": "ok"})
 
 
+@app.put("/api/settings/chat-defaults")
+async def api_save_chat_defaults(request: Request):
+    """Persist the user's last-selected agent, connection, and model."""
+    body = await request.json()
+    settings = _load_settings()
+    defaults = settings.get("chat_defaults", {})
+    for key in ("last_agent", "last_connection", "last_model"):
+        if key in body:
+            defaults[key] = body[key]
+    settings["chat_defaults"] = defaults
+    _save_settings(settings)
+    return JSONResponse({"status": "ok"})
+
+
 @app.put("/api/settings/timezone")
 async def api_save_timezone(request: Request):
     """Save timezone preferences."""
@@ -6132,6 +6218,7 @@ async def api_save_api_keys(request: Request):
         "google_gemini": body.get("google_gemini", ""),
         "openrouter":    body.get("openrouter", ""),
         "ollama_url":    ollama_url,
+        "inworld":       body.get("inworld", ""),
     }
     _save_settings(settings)
     return JSONResponse({"status": "ok"})

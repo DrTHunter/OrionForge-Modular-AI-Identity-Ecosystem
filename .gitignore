@@ -31,11 +31,12 @@ ui/data/memory/faiss/*.json
 ui/data/shared/*.jsonl
 ui/data/uploads/*
 ui/data/user_notes/*.json
+ui/data/users/
+orion-ui-standalone/data/users/
 !ui/data/**/.gitkeep
 
 # Secrets
 *.env
-!ui/tools/email_service/email.env
 
 # Sentence-transformers cache
 .cache/

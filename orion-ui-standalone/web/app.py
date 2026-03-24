@@ -2337,7 +2337,9 @@ async def page_tools(request: Request):
     # Email tool config
     try:
         from src.tools.email_tool import get_effective_config as _email_cfg
-        email_config = _email_cfg()
+        _tools_user = getattr(request.state, "user", None)
+        _tools_uid = _tools_user["id"] if _tools_user else ""
+        email_config = _email_cfg(user_id=_tools_uid)
     except Exception:
         email_config = {"api_base_url": "http://127.0.0.1:8000", "timeout": 30, "require_confirmation": True, "accounts": []}
     return templates.TemplateResponse("tools.html", {
@@ -2382,10 +2384,12 @@ async def api_web_search_config_put(request: Request):
 
 # ── Email Tool Config API ──────────────────────────────────────────
 @app.get("/api/tools/email/config", response_class=JSONResponse)
-async def api_email_config_get():
+async def api_email_config_get(request: Request):
     """Return the effective email configuration (passwords masked)."""
+    user = getattr(request.state, "user", None)
+    uid = user["id"] if user else ""
     from src.tools.email_tool import get_effective_config as email_cfg
-    return JSONResponse(email_cfg())
+    return JSONResponse(email_cfg(user_id=uid))
 
 
 @app.put("/api/tools/email/config", response_class=JSONResponse)
@@ -2408,18 +2412,22 @@ async def api_email_config_put(request: Request):
 
 
 @app.get("/api/tools/email/accounts", response_class=JSONResponse)
-async def api_email_accounts_list():
-    """List all email accounts (passwords masked)."""
+async def api_email_accounts_list(request: Request):
+    """List email accounts for the authenticated user (passwords masked)."""
+    user = getattr(request.state, "user", None)
+    uid = user["id"] if user else ""
     from src.tools.email_tool import get_accounts
-    return JSONResponse({"accounts": get_accounts()})
+    return JSONResponse({"accounts": get_accounts(uid)})
 
 
 @app.post("/api/tools/email/accounts", response_class=JSONResponse)
 async def api_email_accounts_save(request: Request):
-    """Create or update an email account."""
+    """Create or update an email account for the authenticated user."""
+    user = getattr(request.state, "user", None)
+    uid = user["id"] if user else ""
     body = await request.json()
     from src.tools.email_tool import save_account
-    saved = save_account(body)
+    saved = save_account(uid, body)
     # Mask password for response
     resp = dict(saved)
     if resp.get("password"):
@@ -2429,24 +2437,28 @@ async def api_email_accounts_save(request: Request):
 
 
 @app.delete("/api/tools/email/accounts/{account_id}", response_class=JSONResponse)
-async def api_email_accounts_delete(account_id: str):
-    """Delete an email account."""
+async def api_email_accounts_delete(account_id: str, request: Request):
+    """Delete an email account for the authenticated user."""
+    user = getattr(request.state, "user", None)
+    uid = user["id"] if user else ""
     from src.tools.email_tool import delete_account
-    if delete_account(account_id):
+    if delete_account(uid, account_id):
         return JSONResponse({"deleted": True, "id": account_id})
     return JSONResponse({"error": "Account not found"}, status_code=404)
 
 
 @app.post("/api/tools/email/test", response_class=JSONResponse)
 async def api_email_test(request: Request):
-    """Send a test email through a specific account."""
+    """Send a test email through a specific account (scoped to user)."""
+    user = getattr(request.state, "user", None)
+    uid = user["id"] if user else ""
     body = await request.json()
     account_id = body.get("account_id", "")
     recipient = body.get("recipient", "")
     if not recipient or "@" not in recipient:
         return JSONResponse({"error": "Valid recipient email required"}, status_code=400)
     from src.tools.email_tool import get_account_by_id, get_default_account, _send_via_smtp
-    account = get_account_by_id(account_id) if account_id else get_default_account()
+    account = get_account_by_id(uid, account_id) if account_id else get_default_account(uid)
     if not account:
         return JSONResponse({"error": "No account found"}, status_code=404)
     import json as _json
@@ -3726,7 +3738,8 @@ async def api_chat_send(req: ChatRequest, request: Request):
                 # Execute (authorization is enforced inside execute_tool)
                 log.info("[tools] Round %d — %s calling %s(%s)", _round + 1, req.agent, fn_name, fn_args)
                 try:
-                    result = execute_tool(fn_name, fn_args, agent_name=req.agent)
+                    _user_id = user["id"] if user else ""
+                    result = execute_tool(fn_name, fn_args, agent_name=req.agent, user_id=_user_id)
                 except PermissionError as exc:
                     result = f"BLOCKED: {exc}"
                     log.warning("[tools] %s blocked for %s: %s", fn_name, req.agent, exc)
@@ -5788,7 +5801,10 @@ async def api_tts_voices():
 
 
 def _get_inworld_api_key():
-    """Return the user's Inworld TTS API key from settings, or None."""
+    """Return the Inworld TTS API key (env var → settings fallback), or None."""
+    key = os.environ.get("INWORLD_API_KEY", "").strip()
+    if key:
+        return key
     settings = _load_settings()
     return settings.get("api_keys", {}).get("inworld", "") or None
 

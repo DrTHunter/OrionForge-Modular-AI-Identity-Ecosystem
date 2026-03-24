@@ -14,12 +14,12 @@ python -m uvicorn web.app:app --host 0.0.0.0 --port 8989 --reload
 
 | File | Purpose |
 |------|---------|
-| `app.py` | FastAPI application — all routes, helpers, and API endpoints (168 routes, ~6,300 lines) |
-| `auth.py` | Supabase OAuth + JWT verification — JWKS validation, session middleware, path whitelist (121 lines) |
-| `stripe_billing.py` | Stripe subscription system — checkout, webhooks, credits, trial management, tier gating (840 lines) |
+| `app.py` | FastAPI application — all routes, helpers, and API endpoints (172 routes, ~6,500 lines) |
+| `auth.py` | Supabase OAuth + JWT verification — JWKS validation, session middleware, path whitelist (142 lines) |
+| `stripe_billing.py` | Stripe subscription system — checkout, webhooks, credits, trial management, tier gating (1,400 lines) |
 | `image_gen.py` | Image generation helper (9 providers: OpenAI DALL-E/GPT Image, Google Imagen, Stability, Ideogram, Replicate, FAL, Leonardo, Midjourney) |
 | `static/style.css` | Stylesheet for the dashboard |
-| `templates/` | Jinja2 HTML templates (16 files — 15 pages + base layout) |
+| `templates/` | Jinja2 HTML templates (17 files — 16 pages + base layout) |
 
 ## Templates
 
@@ -30,6 +30,7 @@ python -m uvicorn web.app:app --host 0.0.0.0 --port 8989 --reload
 | `plans.html` | Subscription tier selection — Free vs Pro ($9.99/mo) |
 | `store.html` | Credit packs, one-time tool purchases, usage history |
 | `admin_keys.html` | Admin panel — API key management (secured by email whitelist) |
+| `admin_voices.html` | Admin panel — ElevenLabs voice allowlist (search, filter, premium toggle, bulk save) |
 | `chat.html` | Real-time chat with agents — streaming, tool execution, folders |
 | `vault.html` | Memory vault browser — sort by 8 fields, metadata display, max memory limits |
 | `profiles.html` | Agent profile viewer/editor — collapsible system prompt, soul script editor (FAISS-indexed badge), knowledge notes, avatar upload, create new agents |
@@ -42,9 +43,9 @@ python -m uvicorn web.app:app --host 0.0.0.0 --port 8989 --reload
 | `agi_loop.html` | AGI loop configuration (intervals, budgets, steps) |
 | `about.html` | Project wiki with auto-generated articles from READMEs + custom notes editor |
 
-## API Endpoints (168 routes)
+## API Endpoints (172 routes)
 
-### Pages (15 routes)
+### Pages (17 routes)
 
 | Route | Description |
 |-------|-------------|
@@ -63,7 +64,8 @@ python -m uvicorn web.app:app --host 0.0.0.0 --port 8989 --reload
 | `GET /skins` | UI skins marketplace |
 | `GET /agi-loop` | AGI loop config |
 | `GET /about` | Wiki page |
-| `GET /admin/keys` | Admin panel |
+| `GET /admin/keys` | Admin panel — API keys |
+| `GET /admin/voices` | Admin panel — voice allowlist |
 
 ### Auth API (~6 routes)
 
@@ -227,6 +229,21 @@ python -m uvicorn web.app:app --host 0.0.0.0 --port 8989 --reload
 | `GET /api/ollama/models` | List Ollama models |
 | `POST /api/image/generate` | Generate image |
 | `GET /api/health` | Health check |
+
+### Admin API (~10 routes)
+
+| Route | Description |
+|-------|-------------|
+| `POST /api/admin/platform-keys` | Save platform API key |
+| `POST /api/admin/platform-keys/test` | Test platform API key |
+| `DELETE /api/admin/platform-keys/{provider}` | Delete platform key |
+| `POST /api/admin/sync-openrouter-pricing` | Sync OpenRouter pricing |
+| `GET /api/admin/users` | List all users |
+| `DELETE /api/admin/users/{user_id}` | Wipe user data |
+| `POST /api/admin/users/wipe-by-email` | Wipe user data by email |
+| `POST /api/admin/users/purge-inactive` | Purge inactive users |
+| `GET /api/admin/voices/all` | List all ElevenLabs voices |
+| `PUT /api/admin/voices/allowed` | Save voice allowlist |
 
 ## Startup Behavior
 
