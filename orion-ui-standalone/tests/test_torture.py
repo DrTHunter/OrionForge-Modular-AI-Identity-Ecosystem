@@ -10127,6 +10127,148 @@ def test_faiss_scaling():
 
 
 # ═════════════════════════════════════════════
+# METERING SOURCE FILTERING — platform vs user cost tagging
+# ═════════════════════════════════════════════
+def test_metering_source_filtering():
+    """Test source param on log_cost_event, read_cost_log source/until filters,
+    aggregate_costs by_source, and ORION_COST_SOURCE env var fallback."""
+    print("\n=== TORTURE: Metering — Source Filtering ===")
+    from src.observability.metering import (
+        Metering, TokenUsage, CostBreakdown,
+        log_cost_event, read_cost_log, aggregate_costs,
+        set_cost_log_path,
+    )
+
+    tmp = tempfile.mkdtemp()
+    log_path = os.path.join(tmp, "cost_log.jsonl")
+    set_cost_log_path(log_path)
+
+    try:
+        m = Metering(
+            usage=TokenUsage(prompt_tokens=100, completion_tokens=50, total_tokens=150),
+            cost=CostBreakdown(total_cost=0.01),
+            model="gpt-4", provider="openai",
+        )
+
+        # ── 1. log_cost_event with source ──
+        ev1 = log_cost_event(m, agent="a1", source="platform")
+        check("source=platform written", ev1["source"] == "platform")
+
+        ev2 = log_cost_event(m, agent="a2", source="user")
+        check("source=user written", ev2["source"] == "user")
+
+        ev3 = log_cost_event(m, agent="a3")
+        check("no source → empty", ev3["source"] == "")
+
+        # ── 2. ORION_COST_SOURCE env var fallback ──
+        os.environ["ORION_COST_SOURCE"] = "platform"
+        try:
+            ev4 = log_cost_event(m, agent="a4")
+            check("env var fallback", ev4["source"] == "platform")
+        finally:
+            del os.environ["ORION_COST_SOURCE"]
+
+        # Explicit source overrides env
+        os.environ["ORION_COST_SOURCE"] = "platform"
+        try:
+            ev5 = log_cost_event(m, agent="a5", source="user")
+            check("explicit overrides env", ev5["source"] == "user")
+        finally:
+            del os.environ["ORION_COST_SOURCE"]
+
+        # ── 3. read_cost_log source filter ──
+        platform_events = read_cost_log(source="platform")
+        check("read source=platform count", len(platform_events) == 2,
+              f"got {len(platform_events)}")
+
+        user_events = read_cost_log(source="user")
+        check("read source=user count", len(user_events) == 2,
+              f"got {len(user_events)}")
+
+        # ── 4. read_cost_log until filter ──
+        until_past = read_cost_log(until="2000-01-01T00:00:00+00:00")
+        check("until past → 0", len(until_past) == 0)
+
+        until_future = read_cost_log(until="2099-01-01T00:00:00+00:00")
+        check("until future → all", len(until_future) == 5)
+
+        # Combined: source + until
+        combo = read_cost_log(source="platform", until="2099-01-01T00:00:00+00:00")
+        check("source+until combo", len(combo) == 2)
+
+        # ── 5. aggregate_costs by_source ──
+        all_events = read_cost_log()
+        agg = aggregate_costs(all_events)
+        check("agg has by_source", "by_source" in agg)
+        check("agg by_source has platform", "platform" in agg["by_source"])
+        check("agg by_source has user", "user" in agg["by_source"])
+        check("agg by_source platform cost",
+              abs(agg["by_source"]["platform"] - 0.02) < 0.001)
+        check("agg by_source user cost",
+              abs(agg["by_source"]["user"] - 0.02) < 0.001)
+
+        # Empty source events bucketed as "unknown"
+        no_source = [ev for ev in all_events if ev.get("source") == ""]
+        if no_source:
+            agg_no = aggregate_costs(no_source)
+            check("empty source → unknown bucket",
+                  "unknown" in agg_no["by_source"])
+
+        # ── 6. aggregate_costs empty → by_source empty ──
+        empty_agg = aggregate_costs([])
+        check("empty agg by_source", empty_agg["by_source"] == {})
+
+    finally:
+        set_cost_log_path(None)
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ═════════════════════════════════════════════
+# COST TRACKER SOURCE TABS — CostTrackerTool with source filter
+# ═════════════════════════════════════════════
+def test_cost_tracker_source_tabs():
+    """Test CostTrackerTool cost_summary and cost_log with source filter."""
+    print("\n=== TORTURE: CostTrackerTool — Source Tabs ===")
+    from src.tools.cost_tracker import CostTrackerTool
+    from src.observability.metering import (
+        Metering, TokenUsage, CostBreakdown,
+        log_cost_event, set_cost_log_path,
+    )
+
+    tmp = tempfile.mkdtemp()
+    log_path = os.path.join(tmp, "cost_log.jsonl")
+    set_cost_log_path(log_path)
+
+    try:
+        m = Metering(
+            usage=TokenUsage(prompt_tokens=100, completion_tokens=50, total_tokens=150),
+            cost=CostBreakdown(total_cost=0.01),
+            model="gpt-4", provider="openai",
+        )
+        log_cost_event(m, agent="astraea", source="platform")
+        log_cost_event(m, agent="astraea", source="user")
+        log_cost_event(m, agent="callum", source="platform")
+
+        tool = CostTrackerTool()
+
+        # cost_summary — all
+        r = json.loads(tool.execute({"action": "cost_summary"}))
+        check("summary all_time 3 calls", r["all_time"]["num_calls"] == 3)
+
+        # cost_log — all
+        r2 = json.loads(tool.execute({"action": "cost_log"}))
+        check("cost_log all count 3", r2["count"] == 3)
+
+        # cost_log — verify source field present in events
+        check("cost_log events have source",
+              all("source" in e for e in r2["events"]))
+
+    finally:
+        set_cost_log_path(None)
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ═════════════════════════════════════════════
 if __name__ == "__main__":
     test_boundary_policy()
     test_pii_guard_extended()
@@ -10255,6 +10397,8 @@ if __name__ == "__main__":
     test_inworld_api_key_helper()
     test_check_admin_helper()
     test_faiss_scaling()
+    test_metering_source_filtering()
+    test_cost_tracker_source_tabs()
 
     print(f"\n{'='*40}")
     print(f"Results: {PASS} passed, {FAIL} failed")
