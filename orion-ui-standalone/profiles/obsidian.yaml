@@ -16,7 +16,7 @@ directives:
   scopes:
   - shared
   - obsidian
-inworld_voice: Dennis
+inworld_voice: Evan
 identity_faiss_profile: __default__
 memory:
   enabled: true
@@ -35,5 +35,5 @@ policy:
 provider: openai
 system_prompt: obsidian.system.md
 temperature: 0.7
-voice_id: ''
+voice_id: nPczCjzI2devNBz1zQrb
 window_size: 50

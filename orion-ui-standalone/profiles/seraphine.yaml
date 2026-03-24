@@ -16,7 +16,7 @@ directives:
   scopes:
   - shared
   - seraphine
-inworld_voice: Ashley
+inworld_voice: Celeste
 identity_faiss_profile: __default__
 memory:
   enabled: true
@@ -35,5 +35,5 @@ policy:
 provider: openai
 system_prompt: seraphine.system.md
 temperature: 0.75
-voice_id: ''
+voice_id: flHkNRp1BlvT73UL6gyz
 window_size: 50
