@@ -16,7 +16,7 @@ directives:
   scopes:
   - shared
   - maris
-edge_voice: nova
+inworld_voice: Ashley
 identity_faiss_profile: __default__
 memory:
   enabled: true

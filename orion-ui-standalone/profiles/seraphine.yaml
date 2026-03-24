@@ -16,7 +16,7 @@ directives:
   scopes:
   - shared
   - seraphine
-edge_voice: shimmer
+inworld_voice: Ashley
 identity_faiss_profile: __default__
 memory:
   enabled: true

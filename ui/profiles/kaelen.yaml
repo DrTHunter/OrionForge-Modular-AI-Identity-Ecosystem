@@ -16,7 +16,7 @@ directives:
   scopes:
   - shared
   - kaelen
-edge_voice: onyx
+inworld_voice: Dennis
 identity_faiss_profile: __default__
 memory:
   enabled: true

@@ -33,4 +33,4 @@ directives:
   - codex_animus
   max_sections: 5
 voice_id: JBFqnCBsd6RMkjVDRZzb
-edge_voice: echo
+inworld_voice: Dennis
