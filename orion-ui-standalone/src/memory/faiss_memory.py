@@ -43,7 +43,7 @@ class FAISSMemory:
         self,
         vault_path: str,
         faiss_dir: str,
-        model_name: str = "all-mpnet-base-v2",
+        model_name: str = "all-MiniLM-L6-v2",
     ):
         self.vault = VaultStore(vault_path)
         self.faiss_dir = Path(faiss_dir)
