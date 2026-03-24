@@ -103,16 +103,33 @@ async def _lifespan(application: FastAPI):
         log.info("[startup] OpenRouter pricing sync: %s", result)
     except Exception as exc:
         log.warning("[startup] OpenRouter pricing sync failed: %s", exc)
-    # Build FAISS index in background thread so health check passes quickly
+    # Build FAISS index in background thread so health check passes quickly.
+    # Use a lock file so only one worker rebuilds; others wait then load.
     import threading
+    import fcntl
     def _bg_faiss():
-        try:
-            _rebuild_notes_faiss()
-            from src.storage.note_collector import invalidate_notes_faiss
-            invalidate_notes_faiss()
-            log.info("[startup] NotesFAISS build completed (background)")
-        except Exception as exc:
-            log.warning("[startup] NotesFAISS build skipped: %s", exc)
+        lock_path = Path("data/memory/faiss/.rebuild.lock")
+        lock_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(lock_path, "w") as lf:
+            got_lock = False
+            try:
+                fcntl.flock(lf, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                got_lock = True
+            except OSError:
+                log.info("[startup] Another worker is rebuilding NotesFAISS — waiting")
+                fcntl.flock(lf, fcntl.LOCK_EX)  # blocking wait
+            try:
+                if got_lock:
+                    _rebuild_notes_faiss()
+                    log.info("[startup] NotesFAISS build completed (background)")
+                else:
+                    log.info("[startup] NotesFAISS rebuild done by sibling — loading cached index")
+                from src.storage.note_collector import invalidate_notes_faiss
+                invalidate_notes_faiss()
+            except Exception as exc:
+                log.warning("[startup] NotesFAISS build skipped: %s", exc)
+            finally:
+                fcntl.flock(lf, fcntl.LOCK_UN)
     threading.Thread(target=_bg_faiss, daemon=True).start()
     # Auto-purge inactive accounts (>90 days)
     try:
@@ -2858,7 +2875,9 @@ async def _execute_agi_tick(agent: str, stimulus: str, agi_config: dict) -> dict
         now = datetime.now(timezone.utc).isoformat()
         chat_data["messages"].append({"role": "user", "text": stimulus, "time": now})
 
-        llm_messages, layers, tool_defs = _build_chat_messages(agent, chat_data["messages"])
+        llm_messages, layers, tool_defs = await asyncio.to_thread(
+            _build_chat_messages, agent, chat_data["messages"]
+        )
 
         # Model resolution via router
         profile = _load_profile(agent)
@@ -3560,8 +3579,10 @@ async def api_chat_send(req: ChatRequest, request: Request):
     chat_data["messages"].append({"role": "user", "text": req.stimulus, "time": now})
     chat_data["updated"] = now
 
-    # Build prompt with all identity layers
-    llm_messages, layers, tool_defs = _build_chat_messages(req.agent, chat_data["messages"])
+    # Build prompt with all identity layers (offload to thread — FAISS encode is CPU-bound)
+    llm_messages, layers, tool_defs = await asyncio.to_thread(
+        _build_chat_messages, req.agent, chat_data["messages"]
+    )
 
     # Resolve model (with model router task-tier mapping)
     profile = _load_profile(req.agent)
@@ -3949,7 +3970,9 @@ async def _stream_chat_generator(req: ChatRequest, request: Request, user, conn,
     chat_data["messages"].append({"role": "user", "text": req.stimulus, "time": now})
     chat_data["updated"] = now
 
-    llm_messages, layers, tool_defs = _build_chat_messages(req.agent, chat_data["messages"])
+    llm_messages, layers, tool_defs = await asyncio.to_thread(
+        _build_chat_messages, req.agent, chat_data["messages"]
+    )
 
     profile = _load_profile(req.agent)
     agent_cfg = _get_agent_config(req.agent)
