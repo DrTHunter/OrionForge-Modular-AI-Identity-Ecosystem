@@ -1306,6 +1306,7 @@
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  const _promptsLoaded = new Set();
   function openEditor(name) {
     document.getElementById('view-agents').classList.remove('active');
     document.querySelectorAll('.editor-view').forEach(v => v.classList.remove('active'));
@@ -1317,6 +1318,19 @@
       document.getElementById('tab-btn-agents').innerHTML =
         '<span style="opacity:0.6">Agents</span> <span style="color:#3f3f46;margin:0 0.25rem;">›</span> ' + _esc(displayName);
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      // Lazy-load system prompt + soul script on first open
+      if (!_promptsLoaded.has(name)) {
+        _promptsLoaded.add(name);
+        fetch('/api/profiles/' + encodeURIComponent(name))
+          .then(r => r.json())
+          .then(data => {
+            const sp = document.getElementById('prompt-' + name);
+            const ss = document.getElementById('soul-' + name);
+            if (sp && data.system_prompt) sp.value = data.system_prompt;
+            if (ss && data.soul_script) ss.value = data.soul_script;
+          })
+          .catch(() => _promptsLoaded.delete(name));
+      }
     }
   }
 

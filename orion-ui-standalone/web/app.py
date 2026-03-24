@@ -21,6 +21,7 @@ import re
 import subprocess
 import sys
 import threading
+import time as _time
 import uuid
 import base64 as _b64
 from datetime import datetime, timedelta, timezone
@@ -337,6 +338,27 @@ def _get_faiss_memory():
 
 
 # ═══════════════════════════════════════════════════════════════════
+#  TTL CACHE — eliminates redundant disk reads within the same request
+# ═══════════════════════════════════════════════════════════════════
+_TTL_CACHE: dict[str, tuple[float, object]] = {}   # key → (expires_at, data)
+_TTL_SECONDS = 2.0                                  # short-lived: just covers one render cycle
+
+def _cache_get(key: str):
+    entry = _TTL_CACHE.get(key)
+    if entry and entry[0] > _time.monotonic():
+        return entry[1]
+    return None
+
+def _cache_set(key: str, value):
+    _TTL_CACHE[key] = (_time.monotonic() + _TTL_SECONDS, value)
+
+def _cache_invalidate(*prefixes: str):
+    """Drop any cache keys that start with one of the given prefixes."""
+    for k in [k for k in _TTL_CACHE if any(k.startswith(p) for p in prefixes)]:
+        _TTL_CACHE.pop(k, None)
+
+
+# ═══════════════════════════════════════════════════════════════════
 #  JSON HELPERS
 # ═══════════════════════════════════════════════════════════════════
 
@@ -361,10 +383,16 @@ def _write_json(path: Path, data):
 # ═══════════════════════════════════════════════════════════════════
 
 def _load_connections() -> dict:
-    return _read_json(CONNECTIONS_FILE, {"connections": [], "agent_connections": {}})
+    cached = _cache_get("connections")
+    if cached is not None:
+        return cached
+    data = _read_json(CONNECTIONS_FILE, {"connections": [], "agent_connections": {}})
+    _cache_set("connections", data)
+    return data
 
 def _save_connections(data: dict):
     _write_json(CONNECTIONS_FILE, data)
+    _cache_invalidate("connections")
 
 PLATFORM_OLLAMA_URL = "http://orionforge-engine-ollama.flycast:11434"
 
@@ -492,10 +520,16 @@ def _resolve_connection(connection_id: str | None, agent: str) -> dict | None:
 # ═══════════════════════════════════════════════════════════════════
 
 def _load_settings() -> dict:
-    return _read_json(SETTINGS_FILE, {})
+    cached = _cache_get("settings")
+    if cached is not None:
+        return cached
+    data = _read_json(SETTINGS_FILE, {})
+    _cache_set("settings", data)
+    return data
 
 def _save_settings(data: dict):
     _write_json(SETTINGS_FILE, data)
+    _cache_invalidate("settings")
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -503,16 +537,22 @@ def _save_settings(data: dict):
 # ═══════════════════════════════════════════════════════════════════
 
 def _load_pricing() -> dict:
+    hit = _cache_get("pricing")
+    if hit is not None:
+        return hit
     if not PRICING_FILE.exists():
         return {}
     try:
         with open(PRICING_FILE, "r", encoding="utf-8") as f:
-            return yaml.safe_load(f) or {}
+            data = yaml.safe_load(f) or {}
+        _cache_set("pricing", data)
+        return data
     except yaml.YAMLError as exc:
         log.warning("[pricing] Failed to parse %s: %s — returning empty dict", PRICING_FILE, exc)
         return {}
 
 def _save_pricing(data: dict):
+    _cache_invalidate("pricing")
     PRICING_FILE.parent.mkdir(parents=True, exist_ok=True)
     # Dump to string first, validate round-trip, then write
     raw = yaml.dump(data, default_flow_style=False, sort_keys=False,
@@ -666,15 +706,22 @@ def _prioritize_default_agent(agents: list[str]) -> list[str]:
     return agents
 
 def _load_profile(name: str) -> dict:
+    key = f"profile:{name}"
+    cached = _cache_get(key)
+    if cached is not None:
+        return cached
     path = _PROFILES_DIR / f"{name}.yaml"
     if not path.exists():
         return {}
     with open(path, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f) or {}
+        data = yaml.safe_load(f) or {}
+    _cache_set(key, data)
+    return data
 
 def _save_profile(name: str, data: dict):
     with open(_PROFILES_DIR / f"{name}.yaml", "w", encoding="utf-8") as f:
         yaml.dump(data, f, default_flow_style=False, allow_unicode=True)
+    _cache_invalidate(f"profile:{name}")
 
 def _load_system_prompt(name: str) -> str:
     path = _PROMPTS_DIR / f"{name}.system.md"
@@ -1892,8 +1939,8 @@ async def page_profiles(request: Request):
         cfg = settings.get("agent_configs", {}).get(name, {})
         agent_data[name] = {
             "profile": profile, "config": cfg,
-            "system_prompt": _load_system_prompt(name),
-            "soul_script": _load_soul_script(name),
+            "system_prompt": "",
+            "soul_script": "",
             "display_name": cfg.get("display_name", name),
             "description": cfg.get("description", ""),
         }
@@ -4511,7 +4558,8 @@ async def api_profile_get(name: str):
     if not profile:
         return JSONResponse({"error": "Not found"}, 404)
     return {"name": name, "profile": profile, "config": _get_agent_config(name),
-            "system_prompt": _load_system_prompt(name)}
+            "system_prompt": _load_system_prompt(name),
+            "soul_script": _load_soul_script(name)}
 
 @app.put("/api/profiles/{name}")
 async def api_profile_update(name: str, request: Request):

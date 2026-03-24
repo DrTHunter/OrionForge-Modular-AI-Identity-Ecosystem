@@ -4912,6 +4912,7 @@ def test_avatar_migration():
         tmp_settings = tmp_config / "settings.json"
 
         _app.SETTINGS_FILE = tmp_settings
+        _app._TTL_CACHE.clear()
         _app._UPLOADS_DIR = tmp_uploads
 
         # Create a small 1x1 PNG
@@ -4993,6 +4994,7 @@ def test_avatar_migration():
 
     finally:
         _app.SETTINGS_FILE = orig_settings
+        _app._TTL_CACHE.clear()
         _app._UPLOADS_DIR = orig_uploads
         shutil.rmtree(tmp, ignore_errors=True)
 
@@ -5032,6 +5034,7 @@ def test_profile_api_torture():
         tmp_settings.write_text("{}", encoding="utf-8")
 
         _app.SETTINGS_FILE = tmp_settings
+        _app._TTL_CACHE.clear()
         _app._UPLOADS_DIR = tmp_uploads
         _app._PROFILES_DIR = tmp_profiles
         _app._PROMPTS_DIR = tmp_prompts
@@ -5168,6 +5171,7 @@ def test_profile_api_torture():
 
     finally:
         _app.SETTINGS_FILE = orig_settings
+        _app._TTL_CACHE.clear()
         _app._UPLOADS_DIR = orig_uploads
         _app._PROFILES_DIR = orig_profiles
         _app._PROMPTS_DIR = orig_prompts
@@ -5192,6 +5196,7 @@ def test_skins_api():
         tmp_settings.parent.mkdir(parents=True)
         tmp_settings.write_text("{}", encoding="utf-8")
         _app.SETTINGS_FILE = tmp_settings
+        _app._TTL_CACHE.clear()
 
         try:
             from httpx import ASGITransport, AsyncClient
@@ -5243,6 +5248,7 @@ def test_skins_api():
 
     finally:
         _app.SETTINGS_FILE = orig_settings
+        _app._TTL_CACHE.clear()
         shutil.rmtree(tmp, ignore_errors=True)
 
 
@@ -5268,6 +5274,7 @@ def test_saved_profile_crud():
 
         _app._SAVED_MEMORY_PROFILES_DIR = tmp_profiles
         _app.SETTINGS_FILE = tmp_settings
+        _app._TTL_CACHE.clear()
 
         # ── 1. _list_profiles_in — empty directory ──
         result = _app._list_profiles_in(tmp_profiles)
@@ -5379,6 +5386,7 @@ def test_saved_profile_crud():
     finally:
         _app._SAVED_MEMORY_PROFILES_DIR = orig_dir
         _app.SETTINGS_FILE = orig_settings
+        _app._TTL_CACHE.clear()
         shutil.rmtree(tmp, ignore_errors=True)
 
 
@@ -5557,6 +5565,7 @@ def test_profile_create_v2():
         _app._PROMPTS_DIR = tmp_prompts
         _app._DIRECTIVES_DIR = tmp_directives
         _app.SETTINGS_FILE = tmp_settings
+        _app._TTL_CACHE.clear()
 
         try:
             from httpx import ASGITransport, AsyncClient
@@ -5611,6 +5620,7 @@ def test_profile_create_v2():
         _app._PROMPTS_DIR = orig_prompts
         _app._DIRECTIVES_DIR = orig_directives
         _app.SETTINGS_FILE = orig_settings
+        _app._TTL_CACHE.clear()
         shutil.rmtree(tmp, ignore_errors=True)
 
 
@@ -5630,6 +5640,7 @@ def test_settings_helpers():
         tmp_settings = Path(tmp) / "config" / "settings.json"
         tmp_settings.parent.mkdir(parents=True)
         _app.SETTINGS_FILE = tmp_settings
+        _app._TTL_CACHE.clear()
 
         # ── 1. Missing file → empty dict ──
         data = _app._load_settings()
@@ -5655,6 +5666,7 @@ def test_settings_helpers():
 
     finally:
         _app.SETTINGS_FILE = orig_settings
+        _app._TTL_CACHE.clear()
         shutil.rmtree(tmp, ignore_errors=True)
 
 
@@ -6589,6 +6601,7 @@ def test_edge_tts_conn_env_fallback():
             ], "agent_connections": {}
         }), encoding="utf-8")
         _app.CONNECTIONS_FILE = tmp_connections
+        _app._TTL_CACHE.clear()
         conn = _get_elevenlabs_conn()
         check("no elevenlabs conn -> None", conn is None)
 
@@ -6599,6 +6612,7 @@ def test_edge_tts_conn_env_fallback():
                  "api_key": "el-key", "enabled": True, "platform_hosted": True}
             ], "agent_connections": {}
         }), encoding="utf-8")
+        _app._TTL_CACHE.clear()
         conn2 = _get_elevenlabs_conn()
         check("el conn found", conn2 is not None)
         check("el conn id", conn2["id"] == "el-1")
@@ -6610,11 +6624,13 @@ def test_edge_tts_conn_env_fallback():
                 {"id": "el-2", "provider": "elevenlabs", "enabled": False, "api_key": "key"}
             ], "agent_connections": {}
         }), encoding="utf-8")
+        _app._TTL_CACHE.clear()
         conn3 = _get_elevenlabs_conn()
         check("disabled el conn -> None", conn3 is None)
 
     finally:
         _app.CONNECTIONS_FILE = orig_connections
+        _app._TTL_CACHE.clear()
         shutil.rmtree(tmp, ignore_errors=True)
 
 
@@ -6635,6 +6651,7 @@ def test_whisper_conn_env_fallback():
             "connections": [], "agent_connections": {}
         }), encoding="utf-8")
         _app.CONNECTIONS_FILE = tmp_connections
+        _app._TTL_CACHE.clear()
         old_or = os.environ.pop("OPENROUTER_API_KEY", None)
         old_el = os.environ.pop("ELEVENLABS_API_KEY", None)
         try:
@@ -6666,6 +6683,7 @@ def test_whisper_conn_env_fallback():
 
     finally:
         _app.CONNECTIONS_FILE = orig_connections
+        _app._TTL_CACHE.clear()
         shutil.rmtree(tmp, ignore_errors=True)
 
 
@@ -6713,6 +6731,7 @@ def test_connections_json_tts_fallback():
             ], "agent_connections": {}
         }), encoding="utf-8")
         _app.CONNECTIONS_FILE = tmp_connections
+        _app._TTL_CACHE.clear()
 
         conn = _get_elevenlabs_conn()
         check("json fallback finds conn", conn is not None)
@@ -6727,6 +6746,7 @@ def test_connections_json_tts_fallback():
                  "enabled": False}
             ], "agent_connections": {}
         }), encoding="utf-8")
+        _app._TTL_CACHE.clear()
         conn2 = _get_elevenlabs_conn()
         check("disabled conn returns None", conn2 is None)
 
@@ -6738,6 +6758,7 @@ def test_connections_json_tts_fallback():
                  "enabled": True}
             ], "agent_connections": {}
         }), encoding="utf-8")
+        _app._TTL_CACHE.clear()
         conn3 = _get_elevenlabs_conn()
         check("wrong provider returns None", conn3 is None)
 
@@ -6745,11 +6766,13 @@ def test_connections_json_tts_fallback():
         tmp_connections.write_text(json.dumps({
             "connections": [], "agent_connections": {}
         }), encoding="utf-8")
+        _app._TTL_CACHE.clear()
         conn4 = _get_elevenlabs_conn()
         check("empty connections returns None", conn4 is None)
 
     finally:
         _app.CONNECTIONS_FILE = orig_connections
+        _app._TTL_CACHE.clear()
         shutil.rmtree(tmp, ignore_errors=True)
 
 
@@ -6768,12 +6791,14 @@ def test_connections_json_whisper_fallback():
         tmp_connections.parent.mkdir(parents=True, exist_ok=True)
         tmp_settings.write_text("{}", encoding="utf-8")
         _app.SETTINGS_FILE = tmp_settings
+        _app._TTL_CACHE.clear()
 
         # ── 1. Empty connections → None ──
         tmp_connections.write_text(json.dumps({
             "connections": [], "agent_connections": {}
         }), encoding="utf-8")
         _app.CONNECTIONS_FILE = tmp_connections
+        _app._TTL_CACHE.clear()
         conn = _app._resolve_connection(None, "orion")
         check("empty connections -> None", conn is None)
 
@@ -6784,6 +6809,7 @@ def test_connections_json_whisper_fallback():
                  "api_key": "sk-test", "enabled": True, "type": "external"},
             ], "agent_connections": {}
         }), encoding="utf-8")
+        _app._TTL_CACHE.clear()
         conn2 = _app._resolve_connection("c1", "orion")
         check("explicit conn_id found", conn2 is not None)
         check("explicit conn_id correct", conn2["id"] == "c1")
@@ -6794,6 +6820,7 @@ def test_connections_json_whisper_fallback():
                 {"id": "c1", "provider": "openai", "enabled": False, "type": "external"},
             ], "agent_connections": {}
         }), encoding="utf-8")
+        _app._TTL_CACHE.clear()
         conn3 = _app._resolve_connection("c1", "orion")
         check("disabled explicit conn -> None", conn3 is None)
 
@@ -6803,6 +6830,7 @@ def test_connections_json_whisper_fallback():
                 {"id": "c1", "provider": "openai", "enabled": True, "type": "external"},
             ], "agent_connections": {"orion": "c1"}
         }), encoding="utf-8")
+        _app._TTL_CACHE.clear()
         conn4 = _app._resolve_connection(None, "orion")
         check("agent-mapped conn found", conn4 is not None)
         check("agent-mapped conn correct", conn4["id"] == "c1")
@@ -6814,13 +6842,16 @@ def test_connections_json_whisper_fallback():
                  "type": "external", "platform_hosted": True, "api_key": "or-key"},
             ], "agent_connections": {}
         }), encoding="utf-8")
+        _app._TTL_CACHE.clear()
         conn5 = _app._resolve_connection(None, "orion")
         check("platform fallback found", conn5 is not None)
         check("platform fallback correct", conn5["id"] == "plat1")
 
     finally:
         _app.CONNECTIONS_FILE = orig_connections
+        _app._TTL_CACHE.clear()
         _app.SETTINGS_FILE = orig_settings
+        _app._TTL_CACHE.clear()
         shutil.rmtree(tmp, ignore_errors=True)
 
 
@@ -6980,6 +7011,7 @@ def test_env_priority_over_connections():
             ], "agent_connections": {}
         }), encoding="utf-8")
         _app.CONNECTIONS_FILE = tmp_connections
+        _app._TTL_CACHE.clear()
 
         old_el = os.environ.pop("ELEVENLABS_API_KEY", None)
         old_or = os.environ.pop("OPENROUTER_API_KEY", None)
@@ -7007,6 +7039,7 @@ def test_env_priority_over_connections():
 
     finally:
         _app.CONNECTIONS_FILE = orig_connections
+        _app._TTL_CACHE.clear()
         shutil.rmtree(tmp, ignore_errors=True)
 
 
@@ -7026,6 +7059,7 @@ def test_platform_api_keys_image():
         tmp_settings = Path(tmp) / "config" / "settings.json"
         tmp_settings.parent.mkdir(parents=True)
         _app.SETTINGS_FILE = tmp_settings
+        _app._TTL_CACHE.clear()
 
         # ── 1. Default state: no Platform Keys enabled ──
         default = _app._load_settings()
@@ -7096,6 +7130,7 @@ def test_platform_api_keys_image():
 
     finally:
         _app.SETTINGS_FILE = orig_settings
+        _app._TTL_CACHE.clear()
         shutil.rmtree(tmp, ignore_errors=True)
 
 
@@ -7115,6 +7150,7 @@ def test_platform_api_keys_voice():
         tmp_settings = Path(tmp) / "config" / "settings.json"
         tmp_settings.parent.mkdir(parents=True)
         _app.SETTINGS_FILE = tmp_settings
+        _app._TTL_CACHE.clear()
 
         # ── 1. Default state: no Platform Keys enabled ──
         default = _app._load_settings()
@@ -7180,6 +7216,7 @@ def test_platform_api_keys_voice():
 
     finally:
         _app.SETTINGS_FILE = orig_settings
+        _app._TTL_CACHE.clear()
         shutil.rmtree(tmp, ignore_errors=True)
 
 
@@ -7231,6 +7268,7 @@ def test_get_platform_connections():
         tmp_conn = Path(tmp) / "config" / "connections.json"
         tmp_conn.parent.mkdir(parents=True)
         _app.CONNECTIONS_FILE = tmp_conn
+        _app._TTL_CACHE.clear()
 
         store = {
             "connections": [
@@ -7260,6 +7298,7 @@ def test_get_platform_connections():
 
     finally:
         _app.CONNECTIONS_FILE = orig_conn
+        _app._TTL_CACHE.clear()
         shutil.rmtree(tmp, ignore_errors=True)
 
 
@@ -7278,6 +7317,7 @@ def test_page_chat_connections_split():
         tmp_conn = Path(tmp) / "config" / "connections.json"
         tmp_conn.parent.mkdir(parents=True)
         _app.CONNECTIONS_FILE = tmp_conn
+        _app._TTL_CACHE.clear()
 
         store = {
             "connections": [
@@ -7322,6 +7362,7 @@ def test_page_chat_connections_split():
 
     finally:
         _app.CONNECTIONS_FILE = orig_conn
+        _app._TTL_CACHE.clear()
         shutil.rmtree(tmp, ignore_errors=True)
 
 
@@ -7340,6 +7381,7 @@ def test_admin_platform_key_ollama_save():
         tmp_conn = Path(tmp) / "config" / "connections.json"
         tmp_conn.parent.mkdir(parents=True)
         _app.CONNECTIONS_FILE = tmp_conn
+        _app._TTL_CACHE.clear()
         _app._save_connections({"connections": []})
 
         EXPECTED_URL = _app.PLATFORM_OLLAMA_URL
@@ -7416,6 +7458,7 @@ def test_admin_platform_key_ollama_save():
 
     finally:
         _app.CONNECTIONS_FILE = orig_conn
+        _app._TTL_CACHE.clear()
         shutil.rmtree(tmp, ignore_errors=True)
 
 
@@ -7434,6 +7477,7 @@ def test_user_api_keys_openrouter_ollama():
         tmp_settings = Path(tmp) / "config" / "settings.json"
         tmp_settings.parent.mkdir(parents=True)
         _app.SETTINGS_FILE = tmp_settings
+        _app._TTL_CACHE.clear()
 
         # ── 1. Save all user keys including openrouter + ollama_url ──
         body = {
@@ -7494,6 +7538,7 @@ def test_user_api_keys_openrouter_ollama():
 
     finally:
         _app.SETTINGS_FILE = orig_settings
+        _app._TTL_CACHE.clear()
         shutil.rmtree(tmp, ignore_errors=True)
 
 
@@ -7512,6 +7557,7 @@ def test_user_api_keys_masking():
         tmp_settings = Path(tmp) / "config" / "settings.json"
         tmp_settings.parent.mkdir(parents=True)
         _app.SETTINGS_FILE = tmp_settings
+        _app._TTL_CACHE.clear()
 
         settings = {
             "api_keys": {
@@ -7563,6 +7609,7 @@ def test_user_api_keys_masking():
 
     finally:
         _app.SETTINGS_FILE = orig_settings
+        _app._TTL_CACHE.clear()
         shutil.rmtree(tmp, ignore_errors=True)
 
 
@@ -7581,6 +7628,7 @@ def test_connections_all_models_static():
         tmp_conn = Path(tmp) / "config" / "connections.json"
         tmp_conn.parent.mkdir(parents=True)
         _app.CONNECTIONS_FILE = tmp_conn
+        _app._TTL_CACHE.clear()
 
         store = {
             "connections": [
@@ -7632,6 +7680,7 @@ def test_connections_all_models_static():
 
     finally:
         _app.CONNECTIONS_FILE = orig_conn
+        _app._TTL_CACHE.clear()
         shutil.rmtree(tmp, ignore_errors=True)
 
 
@@ -7838,6 +7887,7 @@ def test_soul_script_api():
         tmp_settings.write_text("{}", encoding="utf-8")
 
         _app.SETTINGS_FILE = tmp_settings
+        _app._TTL_CACHE.clear()
         _app._PROFILES_DIR = tmp_profiles
         _app._PROMPTS_DIR = tmp_prompts
         _app._DIRECTIVES_DIR = tmp_directives
@@ -7925,6 +7975,7 @@ def test_soul_script_api():
 
     finally:
         _app.SETTINGS_FILE = orig_settings
+        _app._TTL_CACHE.clear()
         _app._PROFILES_DIR = orig_profiles
         _app._PROMPTS_DIR = orig_prompts
         _app._DIRECTIVES_DIR = orig_directives
@@ -8230,7 +8281,9 @@ def test_resolve_connection_userkey():
         tmp_conn = Path(tmp) / "config" / "connections.json"
         tmp_settings.parent.mkdir(parents=True)
         _app.SETTINGS_FILE = tmp_settings
+        _app._TTL_CACHE.clear()
         _app.CONNECTIONS_FILE = tmp_conn
+        _app._TTL_CACHE.clear()
 
         # Set up user API keys
         settings = {
@@ -8296,7 +8349,9 @@ def test_resolve_connection_userkey():
 
     finally:
         _app.SETTINGS_FILE = orig_settings
+        _app._TTL_CACHE.clear()
         _app.CONNECTIONS_FILE = orig_conn
+        _app._TTL_CACHE.clear()
         shutil.rmtree(tmp, ignore_errors=True)
 
 
@@ -8315,6 +8370,7 @@ def test_api_user_models():
         tmp_settings = Path(tmp) / "config" / "settings.json"
         tmp_settings.parent.mkdir(parents=True)
         _app.SETTINGS_FILE = tmp_settings
+        _app._TTL_CACHE.clear()
 
         # ── 1. All keys set → all providers returned ──
         settings = {
@@ -8418,6 +8474,7 @@ def test_api_user_models():
 
     finally:
         _app.SETTINGS_FILE = orig_settings
+        _app._TTL_CACHE.clear()
         shutil.rmtree(tmp, ignore_errors=True)
 
 
@@ -9414,7 +9471,9 @@ def test_admin_voices_api():
             "agent_connections": {},
         }), encoding="utf-8")
         _app.SETTINGS_FILE = tmp_settings
+        _app._TTL_CACHE.clear()
         _app.CONNECTIONS_FILE = tmp_connections
+        _app._TTL_CACHE.clear()
 
         try:
             from httpx import ASGITransport, AsyncClient
@@ -9493,7 +9552,9 @@ def test_admin_voices_api():
 
     finally:
         _app.SETTINGS_FILE = orig_settings
+        _app._TTL_CACHE.clear()
         _app.CONNECTIONS_FILE = orig_connections
+        _app._TTL_CACHE.clear()
         shutil.rmtree(tmp, ignore_errors=True)
 
 
@@ -9575,6 +9636,7 @@ def test_admin_user_management_api():
         tmp_settings.parent.mkdir(parents=True, exist_ok=True)
         tmp_settings.write_text("{}", encoding="utf-8")
         _app.SETTINGS_FILE = tmp_settings
+        _app._TTL_CACHE.clear()
 
         try:
             from httpx import ASGITransport, AsyncClient
@@ -9625,6 +9687,7 @@ def test_admin_user_management_api():
 
     finally:
         _app.SETTINGS_FILE = orig_settings
+        _app._TTL_CACHE.clear()
         shutil.rmtree(tmp, ignore_errors=True)
 
 
@@ -9648,6 +9711,7 @@ def test_connections_crud_api():
             "agent_connections": {},
         }), encoding="utf-8")
         _app.CONNECTIONS_FILE = tmp_connections
+        _app._TTL_CACHE.clear()
 
         try:
             from httpx import ASGITransport, AsyncClient
@@ -9729,6 +9793,7 @@ def test_connections_crud_api():
 
     finally:
         _app.CONNECTIONS_FILE = orig_connections
+        _app._TTL_CACHE.clear()
         shutil.rmtree(tmp, ignore_errors=True)
 
 
@@ -9750,6 +9815,7 @@ def test_pricing_crud_api():
         # Start with empty pricing
         tmp_pricing.write_text("", encoding="utf-8")
         _app.PRICING_FILE = tmp_pricing
+        _app._TTL_CACHE.clear()
 
         try:
             from httpx import ASGITransport, AsyncClient
@@ -9827,6 +9893,7 @@ def test_pricing_crud_api():
 
     finally:
         _app.PRICING_FILE = orig_pricing
+        _app._TTL_CACHE.clear()
         shutil.rmtree(tmp, ignore_errors=True)
 
 
@@ -9849,6 +9916,7 @@ def test_tts_voices_filter_logic():
         # ── 1. No allowlist → all voices pass through ──
         tmp_settings.write_text(json.dumps({}), encoding="utf-8")
         _app.SETTINGS_FILE = tmp_settings
+        _app._TTL_CACHE.clear()
         settings = _app._load_settings()
         allowed = settings.get("allowed_voices", [])
         check("no allowlist → empty list", allowed == [])
@@ -9858,6 +9926,7 @@ def test_tts_voices_filter_logic():
             "allowed_voices": ["voice_a", "voice_b"],
             "premium_voices": ["voice_b"],
         }), encoding="utf-8")
+        _app._TTL_CACHE.clear()
         settings2 = _app._load_settings()
         allowed2 = settings2.get("allowed_voices", [])
         premium2 = set(settings2.get("premium_voices", []))
@@ -9888,12 +9957,14 @@ def test_tts_voices_filter_logic():
             "allowed_voices": [],
             "premium_voices": [],
         }), encoding="utf-8")
+        _app._TTL_CACHE.clear()
         settings3 = _app._load_settings()
         allowed3 = settings3.get("allowed_voices", [])
         check("empty allowlist → show all", len(allowed3) == 0)
 
     finally:
         _app.SETTINGS_FILE = orig_settings
+        _app._TTL_CACHE.clear()
         shutil.rmtree(tmp, ignore_errors=True)
 
 
@@ -9916,26 +9987,31 @@ def test_inworld_api_key_helper():
         # ── 1. No api_keys → None ──
         tmp_settings.write_text(json.dumps({}), encoding="utf-8")
         _app.SETTINGS_FILE = tmp_settings
+        _app._TTL_CACHE.clear()
         result = _app._get_inworld_api_key()
         check("no api_keys → None", result is None)
 
         # ── 2. Empty inworld key → None ──
         tmp_settings.write_text(json.dumps({"api_keys": {"inworld": ""}}), encoding="utf-8")
+        _app._TTL_CACHE.clear()
         result2 = _app._get_inworld_api_key()
         check("empty inworld key → None", result2 is None)
 
         # ── 3. Valid key → returned ──
         tmp_settings.write_text(json.dumps({"api_keys": {"inworld": "my-secret-key"}}), encoding="utf-8")
+        _app._TTL_CACHE.clear()
         result3 = _app._get_inworld_api_key()
         check("valid key returned", result3 == "my-secret-key")
 
         # ── 4. Other keys present, no inworld → None ──
         tmp_settings.write_text(json.dumps({"api_keys": {"openai": "sk-abc"}}), encoding="utf-8")
+        _app._TTL_CACHE.clear()
         result4 = _app._get_inworld_api_key()
         check("no inworld key → None", result4 is None)
 
     finally:
         _app.SETTINGS_FILE = orig_settings
+        _app._TTL_CACHE.clear()
         shutil.rmtree(tmp, ignore_errors=True)
 
 
