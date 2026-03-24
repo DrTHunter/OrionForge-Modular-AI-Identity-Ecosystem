@@ -16,7 +16,7 @@ directives:
   scopes:
   - shared
   - kazara
-inworld_voice: Dennis
+inworld_voice: Dominus
 identity_faiss_profile: __default__
 memory:
   enabled: true
@@ -35,5 +35,5 @@ policy:
 provider: openai
 system_prompt: kazara.system.md
 temperature: 0.65
-voice_id: uuUzmO5DqwnGoJIDCLmw
+voice_id: Xb7hH8MSUJpSbSDYk0k2
 window_size: 50

@@ -16,7 +16,7 @@ directives:
   scopes:
   - shared
   - dalvarr
-inworld_voice: Dennis
+inworld_voice: Hades
 identity_faiss_profile: __default__
 memory:
   enabled: true

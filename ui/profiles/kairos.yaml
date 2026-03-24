@@ -16,7 +16,7 @@ directives:
   scopes:
   - shared
   - kairos
-inworld_voice: Dennis
+inworld_voice: Nate
 identity_faiss_profile: __default__
 memory:
   enabled: true
@@ -35,5 +35,5 @@ policy:
 provider: openai
 system_prompt: kairos.system.md
 temperature: 0.75
-voice_id: ''
+voice_id: TX3LPaxmHKxFdv7VOQHJ
 window_size: 50

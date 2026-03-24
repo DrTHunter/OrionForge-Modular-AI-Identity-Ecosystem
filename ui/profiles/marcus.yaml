@@ -15,7 +15,7 @@ directives:
   scopes:
   - shared
   - marcus
-inworld_voice: Dennis
+inworld_voice: Graham
 identity_faiss_profile: __default__
 memory:
   enabled: true
