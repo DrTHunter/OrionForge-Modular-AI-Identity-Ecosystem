@@ -6041,7 +6041,7 @@ async def api_stt_elevenlabs(request: Request):
                 url,
                 headers=headers,
                 files={"file": (filename, audio_bytes, "audio/webm")},
-                data={"language_code": language},
+                data={"model_id": "scribe_v1", "language_code": language},
             )
             resp.raise_for_status()
             data = resp.json()
