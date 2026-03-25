@@ -43,10 +43,6 @@ engines:
     engine: github
     shortcut: gh
     disabled: false
-  - name: stackoverflow
-    engine: stackoverflow
-    shortcut: so
-    disabled: false
   - name: arxiv
     engine: arxiv
     shortcut: arx
