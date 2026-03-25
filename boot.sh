@@ -131,6 +131,25 @@ if [ ! -f "$PERSIST_NOTES/index.json" ]; then
     cp -a "$APP_NOTES"/* "$PERSIST_NOTES/" 2>/dev/null || true
 else
     echo "[boot] Persistent user notes exist — preserving."
+    # Sync any bundled notes that are larger than their persisted version.
+    # This catches notes that were empty on volume but got content in the repo.
+    for src in "$APP_NOTES"/*.json; do
+        [ -f "$src" ] || continue
+        fname="$(basename "$src")"
+        [ "$fname" = "index.json" ] && continue
+        dst="$PERSIST_NOTES/$fname"
+        if [ -f "$dst" ]; then
+            src_size=$(stat -c%s "$src" 2>/dev/null || stat -f%z "$src" 2>/dev/null || echo 0)
+            dst_size=$(stat -c%s "$dst" 2>/dev/null || stat -f%z "$dst" 2>/dev/null || echo 0)
+            if [ "$src_size" -gt "$dst_size" ]; then
+                echo "[boot] Upgrading note $fname ($dst_size → $src_size bytes)"
+                cp -a "$src" "$dst"
+            fi
+        else
+            echo "[boot] New bundled note $fname — copying to persistent volume."
+            cp -a "$src" "$dst"
+        fi
+    done
 fi
 
 # 12. Symlink user_notes dir to persistent volume
