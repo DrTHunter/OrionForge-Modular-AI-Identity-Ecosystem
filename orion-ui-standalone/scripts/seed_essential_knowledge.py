@@ -17,7 +17,7 @@
 
 
 
-chrome://settings/searchEngines
+JanusSafe
     Safe                    
 
 db8c5af8-2a91-4d81-a6a5-8894cf283a36

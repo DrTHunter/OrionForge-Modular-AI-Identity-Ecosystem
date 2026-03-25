@@ -225,7 +225,6 @@
   "tool_config": {
     "web_search": {
       "require_justification": true,
-      "searxng_url": "http://localhost:3000/search",
       "modes": {
         "fast": {
           "pages": 2,
