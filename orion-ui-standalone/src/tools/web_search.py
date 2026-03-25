@@ -91,10 +91,12 @@ def _load_tool_config() -> Dict[str, Any]:
 
 
 def get_effective_config() -> Dict[str, Any]:
-    """Return merged config (defaults + user overrides from settings.json)."""
+    """Return merged config (defaults + user overrides from settings.json).
+    Environment variable SEARXNG_URL always wins over settings.json."""
     saved = _load_tool_config()
+    searxng_url = os.environ.get("SEARXNG_URL") or saved.get("searxng_url") or _DEFAULT_SEARXNG_URL
     return {
-        "searxng_url": saved.get("searxng_url", _DEFAULT_SEARXNG_URL),
+        "searxng_url": searxng_url,
         "ignored_sites": saved.get("ignored_sites", _DEFAULT_IGNORED_SITES),
         "require_justification": saved.get("require_justification", True),
         "modes": {
