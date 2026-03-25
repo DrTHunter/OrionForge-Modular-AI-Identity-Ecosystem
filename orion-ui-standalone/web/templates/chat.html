@@ -909,6 +909,8 @@ let _pendingModelRestore = null;
 let _sessionCost = 0;
 let _sessionTokens = 0;
 let _sessionCredits = 0;
+let _sessionTtsCost = 0;
+let _sessionSttCost = 0;
 let _creditBalance = -1;  // -1 = unknown
 
 // ═══════════════════════════════════════════
@@ -988,6 +990,14 @@ function updateCostTicker() {
   if (!el) return;
   const costStr = _sessionCost > 0.01 ? '$' + _sessionCost.toFixed(4) : '$' + _sessionCost.toFixed(6);
   let html = `<span style="opacity:0.5;">Session:</span> ${costStr} <span style="opacity:0.4;">·</span> ${_sessionTokens.toLocaleString()} tok`;
+  if (_sessionTtsCost > 0) {
+    const ttsStr = _sessionTtsCost > 0.01 ? '$' + _sessionTtsCost.toFixed(4) : '$' + _sessionTtsCost.toFixed(6);
+    html += ` <span style="opacity:0.4;">·</span> <span style="color:#f59e0b;">TTS ${ttsStr}</span>`;
+  }
+  if (_sessionSttCost > 0) {
+    const sttStr = _sessionSttCost > 0.01 ? '$' + _sessionSttCost.toFixed(4) : '$' + _sessionSttCost.toFixed(6);
+    html += ` <span style="opacity:0.4;">·</span> <span style="color:#38bdf8;">STT ${sttStr}</span>`;
+  }
   if (_sessionCredits > 0) {
     html += ` <span style="opacity:0.4;">·</span> <span style="color:#a78bfa;">${_sessionCredits} credits</span>`;
   }
@@ -1556,6 +1566,7 @@ async function speakText(text, metaEl) {
     // Add TTS cost to session tracker
     if (ttsCost > 0) {
       _sessionCost += ttsCost;
+      _sessionTtsCost += ttsCost;
       updateCostTicker();
     }
     return { characters: charCount, cost: ttsCost, provider, premium: isPremium };
@@ -1697,6 +1708,7 @@ function _toggleMicElevenLabs() {
           // Track STT cost in session
           if (data.stt_cost > 0) {
             _sessionCost += data.stt_cost;
+            _sessionSttCost += data.stt_cost;
             updateCostTicker();
           }
           if (text) {
@@ -1964,9 +1976,11 @@ function loadChatIntoThread(chat) {
   document.getElementById('chat-agent').value = chat.agent || 'astraea';
   _saveChatDefaults();
   // Recalculate session cost
-  _sessionCost = 0; _sessionTokens = 0; _sessionCredits = 0;
+  _sessionCost = 0; _sessionTokens = 0; _sessionCredits = 0; _sessionTtsCost = 0; _sessionSttCost = 0;
   _msgs.forEach(m => {
     if (m.data?.cost?.total_cost) _sessionCost += m.data.cost.total_cost;
+    if (m.data?.tts_cost) { _sessionCost += m.data.tts_cost; _sessionTtsCost += m.data.tts_cost; }
+    if (m.data?.stt_cost) { _sessionCost += m.data.stt_cost; _sessionSttCost += m.data.stt_cost; }
     if (m.data?.usage) _sessionTokens += (m.data.usage.prompt_tokens||0) + (m.data.usage.completion_tokens||0);
   });
   if (_sessionCost > 0) updateCostTicker();
@@ -2868,7 +2882,9 @@ async function sendChatMsg() {
 
     // Auto-play TTS if enabled
     if (_ttsProvider !== 'off') {
-      speakText(responseText, el.querySelector('.msg-meta'));
+      speakText(responseText, el.querySelector('.msg-meta')).then(r => {
+        if (r && r.cost > 0) m.data.tts_cost = (m.data.tts_cost || 0) + r.cost;
+      });
     }
 
     generateSuggestions(responseText, agent);
