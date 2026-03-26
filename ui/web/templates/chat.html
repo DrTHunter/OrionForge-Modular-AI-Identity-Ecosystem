@@ -189,12 +189,15 @@
   }
   .msg-body {
     font-size: 0.875rem; line-height: 1.65;
-    white-space: pre-wrap; word-break: break-word;
+    word-break: break-word;
     color: #d4d4d8;
     background: rgba(99,102,241,0.04);
     border: 1px solid rgba(99,102,241,0.08);
     border-radius: 0.625rem;
     padding: 0.5rem 0.75rem;
+  }
+  .user-entry .msg-body {
+    white-space: pre-wrap;
   }
   .user-entry .msg-body {
     color: #d1fae5;
@@ -665,15 +668,18 @@
 
   /* ── Markdown-rendered message body ── */
   .msg-body h1, .msg-body h2, .msg-body h3, .msg-body h4 {
-    margin: 0.75rem 0 0.375rem; font-weight: 700; color: #e4e4e7; line-height: 1.35;
+    margin: 0.5rem 0 0.25rem; font-weight: 700; color: #e4e4e7; line-height: 1.35;
   }
   .msg-body h1 { font-size: 1.25rem; }
   .msg-body h2 { font-size: 1.1rem; }
   .msg-body h3 { font-size: 1rem; }
   .msg-body h4 { font-size: 0.9375rem; color: #a1a1aa; }
-  .msg-body p { margin: 0.375rem 0; }
-  .msg-body ul, .msg-body ol { margin: 0.375rem 0 0.375rem 1.25rem; }
+  .msg-body p { margin: 0.25rem 0; }
+  .msg-body ul { margin: 0.25rem 0 0.25rem 0.25rem; padding-left: 1.25rem; list-style-type: disc; }
+  .msg-body ol { margin: 0.25rem 0 0.25rem 0.25rem; padding-left: 1.25rem; list-style-type: decimal; }
   .msg-body li { margin: 0.125rem 0; }
+  .msg-body > *:first-child { margin-top: 0; }
+  .msg-body > *:last-child { margin-bottom: 0; }
   .msg-body blockquote {
     border-left: 3px solid #6366f1; padding: 0.25rem 0.75rem; margin: 0.5rem 0;
     color: #a1a1aa; background: rgba(99,102,241,0.04); border-radius: 0 0.375rem 0.375rem 0;
