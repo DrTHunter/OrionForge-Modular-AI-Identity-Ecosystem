@@ -127,6 +127,7 @@ body {
     line-height: 1.6;
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
 }
 
 ::-webkit-scrollbar { width: 6px; }
@@ -2236,30 +2237,203 @@ section { position: relative; z-index: 1; }
    ------------------------------------------------------- */
 @media (max-width: 1024px) {
     .vision-grid { grid-template-columns: 1fr; }
-    .soulscript-grid { grid-template-columns: 1fr; }
+    .soulscript-grid { grid-template-columns: repeat(2, 1fr); }
     .ui-dashboard-body { grid-template-columns: 1fr; }
     .ui-sidebar { flex-direction: row; flex-wrap: wrap; }
     .footer-grid { grid-template-columns: 1fr 1fr; }
+    #vision, #ui-access, #agents, #tools, #marketplace,
+    #pipeline, #soulscript, #pricing, #cta { padding: 80px 0; }
+    .hero { padding: 100px 24px 60px; }
 }
+
 @media (max-width: 768px) {
+    /* --- NAV --- */
     .nav-links { display: none; }
     .mobile-toggle { display: block; }
     .nav-links.active {
         display: flex; flex-direction: column;
         position: absolute; top: 60px; left: 0; right: 0;
-        background: rgba(4,6,14,0.95);
+        background: rgba(4,6,14,0.97);
         backdrop-filter: blur(20px);
-        padding: 24px;
+        -webkit-backdrop-filter: blur(20px);
+        padding: 20px 24px;
         border-bottom: 1px solid var(--border-glass);
+        gap: 4px;
+        z-index: 1000;
     }
+    .nav-links.active a {
+        padding: 12px 0;
+        font-size: 1rem;
+    }
+    .nav-auth .btn-ghost { display: none; }
+    .nav-auth .btn-primary { padding: 8px 14px; font-size: 0.8rem; }
+
+    /* --- GLOBAL SPACING --- */
+    .container { padding: 0 16px; }
+    #vision, #ui-access, #agents, #tools, #marketplace,
+    #pipeline, #soulscript, #pricing, #cta { padding: 56px 0; }
+    .section-header { margin-bottom: 36px; }
+    .section-title { font-size: clamp(1.5rem, 5vw, 2rem); }
+    .section-subtitle { font-size: 0.9rem; }
+
+    /* --- HERO --- */
+    .hero { padding: 100px 20px 56px; min-height: auto; }
     .hero h1 { font-size: 2rem; }
-    .hero-stats { flex-direction: column; gap: 24px; }
+    .hero p { font-size: 0.95rem; margin-bottom: 28px; }
+    .hero-actions { flex-direction: column; width: 100%; }
+    .hero-actions .btn-hero { width: 100%; justify-content: center; }
+    .hero-stats {
+        flex-direction: row; flex-wrap: wrap;
+        gap: 20px; justify-content: center;
+        margin-top: 40px;
+    }
+    .hero-stats > div { min-width: 90px; }
+    .hero-stat-value { font-size: 1.5rem; }
+    .hero-stat-label { font-size: 0.7rem; }
+
+    /* --- ALL GRIDS → SINGLE COLUMN --- */
     .agents-grid { grid-template-columns: 1fr; }
     .tools-grid { grid-template-columns: 1fr; }
+    .workshop-grid { grid-template-columns: 1fr; }
+    .clones-grid { grid-template-columns: 1fr; }
+    .packs-grid { grid-template-columns: 1fr; }
     .ui-features { grid-template-columns: 1fr; }
-    .footer-grid { grid-template-columns: 1fr; }
+    .soulscript-grid { grid-template-columns: 1fr; }
+    .vision-grid { grid-template-columns: 1fr; }
+
+    /* --- UI DASHBOARD --- */
+    .ui-dashboard-body { padding: 20px; gap: 16px; }
+    .ui-sidebar { flex-direction: row; flex-wrap: wrap; gap: 4px; }
+    .ui-sidebar-item { padding: 10px 14px; font-size: 0.82rem; }
+    .ui-main-area { padding: 24px 16px; }
+    .ui-main-area h3 { font-size: 1.25rem; }
+
+    /* --- AGENT CARDS --- */
+    .agent-card-header { height: 140px; }
+    .agent-card-body { padding: 20px; }
+    .agent-card-footer { flex-direction: column; align-items: flex-start; gap: 8px; }
+    .agent-card-footer .agent-tags { justify-content: flex-start; }
+
+    /* --- WORKSHOP TABS (horizontal scroll) --- */
+    .workshop-tabs {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+    .workshop-tabs::-webkit-scrollbar { display: none; }
+    .workshop-tab { padding: 9px 14px; font-size: 0.78rem; flex-shrink: 0; }
+
+    /* --- WORKSHOP FILTERS --- */
+    .workshop-filters { flex-direction: column; gap: 10px; }
+    .filter-group {
+        width: 100%; overflow-x: auto; flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch; scrollbar-width: none;
+    }
+    .filter-group::-webkit-scrollbar { display: none; }
+    .filter-btn { flex-shrink: 0; padding: 8px 14px; }
+    .search-wrapper { width: 100%; min-width: unset; }
+    .workshop-search { min-width: unset; width: 100%; }
+
+    /* --- OATH / PAYMENT --- */
+    .oath-grid { grid-template-columns: 1fr; }
+    .oath-left h3 { font-size: 1.3rem; }
+    .oath-text { padding: 18px; font-size: 0.82rem; }
+    .rev-tier { padding: 14px 12px; gap: 10px; }
+    .rev-tier-badge { width: 38px; height: 38px; font-size: 0.95rem; }
+    .rev-tier-split { font-size: 0.95rem; }
+    .connect-cta { flex-direction: column; }
+    .connect-btn { width: 100%; justify-content: center; }
+
+    /* --- PIPELINE --- */
+    .pipeline-steps::before { left: 19px; }
+    .pipeline-num { width: 40px; height: 40px; font-size: 0.9rem; }
+    .pipeline-step { gap: 16px; padding: 18px 0; }
+    .pipeline-step-content h4 { font-size: 1rem; }
+    .pipeline-step-content p { font-size: 0.85rem; }
+
+    /* --- SOUL SCRIPT BANDS --- */
+    .soulscript-bands::before { left: 14px; }
+    .soulscript-band-marker { width: 30px; height: 30px; font-size: 0.7rem; }
+    .soulscript-band { gap: 14px; }
+
+    /* --- MODALS --- */
+    .modal-overlay { padding: 12px; }
+    .modal { max-height: 92vh; }
+    .modal-header { padding: 24px 20px 0; }
+    .modal-body { padding: 20px; }
+    .modal-agent-avatar { width: 64px; height: 64px; }
+    .auth-card { padding: 32px 24px; }
+    .auth-card h2 { font-size: 1.3rem; }
+
+    /* --- PRICING --- */
+    .pricing-grid { gap: 20px; }
+    .price-card { padding: 28px 20px 24px; }
+    .subscription-hero { padding: 32px 20px 28px; }
+
+    /* --- FOOTER --- */
+    .footer-grid { grid-template-columns: 1fr; gap: 32px; }
     .footer-bottom { flex-direction: column; gap: 12px; text-align: center; }
-    .pipeline-steps::before { left: 27px; }
+}
+
+@media (max-width: 480px) {
+    /* --- HERO --- */
+    .hero h1 { font-size: 1.7rem; }
+    .hero-badge { font-size: 0.7rem; padding: 5px 12px; }
+    .hero-stats { gap: 14px; }
+    .hero-stat-value { font-size: 1.25rem; }
+
+    /* --- NAV --- */
+    .nav-inner { padding: 0 12px; }
+    .nav-logo { font-size: 1.05rem; gap: 8px; }
+    .nav-logo i { font-size: 1.15rem; }
+
+    /* --- BUTTONS --- */
+    .btn-hero { padding: 12px 24px; font-size: 0.9rem; }
+
+    /* --- CARDS (tighter padding) --- */
+    .vision-card { padding: 24px 18px; }
+    .soulscript-card { padding: 24px 18px; }
+    .tool-card { padding: 20px 16px; }
+    .ui-dashboard-body { padding: 14px; }
+
+    /* --- PRICING --- */
+    .sub-features li { font-size: 0.78rem; }
+    .payment-cards { grid-template-columns: 1fr; }
+
+    /* --- WORKSHOP --- */
+    .workshop-hero h2 { font-size: 1.4rem; }
+    .ws-card-body { padding: 16px; }
+    .ws-card-meta { flex-direction: column; align-items: flex-start; gap: 10px; }
+
+    /* --- SOUL SCRIPT INTRO --- */
+    .soulscript-intro p { font-size: 0.95rem; }
+
+    /* --- SECTION LABELS --- */
+    .section-label { font-size: 0.7rem; letter-spacing: 1.5px; }
+
+    /* --- MODAL --- */
+    .modal-overlay { padding: 8px; }
+    .modal-header { padding: 20px 16px 0; }
+    .modal-body { padding: 16px; }
+    .modal-header h2 { font-size: 1.25rem; }
+
+    /* --- PIPELINE COMPACT --- */
+    .pipeline-num { width: 36px; height: 36px; font-size: 0.8rem; }
+    .pipeline-steps::before { left: 17px; }
+
+    /* --- AGENT CARD --- */
+    .agent-card-desc { -webkit-line-clamp: 2; }
+}
+
+@media (max-width: 360px) {
+    .container { padding: 0 10px; }
+    .hero { padding: 88px 10px 44px; }
+    .hero h1 { font-size: 1.5rem; }
+    .hero p { font-size: 0.88rem; }
+    .auth-card { padding: 24px 16px; }
+    .auth-btn { padding: 12px 16px; font-size: 0.88rem; }
+    .auth-input { padding: 12px 14px; }
 }
     </style>
 </head>
@@ -3936,7 +4110,10 @@ function initNavScroll() {
 // MOBILE NAV
 // -------------------------------------------------------
 function toggleMobileNav() {
-    document.getElementById('nav-links').classList.toggle('active');
+    const navLinks = document.getElementById('nav-links');
+    const toggle = document.querySelector('.mobile-toggle i');
+    navLinks.classList.toggle('active');
+    toggle.className = navLinks.classList.contains('active') ? 'fas fa-times' : 'fas fa-bars';
 }
 
 // -------------------------------------------------------
@@ -4085,6 +4262,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.nav-links a').forEach(link => {
         link.addEventListener('click', () => {
             document.getElementById('nav-links').classList.remove('active');
+            const toggle = document.querySelector('.mobile-toggle i');
+            if (toggle) toggle.className = 'fas fa-bars';
         });
     });
 });
