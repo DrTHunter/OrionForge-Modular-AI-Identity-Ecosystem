@@ -841,13 +841,6 @@
             <div class="tb-sep"></div>
             <button type="button" onclick="setMode('chat')" id="btn-chat" class="tb on">💬 Chat</button>
             <button type="button" onclick="setMode('burst')" id="btn-burst" class="tb">⚡ Burst</button>
-            <div class="tb-sep"></div>
-            <span id="burst-opts" class="flex items-center gap-1" style="display:none;">
-              <span class="text-xs text-zinc-600">Ticks</span>
-              <input id="chat-burst-ticks" type="number" value="4" min="1" max="50" class="tb-num">
-              <span class="text-xs text-zinc-600">Steps</span>
-              <input id="chat-max-steps" type="number" value="3" min="1" max="100" class="tb-num">
-            </span>
             <select id="chat-connection" class="tb-sel" title="API Connection" onchange="onConnectionChange(this)">
               <option value="__platform__" data-type="platform" data-provider="openrouter" data-url="" data-models="">🧩 Platform Models</option>
               <option value="__auto__" data-type="auto" data-provider="router" data-url="" data-models="">🤖 Auto (User Router)</option>
@@ -1413,7 +1406,6 @@ function setMode(mode) {
   _mode = mode;
   document.getElementById('btn-chat').className  = 'tb' + (mode === 'chat'  ? ' on' : '');
   document.getElementById('btn-burst').className = 'tb' + (mode === 'burst' ? ' on' : '');
-  document.getElementById('burst-opts').style.display = mode === 'burst' ? 'flex' : 'none';
 }
 function toggleSidebar() {
   document.getElementById('sidebar').classList.toggle('collapsed');
@@ -3039,8 +3031,8 @@ async function runChat() {
     agent,
     stimulus: stim,
     mode: _mode,
-    burst_ticks:   parseInt(document.getElementById('chat-burst-ticks').value) || 4,
-    max_steps:     parseInt(document.getElementById('chat-max-steps').value) || 3,
+    burst_ticks:   4,
+    max_steps:     3,
     ..._buildChatRoutingPayload(),
     chat_id:       _chatId,
   };
