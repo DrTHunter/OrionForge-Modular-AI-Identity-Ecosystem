@@ -535,24 +535,13 @@
     <div class="card mb-5">
       <span class="card-header">Burst-Mode Allowed Tools</span>
       <p class="text-xs text-forge-muted mt-1 mb-3">Tools the agent can invoke autonomously during burst ticks. All sandboxed with boundary enforcement.</p>
-      <div class="flex flex-wrap gap-1.5">
-        <span class="tool-chip">memory.recall</span>
-        <span class="tool-chip">memory.search</span>
-        <span class="tool-chip">memory.add</span>
-        <span class="tool-chip">memory.bulk_add</span>
-        <span class="tool-chip">memory.update</span>
-        <span class="tool-chip">memory.delete</span>
-        <span class="tool-chip">memory.bulk_delete</span>
-        <span class="tool-chip">inbox.send</span>
-        <span class="tool-chip">directives.search</span>
-        <span class="tool-chip">directives.list</span>
-        <span class="tool-chip">directives.get</span>
-        <span class="tool-chip">directives.manifest</span>
-        <span class="tool-chip">directives.changes</span>
-        <span class="tool-chip">task_inbox.add</span>
-        <span class="tool-chip">task_inbox.next</span>
-        <span class="tool-chip">task_inbox.ack</span>
-        <span class="tool-chip">runtime_info</span>
+      <div class="flex flex-wrap gap-1.5" id="dash-allowed-tools">
+        {% for tool_name in allowed_tools %}
+        <span class="tool-chip">{{ tool_name }}</span>
+        {% endfor %}
+        {% if not allowed_tools %}
+        <span class="text-xs text-zinc-500">No tools configured for this agent</span>
+        {% endif %}
       </div>
     </div>
   </div>
