@@ -3568,6 +3568,25 @@ class ChatRequest(BaseModel):
     connection_id: Optional[str] = None
     model_override: Optional[str] = None
     chat_id: Optional[str] = None
+    images: Optional[list] = None    # list of image URLs to include
+
+
+@app.post("/api/chat/upload")
+async def api_chat_upload(file: UploadFile = File(...)):
+    """Upload a file for use in chat (images, text docs)."""
+    allowed = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".avif",
+               ".pdf", ".txt", ".md", ".csv", ".json", ".yaml", ".yml"}
+    ext = os.path.splitext(file.filename or "")[1].lower()
+    if ext not in allowed:
+        return JSONResponse({"error": f"File type {ext} not allowed"}, 400)
+    safe_name = f"chat_{uuid.uuid4().hex[:8]}{ext}"
+    dest = _UPLOADS_DIR / safe_name
+    content = await file.read()
+    if len(content) > 20 * 1024 * 1024:
+        return JSONResponse({"error": "File too large (max 20MB)"}, 400)
+    with open(dest, "wb") as f:
+        f.write(content)
+    return JSONResponse({"url": f"/uploads/{safe_name}", "name": file.filename, "type": file.content_type})
 
 
 class FolderCreate(BaseModel):
@@ -4074,6 +4093,18 @@ async def _stream_chat_generator(req: ChatRequest, request: Request, user, conn,
         pass
 
     running_messages = list(llm_messages)
+
+    # ── Inject attached images into the last user message (vision) ──
+    if req.images:
+        for i in range(len(running_messages) - 1, -1, -1):
+            if running_messages[i].get("role") == "user":
+                orig = running_messages[i].get("content", "")
+                content_parts = [{"type": "text", "text": orig}]
+                for img_url in req.images:
+                    content_parts.append({"type": "image_url", "image_url": {"url": img_url}})
+                running_messages[i] = {"role": "user", "content": content_parts}
+                break
+
     full_response = ""   # accumulate final response text (for saving to chat)
 
     for _round in range(MAX_TOOL_ROUNDS + 1):
