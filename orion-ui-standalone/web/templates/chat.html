@@ -770,6 +770,34 @@
     background: rgba(99,102,241,0.15); border-color: rgba(99,102,241,0.35);
     color: #c7d2fe; transform: translateY(-1px);
   }
+
+  /* Mobile toolbar menu */
+  .tb-mobile-toggle {
+    display: none; align-items: center; justify-content: center;
+    width: 2rem; height: 2rem; border-radius: 50%; border: 1px solid rgba(42,42,58,0.5);
+    background: transparent; color: #a1a1aa; font-size: 1.1rem;
+    cursor: pointer; transition: background 0.15s, color 0.15s; flex-shrink: 0;
+  }
+  .tb-mobile-toggle:hover { background: rgba(99,102,241,0.1); color: #e4e4e7; }
+  .tb-mobile-toggle.open { background: rgba(99,102,241,0.15); color: #818cf8; border-color: rgba(99,102,241,0.2); }
+  .tb-collapsible { display: contents; }
+
+  @media (max-width: 640px) {
+    .tb-mobile-toggle { display: inline-flex; }
+    .tb-collapsible {
+      display: none;
+      position: absolute; bottom: 100%; left: 0; right: 0;
+      background: #18181b; border: 1px solid rgba(42,42,58,0.7);
+      border-radius: 0.5rem 0.5rem 0 0;
+      padding: 0.5rem 0.75rem;
+      flex-wrap: wrap; gap: 0.5rem; align-items: center;
+      box-shadow: 0 -4px 16px rgba(0,0,0,0.4);
+      z-index: 20;
+    }
+    .tb-collapsible.open { display: flex; }
+    .tb-collapsible .tb-sep { display: none; }
+    .compose-toolbar { position: relative; }
+  }
 </style>
 
 <!-- ═══════════════ LAYOUT ═══════════════ -->
@@ -828,39 +856,42 @@
             <button type="button" onclick="toggleMic()" id="btn-mic" class="mic-btn" title="Voice input (ElevenLabs Speech-to-Text)">🎙️</button>
           </div>
           <div class="compose-toolbar">
-            <!-- STT provider toggle hidden; ElevenLabs is the sole provider -->
-            <button type="button" onclick="toggleSTTProvider()" id="btn-stt" class="tb stt-toggle on-elevenlabs" title="STT: ElevenLabs" style="display:none">
-              <span class="stt-dot"></span><span id="stt-label">🎤 ElevenLabs</span>
-            </button>
-            <div class="tb-sep"></div>
-            <select id="chat-agent" class="tb-sel" title="Agent">
-              <option value="__none__">🧠 LLM Only</option>
-              {% for agent in agents %}
-              <option value="{{ agent }}">{{ agent | capitalize }}</option>
-              {% endfor %}
-            </select>
-            <div class="tb-sep"></div>
-            <select id="chat-connection" class="tb-sel" title="API Connection" onchange="onConnectionChange(this)">
-              <option value="__platform__" data-type="platform" data-provider="openrouter" data-url="" data-models="">🧩 Platform Models</option>
-              <option value="__auto__" data-type="auto" data-provider="router" data-url="" data-models="">🤖 Auto (User Router)</option>
-              <option value="__user__" data-type="user" data-provider="user" data-url="" data-models="">👤 User Models</option>
-            </select>
-            <select id="chat-model" class="tb-sel" title="Model" style="display:none;">
-              <option value="">Loading…</option>
-            </select>
-            <button type="button" id="btn-pin-model" class="pin-btn" title="Pin/unpin current model as favorite" onclick="togglePinModel()" style="display:none;">📌</button>
-            <div class="tb-sep"></div>
-            <button type="button" onclick="toggleTTS()" id="btn-tts" class="tb tts-toggle" title="Text-to-Speech — click to cycle">
-              <span class="tts-dot"></span><span id="tts-label">🔊 TTS</span>
-            </button>
-            <div class="tts-vol-wrap">
-              <button type="button" class="tts-vol-btn" onclick="toggleVolPopup()" id="btn-vol" title="TTS Volume">🔉</button>
-              <div class="tts-vol-popup" id="vol-popup">
-                <span class="vol-pct" id="vol-pct">80%</span>
-                <input type="range" id="vol-slider" min="0" max="100" value="80" oninput="setTtsVolume(this.value)">
+            <button type="button" class="tb-mobile-toggle" id="btn-tb-menu" onclick="toggleToolbarMenu()" title="Options">+</button>
+            <div class="tb-collapsible" id="tb-collapsible">
+              <!-- STT provider toggle hidden; ElevenLabs is the sole provider -->
+              <button type="button" onclick="toggleSTTProvider()" id="btn-stt" class="tb stt-toggle on-elevenlabs" title="STT: ElevenLabs" style="display:none">
+                <span class="stt-dot"></span><span id="stt-label">🎤 ElevenLabs</span>
+              </button>
+              <div class="tb-sep"></div>
+              <select id="chat-agent" class="tb-sel" title="Agent">
+                <option value="__none__">🧠 LLM Only</option>
+                {% for agent in agents %}
+                <option value="{{ agent }}">{{ agent | capitalize }}</option>
+                {% endfor %}
+              </select>
+              <div class="tb-sep"></div>
+              <select id="chat-connection" class="tb-sel" title="API Connection" onchange="onConnectionChange(this)">
+                <option value="__platform__" data-type="platform" data-provider="openrouter" data-url="" data-models="">🧩 Platform Models</option>
+                <option value="__auto__" data-type="auto" data-provider="router" data-url="" data-models="">🤖 Auto (User Router)</option>
+                <option value="__user__" data-type="user" data-provider="user" data-url="" data-models="">👤 User Models</option>
+              </select>
+              <select id="chat-model" class="tb-sel" title="Model" style="display:none;">
+                <option value="">Loading…</option>
+              </select>
+              <button type="button" id="btn-pin-model" class="pin-btn" title="Pin/unpin current model as favorite" onclick="togglePinModel()" style="display:none;">📌</button>
+              <div class="tb-sep"></div>
+              <button type="button" onclick="toggleTTS()" id="btn-tts" class="tb tts-toggle" title="Text-to-Speech — click to cycle">
+                <span class="tts-dot"></span><span id="tts-label">🔊 TTS</span>
+              </button>
+              <div class="tts-vol-wrap">
+                <button type="button" class="tts-vol-btn" onclick="toggleVolPopup()" id="btn-vol" title="TTS Volume">🔉</button>
+                <div class="tts-vol-popup" id="vol-popup">
+                  <span class="vol-pct" id="vol-pct">80%</span>
+                  <input type="range" id="vol-slider" min="0" max="100" value="80" oninput="setTtsVolume(this.value)">
+                </div>
               </div>
+              <button type="button" onclick="stopTtsGlobal()" id="btn-tts-stop" class="tb" style="display:none; color:#ef4444; font-size:0.75rem;" title="Stop TTS playback">⏹</button>
             </div>
-            <button type="button" onclick="stopTtsGlobal()" id="btn-tts-stop" class="tb" style="display:none; color:#ef4444; font-size:0.75rem;" title="Stop TTS playback">⏹</button>
             <button onclick="runChat()" id="btn-send" class="send-btn" title="Send (Ctrl+Enter)">▶</button>
             <button onclick="stopChat()" id="btn-stop" class="stop-btn" style="display:none;" title="Stop">■</button>
           </div>
@@ -1406,6 +1437,10 @@ function setMode(mode) {
 }
 function toggleSidebar() {
   document.getElementById('sidebar').classList.toggle('collapsed');
+}
+function toggleToolbarMenu() {
+  document.getElementById('tb-collapsible').classList.toggle('open');
+  document.getElementById('btn-tb-menu').classList.toggle('open');
 }
 
 // ═══════════════════════════════════════════
