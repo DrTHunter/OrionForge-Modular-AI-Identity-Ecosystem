@@ -839,8 +839,6 @@
               {% endfor %}
             </select>
             <div class="tb-sep"></div>
-            <button type="button" onclick="setMode('chat')" id="btn-chat" class="tb on">💬 Chat</button>
-            <button type="button" onclick="setMode('burst')" id="btn-burst" class="tb">⚡ Burst</button>
             <select id="chat-connection" class="tb-sel" title="API Connection" onchange="onConnectionChange(this)">
               <option value="__platform__" data-type="platform" data-provider="openrouter" data-url="" data-models="">🧩 Platform Models</option>
               <option value="__auto__" data-type="auto" data-provider="router" data-url="" data-models="">🤖 Auto (User Router)</option>
@@ -1393,9 +1391,7 @@ function autoResize(el) {
   el.style.height = Math.min(el.scrollHeight, 128) + 'px';
 }
 function setMode(mode) {
-  _mode = mode;
-  document.getElementById('btn-chat').className  = 'tb' + (mode === 'chat'  ? ' on' : '');
-  document.getElementById('btn-burst').className = 'tb' + (mode === 'burst' ? ' on' : '');
+  _mode = 'chat';
 }
 function toggleSidebar() {
   document.getElementById('sidebar').classList.toggle('collapsed');
