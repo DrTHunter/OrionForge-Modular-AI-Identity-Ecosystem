@@ -1285,19 +1285,24 @@
       </div>
     </div>
 
-    <!-- Budget progress (demo) -->
+    <!-- Budget progress (live) -->
     <div class="card mb-5">
-      <span class="card-header">Current Spending</span>
-      <p class="text-xs text-forge-muted mt-1 mb-4">Live spending data will appear when the backend is connected</p>
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <span class="card-header mb-0">Current Spending</span>
+          <p class="text-xs text-forge-muted mt-1">Live spending data from the budget tracker</p>
+        </div>
+        <button onclick="budgetResetSession()" class="filter-btn" style="cursor:pointer;color:#fca5a5;">Reset Session</button>
+      </div>
       <div class="space-y-5">
         <div>
           <div class="flex justify-between mb-1">
             <span class="text-xs text-zinc-400 font-semibold">Monthly Spend</span>
-            <span class="text-xs text-zinc-300">$0.00 / $<span id="budget-hard-display">{{ config.monthly_hard_cap }}</span></span>
+            <span class="text-xs text-zinc-300">$<span id="budget-monthly-spent">0.00</span> / $<span id="budget-hard-display">{{ config.monthly_hard_cap }}</span></span>
           </div>
           <div class="budget-bar-wrap">
-            <div class="budget-bar-fill" style="width: 0%; background: linear-gradient(90deg, #6366f1, #818cf8);"></div>
-            <div class="budget-bar-text">0%</div>
+            <div class="budget-bar-fill" id="budget-monthly-bar" style="width: 0%; background: linear-gradient(90deg, #6366f1, #818cf8);"></div>
+            <div class="budget-bar-text" id="budget-monthly-pct">0%</div>
           </div>
           <div class="flex justify-between mt-1">
             <span class="text-xs text-zinc-600">Soft: $<span id="budget-soft-display">{{ config.monthly_soft_cap }}</span></span>
@@ -1307,11 +1312,11 @@
         <div>
           <div class="flex justify-between mb-1">
             <span class="text-xs text-zinc-400 font-semibold">Session Spend</span>
-            <span class="text-xs text-zinc-300">$0.00 / $<span id="budget-session-display">{{ config.per_session_cap }}</span></span>
+            <span class="text-xs text-zinc-300">$<span id="budget-session-spent">0.00</span> / $<span id="budget-session-display">{{ config.per_session_cap }}</span></span>
           </div>
           <div class="budget-bar-wrap">
-            <div class="budget-bar-fill" style="width: 0%; background: linear-gradient(90deg, #22d3ee, #67e8f9);"></div>
-            <div class="budget-bar-text">0%</div>
+            <div class="budget-bar-fill" id="budget-session-bar" style="width: 0%; background: linear-gradient(90deg, #22d3ee, #67e8f9);"></div>
+            <div class="budget-bar-text" id="budget-session-pct">0%</div>
           </div>
         </div>
         <div>
@@ -1320,42 +1325,23 @@
             <span class="text-xs text-zinc-300">$<span id="budget-tick-display">{{ config.per_tick_cap }}</span> max</span>
           </div>
           <div class="budget-bar-wrap">
-            <div class="budget-bar-fill" style="width: 0%; background: linear-gradient(90deg, #10b981, #6ee7b7);"></div>
-            <div class="budget-bar-text">0%</div>
+            <div class="budget-bar-fill" id="budget-tick-bar" style="width: 0%; background: linear-gradient(90deg, #10b981, #6ee7b7);"></div>
+            <div class="budget-bar-text" id="budget-tick-pct">0%</div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Tier cost breakdown -->
+    <!-- Tier cost breakdown (dynamic) -->
     <div class="card mb-5">
       <span class="card-header">Tier Cost Breakdown</span>
-      <p class="text-xs text-forge-muted mt-1 mb-3">Spending per model tier &mdash; populated when backend is connected</p>
+      <p class="text-xs text-forge-muted mt-1 mb-3">Spending per model tier</p>
       <table class="tier-table">
         <thead>
-          <tr><th>Tier</th><th>Calls</th><th>Tokens</th><th>Cost</th><th>% of Budget</th></tr>
+          <tr><th>Tier</th><th>Cost</th><th>% of Budget</th></tr>
         </thead>
-        <tbody>
-          <tr>
-            <td><span class="tier-badge tier-t0">T0 local_cheap</span></td>
-            <td class="text-zinc-500">&mdash;</td><td class="text-zinc-500">&mdash;</td>
-            <td class="text-emerald-300">$0.00</td><td class="text-zinc-500">0%</td>
-          </tr>
-          <tr>
-            <td><span class="tier-badge tier-t1">T1 local_strong</span></td>
-            <td class="text-zinc-500">&mdash;</td><td class="text-zinc-500">&mdash;</td>
-            <td class="text-cyan-300">$0.00</td><td class="text-zinc-500">0%</td>
-          </tr>
-          <tr>
-            <td><span class="tier-badge tier-t2">T2 cheap_cloud</span></td>
-            <td class="text-zinc-500">&mdash;</td><td class="text-zinc-500">&mdash;</td>
-            <td class="text-indigo-300">$0.00</td><td class="text-zinc-500">0%</td>
-          </tr>
-          <tr>
-            <td><span class="tier-badge tier-t3">T3 expensive_cloud</span></td>
-            <td class="text-zinc-500">&mdash;</td><td class="text-zinc-500">&mdash;</td>
-            <td class="text-yellow-300">$0.00</td><td class="text-zinc-500">0%</td>
-          </tr>
+        <tbody id="budget-tier-tbody">
+          <tr><td colspan="3" class="text-zinc-500 text-center text-xs">Loading&hellip;</td></tr>
         </tbody>
       </table>
     </div>
@@ -1413,7 +1399,7 @@
           <div class="text-sm font-bold text-white mb-1">Narrative Journal</div>
           <p class="text-xs text-zinc-400 leading-relaxed">
             Human-readable narrative entries generated from each tick.
-            View them in the <strong class="text-indigo-300 cursor-pointer" onclick="switchTab('journal');document.querySelectorAll('.tab-btn')[2].click();">Journal tab</strong>.
+            View them in the <strong class="text-indigo-300 cursor-pointer" onclick="switchTabById('journal')">Journal tab</strong>.
           </p>
           <code class="text-xs text-zinc-600 block mt-2">data/orion/agi_loop_journal.jsonl</code>
         </div>
@@ -1638,6 +1624,12 @@ function _applyStatus(st) {
 
   if (st.recent_ticks && st.recent_ticks.length) _renderTickLog(st.recent_ticks);
 
+  /* Refresh budget data when budget tab is visible during polling */
+  if (typeof budgetRefresh === 'function') {
+    const budgetPanel = document.getElementById('panel-budget');
+    if (budgetPanel && budgetPanel.classList.contains('active')) budgetRefresh();
+  }
+
   if (!st.running && _pollTimer) {
     _stopPolling();
     if (st.stop_reason && st.stop_reason !== _lastStopReason) {
@@ -1645,6 +1637,7 @@ function _applyStatus(st) {
       showToast('Loop stopped: ' + st.stop_reason.replaceAll('_', ' '), 'warn');
     }
     _loadHistory();
+    if (typeof budgetRefresh === 'function') budgetRefresh();
   }
 }
 
@@ -2429,6 +2422,102 @@ renderTaskTierMap();
 
 /* ── Initialize AGI loop runtime (must run after _connections is defined) ── */
 _initAGILoop();
+
+
+/* ═══════════════════════════════════════════════════════════════════ */
+/*  Budget tab — live spending data from /api/model-router/budget    */
+/* ═══════════════════════════════════════════════════════════════════ */
+
+async function budgetRefresh() {
+  try {
+    const resp = await fetch('/api/model-router/budget');
+    const data = await resp.json();
+    if (data.error) return;
+
+    const monthlyCap = data.monthly_hard_cap || 1;
+    const sessionCap = data.per_session_cap || 1;
+    const monthlySpent = data.monthly_spent || 0;
+    const sessionSpent = data.session_spent || 0;
+
+    // Monthly bar
+    const monthlyPct = Math.min(100, (monthlySpent / monthlyCap) * 100);
+    const mSpentEl = document.getElementById('budget-monthly-spent');
+    const mBarEl   = document.getElementById('budget-monthly-bar');
+    const mPctEl   = document.getElementById('budget-monthly-pct');
+    if (mSpentEl) mSpentEl.textContent = monthlySpent.toFixed(2);
+    if (mBarEl)   mBarEl.style.width = monthlyPct.toFixed(1) + '%';
+    if (mPctEl)   mPctEl.textContent = monthlyPct.toFixed(1) + '%';
+    if (data.hard_limit_hit && mBarEl) mBarEl.style.background = 'linear-gradient(90deg, #ef4444, #f87171)';
+    else if (data.soft_limit_hit && mBarEl) mBarEl.style.background = 'linear-gradient(90deg, #f59e0b, #fcd34d)';
+
+    // Session bar
+    const sessionPct = Math.min(100, (sessionSpent / sessionCap) * 100);
+    const sSpentEl = document.getElementById('budget-session-spent');
+    const sBarEl   = document.getElementById('budget-session-bar');
+    const sPctEl   = document.getElementById('budget-session-pct');
+    if (sSpentEl) sSpentEl.textContent = sessionSpent.toFixed(2);
+    if (sBarEl)   sBarEl.style.width = sessionPct.toFixed(1) + '%';
+    if (sPctEl)   sPctEl.textContent = sessionPct.toFixed(1) + '%';
+
+    // Update cap displays
+    const hardEl = document.getElementById('budget-hard-display');
+    const softEl = document.getElementById('budget-soft-display');
+    const hard2  = document.getElementById('budget-hard-display2');
+    const sessEl = document.getElementById('budget-session-display');
+    if (hardEl) hardEl.textContent = (data.monthly_hard_cap || 0).toFixed(2);
+    if (softEl) softEl.textContent = (data.monthly_soft_cap || 0).toFixed(2);
+    if (hard2)  hard2.textContent = (data.monthly_hard_cap || 0).toFixed(2);
+    if (sessEl) sessEl.textContent = (data.per_session_cap || 0).toFixed(2);
+
+    // Tier spending breakdown
+    const tierSpending = data.tier_spending || {};
+    const tbody = document.getElementById('budget-tier-tbody');
+    if (tbody) {
+      const totalSpent = monthlySpent || 1;
+      const entries = Object.entries(tierSpending).sort((a, b) => b[1] - a[1]);
+      if (entries.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="text-zinc-500 text-center text-xs">No tier spending recorded yet</td></tr>';
+      } else {
+        tbody.innerHTML = entries.map(([tier, cost]) => {
+          const pct = ((cost / totalSpent) * 100).toFixed(1);
+          const c = _tierColor(tier) || { bg: 'rgba(99,102,241,0.12)', fg: '#a5b4fc' };
+          return `<tr>
+            <td><span class="tier-badge" style="background:${c.bg};color:${c.fg};">${_esc(tier.toUpperCase())}</span></td>
+            <td class="text-emerald-300">$${cost.toFixed(4)}</td>
+            <td class="text-zinc-400">${pct}%</td>
+          </tr>`;
+        }).join('');
+      }
+    }
+  } catch (_) {}
+}
+
+async function budgetResetSession() {
+  if (!confirm('Reset session spending counter to $0.00?')) return;
+  try {
+    const resp = await fetch('/api/model-router/budget/reset-session', { method: 'POST' });
+    const data = await resp.json();
+    if (data.ok) {
+      showToast('Session spending reset', 'ok');
+      budgetRefresh();
+    } else {
+      showToast(data.error || 'Reset failed', 'error');
+    }
+  } catch (e) {
+    showToast('Error: ' + e.message, 'error');
+  }
+}
+
+/* Auto-refresh budget every 5s when on that tab */
+setInterval(() => {
+  const panel = document.getElementById('panel-budget');
+  if (panel && panel.classList.contains('active')) {
+    budgetRefresh();
+  }
+}, 5000);
+
+/* Initial budget load */
+budgetRefresh();
 
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 /*  Inbox tab — live API-connected                                   */
