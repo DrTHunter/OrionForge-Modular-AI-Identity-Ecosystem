@@ -2862,12 +2862,19 @@ async def page_agi_loop(request: Request):
     except Exception:
         loop_status = {"running": False, "paused": False, "total_ticks": 0}
     router_config = _load_model_router_config()
+    # Resolve allowed tools for the configured agent
+    try:
+        from src.tools.registry import get_allowed_tools
+        allowed_tools = get_allowed_tools(config.get("profile", ""))
+    except Exception:
+        allowed_tools = []
     return templates.TemplateResponse(request, "agi_loop.html", {
         "page": "agi-loop",
         "agents": agents, "config": config,
         "connections": connections,
         "loop_status": loop_status,
         "router_config": router_config,
+        "allowed_tools": allowed_tools,
     })
 
 
@@ -3011,6 +3018,8 @@ async def _execute_agi_tick(agent: str, stimulus: str, agi_config: dict) -> dict
             pass
 
         running_messages = list(llm_messages)
+        max_tool_calls = agi_config.get("max_tool_calls_per_tick", 15)
+        total_tool_calls = 0
 
         response_text = ""
         for step in range(max_steps + 1):
@@ -3052,6 +3061,9 @@ async def _execute_agi_tick(agent: str, stimulus: str, agi_config: dict) -> dict
                 import json as _json
 
                 for tc in (tool_calls or []):
+                    if total_tool_calls >= max_tool_calls:
+                        log.warning("[agi_tick] %s hit max_tool_calls (%d) — skipping remaining", agent, max_tool_calls)
+                        break
                     fn_name = tc.get("function", {}).get("name", "")
                     fn_args_raw = tc.get("function", {}).get("arguments", "{}")
                     tc_id = tc.get("id", "")
@@ -3060,7 +3072,8 @@ async def _execute_agi_tick(agent: str, stimulus: str, agi_config: dict) -> dict
                     except _json.JSONDecodeError:
                         fn_args = {}
 
-                    log.info("[agi_tick] %s calling %s(%s)", agent, fn_name, fn_args)
+                    total_tool_calls += 1
+                    log.info("[agi_tick] %s calling %s(%s) [%d/%d]", agent, fn_name, fn_args, total_tool_calls, max_tool_calls)
                     try:
                         result = execute_tool(fn_name, fn_args, agent_name=agent)
                     except PermissionError as exc:
@@ -3070,7 +3083,7 @@ async def _execute_agi_tick(agent: str, stimulus: str, agi_config: dict) -> dict
 
                     tool_call_log.append({
                         "tool": fn_name, "arguments": fn_args,
-                        "result": result[:500],
+                        "result": result[:2000],
                     })
                     running_messages.append({
                         "role": "tool", "tool_call_id": tc_id,
