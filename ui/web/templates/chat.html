@@ -834,6 +834,7 @@
             </button>
             <div class="tb-sep"></div>
             <select id="chat-agent" class="tb-sel" title="Agent">
+              <option value="__none__">🧠 LLM Only</option>
               {% for agent in agents %}
               <option value="{{ agent }}">{{ agent | capitalize }}</option>
               {% endfor %}
