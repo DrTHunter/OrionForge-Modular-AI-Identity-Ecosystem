@@ -501,6 +501,24 @@
        TAB 2 — Chat
        ═══════════════════════════════════════════════════════════ -->
   <div class="settings-panel {{ 'active' if tab == 'chat' }}" id="panel-chat">
+
+    <!-- Default Agent -->
+    <div class="settings-section">
+      <div class="settings-section-title">Default Agent</div>
+      <div class="settings-section-desc">Choose which agent is selected by default when starting a new chat</div>
+      <div class="mb-3">
+        <label class="block text-xs text-forge-muted mb-1">Agent</label>
+        <select id="default-agent-select" class="search-input" style="max-width:20rem;">
+          {% for agent in agents %}
+          {% set cfg = settings.get('agent_configs', {}).get(agent, {}) %}
+          {% set label = cfg.get('display_name', agent.replace('_', ' ').title()) %}
+          <option value="{{ agent }}" {{ 'selected' if settings.get('default_agent') == agent }}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <button class="filter-btn active" onclick="saveDefaultAgent()" style="cursor:pointer;">Save Default Agent</button>
+    </div>
+
     <div class="settings-section">
       <div class="settings-section-title">Chat Background</div>
       <div class="settings-section-desc">Set a custom background image for the chat view. Supported: PNG, JPG, WebP, GIF</div>
@@ -894,6 +912,17 @@ async function saveTimezone() {
   const data = await resp.json();
   if (data.status === 'ok') showToast('Timezone saved', 'ok');
   else showToast('Error saving timezone', 'error');
+}
+
+/* ── Default Agent ─────────────────────────────────────── */
+async function saveDefaultAgent() {
+  const agent = document.getElementById('default-agent-select').value;
+  const resp = await fetch('/api/settings/default-agent', {
+    method: 'PUT', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ default_agent: agent }),
+  });
+  const data = await resp.json();
+  showToast(data.status === 'ok' ? 'Default agent saved' : (data.error || 'Error'), data.status === 'ok' ? 'ok' : 'error');
 }
 
 /* ── Chat Background ───────────────────────────────────── */
