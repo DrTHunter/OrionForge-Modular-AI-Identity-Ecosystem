@@ -2113,10 +2113,12 @@ async def page_knowledge_edit(request: Request, note_id: str):
 @app.get("/settings", response_class=HTMLResponse)
 async def page_settings(request: Request, tab: str = "api_keys"):
     store = _load_connections()
+    agents = _list_unlocked_agents(request)
     return templates.TemplateResponse(request, "settings.html", {
         "page": "settings",
         "connections": store.get("connections", []),
         "settings": _load_settings(), "tab": tab,
+        "agents": agents,
     })
 
 @app.get("/pricing", response_class=RedirectResponse)
@@ -6401,6 +6403,20 @@ async def api_save_chat_defaults(request: Request):
         if key in body:
             defaults[key] = body[key]
     settings["chat_defaults"] = defaults
+    _save_settings(settings)
+    return JSONResponse({"status": "ok"})
+
+
+@app.put("/api/settings/default-agent")
+async def api_save_default_agent(request: Request):
+    """Save the user's preferred default agent for new chats."""
+    body = await request.json()
+    agent = body.get("default_agent", "")
+    allowed = _list_unlocked_agents(request)
+    if agent and agent not in allowed:
+        return JSONResponse({"error": "Agent not available"}, status_code=400)
+    settings = _load_settings()
+    settings["default_agent"] = agent
     _save_settings(settings)
     return JSONResponse({"status": "ok"})
 
