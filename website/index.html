@@ -1538,6 +1538,7 @@ section { position: relative; z-index: 1; }
 .tool-card-icon.continuation { background: rgba(96,165,250,0.12); color: #60a5fa; }
 .tool-card-icon.runtime { background: rgba(167,139,250,0.12); color: #a78bfa; }
 .tool-card-icon.echo { background: rgba(148,163,184,0.12); color: #94a3b8; }
+.tool-card-icon.coding { background: rgba(34,211,238,0.12); color: var(--cyan); }
 
 .tool-card h4 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
 .tool-card p {
@@ -2727,7 +2728,7 @@ section { position: relative; z-index: 1; }
         <div class="section-header reveal">
             <div class="section-label"><i class="fas fa-cogs"></i> Runtime Tools</div>
             <h2 class="section-title">The Agent Toolbelt</h2>
-            <p class="section-subtitle">10 tools agents can invoke at runtime � all policy-gated and audited</p>
+            <p class="section-subtitle">11 tools agents can invoke at runtime � all policy-gated and audited</p>
         </div>
 
         <div class="tools-grid" id="tools-grid">
@@ -2745,8 +2746,8 @@ section { position: relative; z-index: 1; }
         <!-- Workshop Hero -->
         <div class="workshop-hero reveal">
             <div class="section-label"><i class="fas fa-hammer"></i> Creator Workshop</div>
-            <h2 class="section-title">The SoulScript Workshop</h2>
-            <p class="section-subtitle">Browse, install, and publish AI identities, tools, mods, and soul script parts. Built by creators, for creators. Powered by Stripe Connect.</p>
+            <h2 class="section-title">The SoulScript Workshop <span style="background: linear-gradient(135deg, var(--amber), var(--rose)); -webkit-background-clip: text; background-clip: text; color: transparent; font-size: 0.6em; vertical-align: middle; margin-left: 12px;">Coming Soon</span></h2>
+            <p class="section-subtitle" style="max-width: 780px; margin: 0 auto;">The SoulScript Workshop is a creator-driven marketplace where you can browse, install, and publish AI identities, tools, mods, memory packs, and soul script parts. Creators build and upload their own agents, personality layers, symbolic memory sets, UI skins, and tool extensions — then list them for free or for sale. Buyers get one-click installs directly into their Orion Forge instance. Revenue is split automatically via Stripe Connect, so creators get paid instantly with zero hassle. Think Steam Workshop meets an AI identity store — built by creators, for creators.</p>
         </div>
 
         <!-- Category Tabs -->
@@ -3699,6 +3700,14 @@ const tools = [
         iconClass: 'echo',
         badge: 'TEST',
         desc: 'Safe demo and testing tool. Returns whatever message it receives. Used for verifying tool dispatch, allowlist gating, and sandbox connectivity.'
+    },
+    {
+        id: 'coding_tool',
+        name: 'Coding Tool',
+        icon: 'fas fa-laptop-code',
+        iconClass: 'coding',
+        badge: 'DEV',
+        desc: 'Create and edit code directly on your computer, access GitHub repositories, and utilize the command prompt — all from within your Orion Forge agent session.'
     }
 ];
 
