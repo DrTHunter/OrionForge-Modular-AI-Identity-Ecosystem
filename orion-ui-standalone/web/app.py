@@ -3398,10 +3398,13 @@ async def api_agi_loop_history(limit: int = Query(50)):
 
 
 @app.get("/api/agi-loop/journal")
-async def api_agi_loop_journal(limit: int = Query(100)):
+async def api_agi_loop_journal(limit: int = Query(500)):
     """Return recent narrative journal entries."""
     from src.tools.agi_loop import get_loop_state
     state = get_loop_state()
+    # Reload from disk if memory is empty (e.g. after process restart)
+    if not state.journal_entries:
+        state.load_journal_from_disk()
     entries = state.journal_entries[-limit:]
     return JSONResponse({
         "entries": entries,
