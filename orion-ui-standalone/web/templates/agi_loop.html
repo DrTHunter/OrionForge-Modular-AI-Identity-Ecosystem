@@ -387,15 +387,38 @@
   .jnl-row-subject {
     font-size: 0.8125rem; font-weight: 600; color: #e4e4e7;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    line-height: 1.4;
+    line-height: 1.4; transition: all 0.2s;
+  }
+  .jnl-row.expanded .jnl-row-subject {
+    white-space: pre-wrap; word-break: break-word; overflow: visible;
   }
   .jnl-row-preview {
     font-size: 0.75rem; color: #71717a; margin-top: 0.125rem;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
+  .jnl-row.expanded .jnl-row-preview {
+    white-space: pre-wrap; word-break: break-word; overflow: visible;
+  }
   .jnl-row-meta {
     font-size: 0.6875rem; color: #52525b; margin-top: 0.3125rem;
     display: flex; gap: 0.625rem; align-items: center; flex-wrap: wrap;
+  }
+  /* Multi-select highlight */
+  .jnl-row.multi-selected {
+    background: rgba(99,102,241,0.12);
+    border-left: 3px solid #6366f1;
+  }
+  .jnl-row.multi-selected:not(.has-error) {
+    border-left: 3px solid #6366f1;
+  }
+  .jnl-select-indicator {
+    position: absolute; top: 0.5rem; right: 0.5rem; width: 16px; height: 16px;
+    border-radius: 3px; border: 1.5px solid #3f3f46; display: flex;
+    align-items: center; justify-content: center; font-size: 10px;
+    transition: all 0.15s; color: transparent;
+  }
+  .jnl-row.multi-selected .jnl-select-indicator {
+    background: #6366f1; border-color: #6366f1; color: #fff;
   }
   .jnl-tool-chip {
     display: inline-block; padding: 0.0625rem 0.375rem;
@@ -662,6 +685,8 @@
               <span>Errors only</span>
             </label>
             <div style="flex:1;"></div>
+            <span class="jnl-entry-count" id="journal-selected-count" style="display:none; background:rgba(99,102,241,0.2); color:#a5b4fc;">0 selected</span>
+            <button class="jnl-action-btn" id="journal-view-selected-btn" style="display:none; color:#a5b4fc; border-color:rgba(99,102,241,0.4);" onclick="jnlShowMultiDetail()" title="View selected entries">&#128196; View Selected</button>
             <span class="jnl-entry-count" id="journal-count">0 entries</span>
             <button class="jnl-action-btn" onclick="journalRefresh()" title="Refresh">&#8635;</button>
             <button class="jnl-action-btn jnl-action-danger" onclick="journalClear()" title="Clear journal">&#128465;</button>
@@ -1696,10 +1721,12 @@ function _initAGILoop() {
 /* ═══════════════════════════════════════════════════════════════════ */
 
 let _journalEntries = [];
+let _jnlSelectedSet = new Set();   // indices into the *filtered-reversed* array
+let _jnlLastClickIdx = null;       // for shift-click range select
 
 async function journalRefresh() {
   try {
-    const resp = await fetch('/api/agi-loop/journal?limit=200');
+    const resp = await fetch('/api/agi-loop/journal?limit=500');
     const data = await resp.json();
     _journalEntries = data.entries || [];
     _populateJournalAgentFilter();
@@ -1719,18 +1746,94 @@ function _populateJournalAgentFilter() {
   ).join('');
 }
 
+function _jnlGetFiltered() {
+  const agentFilter = (document.getElementById('journal-agent-filter') || {}).value || '';
+  const errorsOnly = (document.getElementById('journal-errors-only') || {}).checked;
+  let filtered = _journalEntries;
+  if (agentFilter) filtered = filtered.filter(e => e.agent === agentFilter);
+  if (errorsOnly) filtered = filtered.filter(e => e.had_error);
+  return [...filtered].reverse();
+}
+
+function _jnlUpdateSelectionUI() {
+  const countEl = document.getElementById('journal-selected-count');
+  const btnEl = document.getElementById('journal-view-selected-btn');
+  if (_jnlSelectedSet.size > 0) {
+    countEl.style.display = '';
+    countEl.textContent = _jnlSelectedSet.size + ' selected';
+    btnEl.style.display = '';
+  } else {
+    countEl.style.display = 'none';
+    btnEl.style.display = 'none';
+  }
+  document.querySelectorAll('.jnl-row').forEach(r => {
+    const idx = parseInt(r.dataset.jnlIdx, 10);
+    r.classList.toggle('multi-selected', _jnlSelectedSet.has(idx));
+  });
+}
+
+function jnlHandleClick(e, revIdx) {
+  const isCtrl = e.ctrlKey || e.metaKey;
+  const isShift = e.shiftKey;
+
+  if (isCtrl) {
+    // Toggle individual selection
+    if (_jnlSelectedSet.has(revIdx)) {
+      _jnlSelectedSet.delete(revIdx);
+    } else {
+      _jnlSelectedSet.add(revIdx);
+    }
+    _jnlLastClickIdx = revIdx;
+    _jnlUpdateSelectionUI();
+    // If exactly one selected, show detail
+    if (_jnlSelectedSet.size === 1) {
+      jnlShowDetail([..._jnlSelectedSet][0]);
+    } else if (_jnlSelectedSet.size > 1) {
+      jnlShowMultiDetail();
+    }
+    return;
+  }
+
+  if (isShift && _jnlLastClickIdx !== null) {
+    // Range selection
+    const lo = Math.min(_jnlLastClickIdx, revIdx);
+    const hi = Math.max(_jnlLastClickIdx, revIdx);
+    for (let i = lo; i <= hi; i++) {
+      _jnlSelectedSet.add(i);
+    }
+    _jnlUpdateSelectionUI();
+    if (_jnlSelectedSet.size > 1) {
+      jnlShowMultiDetail();
+    }
+    return;
+  }
+
+  // Normal click — clear selection, toggle expand, show detail
+  _jnlSelectedSet.clear();
+  _jnlLastClickIdx = revIdx;
+  _jnlUpdateSelectionUI();
+
+  // Toggle expand on the clicked row
+  const row = document.querySelector(`.jnl-row[data-jnl-idx="${revIdx}"]`);
+  if (row) {
+    const wasExpanded = row.classList.contains('expanded');
+    // Collapse all others
+    document.querySelectorAll('.jnl-row.expanded').forEach(r => r.classList.remove('expanded'));
+    if (!wasExpanded) {
+      row.classList.add('expanded');
+    }
+  }
+
+  jnlShowDetail(revIdx);
+}
+
 function journalRender() {
   const container = document.getElementById('journal-list');
   if (!container) return;
 
-  const agentFilter = (document.getElementById('journal-agent-filter') || {}).value || '';
-  const errorsOnly = (document.getElementById('journal-errors-only') || {}).checked;
+  const reversed = _jnlGetFiltered();
 
-  let filtered = _journalEntries;
-  if (agentFilter) filtered = filtered.filter(e => e.agent === agentFilter);
-  if (errorsOnly) filtered = filtered.filter(e => e.had_error);
-
-  document.getElementById('journal-count').textContent = filtered.length + ' entries';
+  document.getElementById('journal-count').textContent = reversed.length + ' entries';
 
   // Update stats
   const totalEl = document.getElementById('jnl-stat-total');
@@ -1742,7 +1845,11 @@ function journalRender() {
   const costEl = document.getElementById('jnl-stat-cost');
   if (costEl) costEl.textContent = '$' + _journalEntries.reduce((s, e) => s + (e.cost || 0), 0).toFixed(4);
 
-  if (!filtered.length) {
+  // Prune stale selections
+  _jnlSelectedSet.forEach(idx => { if (idx >= reversed.length) _jnlSelectedSet.delete(idx); });
+  _jnlUpdateSelectionUI();
+
+  if (!reversed.length) {
     container.innerHTML = `
       <div class="jnl-empty">
         <div class="jnl-empty-icon">&#128214;</div>
@@ -1751,7 +1858,6 @@ function journalRender() {
     return;
   }
 
-  const reversed = [...filtered].reverse();
   container.innerHTML = reversed.map((entry, i) => {
     const ts = entry.ts ? new Date(entry.ts).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '';
     const dateStr = entry.ts ? new Date(entry.ts).toLocaleDateString([], {month:'short',day:'numeric'}) : '';
@@ -1761,13 +1867,13 @@ function journalRender() {
     const costStr = '$' + (entry.cost || 0).toFixed(4);
     const loopTick = `L${entry.loop || '?'}.T${entry.tick || '?'}`;
     const narrative = entry.narrative || '(no narrative)';
-    // Truncate for preview
     const preview = tools.length ? ('Used ' + tools.join(', ')) : (entry.model || '—');
     const isErr = entry.had_error;
-    const idx = reversed.length - 1 - i;
+    const isSelected = _jnlSelectedSet.has(i);
 
     return `
-      <div class="jnl-row ${isErr ? 'has-error' : ''}" onclick="jnlShowDetail(${i})" data-jnl-idx="${i}">
+      <div class="jnl-row ${isErr ? 'has-error' : ''} ${isSelected ? 'multi-selected' : ''}" onclick="jnlHandleClick(event, ${i})" data-jnl-idx="${i}">
+        <div class="jnl-select-indicator">${isSelected ? '✓' : ''}</div>
         <div class="jnl-row-icon ${isErr ? 'err' : 'ok'}">${isErr ? '&#9888;' : loopTick.replace(/^L/, '').charAt(0)}</div>
         <div class="jnl-row-body">
           <div class="jnl-row-subject">${isErr ? '<span style="color:#fca5a5;">Error</span> — ' : ''}${_esc(narrative)}</div>
@@ -1783,15 +1889,9 @@ function journalRender() {
   }).join('');
 }
 
-/* Show detail in right panel */
-let _jnlReversed = [];
+/* Show detail for a single entry in right panel */
 function jnlShowDetail(revIdx) {
-  const agentFilter = (document.getElementById('journal-agent-filter') || {}).value || '';
-  const errorsOnly = (document.getElementById('journal-errors-only') || {}).checked;
-  let filtered = _journalEntries;
-  if (agentFilter) filtered = filtered.filter(e => e.agent === agentFilter);
-  if (errorsOnly) filtered = filtered.filter(e => e.had_error);
-  const reversed = [...filtered].reverse();
+  const reversed = _jnlGetFiltered();
   const entry = reversed[revIdx];
   if (!entry) return;
 
@@ -1823,9 +1923,50 @@ function jnlShowDetail(revIdx) {
   `;
 }
 
+/* Show combined detail for multiple selected entries */
+function jnlShowMultiDetail() {
+  const reversed = _jnlGetFiltered();
+  const selected = [..._jnlSelectedSet].sort((a, b) => a - b);
+  const entries = selected.map(i => reversed[i]).filter(Boolean);
+  if (!entries.length) return;
+
+  const card = document.getElementById('jnl-detail-card');
+  card.style.display = '';
+
+  document.getElementById('jnl-detail-tick').textContent =
+    `${entries.length} entries selected`;
+
+  // Combine all narratives with separators
+  const combinedNarrative = entries.map(e => {
+    const loopTick = `[L${e.loop || '?'}.T${e.tick || '?'}] ${e.agent || 'unknown'}`;
+    const ts = e.ts ? new Date(e.ts).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '';
+    return `${loopTick} (${ts}):\n${e.narrative || '(no narrative)'}`;
+  }).join('\n\n───────────────────────────\n\n');
+
+  document.getElementById('jnl-detail-narrative').textContent = combinedNarrative;
+
+  // Combined tools
+  const allTools = [...new Set(entries.flatMap(e => (e.tools_used || []).filter(Boolean)))];
+  document.getElementById('jnl-detail-tools').innerHTML = allTools.length
+    ? allTools.map(t => `<span class="jnl-tool-chip" style="font-size:0.75rem;padding:0.125rem 0.5rem;">${_esc(t)}</span>`).join('')
+    : '<span style="font-size:0.75rem;color:#52525b;">No tools used</span>';
+
+  const totalCost = entries.reduce((s, e) => s + (e.cost || 0), 0);
+  const errCount = entries.filter(e => e.had_error).length;
+  document.getElementById('jnl-detail-meta').innerHTML = `
+    <span>Entries: <strong style="color:#a1a1aa;">${entries.length}</strong></span>
+    <span>Total Cost: <strong style="color:#22c55e;">$${totalCost.toFixed(6)}</strong></span>
+    <span>Models: <strong style="color:#a1a1aa;">${[...new Set(entries.map(e => e.model).filter(Boolean))].join(', ') || '—'}</strong></span>
+    ${errCount ? `<span style="color:#fca5a5;font-weight:700;">⚠ ${errCount} error(s) in selection</span>` : ''}
+  `;
+}
+
 function jnlCloseDetail() {
   document.getElementById('jnl-detail-card').style.display = 'none';
   document.querySelectorAll('.jnl-row').forEach(r => r.classList.remove('selected'));
+  _jnlSelectedSet.clear();
+  _jnlLastClickIdx = null;
+  _jnlUpdateSelectionUI();
 }
 
 async function journalClear() {
@@ -1835,7 +1976,10 @@ async function journalClear() {
     const data = await resp.json();
     if (data.ok) {
       _journalEntries = [];
+      _jnlSelectedSet.clear();
+      _jnlLastClickIdx = null;
       journalRender();
+      jnlCloseDetail();
       showToast('Journal cleared', 'ok');
     } else {
       showToast('Failed to clear journal', 'error');
