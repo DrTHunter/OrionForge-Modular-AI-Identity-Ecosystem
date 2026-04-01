@@ -3223,12 +3223,32 @@ async def _agi_loop_runner():
                 if stimulus_template:
                     stim = stimulus_template
                 else:
+                    # Gather last tick summary for progress context
+                    _prev_narrative = ""
+                    if state.journal_entries:
+                        _last_journal = state.journal_entries[-1]
+                        _prev_narrative = _last_journal.get("narrative", "")
+
+                    _progress_ctx = ""
+                    if _prev_narrative:
+                        _progress_ctx = (
+                            f"\n\nPREVIOUS TICK SUMMARY: {_prev_narrative}\n"
+                            "Do NOT repeat the same action. Build on what was done or move to the next task."
+                        )
+
                     stim = (
-                        f"[AGI Loop] Tick {tick}/{ticks_per_loop} — loop {loop_count}. "
-                        "Review your directives and continuation notes. "
-                        "Check memory for pending tasks or ideas. "
-                        "Take the most impactful autonomous action available. "
-                        "Use your tools as needed. Report what you did."
+                        f"[AGI Loop] Tick {tick}/{ticks_per_loop} — loop {loop_count}."
+                        f"{_progress_ctx}\n\n"
+                        "INSTRUCTIONS:\n"
+                        "1. Use the continuation_update tool to READ your continuation notes first "
+                        "(mode='replace_section') to see where you left off.\n"
+                        "2. Review memory for pending tasks or ideas.\n"
+                        "3. Take the most impactful autonomous action available. Use your tools.\n"
+                        "4. After acting, use continuation_update (mode='append') to log what you did "
+                        "and what to do next tick.\n"
+                        "5. If you have anything to report to the operator, use the inbox tool "
+                        "(action='send') to message them.\n"
+                        "6. Report what you did in your response."
                     )
 
                 # Execute

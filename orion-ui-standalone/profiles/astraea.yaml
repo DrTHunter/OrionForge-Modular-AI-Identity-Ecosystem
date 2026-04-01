@@ -5,6 +5,7 @@ allowed_tools:
 - directives
 - echo
 - email
+- inbox
 - memory
 - model_router
 - web_search
