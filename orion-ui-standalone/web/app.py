@@ -2992,6 +2992,11 @@ async def _execute_agi_tick(agent: str, stimulus: str, agi_config: dict) -> dict
             if tier_conn:
                 conn = tier_conn
 
+        # ── OpenRouter prefix fix ──────────────────────────────────────
+        if conn.get("provider") == "openrouter" and model and "/" not in model:
+            model = f"openai/{model}"
+            log.info("[agi_tick] Auto-prefixed model for OpenRouter: %s", model)
+
         url = conn["url"].rstrip("/")
         if not url.endswith("/chat/completions"):
             url += "/chat/completions"
