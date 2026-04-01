@@ -3026,6 +3026,9 @@ async def _execute_agi_tick(agent: str, stimulus: str, agi_config: dict) -> dict
         max_tool_calls = agi_config.get("max_tool_calls_per_tick", 15)
         total_tool_calls = 0
 
+        log.info("[agi_tick] agent=%s model=%s provider=%s conn_id=%s url=%s",
+                 agent, model, conn.get("provider"), conn.get("id"), url)
+
         response_text = ""
         for step in range(max_steps + 1):
             payload = {
@@ -3038,6 +3041,10 @@ async def _execute_agi_tick(agent: str, stimulus: str, agi_config: dict) -> dict
 
             async with httpx.AsyncClient(timeout=120) as client:
                 resp = await client.post(url, json=payload, headers=headers)
+                if resp.status_code >= 400:
+                    body = resp.text[:1000]
+                    log.error("[agi_tick] HTTP %d from %s — model=%s body=%s",
+                              resp.status_code, url, model, body)
                 resp.raise_for_status()
                 data = resp.json()
 
