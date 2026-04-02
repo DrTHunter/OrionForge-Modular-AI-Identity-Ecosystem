@@ -963,7 +963,7 @@ let _index = {{ chat_index | tojson }};
 const _agentConns = {{ agent_connections | tojson }};
 const _userProfile = {{ user_profile | tojson }};
 const _avatarMap = {{ avatar_map | tojson }};
-const _pricing = {{ pricing | tojson }};
+let _pricing = {};  // lazy-loaded from /api/pricing
 const _platformConnections = {{ platform_connections | tojson }};
 let _pinnedModels = {{ pinned_models | tojson }};
 const _chatDefaults = {{ chat_defaults | tojson }};
@@ -1029,6 +1029,7 @@ function _saveChatDefaults() {
   });
 
   backfillEmojis();
+  fetch('/api/pricing').then(r => r.json()).then(d => { _pricing = d; }).catch(() => {});
   if (!document.getElementById('chat-connection').value) {
     document.getElementById('chat-connection').value = '__platform__';
   }

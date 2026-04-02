@@ -85,22 +85,36 @@ _SECONDS_PER_DAY = 86400
 
 
 # ── State persistence ────────────────────────────────────────────
+_stripe_state_cache: dict | None = None
+_stripe_state_cache_ts: float = 0.0
+_STRIPE_CACHE_TTL = 30.0  # seconds
+
 def _load_stripe_state() -> dict:
-    """Load subscription state from disk."""
+    """Load subscription state from disk (cached for 30s)."""
+    global _stripe_state_cache, _stripe_state_cache_ts
+    now = time.monotonic()
+    if _stripe_state_cache is not None and (now - _stripe_state_cache_ts) < _STRIPE_CACHE_TTL:
+        return _stripe_state_cache
     if _STRIPE_STATE_FILE.exists():
         try:
             with open(_STRIPE_STATE_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
+                data = json.load(f)
+                _stripe_state_cache = data
+                _stripe_state_cache_ts = now
+                return data
         except (json.JSONDecodeError, OSError):
             pass
     return {"subscriptions": {}}
 
 
 def _save_stripe_state(state: dict):
-    """Persist subscription state."""
+    """Persist subscription state and invalidate cache."""
+    global _stripe_state_cache, _stripe_state_cache_ts
     _STRIPE_STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
     with open(_STRIPE_STATE_FILE, "w", encoding="utf-8") as f:
         json.dump(state, f, indent=2)
+    _stripe_state_cache = state
+    _stripe_state_cache_ts = time.monotonic()
 
 
 def _ensure_trial_start(user_id: str) -> float:

@@ -8559,16 +8559,19 @@ def test_stripe_state_persist_path():
 
         # ── 5. Corrupt file → returns default ──
         tmp_file.write_text("{bad json", encoding="utf-8")
+        billing._stripe_state_cache = None  # clear cache so disk is re-read
         fallback = billing._load_stripe_state()
         check("corrupt file → returns default dict", fallback == {"subscriptions": {}})
 
         # ── 6. Missing file → returns default ──
         tmp_file.unlink()
+        billing._stripe_state_cache = None  # clear cache so disk is re-read
         missing = billing._load_stripe_state()
         check("missing file → returns default dict", missing == {"subscriptions": {}})
 
     finally:
         billing._STRIPE_STATE_FILE = orig
+        billing._stripe_state_cache = None  # reset cache
         shutil.rmtree(tmp, ignore_errors=True)
 
     # ── 7. FREE_TRIAL_DAYS constant ──

@@ -222,5 +222,61 @@
     "display_name": "new_agent",
     "deleted_at": "2026-04-02T16:51:07.308106+00:00",
     "expires_at": "2026-05-02T16:51:07.327066+00:00"
+  },
+  {
+    "id": "new_agent_24ef5b64",
+    "name": "new_agent",
+    "display_name": "new_agent",
+    "deleted_at": "2026-04-02T19:44:16.107618+00:00",
+    "expires_at": "2026-05-02T19:44:16.123824+00:00"
+  },
+  {
+    "id": "new_agent_e48aa60c",
+    "name": "new_agent",
+    "display_name": "new_agent",
+    "deleted_at": "2026-04-02T19:54:28.302180+00:00",
+    "expires_at": "2026-05-02T19:54:28.323866+00:00"
+  },
+  {
+    "id": "new_agent_81454f45",
+    "name": "new_agent",
+    "display_name": "new_agent",
+    "deleted_at": "2026-04-02T19:57:17.501227+00:00",
+    "expires_at": "2026-05-02T19:57:17.503373+00:00"
+  },
+  {
+    "id": "new_agent_e87c1056",
+    "name": "new_agent",
+    "display_name": "new_agent",
+    "deleted_at": "2026-04-02T19:59:56.419579+00:00",
+    "expires_at": "2026-05-02T19:59:56.432263+00:00"
+  },
+  {
+    "id": "new_agent_832a0711",
+    "name": "new_agent",
+    "display_name": "new_agent",
+    "deleted_at": "2026-04-02T20:13:57.356715+00:00",
+    "expires_at": "2026-05-02T20:13:57.359335+00:00"
+  },
+  {
+    "id": "new_agent_6c4a29dd",
+    "name": "new_agent",
+    "display_name": "new_agent",
+    "deleted_at": "2026-04-02T21:14:54.426821+00:00",
+    "expires_at": "2026-05-02T21:14:54.429272+00:00"
+  },
+  {
+    "id": "new_agent_0fcc91cf",
+    "name": "new_agent",
+    "display_name": "new_agent",
+    "deleted_at": "2026-04-02T21:17:02.321861+00:00",
+    "expires_at": "2026-05-02T21:17:02.324536+00:00"
+  },
+  {
+    "id": "new_agent_69b224ab",
+    "name": "new_agent",
+    "display_name": "new_agent",
+    "deleted_at": "2026-04-02T21:21:36.068013+00:00",
+    "expires_at": "2026-05-02T21:21:36.088772+00:00"
   }
 ]

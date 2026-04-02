@@ -379,7 +379,7 @@ def _get_faiss_memory():
 #  TTL CACHE — eliminates redundant disk reads within the same request
 # ═══════════════════════════════════════════════════════════════════
 _TTL_CACHE: dict[str, tuple[float, object]] = {}   # key → (expires_at, data)
-_TTL_SECONDS = 2.0                                  # short-lived: just covers one render cycle
+_TTL_SECONDS = 30.0                                 # covers repeated navigations; writes call _cache_invalidate
 
 def _cache_get(key: str):
     entry = _TTL_CACHE.get(key)
@@ -1969,7 +1969,6 @@ async def page_chat(request: Request):
         "agent_connections": store.get("agent_connections", {}),
         "avatar_map": avatar_map,
         "user_profile": settings.get("user_profile", {}),
-        "pricing": _load_pricing(),
         "chat_background": settings.get("chat_background") or "",
         "pinned_models": settings.get("pinned_models", []),
         "stt_provider": stt_cfg.get("provider", "elevenlabs"),
