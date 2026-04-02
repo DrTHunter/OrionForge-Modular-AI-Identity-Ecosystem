@@ -278,5 +278,12 @@
     "display_name": "new_agent",
     "deleted_at": "2026-04-02T21:21:36.068013+00:00",
     "expires_at": "2026-05-02T21:21:36.088772+00:00"
+  },
+  {
+    "id": "new_agent_e28af2d1",
+    "name": "new_agent",
+    "display_name": "new_agent",
+    "deleted_at": "2026-04-02T22:09:02.466673+00:00",
+    "expires_at": "2026-05-02T22:09:02.492244+00:00"
   }
 ]

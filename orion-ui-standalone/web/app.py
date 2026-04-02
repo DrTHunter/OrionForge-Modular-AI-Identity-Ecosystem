@@ -553,6 +553,51 @@ def _resolve_connection(connection_id: str | None, agent: str) -> dict | None:
     return next((c for c in conns if c.get("enabled") and c.get("platform_hosted")), None)
 
 
+def _prepare_tools_for_connection(tool_defs: list[dict], conn: dict) -> list[dict]:
+    """Swap the SearXNG web_search function tool for OpenRouter's native
+    server tool when the active connection is OpenRouter.
+
+    OpenRouter's ``openrouter:web_search`` runs server-side — the model
+    decides when to search and OpenRouter handles execution transparently.
+    This removes the need for a self-hosted SearXNG instance.
+
+    For non-OpenRouter connections the original tool_defs are returned
+    unchanged (SearXNG fallback).
+    """
+    if conn.get("provider") != "openrouter":
+        return tool_defs
+
+    # Build excluded_domains from the user's web_search config
+    excluded: list[str] = []
+    try:
+        from src.tools.web_search import get_effective_config
+        cfg = get_effective_config()
+        raw = cfg.get("ignored_sites", "")
+        excluded = [s.strip() for s in raw.split(",") if s.strip()]
+    except Exception:
+        pass
+
+    # Remove the function-based web_search def (avoid duplicate search tools)
+    filtered = [d for d in tool_defs
+                if not (d.get("type") == "function"
+                        and d.get("function", {}).get("name") == "web_search")]
+
+    # Inject OpenRouter's native server tool
+    or_search: dict = {
+        "type": "openrouter:web_search",
+        "parameters": {
+            "max_results": 5,
+            "search_context_size": "medium",
+        },
+    }
+    if excluded:
+        or_search["parameters"]["excluded_domains"] = excluded
+    filtered.append(or_search)
+
+    log.info("[tools] Swapped web_search → openrouter:web_search (%d excluded domains)", len(excluded))
+    return filtered
+
+
 # ═══════════════════════════════════════════════════════════════════
 #  SETTINGS
 # ═══════════════════════════════════════════════════════════════════
@@ -3079,6 +3124,9 @@ async def _execute_agi_tick(agent: str, stimulus: str, agi_config: dict) -> dict
         log.info("[agi_tick] agent=%s model=%s provider=%s conn_id=%s url=%s",
                  agent, model, conn.get("provider"), conn.get("id"), url)
 
+        # Swap SearXNG → OpenRouter native web search when using OpenRouter
+        tool_defs = _prepare_tools_for_connection(tool_defs, conn)
+
         response_text = ""
         for step in range(max_steps + 1):
             payload = {
@@ -3923,6 +3971,9 @@ async def api_chat_send(req: ChatRequest, request: Request):
 
     running_messages = list(llm_messages)  # mutable copy for the loop
 
+    # Swap SearXNG → OpenRouter native web search when using OpenRouter
+    tool_defs = _prepare_tools_for_connection(tool_defs, conn)
+
     for _round in range(MAX_TOOL_ROUNDS + 1):
         try:
             payload = {
@@ -4321,6 +4372,9 @@ async def _stream_chat_generator(req: ChatRequest, request: Request, user, conn,
                 break
 
     full_response = ""   # accumulate final response text (for saving to chat)
+
+    # Swap SearXNG → OpenRouter native web search when using OpenRouter
+    tool_defs = _prepare_tools_for_connection(tool_defs, conn)
 
     for _round in range(MAX_TOOL_ROUNDS + 1):
         payload = {
