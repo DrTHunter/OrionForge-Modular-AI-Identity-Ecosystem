@@ -3145,7 +3145,7 @@ def _build_tick_narrative(
 
     # Error case
     if tick_result.get("error"):
-        parts.append(f"Encountered an error: {str(tick_result['error'])[:200]}")
+        parts.append(f"Encountered an error: {str(tick_result['error'])[:500]}")
         return " ".join(parts)
 
     # Tool usage summary
@@ -3157,16 +3157,15 @@ def _build_tick_narrative(
         else:
             parts.append(f"Used {', '.join(names[:-1])} and {names[-1]}.")
 
-    # Response excerpt — first sentence or first 300 chars
+    # Response excerpt — first 4 sentences or first 600 chars
     response = (tick_result.get("response") or "").strip()
     if response:
-        # Take first two sentences or 300 chars, whichever is shorter
         sentences = response.replace("\n", " ").split(". ")
-        excerpt = ". ".join(sentences[:2])
+        excerpt = ". ".join(sentences[:4])
         if not excerpt.endswith("."):
             excerpt += "."
-        if len(excerpt) > 300:
-            excerpt = excerpt[:297] + "..."
+        if len(excerpt) > 600:
+            excerpt = excerpt[:597] + "..."
         parts.append(excerpt)
     else:
         parts.append("No textual response returned.")
@@ -3317,8 +3316,8 @@ async def _agi_loop_runner():
                     "tick": tick,
                     "time": datetime.now(timezone.utc).isoformat(),
                     "agent": agent,
-                    "stimulus": stim[:200],
-                    "response": tick_result.get("response", "")[:500],
+                    "stimulus": stim[:2000],
+                    "response": tick_result.get("response", "")[:5000],
                     "tool_calls": tick_result.get("tool_calls", []),
                     "cost": tick_cost,
                     "error": tick_result.get("error"),
@@ -3338,6 +3337,9 @@ async def _agi_loop_runner():
                     "model": tick_result.get("model", ""),
                     "task_type": tick_result.get("task_type", ""),
                     "narrative": _journal_narrative,
+                    "full_response": tick_result.get("response", "")[:5000],
+                    "full_error": str(tick_result.get("error") or "")[:2000],
+                    "tool_calls": tick_result.get("tool_calls", []),
                     "tools_used": [tc.get("tool", "") for tc in tick_result.get("tool_calls", [])],
                     "cost": round(tick_cost, 6),
                     "had_error": bool(tick_result.get("error")),

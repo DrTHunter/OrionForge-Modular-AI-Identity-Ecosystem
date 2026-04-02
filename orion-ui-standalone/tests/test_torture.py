@@ -2504,12 +2504,12 @@ def test_agi_journal_torture():
     )
     check("narrative no response", "No textual response" in narr_no_resp)
 
-    # Long response truncation (>300 chars)
-    long_resp = "A" * 350 + ". Second sentence."
+    # Long response truncation (>600 chars)
+    long_resp = "A" * 650 + ". Second sentence."
     narr_long = _build_tick_narrative(
         {"response": long_resp}, "astraea", 1, 1, 0.0
     )
-    check("narrative long truncated", len(narr_long) <= 310 or "..." in narr_long)
+    check("narrative long truncated", len(narr_long) <= 610 or "..." in narr_long)
 
     # No tool_calls key at all
     narr_bare = _build_tick_narrative(
@@ -2521,12 +2521,13 @@ def test_agi_journal_torture():
     narr_empty = _build_tick_narrative({}, "astraea", 1, 1, 0.0)
     check("narrative empty result", "No textual response" in narr_empty)
 
-    # Multiple sentences — only first 2 extracted
+    # Multiple sentences — first 4 extracted, 5th excluded
     narr_sents = _build_tick_narrative(
-        {"response": "First sentence. Second one. Third here. Fourth too."},
+        {"response": "First sentence. Second one. Third here. Fourth too. Fifth nope."},
         "astraea", 1, 1, 0.0
     )
-    check("narrative ≤2 sentences", "Third" not in narr_sents)
+    check("narrative ≤4 sentences", "Fifth" not in narr_sents)
+    check("narrative has 3rd sentence", "Third" in narr_sents)
 
     # Error takes priority over response
     narr_err_prio = _build_tick_narrative(
@@ -2536,11 +2537,11 @@ def test_agi_journal_torture():
     check("error trumps response", "BOOM" in narr_err_prio)
     check("error trumps tools", "echo" not in narr_err_prio)
 
-    # Very long error truncated to 200 chars
+    # Very long error truncated to 500 chars
     narr_long_err = _build_tick_narrative(
-        {"error": "X" * 500}, "astraea", 1, 1, 0.0
+        {"error": "X" * 800}, "astraea", 1, 1, 0.0
     )
-    check("long error truncated", len(narr_long_err) < 250)
+    check("long error truncated", len(narr_long_err) < 550)
 
 
 def test_agi_loop_template_journal():
@@ -10655,6 +10656,10 @@ def test_agi_loop_template_modal_and_looplog():
     # ── Expandable loop log ──
     check("loop-entry class", "loop-entry" in html)
     check("_renderTickLog function", "_renderTickLog" in html)
+
+    # ── Journal inline expansion ──
+    check("jnl-row-full class", "jnl-row-full" in html)
+    check("jnl-row-expand-hint class", "jnl-row-expand-hint" in html)
 
     # ── VM storage paths ──
     check("VM persist path", "/persist/orion" in html)

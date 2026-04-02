@@ -399,6 +399,18 @@
   .jnl-row.expanded .jnl-row-preview {
     white-space: pre-wrap; word-break: break-word; overflow: visible;
   }
+  .jnl-row-full {
+    display: none; margin-top: 0.5rem; padding: 0.75rem;
+    background: rgba(24,24,27,0.5); border: 1px solid #2a2a3a;
+    border-radius: 0.5rem; font-size: 0.8125rem; color: #d4d4d8;
+    line-height: 1.6; white-space: pre-wrap; word-break: break-word;
+    max-height: 80vh; overflow-y: auto;
+  }
+  .jnl-row.expanded .jnl-row-full { display: block; }
+  .jnl-row-expand-hint {
+    font-size: 0.625rem; color: #3f3f46; transition: color 0.15s; margin-left: 0.5rem;
+  }
+  .jnl-row:hover .jnl-row-expand-hint { color: #6366f1; }
   .jnl-row-meta {
     font-size: 0.6875rem; color: #52525b; margin-top: 0.3125rem;
     display: flex; gap: 0.625rem; align-items: center; flex-wrap: wrap;
@@ -518,7 +530,7 @@
     background: rgba(24,24,27,0.5); border: 1px solid #2a2a3a;
     border-radius: 0.5rem; font-size: 0.8125rem; color: #d4d4d8;
     line-height: 1.6; white-space: pre-wrap; word-break: break-word;
-    max-height: 300px; overflow-y: auto;
+    max-height: 80vh; overflow-y: auto;
   }
   .loop-entry.expanded .loop-entry-full { display: block; }
   .loop-entry-expand-hint {
@@ -1792,11 +1804,11 @@ function _renderTickLog(ticks) {
     const tools    = (t.tool_calls || []).length;
     const toolStr  = tools ? tools + ' tool call' + (tools > 1 ? 's' : '') : 'no tools';
     const summary  = t.error
-      ? '\u26a0 Error: ' + String(t.error).substring(0, 200)
-      : (t.response || 'No response').substring(0, 300);
+      ? '\u26a0 Error: ' + String(t.error).substring(0, 300)
+      : (t.response || 'No response').substring(0, 400);
     const fullResponse = t.response || t.error || 'No response content';
     const toolDetails = (t.tool_calls || []).map(tc =>
-      `\u2022 ${tc.tool || 'unknown'}(${JSON.stringify(tc.arguments || {}).substring(0, 100)})\n  \u2192 ${(tc.result || '').substring(0, 500)}`
+      `\u2022 ${tc.tool || 'unknown'}(${JSON.stringify(tc.arguments || {}).substring(0, 500)})\n  \u2192 ${tc.result || ''}`
     ).join('\n\n');
     const expandContent = fullResponse + (toolDetails ? '\n\n\u2500\u2500\u2500 Tool Calls \u2500\u2500\u2500\n\n' + toolDetails : '');
 
@@ -1931,13 +1943,15 @@ function jnlHandleClick(e, revIdx) {
     return;
   }
 
-  // Normal click — clear selection, open popup modal
+  // Normal click — toggle inline expansion
   _jnlSelectedSet.clear();
   _jnlLastClickIdx = revIdx;
   _jnlUpdateSelectionUI();
 
-  // Open the full popup modal
-  jnlOpenModal(revIdx);
+  const row = document.querySelector(`[data-jnl-idx="${revIdx}"]`);
+  if (row) {
+    row.classList.toggle('expanded');
+  }
 }
 
 function journalRender() {
@@ -1984,18 +1998,31 @@ function journalRender() {
     const isErr = entry.had_error;
     const isSelected = _jnlSelectedSet.has(i);
 
+    // Build full expanded content from full_response/full_error + tool_calls
+    const fullResp = entry.full_response || entry.narrative || '';
+    const fullErr = entry.full_error || '';
+    const toolCallDetails = (entry.tool_calls || []).map(tc =>
+      `\u2022 ${tc.tool || 'unknown'}(${JSON.stringify(tc.arguments || {}).substring(0, 500)})\n  \u2192 ${tc.result || ''}`
+    ).join('\n\n');
+    let expandParts = [];
+    if (fullErr) expandParts.push('\u26a0 Error:\n' + fullErr);
+    if (fullResp) expandParts.push(fullResp);
+    if (toolCallDetails) expandParts.push('\u2500\u2500\u2500 Tool Calls \u2500\u2500\u2500\n\n' + toolCallDetails);
+    const expandContent = expandParts.join('\n\n') || narrative;
+
     return `
       <div class="jnl-row ${isErr ? 'has-error' : ''} ${isSelected ? 'multi-selected' : ''}" onclick="jnlHandleClick(event, ${i})" data-jnl-idx="${i}">
         <div class="jnl-select-indicator">${isSelected ? '✓' : ''}</div>
         <div class="jnl-row-icon ${isErr ? 'err' : 'ok'}">${isErr ? '&#9888;' : loopTick.replace(/^L/, '').charAt(0)}</div>
         <div class="jnl-row-body">
-          <div class="jnl-row-subject">${isErr ? '<span style="color:#fca5a5;">Error</span> — ' : ''}${_esc(narrative)}</div>
+          <div class="jnl-row-subject">${isErr ? '<span style="color:#fca5a5;">Error</span> — ' : ''}${_esc(narrative)}<span class="jnl-row-expand-hint">\u25bc click to expand</span></div>
           <div class="jnl-row-preview">${_esc(entry.agent || 'unknown')} &middot; ${_esc(preview)}</div>
           <div class="jnl-row-meta">
             <span style="color:#6366f1;font-weight:700;">${loopTick}</span>
             ${toolChips}${moreTools}
             <span class="jnl-row-cost" style="color:${isErr ? '#ef4444' : '#22c55e'};">${costStr}</span>
           </div>
+          <div class="jnl-row-full">${_esc(expandContent)}</div>
         </div>
         <div class="jnl-row-ts">${dateStr}<br>${ts}</div>
       </div>`;
@@ -2130,8 +2157,27 @@ function jnlOpenModal(revIdx) {
     entry.had_error ? '\u26a0 Error \u2014 ' + agent : agent;
   document.getElementById('jnl-modal-meta-line').textContent =
     `${loopTick} \u00b7 ${ts}`;
-  document.getElementById('jnl-modal-narrative').textContent =
-    entry.narrative || '(no narrative recorded)';
+
+  // Show full response if available, otherwise fall back to narrative
+  const fullResp = entry.full_response || '';
+  const fullErr = entry.full_error || '';
+  const narrativeText = entry.narrative || '(no narrative recorded)';
+  let modalBody = '';
+  if (fullErr) modalBody += '\u26a0 Error:\n' + fullErr + '\n\n';
+  if (fullResp) {
+    modalBody += fullResp;
+  } else {
+    modalBody += narrativeText;
+  }
+  // Append tool call details if present
+  const tcs = entry.tool_calls || [];
+  if (tcs.length) {
+    const toolDetails = tcs.map(tc =>
+      `\u2022 ${tc.tool || 'unknown'}(${JSON.stringify(tc.arguments || {}).substring(0, 500)})\n  \u2192 ${tc.result || ''}`
+    ).join('\n\n');
+    modalBody += '\n\n\u2500\u2500\u2500 Tool Calls \u2500\u2500\u2500\n\n' + toolDetails;
+  }
+  document.getElementById('jnl-modal-narrative').textContent = modalBody;
 
   // Tools
   const tools = (entry.tools_used || []).filter(Boolean);
@@ -2188,11 +2234,18 @@ function jnlOpenMultiModal() {
   document.getElementById('jnl-modal-meta-line').textContent =
     `Combined view \u00b7 ${entries.filter(e => e.had_error).length} errors`;
 
-  // Combined narratives
+  // Combined full text
   const combined = entries.map(e => {
     const lt = `[L${e.loop || '?'}.T${e.tick || '?'}] ${e.agent || 'unknown'}`;
     const ts = e.ts ? new Date(e.ts).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '';
-    return `${lt} (${ts}):\n${e.narrative || '(no narrative)'}`;
+    let body = '';
+    if (e.full_error) body += '\u26a0 Error: ' + e.full_error + '\n';
+    body += e.full_response || e.narrative || '(no narrative)';
+    const tcs = e.tool_calls || [];
+    if (tcs.length) {
+      body += '\nTools: ' + tcs.map(tc => tc.tool || 'unknown').join(', ');
+    }
+    return `${lt} (${ts}):\n${body}`;
   }).join('\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n');
 
   document.getElementById('jnl-modal-narrative').textContent = combined;
