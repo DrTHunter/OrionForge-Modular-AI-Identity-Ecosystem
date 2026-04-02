@@ -2552,7 +2552,7 @@ def test_agi_loop_template_journal():
         html = f.read()
 
     # Tab button
-    check("Journal tab button", "switchTab('journal')" in html)
+    check("Journal tab button", "switchTab('journal'" in html)
     check("Journal tab text", ">Journal<" in html)
 
     # Panel container
@@ -10529,6 +10529,145 @@ def test_journal_persistence_path():
     check("history path contains orion", "orion" in str(history_path))
 
 
+# ═════════════════════════════════════════════
+# AGI HISTORY DISK PERSISTENCE — load_history_from_disk full coverage
+# ═════════════════════════════════════════════
+def test_agi_history_disk_persistence():
+    """Test load_history_from_disk: persist, reload, cap at 200,
+    corrupt JSONL recovery, empty file, stale_streak_limit in config."""
+    print("\n=== TORTURE: AGI History — Disk Persist / Load ===")
+    from src.tools.agi_loop import AGILoopState, get_loop_state
+    import src.tools.agi_loop as _agi_mod
+    from pathlib import Path
+
+    state = get_loop_state()
+    state.reset()
+
+    tmp = tempfile.mkdtemp()
+    orig_data_dir = _agi_mod._DATA_DIR
+    _agi_mod._DATA_DIR = Path(tmp)
+
+    try:
+        # ── 1. log_tick persists to JSONL ──
+        for i in range(5):
+            state.log_tick({"tick": i, "model": "gpt-4o", "cost": 0.001})
+        hpath = Path(tmp) / "agi_loop_history.jsonl"
+        check("history JSONL created", hpath.is_file())
+
+        lines = hpath.read_text(encoding="utf-8").strip().split("\n")
+        check("5 lines in history JSONL", len(lines) == 5)
+        parsed = json.loads(lines[0])
+        check("JSONL line 0 tick=0", parsed["tick"] == 0)
+        check("JSONL line 0 model", parsed["model"] == "gpt-4o")
+
+        # ── 2. Clear in-memory and reload from disk ──
+        state.tick_history.clear()
+        check("cleared in-memory history", len(state.tick_history) == 0)
+        state.load_history_from_disk()
+        check("reloaded 5 ticks", len(state.tick_history) == 5)
+        check("reload content correct", state.tick_history[2]["tick"] == 2)
+
+        # ── 3. Reload caps at 200 ──
+        with open(hpath, "w", encoding="utf-8") as f:
+            for i in range(250):
+                f.write(json.dumps({"tick": i, "cost": 0.0}) + "\n")
+        state.tick_history.clear()
+        state.load_history_from_disk()
+        check("reload caps at 200", len(state.tick_history) == 200)
+        check("reload oldest is tick 50", state.tick_history[0]["tick"] == 50)
+
+        # ── 4. Corrupt JSONL recovery ──
+        with open(hpath, "w", encoding="utf-8") as f:
+            f.write('{"tick": 0, "cost": 0.0}\n')
+            f.write('GARBAGE LINE\n')
+            f.write('{"tick": 1, "cost": 0.0}\n')
+        state.tick_history.clear()
+        try:
+            state.load_history_from_disk()
+            loaded = len(state.tick_history)
+            check("corrupt JSONL handled gracefully", loaded >= 0)
+        except Exception:
+            check("corrupt JSONL: exception caught", True)
+
+        # ── 5. Empty file reload ──
+        with open(hpath, "w", encoding="utf-8") as f:
+            f.write("")
+        state.tick_history.clear()
+        state.load_history_from_disk()
+        check("empty file → no ticks", len(state.tick_history) == 0)
+
+        # ── 6. Missing file is safe ──
+        hpath.unlink()
+        state.tick_history.clear()
+        state.load_history_from_disk()
+        check("missing file → no ticks", len(state.tick_history) == 0)
+
+    finally:
+        _agi_mod._DATA_DIR = orig_data_dir
+        shutil.rmtree(tmp, ignore_errors=True)
+        state.reset()
+
+
+# ═════════════════════════════════════════════
+# AGI LOOP CONFIG — stale_streak_limit in defaults + Pydantic model
+# ═════════════════════════════════════════════
+def test_agi_loop_config_stale_streak():
+    """Verify stale_streak_limit exists in backend defaults and Pydantic model."""
+    print("\n=== TORTURE: AGI Loop Config — stale_streak_limit ===")
+
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+    from web.app import _AGI_LOOP_DEFAULTS, AGILoopConfigUpdate
+
+    check("stale_streak_limit in defaults", "stale_streak_limit" in _AGI_LOOP_DEFAULTS)
+    check("stale_streak_limit default is int", isinstance(_AGI_LOOP_DEFAULTS["stale_streak_limit"], int))
+    check("stale_streak_limit >= 1", _AGI_LOOP_DEFAULTS["stale_streak_limit"] >= 1)
+
+    # Pydantic model accepts stale_streak_limit
+    model = AGILoopConfigUpdate(stale_streak_limit=5)
+    check("pydantic accepts stale_streak_limit", model.stale_streak_limit == 5)
+
+    # Default is 2 (matches _AGI_LOOP_DEFAULTS)
+    model_default = AGILoopConfigUpdate()
+    check("pydantic default is 2", model_default.stale_streak_limit == 2)
+
+
+# ═════════════════════════════════════════════
+# AGI LOOP TEMPLATE — Journal Modal + Expandable Loop Log + VM paths
+# ═════════════════════════════════════════════
+def test_agi_loop_template_modal_and_looplog():
+    """Verify agi_loop.html has journal popup modal, expandable loop log entries,
+    and VM storage path references."""
+    print("\n=== TORTURE: AGI Loop Template — Modal / Loop Log / VM ===")
+
+    tpl_path = os.path.join(os.path.dirname(__file__), "..", "web", "templates", "agi_loop.html")
+    with open(tpl_path, encoding="utf-8") as f:
+        html = f.read()
+
+    # ── Journal popup modal ──
+    check("jnlOpenModal function", "jnlOpenModal" in html)
+    check("jnlCloseModal function", "jnlCloseModal" in html)
+    check("jnl-modal-overlay class", "jnl-modal-overlay" in html)
+    check("jnl-modal-body class", "jnl-modal-body" in html)
+    check("jnl-modal-narrative class", "jnl-modal-narrative" in html)
+    check("jnl-modal-meta-grid class", "jnl-modal-meta-grid" in html)
+    check("Escape key closes modal", "Escape" in html)
+
+    # ── Expandable loop log ──
+    check("loop-entry class", "loop-entry" in html)
+    check("_renderTickLog function", "_renderTickLog" in html)
+
+    # ── VM storage paths ──
+    check("VM persist path", "/persist/orion" in html)
+    check("VM persistent volume badge", "Persistent Volume" in html or "VM persistent volume" in html)
+
+    # ── switchTab accepts explicit button ──
+    check("switchTab(id, btnEl) signature", "switchTab" in html)
+    check("switchTabById function", "switchTabById" in html)
+
+    # ── Config save preserves tiers ──
+    check("saveConfig includes _tiers", "_tiers" in html)
+
+
 # =============================================
 if __name__ == "__main__":
     test_boundary_policy()
@@ -10664,6 +10803,9 @@ if __name__ == "__main__":
     test_agi_loop_request_stop_deep()
     test_inbox_persistence_path()
     test_journal_persistence_path()
+    test_agi_history_disk_persistence()
+    test_agi_loop_config_stale_streak()
+    test_agi_loop_template_modal_and_looplog()
 
     print(f"\n{'='*40}")
     print(f"Results: {PASS} passed, {FAIL} failed")

@@ -145,5 +145,68 @@
     "display_name": "new_agent",
     "deleted_at": "2026-03-24T20:48:09.299778+00:00",
     "expires_at": "2026-04-23T20:48:09.301776+00:00"
+  },
+  {
+    "id": "new_agent_7c19773b",
+    "name": "new_agent",
+    "display_name": "new_agent",
+    "deleted_at": "2026-04-02T13:11:02.803091+00:00",
+    "expires_at": "2026-05-02T13:11:02.817091+00:00"
+  },
+  {
+    "id": "new_agent_990db924",
+    "name": "new_agent",
+    "display_name": "new_agent",
+    "deleted_at": "2026-04-02T13:15:08.781862+00:00",
+    "expires_at": "2026-05-02T13:15:08.804433+00:00"
+  },
+  {
+    "id": "new_agent_74ed2db8",
+    "name": "new_agent",
+    "display_name": "new_agent",
+    "deleted_at": "2026-04-02T15:03:23.644010+00:00",
+    "expires_at": "2026-05-02T15:03:23.667093+00:00"
+  },
+  {
+    "id": "new_agent_cf2d118e",
+    "name": "new_agent",
+    "display_name": "new_agent",
+    "deleted_at": "2026-04-02T16:15:41.935363+00:00",
+    "expires_at": "2026-05-02T16:15:41.957970+00:00"
+  },
+  {
+    "id": "new_agent_750e99db",
+    "name": "new_agent",
+    "display_name": "new_agent",
+    "deleted_at": "2026-04-02T16:18:27.986187+00:00",
+    "expires_at": "2026-05-02T16:18:28.009655+00:00"
+  },
+  {
+    "id": "new_agent_4b25be59",
+    "name": "new_agent",
+    "display_name": "new_agent",
+    "deleted_at": "2026-04-02T16:20:21.095384+00:00",
+    "expires_at": "2026-05-02T16:20:21.097494+00:00"
+  },
+  {
+    "id": "new_agent_04227dbc",
+    "name": "new_agent",
+    "display_name": "new_agent",
+    "deleted_at": "2026-04-02T16:22:52.654967+00:00",
+    "expires_at": "2026-05-02T16:22:52.657839+00:00"
+  },
+  {
+    "id": "new_agent_c4b11ada",
+    "name": "new_agent",
+    "display_name": "new_agent",
+    "deleted_at": "2026-04-02T16:24:53.582313+00:00",
+    "expires_at": "2026-05-02T16:24:53.584463+00:00"
+  },
+  {
+    "id": "new_agent_7a8a2f18",
+    "name": "new_agent",
+    "display_name": "new_agent",
+    "deleted_at": "2026-04-02T16:26:55.604320+00:00",
+    "expires_at": "2026-05-02T16:26:55.619039+00:00"
   }
 ]

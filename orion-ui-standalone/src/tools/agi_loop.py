@@ -134,6 +134,23 @@ class AGILoopState:
             return
         self.journal_entries = entries[-500:]
 
+    def load_history_from_disk(self):
+        """Reload tick history from the JSONL file on disk."""
+        path = _DATA_DIR / "agi_loop_history.jsonl"
+        if not path.is_file():
+            return
+        entries: List[Dict[str, Any]] = []
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line:
+                        entries.append(json.loads(line))
+        except Exception as exc:
+            log.warning("[agi_loop] Failed to load history: %s", exc)
+            return
+        self.tick_history = entries[-200:]
+
     def clear_journal(self):
         """Wipe journal from memory and disk."""
         self.journal_entries.clear()
@@ -165,6 +182,7 @@ class AGILoopState:
 # Global singleton
 _state = AGILoopState()
 _state.load_journal_from_disk()
+_state.load_history_from_disk()
 
 
 def get_loop_state() -> AGILoopState:

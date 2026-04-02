@@ -2770,6 +2770,7 @@ _AGI_LOOP_DEFAULTS = {
     "profile": "orion",
     "auto_pause_on_budget": True,
     "auto_pause_on_error_streak": 5,
+    "stale_streak_limit": 2,
     "monthly_hard_cap": 20.00,
     "monthly_soft_cap": 16.00,
     "per_session_cap": 2.00,
@@ -2888,6 +2889,7 @@ class AGILoopConfigUpdate(BaseModel):
     profile: str = "orion"
     auto_pause_on_budget: bool = True
     auto_pause_on_error_streak: int = 5
+    stale_streak_limit: int = 2
     monthly_hard_cap: float = 20.00
     monthly_soft_cap: float = 16.00
     per_session_cap: float = 2.00
@@ -3452,6 +3454,9 @@ async def api_agi_loop_status():
 async def api_agi_loop_history(limit: int = Query(50)):
     from src.tools.agi_loop import get_loop_state
     state = get_loop_state()
+    # Reload from disk if memory is empty (e.g. after process restart)
+    if not state.tick_history:
+        state.load_history_from_disk()
     return JSONResponse({
         "ticks": state.tick_history[-limit:],
         "total": len(state.tick_history),
