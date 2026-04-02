@@ -3248,7 +3248,11 @@ async def _agi_loop_runner():
                         "and what to do next tick.\n"
                         "5. If you have anything to report to the operator, use the inbox tool "
                         "(action='send') to message them.\n"
-                        "6. Report what you did in your response."
+                        "6. Report what you did in your response.\n\n"
+                        "IMPORTANT: If you have completed all available tasks, are stuck repeating "
+                        "the same actions, or determine that continued execution is unproductive, "
+                        "use the agi_loop tool with action='request_stop' and provide a reason. "
+                        "Do NOT keep looping if there is nothing meaningful left to do."
                     )
 
                 # Execute
