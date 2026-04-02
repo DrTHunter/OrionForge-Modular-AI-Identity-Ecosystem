@@ -173,7 +173,11 @@ class AGILoopTool:
                 "'status' — get current loop state, tick count, cost, errors; "
                 "'tick_history' — get recent tick results with optional limit; "
                 "'request_pause' — request the loop to pause after current tick; "
-                "'request_resume' — request the loop to resume from pause."
+                "'request_resume' — request the loop to resume from pause; "
+                "'request_stop' — gracefully stop the loop entirely. Use this when "
+                "you have completed all available tasks, are stuck in a repetitive "
+                "cycle, or determine that continued execution is unproductive. "
+                "Provide a reason so the operator knows why you stopped."
             ),
             "parameters": {
                 "type": "object",
@@ -185,12 +189,17 @@ class AGILoopTool:
                             "tick_history",
                             "request_pause",
                             "request_resume",
+                            "request_stop",
                         ],
                         "description": "The action to perform.",
                     },
                     "limit": {
                         "type": "integer",
                         "description": "Max tick history entries to return (default 10).",
+                    },
+                    "reason": {
+                        "type": "string",
+                        "description": "Reason for stopping or pausing. Required for request_stop.",
                     },
                 },
                 "required": ["action"],
@@ -227,5 +236,17 @@ class AGILoopTool:
                 return json.dumps({"ok": False, "reason": "Loop is not paused"})
             state.paused = False
             return json.dumps({"ok": True, "message": "Loop resumed"})
+
+        elif action == "request_stop":
+            reason = arguments.get("reason", "Agent requested stop")
+            if not state.running:
+                return json.dumps({"ok": False, "reason": "Loop is not running"})
+            state.running = False
+            state.stop_reason = f"agent_requested: {reason}"
+            log.info("[agi_loop] Agent requested stop: %s", reason)
+            return json.dumps({
+                "ok": True,
+                "message": f"Stop requested — loop will end after current tick. Reason: {reason}",
+            })
 
         return json.dumps({"error": f"Unknown action: {action}"})
