@@ -49,7 +49,7 @@
             "Modular Web UI with live chat",
             "AI Identity Marketplace",
             "Multi-provider LLM support (OpenAI, Anthropic, Ollama, OpenRouter)",
-            "10 Runtime Tools",
+            "11 Runtime Tools",
             "Voice input/output (TTS/STT)",
             "Docker deployment"
         ]
@@ -2583,7 +2583,7 @@ section { position: relative; z-index: 1; }
                 <div class="hero-stat-label">Core Agents</div>
             </div>
             <div>
-                <div class="hero-stat-value" data-count="10">0</div>
+                <div class="hero-stat-value" data-count="11">0</div>
                 <div class="hero-stat-label">Runtime Tools</div>
             </div>
             <div>
@@ -3646,12 +3646,12 @@ const tools = [
         desc: 'Multi-account email via SMTP or API relay. Per-agent default accounts, custom signatures, and confirmation flow before sending.'
     },
     {
-        id: 'computer_use',
-        name: 'Computer Use',
-        icon: 'fas fa-desktop',
+        id: 'cost_tracker',
+        name: 'Cost Tracker',
+        icon: 'fas fa-chart-line',
         iconClass: 'computer',
-        badge: 'SANDBOX',
-        desc: 'Anthropic Computer Use in a Docker sandbox. Screenshot, mouse, keyboard, bash commands, and file editing \u2014 all actions audit-logged.'
+        badge: 'BILLING',
+        desc: 'Per-request token metering and cost computation from a pricing registry covering hundreds of models. Source tracking (platform vs user BYOK), date-range filtering, and by_source aggregation.'
     },
     {
         id: 'directives',
@@ -3662,12 +3662,12 @@ const tools = [
         desc: 'Read-only access to user-authored directives \u2014 structured instructions, protocols, and context organized by headings. Agents cannot modify directive files.'
     },
     {
-        id: 'task_inbox',
-        name: 'Task Inbox',
-        icon: 'fas fa-tasks',
+        id: 'model_router',
+        name: 'Model Router',
+        icon: 'fas fa-route',
         iconClass: 'task',
-        badge: 'MULTI',
-        desc: 'Cross-agent task queue. Add tasks, fetch the next pending task, or acknowledge by ID. The backbone of multi-agent coordination.'
+        badge: 'ROUTING',
+        desc: '6-tier model router with task classification, escalation chains, budget-aware gating, and save/load presets. Routes LOCAL_CHEAP through CODE_HEAVY.'
     },
     {
         id: 'inbox',
@@ -3702,12 +3702,12 @@ const tools = [
         desc: 'Safe demo and testing tool. Returns whatever message it receives. Used for verifying tool dispatch, allowlist gating, and sandbox connectivity.'
     },
     {
-        id: 'coding_tool',
-        name: 'Coding Tool',
-        icon: 'fas fa-laptop-code',
+        id: 'agi_loop',
+        name: 'AGI Loop',
+        icon: 'fas fa-infinity',
         iconClass: 'coding',
-        badge: 'DEV',
-        desc: 'Create and edit code directly on your computer, access GitHub repositories, and utilize the command prompt — all from within your Orion Forge agent session.'
+        badge: 'AUTO',
+        desc: 'Autonomous agent loop with configurable intervals, budget caps, and tiered routing. 5 actions: status, tick_history, request_pause, request_resume, request_stop.'
     }
 ];
 
