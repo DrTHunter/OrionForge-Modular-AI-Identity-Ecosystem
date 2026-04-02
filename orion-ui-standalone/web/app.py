@@ -3172,6 +3172,39 @@ def _build_tick_narrative(
     return " ".join(parts)
 
 
+# ── Tick staleness detection ──────────────────────────────────────
+
+def _compute_tick_fingerprint(tick_result: dict) -> str:
+    """Create a normalized fingerprint from a tick's tool calls + response.
+
+    The fingerprint captures *what* the agent did (tool names + arg keys)
+    and a trimmed, lowered version of the response.  Two ticks with the
+    same fingerprint are considered duplicates.
+    """
+    import hashlib
+
+    parts: list[str] = []
+
+    # Tool signature: sorted list of "tool_name:sorted_arg_keys"
+    for tc in tick_result.get("tool_calls", []):
+        name = tc.get("tool", "")
+        arg_keys = sorted(tc.get("arguments", {}).keys())
+        # Include arg *values* for small args (detect identical calls)
+        arg_vals = []
+        for k in arg_keys:
+            v = str(tc["arguments"][k])[:80]
+            arg_vals.append(f"{k}={v}")
+        parts.append(f"{name}({','.join(arg_vals)})")
+
+    # Response text — normalize whitespace, lowercase, first 500 chars
+    resp = (tick_result.get("response") or "").strip().lower()
+    resp = " ".join(resp.split())[:500]
+    parts.append(resp)
+
+    raw = "|".join(parts)
+    return hashlib.sha256(raw.encode()).hexdigest()
+
+
 async def _agi_loop_runner():
     """Background coroutine that drives the autonomous AGI loop."""
     from src.tools.agi_loop import get_loop_state
@@ -3236,9 +3269,18 @@ async def _agi_loop_runner():
                             "Do NOT repeat the same action. Build on what was done or move to the next task."
                         )
 
+                    _stale_warning = ""
+                    if state.stale_streak > 0:
+                        _remaining = config.get("stale_streak_limit", 2) - state.stale_streak
+                        _stale_warning = (
+                            f"\n\n⚠ REPETITION DETECTED: Your last {state.stale_streak} tick(s) were identical. "
+                            f"You will be auto-stopped in {_remaining} more stale tick(s). "
+                            "You MUST do something DIFFERENT this tick or call agi_loop(action='request_stop')."
+                        )
+
                     stim = (
                         f"[AGI Loop] Tick {tick}/{ticks_per_loop} — loop {loop_count}."
-                        f"{_progress_ctx}\n\n"
+                        f"{_progress_ctx}{_stale_warning}\n\n"
                         "INSTRUCTIONS:\n"
                         "1. Use the continuation_update tool to READ your continuation notes first "
                         "(mode='replace_section') to see where you left off.\n"
@@ -3298,6 +3340,21 @@ async def _agi_loop_runner():
                     "cost": round(tick_cost, 6),
                     "had_error": bool(tick_result.get("error")),
                 })
+
+                # ── Staleness detection ───────────────────────────
+                if not tick_result.get("error"):
+                    _fp = _compute_tick_fingerprint(tick_result)
+                    _was_stale = state.record_fingerprint(_fp)
+                    stale_limit = config.get("stale_streak_limit", 2)
+                    if _was_stale:
+                        log.warning("[agi_loop] Stale tick detected (streak %d/%d)",
+                                    state.stale_streak, stale_limit)
+                    if stale_limit and state.stale_streak >= stale_limit:
+                        state.running = False
+                        state.stop_reason = "stale_streak_exceeded"
+                        log.warning("[agi_loop] Stale streak hit %d — auto-stopping to prevent repetition",
+                                    state.stale_streak)
+                        break
 
                 # Budget checks
                 if config.get("auto_pause_on_budget"):

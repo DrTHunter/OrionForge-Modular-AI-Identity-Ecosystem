@@ -8,6 +8,7 @@
   "profile": "astraea",
   "auto_pause_on_budget": true,
   "auto_pause_on_error_streak": 5,
+  "stale_streak_limit": 2,
   "monthly_hard_cap": 20.0,
   "monthly_soft_cap": 16.0,
   "per_session_cap": 2.0,

@@ -60,6 +60,8 @@ class AGILoopState:
         self.total_cost: float = 0.0
         self.session_cost: float = 0.0
         self.error_streak: int = 0
+        self.stale_streak: int = 0
+        self._recent_fingerprints: List[str] = []
         self.tick_history: List[Dict[str, Any]] = []
         self.last_error: Optional[str] = None
         self.started_at: Optional[str] = None
@@ -76,12 +78,25 @@ class AGILoopState:
             "total_cost": round(self.total_cost, 6),
             "session_cost": round(self.session_cost, 6),
             "error_streak": self.error_streak,
+            "stale_streak": self.stale_streak,
             "last_error": self.last_error,
             "started_at": self.started_at,
             "stopped_at": self.stopped_at,
             "stop_reason": self.stop_reason,
             "recent_ticks": self.tick_history[-20:],
         }
+
+    def record_fingerprint(self, fingerprint: str) -> bool:
+        """Record a tick fingerprint. Returns True if it matches the previous tick (stale)."""
+        is_stale = bool(self._recent_fingerprints and self._recent_fingerprints[-1] == fingerprint)
+        self._recent_fingerprints.append(fingerprint)
+        if len(self._recent_fingerprints) > 10:
+            self._recent_fingerprints = self._recent_fingerprints[-10:]
+        if is_stale:
+            self.stale_streak += 1
+        else:
+            self.stale_streak = 0
+        return is_stale
 
     def log_tick(self, tick_data: dict):
         self.tick_history.append(tick_data)
