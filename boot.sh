@@ -238,5 +238,33 @@ ln -sfn "$PERSIST_SHARED" "$APP_SHARED"
 
 echo "[boot] Shared data (inbox) linked to persistent volume."
 
+# ── ORION DATA PERSISTENCE (AGI journal, tick history, etc.) ───
+PERSIST_ORION="/persist/orion"
+APP_ORION="/app/app/data/orion"
+BUNDLED_ORION="/app/_bundled_orion"
+
+mkdir -p "$PERSIST_ORION"
+
+# Seed on first deploy only; preserve runtime data thereafter.
+if [ -d "$BUNDLED_ORION" ]; then
+    if [ ! -f "$PERSIST_ORION/SOUL_SCRIPTS.md" ]; then
+        echo "[boot] First deploy — seeding bundled orion data."
+        cp -a "$BUNDLED_ORION"/* "$PERSIST_ORION/" 2>/dev/null || true
+    else
+        echo "[boot] Persistent orion data exists — preserving."
+        # Always sync SOUL_SCRIPTS.md from repo (it's a static asset)
+        cp -a "$BUNDLED_ORION/SOUL_SCRIPTS.md" "$PERSIST_ORION/" 2>/dev/null || true
+    fi
+fi
+
+if [ -L "$APP_ORION" ]; then
+    rm "$APP_ORION"
+elif [ -d "$APP_ORION" ]; then
+    rm -rf "$APP_ORION"
+fi
+ln -sfn "$PERSIST_ORION" "$APP_ORION"
+
+echo "[boot] Orion data (journal, history) linked to persistent volume."
+
 # 13. Start the app (3 workers — MiniLM model uses ~250MB each, fits in 4GB)
 exec python -m uvicorn web.app:app --host 0.0.0.0 --port 8989 --workers 3
