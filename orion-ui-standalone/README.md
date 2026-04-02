@@ -44,7 +44,7 @@ orion-ui-standalone/
 │       ├── settings.html       # API connections, voice, image settings
 │       ├── pricing.html        # LLM pricing registry editor
 │       ├── skins.html          # 13 UI themes with live preview
-│       ├── agi_loop.html       # AGI loop configuration
+│       ├── agi_loop.html       # AGI loop — 8-tab dashboard, journal modal, expandable loop log, VM storage
 │       └── about.html          # Project wiki with auto-generated articles
 │
 ├── src/                # Soul Script Engine modules (48 source files)
@@ -78,7 +78,7 @@ orion-ui-standalone/
 ├── notes/              # Developer notes per agent
 ├── scripts/            # Seed scripts (seed_memories.py, seed_ui_knowledge.py)
 ├── data/               # Runtime data (chats, memory vault, FAISS indexes, uploads, knowledge notes, agent trash)
-└── tests/              # Test suite — 11 files, 276 functions, ~4,129 checks
+└── tests/              # Test suite — 11 files, 279 functions, ~4,169 checks
 ```
 
 ---
@@ -115,7 +115,7 @@ orion-ui-standalone/
 | **Settings** | `/settings` | API connections, user API keys (OpenAI, Anthropic, DeepSeek, OpenRouter, Google Gemini), chat backgrounds, timezone, voice/image settings |
 | **Pricing** | `/pricing` | LLM pricing registry — view/edit per-model token costs |
 | **Skins** | `/skins` | 13 UI themes with marketplace-style grid and live preview |
-| **AGI Loop** | `/agi-loop` | Autonomous agent loop configuration (intervals, budgets, steps) |
+| **AGI Loop** | `/agi-loop` | Autonomous agent loop — 8-tab dashboard (Dashboard, Inbox, Journal, Config, Pipeline, Model Router, Budget, Loop Log), journal popup modal with narrative details, expandable loop log entries, 6-tier model routing, VM-persistent tick history & journal |
 | **Wiki** | `/about` | Project wiki with auto-generated articles from READMEs + custom notes editor |
 | **Admin Keys** | `/admin/keys` | Admin panel — API key management, secured by OAuth email whitelist |
 | **Admin Voices** | `/admin/voices` | ElevenLabs voice allowlist — search, filter, premium toggle, bulk save |
@@ -196,7 +196,7 @@ $env:PYTHONIOENCODING="utf-8"; python tests/test_torture.py
 
 | Test File | Functions | Checks | Coverage |
 |-----------|-----------|--------|----------|
-| `test_torture.py` | 129 | ~3,188 | Deep torture of all code paths — memory, vault, sort, policy, tools, templates, model router, presets, 6-tier routing, sidecar wiring, soul script helpers, soul script API, soul script FAISS indexing, note collector soul script injection, profiles template collapsible, admin keys, admin voices API & template, admin user management, connections CRUD, pricing CRUD, chat 3-mode selector, user model catalog, `__userkey_` dynamic connections, Stripe state persistence, store catalog structure, tier & trial system, credit system, credit cost estimators, purchase flows (tool/skin/agent), agent ownership, user activity tracking, wipe user data, purge inactive, list all users, auth helpers, tier info structure, runtime info tool, TTS voice filter logic, ElevenLabs/inworld connection helpers, `_check_admin` helper |
+| `test_torture.py` | 132 | ~3,228 | Deep torture of all code paths — memory, vault, sort, policy, tools, templates, model router, presets, 6-tier routing, sidecar wiring, soul script helpers, soul script API, soul script FAISS indexing, note collector soul script injection, profiles template collapsible, admin keys, admin voices API & template, admin user management, connections CRUD, pricing CRUD, chat 3-mode selector, user model catalog, `__userkey_` dynamic connections, Stripe state persistence, store catalog structure, tier & trial system, credit system, credit cost estimators, purchase flows (tool/skin/agent), agent ownership, user activity tracking, wipe user data, purge inactive, list all users, auth helpers, tier info structure, runtime info tool, TTS voice filter logic, ElevenLabs/inworld connection helpers, `_check_admin` helper, AGI history disk persistence, journal popup modal, expandable loop log, VM storage paths |
 | `test_memory.py` | 23 | 155 | VaultStore, MemoryVault, Memory types, PII guard |
 | `test_stress.py` | 29 | 238 | Rapid-fire ops, concurrent access, boundary conditions, router presets, coding tiers |
 | `test_registry_and_tools.py` | 17 | 86 | Tool registry, cost tracker, web search |
@@ -207,7 +207,7 @@ $env:PYTHONIOENCODING="utf-8"; python tests/test_torture.py
 | `test_metering.py` | 11 | 115 | Token accounting, cost computation, aggregation, source tracking |
 | `test_data_paths.py` | 5 | 31 | Data directory layout, auto-creation, isolation |
 | `test_tools.py` | 4 | 38 | EchoTool, ContinuationUpdateTool, EmailTool, RuntimePolicy |
-| **Total** | **276** | **~4,129** | |
+| **Total** | **279** | **~4,169** | |
 
 ---
 

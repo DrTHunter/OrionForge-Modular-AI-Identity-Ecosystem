@@ -456,6 +456,76 @@
     font-size: 0.75rem; color: #52525b; display: flex; flex-direction: column; gap: 0.25rem;
   }
 
+  /* ── Journal Popup Modal ── */
+  .jnl-modal-overlay {
+    display: none; position: fixed; inset: 0; z-index: 10000;
+    background: rgba(0,0,0,0.7); backdrop-filter: blur(6px);
+    animation: tierFadeIn 0.15s ease;
+  }
+  .jnl-modal-overlay.active { display: flex; align-items: center; justify-content: center; }
+  .jnl-modal {
+    background: #13131a; border: 1px solid #2a2a3a; border-radius: 0.75rem;
+    width: 96vw; max-width: 64rem; max-height: 90vh; overflow-y: auto;
+    box-shadow: 0 25px 50px rgba(0,0,0,0.6);
+    animation: tierSlideIn 0.2s ease;
+  }
+  .jnl-modal-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 1.5rem; border-bottom: 1px solid #2a2a3a; position: sticky;
+    top: 0; background: #13131a; z-index: 1;
+  }
+  .jnl-modal-head-title { font-size: 1rem; font-weight: 800; color: #fff; }
+  .jnl-modal-head-meta { font-size: 0.75rem; color: #6366f1; font-weight: 700; font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace; }
+  .jnl-modal-close {
+    background: none; border: none; color: #52525b; font-size: 1.5rem;
+    cursor: pointer; padding: 0.25rem 0.5rem; line-height: 1; transition: color 0.15s;
+  }
+  .jnl-modal-close:hover { color: #fff; }
+  .jnl-modal-body { padding: 1.5rem; }
+  .jnl-modal-narrative {
+    font-size: 0.9375rem; color: #d4d4d8; line-height: 1.75;
+    white-space: pre-wrap; word-break: break-word;
+    background: rgba(24,24,27,0.5); border: 1px solid #2a2a3a;
+    border-radius: 0.5rem; padding: 1.25rem; margin-bottom: 1.25rem;
+    max-height: 50vh; overflow-y: auto;
+  }
+  .jnl-modal-section { margin-bottom: 1rem; }
+  .jnl-modal-section-title {
+    font-size: 0.6875rem; font-weight: 700; color: #52525b;
+    text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;
+  }
+  .jnl-modal-meta-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.75rem;
+  }
+  .jnl-modal-meta-card {
+    background: rgba(24,24,27,0.5); border: 1px solid #2a2a3a;
+    border-radius: 0.5rem; padding: 0.75rem;
+  }
+  .jnl-modal-meta-label {
+    font-size: 0.625rem; font-weight: 700; color: #52525b;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .jnl-modal-meta-value {
+    font-size: 0.875rem; font-weight: 700; color: #e4e4e7; margin-top: 0.25rem;
+  }
+
+  /* ── Loop Log Expandable Entry ── */
+  .loop-entry { cursor: pointer; transition: background 0.15s; border-radius: 0.375rem; padding: 0.75rem; }
+  .loop-entry:hover { background: rgba(99,102,241,0.04); }
+  .loop-entry-full {
+    display: none; margin-top: 0.5rem; padding: 0.75rem;
+    background: rgba(24,24,27,0.5); border: 1px solid #2a2a3a;
+    border-radius: 0.5rem; font-size: 0.8125rem; color: #d4d4d8;
+    line-height: 1.6; white-space: pre-wrap; word-break: break-word;
+    max-height: 300px; overflow-y: auto;
+  }
+  .loop-entry.expanded .loop-entry-full { display: block; }
+  .loop-entry-expand-hint {
+    font-size: 0.625rem; color: #3f3f46; transition: color 0.15s;
+  }
+  .loop-entry:hover .loop-entry-expand-hint { color: #6366f1; }
+
 </style>
 
 <div>
@@ -481,14 +551,14 @@
 
   <!-- â”€â”€ Tabs â”€â”€ -->
   <div class="tab-bar">
-    <button class="tab-btn active" onclick="switchTab('dashboard')">Dashboard</button>
-    <button class="tab-btn" onclick="switchTab('inbox')">Inbox <span class="inbox-badge empty" id="inbox-tab-badge">0</span></button>
-    <button class="tab-btn" onclick="switchTab('journal')">Journal</button>
-    <button class="tab-btn" onclick="switchTab('config')">Configuration</button>
-    <button class="tab-btn" onclick="switchTab('pipeline')">Pipeline</button>
-    <button class="tab-btn" onclick="switchTab('routing')">Model Router</button>
-    <button class="tab-btn" onclick="switchTab('budget')">Budget</button>
-    <button class="tab-btn" onclick="switchTab('log')">Loop Log</button>
+    <button class="tab-btn active" onclick="switchTab('dashboard', this)">Dashboard</button>
+    <button class="tab-btn" onclick="switchTab('inbox', this)">Inbox <span class="inbox-badge empty" id="inbox-tab-badge">0</span></button>
+    <button class="tab-btn" onclick="switchTab('journal', this)">Journal</button>
+    <button class="tab-btn" onclick="switchTab('config', this)">Configuration</button>
+    <button class="tab-btn" onclick="switchTab('pipeline', this)">Pipeline</button>
+    <button class="tab-btn" onclick="switchTab('routing', this)">Model Router</button>
+    <button class="tab-btn" onclick="switchTab('budget', this)">Budget</button>
+    <button class="tab-btn" onclick="switchTab('log', this)">Loop Log</button>
   </div>
 
   <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
@@ -686,7 +756,7 @@
             </label>
             <div style="flex:1;"></div>
             <span class="jnl-entry-count" id="journal-selected-count" style="display:none; background:rgba(99,102,241,0.2); color:#a5b4fc;">0 selected</span>
-            <button class="jnl-action-btn" id="journal-view-selected-btn" style="display:none; color:#a5b4fc; border-color:rgba(99,102,241,0.4);" onclick="jnlShowMultiDetail()" title="View selected entries">&#128196; View Selected</button>
+            <button class="jnl-action-btn" id="journal-view-selected-btn" style="display:none; color:#a5b4fc; border-color:rgba(99,102,241,0.4);" onclick="jnlOpenMultiModal()" title="View selected entries">&#128196; View Selected</button>
             <span class="jnl-entry-count" id="journal-count">0 entries</span>
             <button class="jnl-action-btn" onclick="journalRefresh()" title="Refresh">&#8635;</button>
             <button class="jnl-action-btn jnl-action-danger" onclick="journalClear()" title="Clear journal">&#128465;</button>
@@ -742,9 +812,13 @@
         <!-- Storage info -->
         <div class="card">
           <span class="card-header">Storage</span>
-          <p class="text-xs text-forge-muted mt-1 mb-2">Journal entries are persisted to disk as JSONL</p>
-          <code class="text-xs text-zinc-600 block">data/orion/agi_loop_journal.jsonl</code>
-          <p class="text-xs text-forge-muted mt-2">Auto-refresh every 5 s when this tab is active.</p>
+          <p class="text-xs text-forge-muted mt-1 mb-2">Journal entries are persisted to the VM&rsquo;s persistent volume as JSONL</p>
+          <div class="p-2 rounded-md border border-forge-border bg-forge-bg mt-2 mb-2">
+            <div class="text-xs text-emerald-400 font-semibold mb-1">&#9989; Persistent Volume (Fly.io VM)</div>
+            <code class="text-xs text-zinc-500 block">/persist/orion/agi_loop_journal.jsonl</code>
+            <code class="text-xs text-zinc-500 block mt-0.5">/persist/orion/agi_loop_history.jsonl</code>
+          </div>
+          <p class="text-xs text-forge-muted">Data survives deploys &amp; restarts via <code class="text-zinc-500">orion_data</code> volume mount. Auto-refresh every 5 s when this tab is active.</p>
         </div>
       </div>
     </div>
@@ -1390,7 +1464,7 @@
   <div class="view-panel" id="panel-log">
     <div class="card mb-5">
       <span class="card-header">Loop Execution Log</span>
-      <p class="text-xs text-forge-muted mt-1 mb-3">Recent loop cycle outcomes. Full log: <code class="text-zinc-400">data/orion/agi_loop_history.jsonl</code></p>
+      <p class="text-xs text-forge-muted mt-1 mb-3">Recent loop cycle outcomes. Full log: <code class="text-zinc-400">/persist/orion/agi_loop_history.jsonl</code> <span class="text-emerald-500 text-xs">(VM persistent volume)</span></p>
 
       <div class="loop-timeline" id="loop-log-list">
         <div class="text-sm text-forge-muted p-4 text-center">No ticks recorded yet. Start the loop to begin autonomous execution.</div>
@@ -1407,7 +1481,7 @@
             Structured tick log with loop/tick numbers, agent, model, tool calls, cost and errors.
             Written after every tick.
           </p>
-          <code class="text-xs text-zinc-600 block mt-2">data/orion/agi_loop_history.jsonl</code>
+          <code class="text-xs text-zinc-600 block mt-2">/persist/orion/agi_loop_history.jsonl</code>
         </div>
         <div>
           <div class="text-sm font-bold text-white mb-1">Narrative Journal</div>
@@ -1415,7 +1489,36 @@
             Human-readable narrative entries generated from each tick.
             View them in the <strong class="text-indigo-300 cursor-pointer" onclick="switchTabById('journal')">Journal tab</strong>.
           </p>
-          <code class="text-xs text-zinc-600 block mt-2">data/orion/agi_loop_journal.jsonl</code>
+          <code class="text-xs text-zinc-600 block mt-2">/persist/orion/agi_loop_journal.jsonl</code>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!--  Journal Entry Popup Modal                                       -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="jnl-modal-overlay" id="jnl-modal-overlay" onclick="if(event.target===this) jnlCloseModal()">
+    <div class="jnl-modal">
+      <div class="jnl-modal-head">
+        <div>
+          <div class="jnl-modal-head-title" id="jnl-modal-title">Journal Entry</div>
+          <div class="jnl-modal-head-meta" id="jnl-modal-meta-line"></div>
+        </div>
+        <button class="jnl-modal-close" onclick="jnlCloseModal()">&times;</button>
+      </div>
+      <div class="jnl-modal-body">
+        <div class="jnl-modal-section">
+          <div class="jnl-modal-section-title">Narrative</div>
+          <div class="jnl-modal-narrative" id="jnl-modal-narrative"></div>
+        </div>
+        <div class="jnl-modal-section">
+          <div class="jnl-modal-section-title">Tools Used</div>
+          <div class="jnl-detail-tools" id="jnl-modal-tools"></div>
+        </div>
+        <div class="jnl-modal-section">
+          <div class="jnl-modal-section-title">Details</div>
+          <div class="jnl-modal-meta-grid" id="jnl-modal-details"></div>
         </div>
       </div>
     </div>
@@ -1449,6 +1552,8 @@ function _gatherConfig() {
 
 async function saveConfig() {
   const cfg = _gatherConfig();
+  /* Always include the current tiers so they're not wiped out */
+  if (_tiers && _tiers.length) cfg.tiers = JSON.parse(JSON.stringify(_tiers));
   /* Warn if infinite loops selected */
   if (cfg.max_loops === 0) {
     const ok = confirm(
@@ -1523,12 +1628,19 @@ function toggleBudgetPause() {
 /*  Tab switching                                                    */
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
-function switchTab(id) {
+function switchTab(id, btnEl) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
-  event.currentTarget.classList.add('active');
+  // Use explicitly passed button, or fallback to event.currentTarget
+  const btn = btnEl || (typeof event !== 'undefined' ? event.currentTarget : null);
+  if (btn) btn.classList.add('active');
   const panel = document.getElementById('panel-' + id);
   if (panel) panel.classList.add('active');
+  // Trigger data refresh for that tab
+  if (id === 'journal') journalRefresh();
+  else if (id === 'log') _loadHistory();
+  else if (id === 'budget' && typeof budgetRefresh === 'function') budgetRefresh();
+  else if (id === 'inbox') inboxRefresh();
 }
 
 
@@ -1673,7 +1785,7 @@ function _renderTickLog(ticks) {
   }
   container.innerHTML = '';
   const reversed = [...ticks].reverse();
-  reversed.forEach(t => {
+  reversed.forEach((t, idx) => {
     const errorCls = t.error ? 'text-red-400' : 'text-emerald-400';
     const costStr  = '$' + (t.cost || 0).toFixed(4);
     const timeStr  = t.time ? new Date(t.time).toLocaleString() : '\u2014';
@@ -1682,12 +1794,21 @@ function _renderTickLog(ticks) {
     const summary  = t.error
       ? '\u26a0 Error: ' + String(t.error).substring(0, 200)
       : (t.response || 'No response').substring(0, 300);
+    const fullResponse = t.response || t.error || 'No response content';
+    const toolDetails = (t.tool_calls || []).map(tc =>
+      `\u2022 ${tc.tool || 'unknown'}(${JSON.stringify(tc.arguments || {}).substring(0, 100)})\n  \u2192 ${(tc.result || '').substring(0, 500)}`
+    ).join('\n\n');
+    const expandContent = fullResponse + (toolDetails ? '\n\n\u2500\u2500\u2500 Tool Calls \u2500\u2500\u2500\n\n' + toolDetails : '');
+
     const el = document.createElement('div');
     el.className = 'loop-entry';
+    el.onclick = () => {
+      el.classList.toggle('expanded');
+    };
     el.innerHTML = `
       <div class="loop-entry-idx">#${t.loop || '?'}.${t.tick || '?'}</div>
       <div class="loop-entry-body">
-        <div class="loop-entry-summary">${_esc(summary)}</div>
+        <div class="loop-entry-summary">${_esc(summary)}<span class="loop-entry-expand-hint" style="margin-left:0.5rem;">\u25bc click to expand</span></div>
         <div class="loop-entry-meta">
           <span>${_esc(t.model || '\u2014')}</span>
           <span>${_esc(t.task_type || '\u2014')}</span>
@@ -1695,9 +1816,11 @@ function _renderTickLog(ticks) {
           <span class="${errorCls}">${costStr}</span>
           <span>${timeStr}</span>
         </div>
+        <div class="loop-entry-full">${_esc(expandContent)}</div>
       </div>`;
     container.appendChild(el);
   });
+}
 }
 
 /* ── Bootstrap: detect already-running loop on page load/refresh ── */
@@ -1808,23 +1931,13 @@ function jnlHandleClick(e, revIdx) {
     return;
   }
 
-  // Normal click — clear selection, toggle expand, show detail
+  // Normal click — clear selection, open popup modal
   _jnlSelectedSet.clear();
   _jnlLastClickIdx = revIdx;
   _jnlUpdateSelectionUI();
 
-  // Toggle expand on the clicked row
-  const row = document.querySelector(`.jnl-row[data-jnl-idx="${revIdx}"]`);
-  if (row) {
-    const wasExpanded = row.classList.contains('expanded');
-    // Collapse all others
-    document.querySelectorAll('.jnl-row.expanded').forEach(r => r.classList.remove('expanded'));
-    if (!wasExpanded) {
-      row.classList.add('expanded');
-    }
-  }
-
-  jnlShowDetail(revIdx);
+  // Open the full popup modal
+  jnlOpenModal(revIdx);
 }
 
 function journalRender() {
@@ -1996,6 +2109,138 @@ setInterval(() => {
     journalRefresh();
   }
 }, 5000);
+
+
+/* ── Journal Popup Modal ── */
+
+function jnlOpenModal(revIdx) {
+  const reversed = _jnlGetFiltered();
+  const entry = reversed[revIdx];
+  if (!entry) return;
+
+  // Also update side panel detail
+  jnlShowDetail(revIdx);
+
+  const overlay = document.getElementById('jnl-modal-overlay');
+  const loopTick = `Loop ${entry.loop || '?'} \u00b7 Tick ${entry.tick || '?'}`;
+  const agent = entry.agent || 'unknown';
+  const ts = entry.ts ? new Date(entry.ts).toLocaleString() : '\u2014';
+
+  document.getElementById('jnl-modal-title').textContent =
+    entry.had_error ? '\u26a0 Error \u2014 ' + agent : agent;
+  document.getElementById('jnl-modal-meta-line').textContent =
+    `${loopTick} \u00b7 ${ts}`;
+  document.getElementById('jnl-modal-narrative').textContent =
+    entry.narrative || '(no narrative recorded)';
+
+  // Tools
+  const tools = (entry.tools_used || []).filter(Boolean);
+  document.getElementById('jnl-modal-tools').innerHTML = tools.length
+    ? tools.map(t => `<span class="jnl-tool-chip" style="font-size:0.75rem;padding:0.125rem 0.5rem;">${_esc(t)}</span>`).join('')
+    : '<span style="font-size:0.75rem;color:#52525b;">No tools used</span>';
+
+  // Details grid
+  document.getElementById('jnl-modal-details').innerHTML = `
+    <div class="jnl-modal-meta-card">
+      <div class="jnl-modal-meta-label">Agent</div>
+      <div class="jnl-modal-meta-value">${_esc(agent)}</div>
+    </div>
+    <div class="jnl-modal-meta-card">
+      <div class="jnl-modal-meta-label">Model</div>
+      <div class="jnl-modal-meta-value">${_esc(entry.model || '\u2014')}</div>
+    </div>
+    <div class="jnl-modal-meta-card">
+      <div class="jnl-modal-meta-label">Task Type</div>
+      <div class="jnl-modal-meta-value">${_esc(entry.task_type || '\u2014')}</div>
+    </div>
+    <div class="jnl-modal-meta-card">
+      <div class="jnl-modal-meta-label">Cost</div>
+      <div class="jnl-modal-meta-value" style="color:${entry.had_error ? '#ef4444' : '#22c55e'};">$${(entry.cost || 0).toFixed(6)}</div>
+    </div>
+    <div class="jnl-modal-meta-card">
+      <div class="jnl-modal-meta-label">Loop / Tick</div>
+      <div class="jnl-modal-meta-value">${loopTick}</div>
+    </div>
+    <div class="jnl-modal-meta-card">
+      <div class="jnl-modal-meta-label">Timestamp</div>
+      <div class="jnl-modal-meta-value">${ts}</div>
+    </div>
+    ${entry.had_error ? `
+    <div class="jnl-modal-meta-card" style="grid-column: 1 / -1; border-color: rgba(239,68,68,0.3);">
+      <div class="jnl-modal-meta-label" style="color:#fca5a5;">\u26a0 Error</div>
+      <div class="jnl-modal-meta-value" style="color:#fca5a5;">An error occurred during this tick</div>
+    </div>` : ''}
+  `;
+
+  overlay.classList.add('active');
+}
+
+function jnlOpenMultiModal() {
+  const reversed = _jnlGetFiltered();
+  const selected = [..._jnlSelectedSet].sort((a, b) => a - b);
+  const entries = selected.map(i => reversed[i]).filter(Boolean);
+  if (!entries.length) return;
+
+  const overlay = document.getElementById('jnl-modal-overlay');
+
+  document.getElementById('jnl-modal-title').textContent =
+    `${entries.length} Journal Entries Selected`;
+  document.getElementById('jnl-modal-meta-line').textContent =
+    `Combined view \u00b7 ${entries.filter(e => e.had_error).length} errors`;
+
+  // Combined narratives
+  const combined = entries.map(e => {
+    const lt = `[L${e.loop || '?'}.T${e.tick || '?'}] ${e.agent || 'unknown'}`;
+    const ts = e.ts ? new Date(e.ts).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '';
+    return `${lt} (${ts}):\n${e.narrative || '(no narrative)'}`;
+  }).join('\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n');
+
+  document.getElementById('jnl-modal-narrative').textContent = combined;
+
+  const allTools = [...new Set(entries.flatMap(e => (e.tools_used || []).filter(Boolean)))];
+  document.getElementById('jnl-modal-tools').innerHTML = allTools.length
+    ? allTools.map(t => `<span class="jnl-tool-chip" style="font-size:0.75rem;padding:0.125rem 0.5rem;">${_esc(t)}</span>`).join('')
+    : '<span style="font-size:0.75rem;color:#52525b;">No tools used</span>';
+
+  const totalCost = entries.reduce((s, e) => s + (e.cost || 0), 0);
+  const models = [...new Set(entries.map(e => e.model).filter(Boolean))];
+  document.getElementById('jnl-modal-details').innerHTML = `
+    <div class="jnl-modal-meta-card">
+      <div class="jnl-modal-meta-label">Entries</div>
+      <div class="jnl-modal-meta-value">${entries.length}</div>
+    </div>
+    <div class="jnl-modal-meta-card">
+      <div class="jnl-modal-meta-label">Total Cost</div>
+      <div class="jnl-modal-meta-value" style="color:#22c55e;">$${totalCost.toFixed(6)}</div>
+    </div>
+    <div class="jnl-modal-meta-card">
+      <div class="jnl-modal-meta-label">Models</div>
+      <div class="jnl-modal-meta-value">${_esc(models.join(', ') || '\u2014')}</div>
+    </div>
+    <div class="jnl-modal-meta-card">
+      <div class="jnl-modal-meta-label">Errors</div>
+      <div class="jnl-modal-meta-value" style="color:${entries.some(e => e.had_error) ? '#fca5a5' : '#22c55e'};">${entries.filter(e => e.had_error).length}</div>
+    </div>
+  `;
+
+  overlay.classList.add('active');
+}
+
+function jnlCloseModal() {
+  document.getElementById('jnl-modal-overlay').classList.remove('active');
+}
+
+// Escape closes journal modal
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    const jnlOverlay = document.getElementById('jnl-modal-overlay');
+    if (jnlOverlay && jnlOverlay.classList.contains('active')) {
+      jnlCloseModal();
+      e.stopPropagation();
+      return;
+    }
+  }
+});
 
 
 /*  Toast helper                                                     */
@@ -2669,12 +2914,15 @@ const _INBOX_TYPE_ICONS = {
 };
 
 function switchTabById(id) {
+  const tabMap = {
+    dashboard: 0, inbox: 1, journal: 2, config: 3,
+    pipeline: 4, routing: 5, budget: 6, log: 7,
+  };
+  const idx = tabMap[id];
   const btns = document.querySelectorAll('.tab-btn');
-  btns.forEach(b => {
-    if (b.textContent.trim().toLowerCase().startsWith(id.toLowerCase())) {
-      b.click();
-    }
-  });
+  if (idx !== undefined && btns[idx]) {
+    switchTab(id, btns[idx]);
+  }
 }
 
 async function inboxRefresh() {

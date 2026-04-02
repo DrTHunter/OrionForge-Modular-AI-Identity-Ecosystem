@@ -267,6 +267,63 @@ These issues were discovered while verifying template variable correctness:
 | Accessibility issues | Pervasive (keyboard nav, ARIA, contrast) |
 | External CDN dependencies | 3 (Tailwind, marked.js, highlight.js) |
 
+---
+
+## 4. AGI Loop Tab — Recent Fixes (2025)
+
+A comprehensive audit and fix pass addressed the following issues in the AGI Loop tab (`agi_loop.html`, `app.py`, `src/tools/agi_loop.py`):
+
+### 4.1 Agent Switching (Fixed)
+
+| File | Finding | Fix |
+|------|---------|-----|
+| `agi_loop.html` | `switchTab()` relied on `event.currentTarget` — broke on programmatic calls from `switchTabById()` | Refactored to accept explicit `(id, btnEl)` params; falls back to querySelector if no button passed |
+| `agi_loop.html` | `switchTabById()` used fragile `.textContent` matching to find tab buttons | Replaced with index-based lookup map for reliable programmatic tab switching |
+
+### 4.2 Config Persistence (Fixed)
+
+| File | Finding | Fix |
+|------|---------|-----|
+| `agi_loop.html` | `saveConfig()` gathered config without tier data — save/reload wiped all tiers | `saveConfig()` now always includes `_tiers` via `JSON.parse(JSON.stringify(_tiers))` |
+| `app.py` | `stale_streak_limit` missing from `_AGI_LOOP_DEFAULTS` and `AGILoopConfigUpdate` Pydantic model | Added `stale_streak_limit: int = 2` to both defaults dict and Pydantic model |
+
+### 4.3 Storage Display (Fixed)
+
+| File | Finding | Fix |
+|------|---------|-----|
+| `agi_loop.html` | Storage card showed `data/orion/` paths with "Local" badge — misleading since Fly.io VM uses `/persist/` | Updated all file path references to `/persist/orion/…` with green "VM Volume" badge |
+
+### 4.4 Journal Popup Modal (New Feature)
+
+| File | Finding | Fix |
+|------|---------|-----|
+| `agi_loop.html` | Journal entries only displayed truncated text in a cramped side panel | Added full popup modal (`jnlOpenModal()`, `jnlOpenMultiModal()`, `jnlCloseModal()`) with scrollable narrative, tool call details, and metadata grid |
+| `agi_loop.html` | New CSS: `.jnl-modal-overlay`, `.jnl-modal`, `.jnl-modal-head`, `.jnl-modal-body`, `.jnl-modal-narrative`, `.jnl-modal-section`, `.jnl-modal-meta-grid/card` | Escape key closes modal; click-outside dismisses |
+
+### 4.5 Expandable Loop Log (New Feature)
+
+| File | Finding | Fix |
+|------|---------|-----|
+| `agi_loop.html` | Loop log entries truncated at 300 chars with no way to see full content | `_renderTickLog()` now creates expandable `.loop-entry` elements with full response text and tool call details on click |
+
+### 4.6 Tick History Disk Persistence (Fixed)
+
+| File | Finding | Fix |
+|------|---------|-----|
+| `src/tools/agi_loop.py` | `tick_history` only lived in memory — lost on restart | Added `load_history_from_disk()` method (mirrors `load_journal_from_disk()`); called at module init alongside journal load |
+| `app.py` | `/api/agi-loop/history` returned empty array after restart | Added disk-load fallback: if in-memory history is empty, calls `state.load_history_from_disk()` before responding |
+
+### 4.7 Test Coverage Added
+
+New torture tests cover:
+- `load_history_from_disk()` — persist, reload, cap at 200, corrupt JSONL recovery, empty file handling
+- `stale_streak_limit` in config defaults and Pydantic model
+- Journal popup modal HTML elements in template
+- Expandable loop log entry elements in template
+- VM storage path references in template
+
+---
+
 ### Priority Recommendations
 
 1. **CRITICAL:** Add tests for LLM client modules (`anthropic_client.py`, `ollama.py`, `openai_compat.py`)
@@ -280,4 +337,4 @@ These issues were discovered while verifying template variable correctness:
 9. **MEDIUM:** Add keyboard accessibility to interactive `<div>` elements
 10. **LOW:** Split large templates into Jinja2 includes/partials
 11. **LOW:** Split `app.py` into route modules
-12. **LOW:** Split `test_torture.py` (5144 lines) into focused test files
+12. **LOW:** Split `test_torture.py` into focused test files
