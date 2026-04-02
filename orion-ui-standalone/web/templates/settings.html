@@ -133,7 +133,8 @@
       <div class="mb-3">
         <label class="block text-xs text-forge-muted mb-1">API Key</label>
         <input id="key-openai" type="password" class="search-input w-full" style="max-width:32rem;"
-               placeholder="sk-..." value="{{ settings.get('api_keys', {}).get('openai', '') }}">
+               placeholder="sk-..." value="">
+        <span id="key-openai-status" class="text-xs ml-2" style="color:#22c55e; display:none;">✓ configured</span>
       </div>
     </div>
 
@@ -144,7 +145,8 @@
       <div class="mb-3">
         <label class="block text-xs text-forge-muted mb-1">API Key</label>
         <input id="key-anthropic" type="password" class="search-input w-full" style="max-width:32rem;"
-               placeholder="sk-ant-..." value="{{ settings.get('api_keys', {}).get('anthropic', '') }}">
+               placeholder="sk-ant-..." value="">
+        <span id="key-anthropic-status" class="text-xs ml-2" style="color:#22c55e; display:none;">✓ configured</span>
       </div>
     </div>
 
@@ -155,7 +157,8 @@
       <div class="mb-3">
         <label class="block text-xs text-forge-muted mb-1">API Key</label>
         <input id="key-deepseek" type="password" class="search-input w-full" style="max-width:32rem;"
-               placeholder="sk-..." value="{{ settings.get('api_keys', {}).get('deepseek', '') }}">
+               placeholder="sk-..." value="">
+        <span id="key-deepseek-status" class="text-xs ml-2" style="color:#22c55e; display:none;">✓ configured</span>
       </div>
     </div>
 
@@ -166,7 +169,8 @@
       <div class="mb-3">
         <label class="block text-xs text-forge-muted mb-1">API Key</label>
         <input id="key-google_gemini" type="password" class="search-input w-full" style="max-width:32rem;"
-               placeholder="AIza..." value="{{ settings.get('api_keys', {}).get('google_gemini', '') }}">
+               placeholder="AIza..." value="">
+        <span id="key-google_gemini-status" class="text-xs ml-2" style="color:#22c55e; display:none;">✓ configured</span>
       </div>
     </div>
 
@@ -177,7 +181,8 @@
       <div class="mb-3">
         <label class="block text-xs text-forge-muted mb-1">API Key</label>
         <input id="key-openrouter" type="password" class="search-input w-full" style="max-width:32rem;"
-               placeholder="sk-or-..." value="{{ settings.get('api_keys', {}).get('openrouter', '') }}">
+               placeholder="sk-or-..." value="">
+        <span id="key-openrouter-status" class="text-xs ml-2" style="color:#22c55e; display:none;">✓ configured</span>
       </div>
     </div>
 
@@ -199,7 +204,8 @@
       <div class="mb-3">
         <label class="block text-xs text-forge-muted mb-1">API Key (Base64 credentials)</label>
         <input id="key-inworld" type="password" class="search-input w-full" style="max-width:32rem;"
-               placeholder="Paste your Base64 API key..." value="{{ settings.get('api_keys', {}).get('inworld', '') }}">
+               placeholder="Paste your Base64 API key..." value="">
+        <span id="key-inworld-status" class="text-xs ml-2" style="color:#22c55e; display:none;">✓ configured</span>
       </div>
     </div>
 
@@ -246,7 +252,7 @@
         <label class="block text-xs text-forge-muted mb-1">API Key <span class="text-zinc-600">(auto-filled from API Keys tab)</span></label>
         <div style="display:flex; gap:0.75rem; align-items:center;">
           <input id="img-openai-key" type="password" class="search-input w-full img-key-input" style="max-width:32rem;"
-                 placeholder="sk-..." value="{{ settings.get('image', {}).get('openai_api_key') or settings.get('api_keys', {}).get('openai', '') }}">
+                 placeholder="sk-..." value="">
           <div style="display:flex; align-items:center; gap:0.5rem; white-space:nowrap;">
             <span class="text-xs text-forge-muted">Platform Keys</span>
             <div id="img-openai-platform-toggle" class="toggle-switch {{ 'active' if settings.get('image', {}).get('use_platform_openai') }}" onclick="toggleImagePlatformKey('openai')">
@@ -265,7 +271,7 @@
         <label class="block text-xs text-forge-muted mb-1">API Key <span class="text-zinc-600">(auto-filled from API Keys tab)</span></label>
         <div style="display:flex; gap:0.75rem; align-items:center;">
           <input id="img-google-key" type="password" class="search-input w-full img-key-input" style="max-width:32rem;"
-                 placeholder="AIza..." value="{{ settings.get('image', {}).get('google_api_key') or settings.get('api_keys', {}).get('google_gemini', '') }}">
+                 placeholder="AIza..." value="">
           <div style="display:flex; align-items:center; gap:0.5rem; white-space:nowrap;">
             <span class="text-xs text-forge-muted">Platform Keys</span>
             <div id="img-google-platform-toggle" class="toggle-switch {{ 'active' if settings.get('image', {}).get('use_platform_google') }}" onclick="toggleImagePlatformKey('google')">
@@ -284,7 +290,7 @@
         <label class="block text-xs text-forge-muted mb-1">API Key</label>
         <div style="display:flex; gap:0.75rem; align-items:center;">
           <input id="img-stability-key" type="password" class="search-input w-full img-key-input" style="max-width:32rem;"
-                 placeholder="sk-..." value="{{ settings.get('image', {}).get('stability_api_key', '') }}">
+                 placeholder="sk-..." value="">
           <div style="display:flex; align-items:center; gap:0.5rem; white-space:nowrap;">
             <span class="text-xs text-forge-muted">Platform Keys</span>
             <div id="img-stability-platform-toggle" class="toggle-switch {{ 'active' if settings.get('image', {}).get('use_platform_stability') }}" onclick="toggleImagePlatformKey('stability')">
@@ -302,7 +308,7 @@
       <div class="mb-3">
         <label class="block text-xs text-forge-muted mb-1">API Key</label>
         <input id="img-ideogram-key" type="password" class="search-input w-full img-key-input" style="max-width:32rem;"
-               placeholder="ig-..." value="{{ settings.get('image', {}).get('ideogram_api_key', '') }}">
+               placeholder="ig-..." value="">
       </div>
     </div>
 
@@ -313,7 +319,7 @@
       <div class="mb-3">
         <label class="block text-xs text-forge-muted mb-1">API Token</label>
         <input id="img-replicate-key" type="password" class="search-input w-full img-key-input" style="max-width:32rem;"
-               placeholder="r8_..." value="{{ settings.get('image', {}).get('replicate_api_key', '') }}">
+               placeholder="r8_..." value="">
       </div>
     </div>
 
@@ -324,7 +330,7 @@
       <div class="mb-3">
         <label class="block text-xs text-forge-muted mb-1">API Key</label>
         <input id="img-fal-key" type="password" class="search-input w-full img-key-input" style="max-width:32rem;"
-               placeholder="fal-..." value="{{ settings.get('image', {}).get('fal_api_key', '') }}">
+               placeholder="fal-..." value="">
       </div>
     </div>
 
@@ -335,7 +341,7 @@
       <div class="mb-3">
         <label class="block text-xs text-forge-muted mb-1">API Key</label>
         <input id="img-leonardo-key" type="password" class="search-input w-full img-key-input" style="max-width:32rem;"
-               placeholder="Bearer token" value="{{ settings.get('image', {}).get('leonardo_api_key', '') }}">
+               placeholder="Bearer token" value="">
       </div>
     </div>
 
@@ -351,7 +357,7 @@
       <div class="mb-3">
         <label class="block text-xs text-forge-muted mb-1">API Key / Token</label>
         <input id="img-midjourney-key" type="password" class="search-input w-full img-key-input" style="max-width:32rem;"
-               placeholder="Bearer token" value="{{ settings.get('image', {}).get('midjourney_api_key', '') }}">
+               placeholder="Bearer token" value="">
       </div>
     </div>
 
@@ -407,7 +413,7 @@
           <label class="block text-xs text-forge-muted mb-1">ElevenLabs API Key</label>
           <div style="display:flex; gap:0.75rem; align-items:center;">
             <input id="tts-elevenlabs-api-key" type="password" class="search-input w-full" style="max-width:32rem;"
-                   placeholder="xi-..." value="{{ settings.get('tts', {}).get('elevenlabs_api_key', '') }}">
+                   placeholder="xi-..." value="">
             <div style="display:flex; align-items:center; gap:0.5rem; white-space:nowrap;">
               <span class="text-xs text-forge-muted">Platform Keys</span>
               <div id="tts-elevenlabs-platform-toggle" class="toggle-switch {{ 'active' if settings.get('tts', {}).get('use_platform_elevenlabs') }}" onclick="toggleVoicePlatformKey('elevenlabs')">
@@ -445,7 +451,7 @@
           <label class="block text-xs text-forge-muted mb-1">API Key</label>
           <div style="display:flex; gap:0.75rem; align-items:center;">
             <input id="tts-openedai-cloud-api-key" type="password" class="search-input w-full" style="max-width:32rem;"
-                   placeholder="sk-..." value="{{ settings.get('tts', {}).get('openedai_cloud_api_key', '') }}">
+                   placeholder="sk-..." value="">
             <div style="display:flex; align-items:center; gap:0.5rem; white-space:nowrap;">
               <span class="text-xs text-forge-muted">Platform Keys</span>
               <div id="tts-openedai-cloud-platform-toggle" class="toggle-switch {{ 'active' if settings.get('tts', {}).get('use_platform_openedai_cloud') }}" onclick="toggleVoicePlatformKey('openedai_cloud')">
@@ -630,7 +636,31 @@ async function saveApiKeys() {
   });
   const data = await resp.json();
   showToast(data.status === 'ok' ? 'API keys saved' : 'Error saving keys', data.status === 'ok' ? 'ok' : 'error');
+  if (data.status === 'ok') loadKeyStatus();  // refresh indicators
 }
+
+/* ── Load key configuration status (never exposes raw keys) ── */
+async function loadKeyStatus() {
+  try {
+    const resp = await fetch('/api/settings/api-keys');
+    const data = await resp.json();
+    const configured = data._configured || {};
+    const fields = ['openai','anthropic','deepseek','google_gemini','openrouter','inworld'];
+    fields.forEach(f => {
+      const el = document.getElementById('key-' + f + '-status');
+      if (el) el.style.display = configured[f] ? 'inline' : 'none';
+      // Show masked value as placeholder so user knows a key exists
+      const inp = document.getElementById('key-' + f);
+      if (inp && configured[f] && !inp.value) {
+        inp.placeholder = data[f] || inp.placeholder;
+      }
+    });
+    // Ollama URL is non-secret — set value directly
+    const ollamaEl = document.getElementById('key-ollama_url');
+    if (ollamaEl && data.ollama_url && !ollamaEl.value) ollamaEl.value = data.ollama_url;
+  } catch(e) { /* silently ignore on load */ }
+}
+loadKeyStatus();
 
 /* ── Platform API Keys Toggle Handler –––––––––––––––––– */
 function toggleImagePlatformKey(provider) {

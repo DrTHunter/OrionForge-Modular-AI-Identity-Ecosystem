@@ -10673,6 +10673,237 @@ def test_agi_loop_template_modal_and_looplog():
     check("saveConfig includes _tiers", "_tiers" in html)
 
 
+# ═════════════════════════════════════════════
+# KEY VAULT — ENCRYPTION AT REST
+# ═════════════════════════════════════════════
+def test_key_vault_encryption():
+    """Test Fernet encrypt/decrypt round-trip, masking, and settings integration."""
+    print("\n=== TORTURE: Key Vault — Encryption at Rest ===")
+    from web.key_vault import (
+        encrypt_value, decrypt_value, mask_value,
+        encrypt_settings_secrets, decrypt_settings_secrets,
+        strip_secrets_for_template,
+    )
+
+    # ── 1. Encrypt/decrypt round-trip ──
+    plain = "sk-abc123456789xyz"
+    encrypted = encrypt_value(plain)
+    check("encrypted starts with enc:", encrypted.startswith("enc:"))
+    check("encrypted != plaintext", encrypted != plain)
+    decrypted = decrypt_value(encrypted)
+    check("decrypt round-trip", decrypted == plain)
+
+    # ── 2. Empty values ──
+    check("encrypt empty → empty", encrypt_value("") == "")
+    check("decrypt empty → empty", decrypt_value("") == "")
+
+    # ── 3. Legacy plaintext passthrough ──
+    check("legacy plaintext passthrough", decrypt_value("sk-plaintext") == "sk-plaintext")
+
+    # ── 4. Corrupted enc: → empty ──
+    check("corrupted enc: → empty", decrypt_value("enc:garbagetokenthatisnotvalid") == "")
+
+    # ── 5. Masking logic ──
+    check("mask long key starts right", mask_value("sk-abcdefghijklmnop")[:4] == "sk-a")
+    check("mask long key ends right", mask_value("sk-abcdefghijklmnop")[-4:] == "mnop")
+    check("mask long key has bullets", "•" in mask_value("sk-abcdefghijklmnop"))
+    check("mask short key all bullets", mask_value("AIza") == "••••")
+    check("mask empty → empty", mask_value("") == "")
+
+    # ── 6. Settings encryption round-trip ──
+    settings = {
+        "api_keys": {
+            "openai": "sk-openai-test",
+            "anthropic": "sk-ant-test",
+            "ollama_url": "http://localhost:11434",
+        },
+        "image": {
+            "preferred": "openai_dalle3",
+            "openai_api_key": "sk-img-test",
+        },
+        "tts": {
+            "provider": "elevenlabs",
+            "elevenlabs_api_key": "xi-test-key",
+        },
+        "timezone": "auto",
+    }
+    encrypted_settings = encrypt_settings_secrets(settings)
+    check("openai encrypted", encrypted_settings["api_keys"]["openai"].startswith("enc:"))
+    check("anthropic encrypted", encrypted_settings["api_keys"]["anthropic"].startswith("enc:"))
+    check("ollama_url NOT encrypted", encrypted_settings["api_keys"]["ollama_url"] == "http://localhost:11434")
+    check("image key encrypted", encrypted_settings["image"]["openai_api_key"].startswith("enc:"))
+    check("image preferred NOT encrypted", encrypted_settings["image"]["preferred"] == "openai_dalle3")
+    check("tts key encrypted", encrypted_settings["tts"]["elevenlabs_api_key"].startswith("enc:"))
+    check("timezone untouched", encrypted_settings["timezone"] == "auto")
+
+    decrypted_settings = decrypt_settings_secrets(encrypted_settings)
+    check("openai decrypted", decrypted_settings["api_keys"]["openai"] == "sk-openai-test")
+    check("anthropic decrypted", decrypted_settings["api_keys"]["anthropic"] == "sk-ant-test")
+    check("image key decrypted", decrypted_settings["image"]["openai_api_key"] == "sk-img-test")
+    check("tts key decrypted", decrypted_settings["tts"]["elevenlabs_api_key"] == "xi-test-key")
+
+    # ── 7. strip_secrets_for_template ──
+    stripped = strip_secrets_for_template(settings)
+    check("stripped openai empty", stripped["api_keys"]["openai"] == "")
+    check("stripped anthropic empty", stripped["api_keys"]["anthropic"] == "")
+    check("stripped ollama_url preserved", stripped["api_keys"]["ollama_url"] == "http://localhost:11434")
+    check("stripped image key empty", stripped["image"]["openai_api_key"] == "")
+    check("stripped image preferred preserved", stripped["image"]["preferred"] == "openai_dalle3")
+    check("stripped tts key empty", stripped["tts"]["elevenlabs_api_key"] == "")
+    check("stripped tts provider preserved", stripped["tts"]["provider"] == "elevenlabs")
+    check("stripped timezone preserved", stripped["timezone"] == "auto")
+
+    # ── 8. _save_settings / _load_settings round-trip with encryption ──
+    from pathlib import Path
+    tmp = tempfile.mkdtemp()
+    try:
+        import web.app as _app
+        orig_settings = _app.SETTINGS_FILE
+        tmp_settings = Path(tmp) / "config" / "settings.json"
+        tmp_settings.parent.mkdir(parents=True)
+        _app.SETTINGS_FILE = tmp_settings
+        _app._TTL_CACHE.clear()
+
+        _app._save_settings(settings)
+        # Read raw file to verify encryption on disk
+        with open(tmp_settings, "r", encoding="utf-8") as f:
+            raw = json.load(f)
+        check("on-disk openai encrypted", raw["api_keys"]["openai"].startswith("enc:"))
+        check("on-disk ollama_url plain", raw["api_keys"]["ollama_url"] == "http://localhost:11434")
+
+        # Load via _load_settings → decrypted
+        loaded = _app._load_settings()
+        check("loaded openai decrypted", loaded["api_keys"]["openai"] == "sk-openai-test")
+        check("loaded tts key decrypted", loaded["tts"]["elevenlabs_api_key"] == "xi-test-key")
+    finally:
+        _app.SETTINGS_FILE = orig_settings
+        _app._TTL_CACHE.clear()
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ═════════════════════════════════════════════
+# KEY VAULT — PER-USER ISOLATION
+# ═════════════════════════════════════════════
+def test_key_vault_per_user_isolation():
+    """Test that per-user key storage is isolated and encrypted."""
+    print("\n=== TORTURE: Key Vault — Per-User Isolation ===")
+    from pathlib import Path
+    from web.key_vault import (
+        save_user_keys, load_user_keys, load_user_keys_masked,
+        delete_user_keys, _user_keys_path,
+    )
+    tmp = tempfile.mkdtemp()
+    try:
+        import web.key_vault as _kv
+        orig_data_dir = _kv._DATA_DIR
+        _kv._DATA_DIR = Path(tmp)
+
+        # ── 1. Save keys for user A ──
+        save_user_keys("user-aaa", "api_keys", {
+            "openai": "sk-user-a-key",
+            "anthropic": "sk-ant-a",
+            "ollama_url": "http://localhost:11434",
+        })
+
+        # ── 2. Save keys for user B ──
+        save_user_keys("user-bbb", "api_keys", {
+            "openai": "sk-user-b-key",
+            "anthropic": "sk-ant-b",
+            "ollama_url": "http://remote:11434",
+        })
+
+        # ── 3. Load user A → sees user A keys only ──
+        a_keys = load_user_keys("user-aaa", "api_keys")
+        check("user A openai correct", a_keys["openai"] == "sk-user-a-key")
+        check("user A anthropic correct", a_keys["anthropic"] == "sk-ant-a")
+
+        # ── 4. Load user B → sees user B keys only ──
+        b_keys = load_user_keys("user-bbb", "api_keys")
+        check("user B openai correct", b_keys["openai"] == "sk-user-b-key")
+        check("user B anthropic correct", b_keys["anthropic"] == "sk-ant-b")
+
+        # ── 5. User A cannot see user B's keys ──
+        check("user A ≠ user B openai", a_keys["openai"] != b_keys["openai"])
+
+        # ── 6. Encrypted on disk ──
+        a_path = _user_keys_path("user-aaa")
+        with open(a_path, "r", encoding="utf-8") as f:
+            raw = json.load(f)
+        check("user A openai encrypted on disk", raw["api_keys"]["openai"].startswith("enc:"))
+        check("user A ollama_url plain on disk", raw["api_keys"]["ollama_url"] == "http://localhost:11434")
+
+        # ── 7. Masked keys ──
+        masked = load_user_keys_masked("user-aaa", "api_keys")
+        check("masked openai has bullets", "•" in masked["openai"])
+        check("masked openai not plaintext", masked["openai"] != "sk-user-a-key")
+        check("masked ollama_url plain", masked["ollama_url"] == "http://localhost:11434")
+
+        # ── 8. Delete user keys ──
+        delete_user_keys("user-aaa")
+        check("user A keys deleted", not a_path.exists())
+        check("user B keys still exist", _user_keys_path("user-bbb").exists())
+
+        # ── 9. Load deleted user → empty ──
+        check("deleted user → empty", load_user_keys("user-aaa", "api_keys") == {})
+
+        # ── 10. Multiple categories ──
+        save_user_keys("user-ccc", "api_keys", {"openai": "sk-c"})
+        save_user_keys("user-ccc", "image", {"openai_api_key": "sk-img-c"})
+        check("api_keys category", load_user_keys("user-ccc", "api_keys")["openai"] == "sk-c")
+        check("image category", load_user_keys("user-ccc", "image")["openai_api_key"] == "sk-img-c")
+
+    finally:
+        _kv._DATA_DIR = orig_data_dir
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ═════════════════════════════════════════════
+# KEY VAULT — HTML TEMPLATE STRIPPING
+# ═════════════════════════════════════════════
+def test_key_vault_html_stripping():
+    """Test that settings.html no longer contains raw key values."""
+    print("\n=== TORTURE: Key Vault — HTML Template Stripping ===")
+    from pathlib import Path
+
+    template_path = Path(__file__).resolve().parent.parent / "web" / "templates" / "settings.html"
+    html = template_path.read_text(encoding="utf-8")
+
+    # ── 1. No raw key values in input value attributes ──
+    # These patterns should NOT appear — they were the old insecure approach.
+    import re
+    dangerous_patterns = [
+        r"value=\"\{\{.*api_keys.*get\('openai'",
+        r"value=\"\{\{.*api_keys.*get\('anthropic'",
+        r"value=\"\{\{.*api_keys.*get\('deepseek'",
+        r"value=\"\{\{.*api_keys.*get\('google_gemini'",
+        r"value=\"\{\{.*api_keys.*get\('openrouter'",
+        r"value=\"\{\{.*api_keys.*get\('inworld'",
+        r"value=\"\{\{.*image.*get\('openai_api_key'",
+        r"value=\"\{\{.*image.*get\('stability_api_key'",
+        r"value=\"\{\{.*image.*get\('ideogram_api_key'",
+        r"value=\"\{\{.*image.*get\('replicate_api_key'",
+        r"value=\"\{\{.*image.*get\('fal_api_key'",
+        r"value=\"\{\{.*image.*get\('leonardo_api_key'",
+        r"value=\"\{\{.*image.*get\('midjourney_api_key'",
+        r"value=\"\{\{.*tts.*get\('elevenlabs_api_key'",
+        r"value=\"\{\{.*tts.*get\('openedai_cloud_api_key'",
+    ]
+    for pattern in dangerous_patterns:
+        match = re.search(pattern, html)
+        check(f"no raw key in HTML: {pattern[:40]}...", match is None,
+              f"FOUND at: {match.group() if match else 'n/a'}")
+
+    # ── 2. loadKeyStatus function exists ──
+    check("loadKeyStatus function present", "loadKeyStatus" in html)
+
+    # ── 3. Key status indicators present ──
+    check("openai status indicator", "key-openai-status" in html)
+    check("anthropic status indicator", "key-anthropic-status" in html)
+
+    # ── 4. Ollama URL still rendered (non-secret) ──
+    check("ollama_url still in template", "ollama_url" in html)
+
+
 # =============================================
 if __name__ == "__main__":
     test_boundary_policy()
@@ -10811,6 +11042,9 @@ if __name__ == "__main__":
     test_agi_history_disk_persistence()
     test_agi_loop_config_stale_streak()
     test_agi_loop_template_modal_and_looplog()
+    test_key_vault_encryption()
+    test_key_vault_per_user_isolation()
+    test_key_vault_html_stripping()
 
     print(f"\n{'='*40}")
     print(f"Results: {PASS} passed, {FAIL} failed")

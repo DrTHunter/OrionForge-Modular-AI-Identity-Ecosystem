@@ -64,6 +64,18 @@ from web.stripe_billing import (
     purge_inactive_users, list_all_users, INACTIVE_ACCOUNT_DAYS,
 )
 from src.memory.types import VALID_SCOPES, VALID_CATEGORIES
+from web.key_vault import (
+    encrypt_settings_secrets, decrypt_settings_secrets,
+    strip_secrets_for_template,
+    save_user_keys, load_user_keys, load_user_keys_masked,
+    delete_user_keys, mask_value,
+)
+import contextvars
+
+# ── Per-request user identity (set by AuthMiddleware) ────────────
+_current_user_id: contextvars.ContextVar[str] = contextvars.ContextVar(
+    "current_user_id", default="__local__"
+)
 
 # ── Project paths ────────────────────────────────────────────────
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -219,6 +231,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
         # Record user activity for inactive-account cleanup
         user_id = request.state.user.get("id", "")
+        _current_user_id.set(user_id or "__local__")
         touch_user_activity(user_id)
 
         # Attach trial info for templates
@@ -247,6 +260,31 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
 
 app.add_middleware(AuthMiddleware)
+
+# ── CSRF protection ─────────────────────────────────────────────
+# Cross-origin form submissions (the classic CSRF vector) send
+# Content-Type: application/x-www-form-urlencoded or multipart/form-data.
+# Our API endpoints expect application/json, which browsers cannot
+# send cross-origin without a CORS preflight.  We block the dangerous
+# form content types on state-changing /api/ routes.  Stripe webhooks
+# are exempt (they use signature verification).
+_CSRF_EXEMPT = {"/api/stripe/webhook"}
+
+class CSRFMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        if request.method in ("POST", "PUT", "PATCH", "DELETE"):
+            path = request.url.path
+            if path.startswith("/api/") and path not in _CSRF_EXEMPT:
+                ct = (request.headers.get("content-type") or "").lower()
+                # Block cross-origin form-encoded submissions
+                if "application/x-www-form-urlencoded" in ct or "multipart/form-data" in ct:
+                    return JSONResponse(
+                        {"error": "CSRF validation failed — form submissions not allowed on API routes"},
+                        status_code=403,
+                    )
+        return await call_next(request)
+
+app.add_middleware(CSRFMiddleware)
 
 # ── Uploads directory (chat backgrounds, etc.) ──────────────────
 _UPLOADS_DIR = _DATA_DIR / "uploads"
@@ -519,16 +557,25 @@ def _resolve_connection(connection_id: str | None, agent: str) -> dict | None:
 #  SETTINGS
 # ═══════════════════════════════════════════════════════════════════
 
+def _get_user_id(request: Request | None = None) -> str:
+    """Return the current user id from request context or contextvars."""
+    if request is not None:
+        user = getattr(request.state, "user", None)
+        if user:
+            return user.get("id", "__local__") or "__local__"
+    return _current_user_id.get("__local__")
+
 def _load_settings() -> dict:
     cached = _cache_get("settings")
     if cached is not None:
         return cached
     data = _read_json(SETTINGS_FILE, {})
+    data = decrypt_settings_secrets(data)
     _cache_set("settings", data)
     return data
 
 def _save_settings(data: dict):
-    _write_json(SETTINGS_FILE, data)
+    _write_json(SETTINGS_FILE, encrypt_settings_secrets(data))
     _cache_invalidate("settings")
 
 
@@ -2114,10 +2161,12 @@ async def page_knowledge_edit(request: Request, note_id: str):
 async def page_settings(request: Request, tab: str = "api_keys"):
     store = _load_connections()
     agents = _list_unlocked_agents(request)
+    # Strip all secret key values before passing to template
+    safe_settings = strip_secrets_for_template(_load_settings())
     return templates.TemplateResponse(request, "settings.html", {
         "page": "settings",
         "connections": store.get("connections", []),
-        "settings": _load_settings(), "tab": tab,
+        "settings": safe_settings, "tab": tab,
         "agents": agents,
     })
 
@@ -6570,9 +6619,9 @@ async def api_save_pinned_models(request: Request):
 async def api_save_api_keys(request: Request):
     """Save per-user API keys for LLM providers (OpenAI, Anthropic, DeepSeek, Google Gemini, OpenRouter, Ollama URL)."""
     body = await request.json()
-    settings = _load_settings()
+    user_id = _get_user_id(request)
     ollama_url = _normalize_ollama_url(body.get("ollama_url", PLATFORM_OLLAMA_URL))
-    settings["api_keys"] = {
+    new_keys = {
         "openai":        body.get("openai", ""),
         "anthropic":     body.get("anthropic", ""),
         "deepseek":      body.get("deepseek", ""),
@@ -6581,15 +6630,31 @@ async def api_save_api_keys(request: Request):
         "ollama_url":    ollama_url,
         "inworld":       body.get("inworld", ""),
     }
+    # Merge: empty values in the request preserve existing keys
+    existing = load_user_keys(user_id, "api_keys")
+    if not existing:
+        existing = _load_settings().get("api_keys", {})
+    for k, v in new_keys.items():
+        if not v and k != "ollama_url":
+            new_keys[k] = existing.get(k, "")
+    # Save to per-user encrypted store
+    save_user_keys(user_id, "api_keys", new_keys)
+    # Also save to global settings (encrypted) for backward compat
+    settings = _load_settings()
+    settings["api_keys"] = new_keys
     _save_settings(settings)
     return JSONResponse({"status": "ok"})
 
 
 @app.get("/api/settings/api-keys")
-async def api_get_api_keys():
+async def api_get_api_keys(request: Request):
     """Return saved API keys (masked for security)."""
-    settings = _load_settings()
-    keys = settings.get("api_keys", {})
+    user_id = _get_user_id(request)
+    # Try per-user store first, fall back to global settings
+    keys = load_user_keys(user_id, "api_keys")
+    if not keys:
+        settings = _load_settings()
+        keys = settings.get("api_keys", {})
     masked = {}
     for k, v in keys.items():
         if k == "ollama_url":
@@ -6600,6 +6665,9 @@ async def api_get_api_keys():
             masked[k] = "•" * len(v)
         else:
             masked[k] = ""
+    # Also return a "has_key" map so the UI can show ✓ indicators
+    has_keys = {k: bool(v and k != "ollama_url") for k, v in keys.items()}
+    masked["_configured"] = has_keys
     return JSONResponse(masked)
 
 
@@ -6661,8 +6729,10 @@ async def api_user_models():
 async def api_save_image_settings(request: Request):
     """Save image-generation provider keys and preferred model."""
     body = await request.json()
-    settings = _load_settings()
-    settings["image"] = {
+    user_id = _get_user_id(request)
+    from web.key_vault import _SECRET_FIELDS as _SF
+    image_secret_fields = _SF.get("image", set())
+    image_keys = {
         "preferred":          body.get("preferred", "none"),
         "openai_api_key":     body.get("openai_api_key", ""),
         "use_platform_openai": body.get("use_platform_openai", False),
@@ -6677,15 +6747,35 @@ async def api_save_image_settings(request: Request):
         "midjourney_url":     body.get("midjourney_url", ""),
         "midjourney_api_key": body.get("midjourney_api_key", ""),
     }
+    # Merge: empty secret values preserve existing keys
+    existing = load_user_keys(user_id, "image")
+    if not existing:
+        existing = _load_settings().get("image", {})
+    for k in image_secret_fields:
+        if not image_keys.get(k):
+            image_keys[k] = existing.get(k, "")
+    save_user_keys(user_id, "image", image_keys)
+    settings = _load_settings()
+    settings["image"] = image_keys
     _save_settings(settings)
     return JSONResponse({"status": "ok"})
 
 
 @app.get("/api/settings/image")
-async def api_get_image_settings():
-    """Return current image generation settings."""
-    settings = _load_settings()
-    return JSONResponse(settings.get("image", {"preferred": "none"}))
+async def api_get_image_settings(request: Request):
+    """Return current image generation settings (keys masked)."""
+    user_id = _get_user_id(request)
+    keys = load_user_keys(user_id, "image")
+    if not keys:
+        settings = _load_settings()
+        keys = settings.get("image", {"preferred": "none"})
+    # Mask secret fields for the response
+    from web.key_vault import _SECRET_FIELDS as _SF
+    masked = dict(keys)
+    for field in _SF.get("image", set()):
+        raw = masked.get(field, "")
+        masked[field] = mask_value(raw) if raw else ""
+    return JSONResponse(masked)
 
 
 @app.post("/api/image/generate")
@@ -6717,7 +6807,10 @@ async def api_image_generate(request: Request):
 async def api_save_voice_settings(request: Request):
     """Save STT and TTS settings (keys, URLs, voice selections)."""
     body = await request.json()
+    user_id = _get_user_id(request)
     settings = _load_settings()
+    from web.key_vault import _SECRET_FIELDS as _SF
+    tts_secret_fields = _SF.get("tts", set())
 
     stt = body.get("stt", {})
     settings["stt"] = {
@@ -6725,7 +6818,7 @@ async def api_save_voice_settings(request: Request):
     }
 
     tts = body.get("tts", {})
-    settings["tts"] = {
+    tts_data = {
         "provider":             tts.get("provider", "none"),
         "elevenlabs_api_key":   tts.get("elevenlabs_api_key", ""),
         "use_platform_elevenlabs": tts.get("use_platform_elevenlabs", False),
@@ -6737,18 +6830,33 @@ async def api_save_voice_settings(request: Request):
         "openedai_cloud_voice":     tts.get("openedai_cloud_voice", ""),
         "openedai_cloud_model":     tts.get("openedai_cloud_model", "tts-1"),
     }
+    # Merge: empty secret values preserve existing keys
+    existing = load_user_keys(user_id, "tts")
+    if not existing:
+        existing = settings.get("tts", {})
+    for k in tts_secret_fields:
+        if not tts_data.get(k):
+            tts_data[k] = existing.get(k, "")
+    settings["tts"] = tts_data
+    save_user_keys(user_id, "tts", tts_data)
 
     _save_settings(settings)
     return JSONResponse({"status": "ok"})
 
 
 @app.get("/api/settings/voice")
-async def api_get_voice_settings():
-    """Return current STT / TTS configuration."""
+async def api_get_voice_settings(request: Request):
+    """Return current STT / TTS configuration (keys masked)."""
     settings = _load_settings()
+    tts = dict(settings.get("tts", {"provider": "none"}))
+    # Mask TTS secret fields
+    from web.key_vault import _SECRET_FIELDS as _SF
+    for field in _SF.get("tts", set()):
+        raw = tts.get(field, "")
+        tts[field] = mask_value(raw) if raw else ""
     return JSONResponse({
         "stt": settings.get("stt", {"provider": "none"}),
-        "tts": settings.get("tts", {"provider": "none"}),
+        "tts": tts,
     })
 
 
