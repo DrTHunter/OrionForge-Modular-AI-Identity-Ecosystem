@@ -1,7 +1,8 @@
 #!/bin/bash
 # ── OrionForge Fly.io Boot Script ──────────────────────────────
 # Ensures uploads, memory vault, config, user notes, chat history,
-# and trash are on the persistent volume so they survive deploys.
+# shared data (inbox), and trash are on the persistent volume so they
+# survive deploys.
 # ─────────────────────────────────────────────────────────────────
 
 set -e
@@ -210,6 +211,32 @@ fi
 ln -sfn "$PERSIST_USERS" "$APP_USERS"
 
 echo "[boot] User data linked to persistent volume."
+
+# ── SHARED DATA PERSISTENCE (inbox, etc.) ──────────────────────
+PERSIST_SHARED="/persist/shared"
+APP_SHARED="/app/app/data/shared"
+BUNDLED_SHARED="/app/_bundled_shared"
+
+mkdir -p "$PERSIST_SHARED"
+
+# Seed on first deploy only; preserve user data thereafter.
+if [ -d "$BUNDLED_SHARED" ]; then
+    if [ ! -f "$PERSIST_SHARED/inbox.jsonl" ]; then
+        echo "[boot] First deploy — seeding bundled shared data."
+        cp -a "$BUNDLED_SHARED"/* "$PERSIST_SHARED/" 2>/dev/null || true
+    else
+        echo "[boot] Persistent shared data exists — preserving."
+    fi
+fi
+
+if [ -L "$APP_SHARED" ]; then
+    rm "$APP_SHARED"
+elif [ -d "$APP_SHARED" ]; then
+    rm -rf "$APP_SHARED"
+fi
+ln -sfn "$PERSIST_SHARED" "$APP_SHARED"
+
+echo "[boot] Shared data (inbox) linked to persistent volume."
 
 # 13. Start the app (3 workers — MiniLM model uses ~250MB each, fits in 4GB)
 exec python -m uvicorn web.app:app --host 0.0.0.0 --port 8989 --workers 3
