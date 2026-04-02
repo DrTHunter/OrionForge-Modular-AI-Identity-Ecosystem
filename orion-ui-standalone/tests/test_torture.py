@@ -54,8 +54,9 @@ Covers:
     get_next_tier, get_tier_for_connection, all 4 execute actions, enabled field)
   - Model Router config (defaults, load/save, merge, empty task_tier_map fix,
     presets CRUD API: list/save/load/delete, filename sanitisation, edge cases)
-  - AGILoopTool (definition, all 4 actions, AGILoopState singleton, reset,
-    to_dict, tick logging, in-memory cap, pause/resume state transitions)
+  - AGILoopTool (definition, all 5 actions, AGILoopState singleton, reset,
+    to_dict, tick logging, in-memory cap, pause/resume/stop state transitions,
+    request_stop with reason, request_stop default reason, stop when not running)
   - AGI Journal (log_journal, _persist_journal, load_journal_from_disk, clear_journal,
     in-memory cap at 500, to_dict recent_journal, disk round-trip, corrupt JSONL,
     empty file reload, cap on reload)
@@ -2151,9 +2152,9 @@ def test_model_router_tool():
 # 25c. AGI Loop Tool — state, tick logging, pause/resume
 # ═════════════════════════════════════════════
 def test_agi_loop_tool():
-    """Test AGILoopTool: definition, all 4 actions, AGILoopState singleton,
-    state transitions, tick logging, edge cases."""
-    print("\n=== TORTURE: AGI Loop — Tool + State ===")
+    """Test AGILoopTool: definition, all 5 actions, AGILoopState singleton,
+    state transitions, tick logging, request_stop, edge cases."""
+    print("\n=== TORTURE: AGI Loop -- Tool + State ===")
     from src.tools.agi_loop import AGILoopTool, AGILoopState, get_loop_state
 
     state = get_loop_state()
@@ -2224,9 +2225,11 @@ def test_agi_loop_tool():
     check("AL def name", defn["name"] == "agi_loop")
     check("AL def has params", "parameters" in defn)
     actions = defn["parameters"]["properties"]["action"]["enum"]
-    check("AL 4 actions", len(actions) == 4)
-    check("AL actions list", set(actions) == {"status", "tick_history", "request_pause", "request_resume"})
+    check("AL 5 actions", len(actions) == 5)
+    check("AL actions list", set(actions) == {"status", "tick_history", "request_pause", "request_resume", "request_stop"})
     check("AL has limit param", "limit" in defn["parameters"]["properties"])
+    check("AL has reason param", "reason" in defn["parameters"]["properties"])
+    check("AL description mentions stop", "stop" in defn["description"].lower())
 
     # ── 6. execute: status ──
     state.reset()
@@ -2270,12 +2273,40 @@ def test_agi_loop_tool():
     check("resume paused → ok=True", r6["ok"] is True)
     check("state.paused = False", state.paused is False)
 
-    # Not paused → can't resume
+    # Not paused -> can't resume
     r7 = json.loads(AGILoopTool.execute({"action": "request_resume"}))
-    check("resume not paused → ok=False", r7["ok"] is False)
+    check("resume not paused -> ok=False", r7["ok"] is False)
     check("resume not paused reason", "not paused" in r7["reason"].lower())
 
-    # ── 10. execute: unknown action ──
+    # -- 9b. execute: request_stop --
+    state.reset()
+    # Not running -> can't stop
+    r_stop1 = json.loads(AGILoopTool.execute({"action": "request_stop", "reason": "test stop"}))
+    check("stop not running -> ok=False", r_stop1["ok"] is False)
+    check("stop not running reason", "not running" in r_stop1["reason"].lower())
+
+    # Running -> can stop with reason
+    state.running = True
+    r_stop2 = json.loads(AGILoopTool.execute({"action": "request_stop", "reason": "All tasks completed"}))
+    check("stop running -> ok=True", r_stop2["ok"] is True)
+    check("stop sets running=False", state.running is False)
+    check("stop_reason contains agent_requested", "agent_requested" in state.stop_reason)
+    check("stop_reason contains provided reason", "All tasks completed" in state.stop_reason)
+    check("stop message contains reason", "All tasks completed" in r_stop2["message"])
+
+    # Running -> stop with default reason (no reason arg)
+    state.reset()
+    state.running = True
+    r_stop3 = json.loads(AGILoopTool.execute({"action": "request_stop"}))
+    check("stop default reason -> ok=True", r_stop3["ok"] is True)
+    check("stop default sets running=False", state.running is False)
+    check("stop default reason in stop_reason", "Agent requested stop" in state.stop_reason)
+
+    # Stop when already stopped -> ok=False
+    r_stop4 = json.loads(AGILoopTool.execute({"action": "request_stop", "reason": "again"}))
+    check("stop already stopped -> ok=False", r_stop4["ok"] is False)
+
+    # -- 10. execute: unknown action --
     r8 = json.loads(AGILoopTool.execute({"action": "BOGUS"}))
     check("unknown action → error", "error" in r8)
 
@@ -10344,7 +10375,161 @@ def test_cost_tracker_source_tabs():
         shutil.rmtree(tmp, ignore_errors=True)
 
 
-# ═════════════════════════════════════════════
+# =============================================
+# BOOT PERSISTENCE — verify boot.sh & Dockerfile.fly cover all data dirs
+# =============================================
+def test_boot_persistence_coverage():
+    """Verify boot.sh symlinks and Dockerfile.fly bundles cover all persistent dirs."""
+    print("\n=== TORTURE: Boot Persistence Coverage ===")
+    from pathlib import Path
+
+    repo_root = Path(__file__).resolve().parent.parent.parent
+    boot_sh = repo_root / "boot.sh"
+    dockerfile = repo_root / "Dockerfile.fly"
+
+    check("boot.sh exists", boot_sh.is_file())
+    check("Dockerfile.fly exists", dockerfile.is_file())
+
+    boot_text = boot_sh.read_text(encoding="utf-8")
+    docker_text = dockerfile.read_text(encoding="utf-8")
+
+    # boot.sh must symlink these directories to /persist/
+    persist_dirs = [
+        "uploads", "memory", "config", "profiles",
+        "user_notes", "chats", "trash", "users", "shared", "orion",
+    ]
+    for d in persist_dirs:
+        check(f"boot.sh has /persist/{d}", f"/persist/{d}" in boot_text)
+        check(f"boot.sh symlinks {d}", f"ln -sfn" in boot_text and d in boot_text)
+
+    # Dockerfile.fly must stage bundled copies
+    bundled_dirs = [
+        "_bundled_uploads", "_bundled_memory", "_bundled_config",
+        "_bundled_profiles", "_bundled_shared", "_bundled_orion",
+    ]
+    for bd in bundled_dirs:
+        check(f"Dockerfile stages {bd}", bd in docker_text)
+
+    # boot.sh must start the app
+    check("boot.sh starts uvicorn", "uvicorn" in boot_text)
+    check("boot.sh port 8989", "8989" in boot_text)
+
+    # boot.sh syncs SOUL_SCRIPTS.md always
+    check("boot.sh syncs SOUL_SCRIPTS.md", "SOUL_SCRIPTS" in boot_text)
+
+    # Dockerfile.fly has HEALTHCHECK
+    check("Dockerfile has HEALTHCHECK", "HEALTHCHECK" in docker_text)
+
+
+# =============================================
+# AGI LOOP REQUEST_STOP — deep edge-case coverage
+# =============================================
+def test_agi_loop_request_stop_deep():
+    """Deep test of request_stop: interplay with pause, repeated stops,
+    stop_reason persistence, state after stop."""
+    print("\n=== TORTURE: AGI Loop -- request_stop deep ===")
+    from src.tools.agi_loop import AGILoopTool, get_loop_state
+
+    state = get_loop_state()
+
+    # -- 1. Stop while paused --
+    state.reset()
+    state.running = True
+    state.paused = True
+    r = json.loads(AGILoopTool.execute({"action": "request_stop", "reason": "stuck while paused"}))
+    check("stop while paused -> ok=True", r["ok"] is True)
+    check("stop while paused sets running=False", state.running is False)
+    check("stop_reason saved", "stuck while paused" in state.stop_reason)
+
+    # -- 2. stop_reason in to_dict --
+    d = state.to_dict()
+    check("to_dict has stop_reason", d["stop_reason"] is not None)
+    check("to_dict stop_reason matches", "stuck while paused" in d["stop_reason"])
+
+    # -- 3. Stop preserves tick count / cost --
+    state.reset()
+    state.running = True
+    state.current_tick = 10
+    state.total_cost = 0.5
+    state.session_cost = 0.3
+    AGILoopTool.execute({"action": "request_stop", "reason": "done"})
+    check("stop preserves current_tick", state.current_tick == 10)
+    check("stop preserves total_cost", state.total_cost == 0.5)
+    check("stop preserves session_cost", state.session_cost == 0.3)
+
+    # -- 4. After stop, pause/resume should fail --
+    r_pause = json.loads(AGILoopTool.execute({"action": "request_pause"}))
+    check("pause after stop -> ok=False", r_pause["ok"] is False)
+
+    # -- 5. Status after stop shows stop_reason --
+    r_status = json.loads(AGILoopTool.execute({"action": "status"}))
+    check("status after stop has stop_reason", r_status["stop_reason"] is not None)
+    check("status after stop running=False", r_status["running"] is False)
+
+    # -- 6. Reason with special characters --
+    state.reset()
+    state.running = True
+    special = "Completed: 100% done! <script>alert('xss')</script>"
+    r_spec = json.loads(AGILoopTool.execute({"action": "request_stop", "reason": special}))
+    check("stop with special chars ok", r_spec["ok"] is True)
+    check("special chars in stop_reason", special in state.stop_reason)
+
+    # -- 7. Very long reason -- 
+    state.reset()
+    state.running = True
+    long_reason = "x" * 2000
+    r_long = json.loads(AGILoopTool.execute({"action": "request_stop", "reason": long_reason}))
+    check("stop with long reason ok", r_long["ok"] is True)
+    check("long reason stored", len(state.stop_reason) > 1000)
+
+    # -- 8. Empty string reason --
+    state.reset()
+    state.running = True
+    r_empty = json.loads(AGILoopTool.execute({"action": "request_stop", "reason": ""}))
+    check("stop with empty reason ok", r_empty["ok"] is True)
+
+    state.reset()
+
+
+# =============================================
+# INBOX PERSISTENCE PATH — verify shared dir setup
+# =============================================
+def test_inbox_persistence_path():
+    """Verify inbox JSONL path resolves under data/shared/ which is persisted."""
+    print("\n=== TORTURE: Inbox Persistence Path ===")
+    import src.data_paths as dp
+
+    inbox_path = dp.inbox_path()
+    check("inbox_path ends with inbox.jsonl", inbox_path.endswith("inbox.jsonl"))
+    check("inbox_path contains shared dir", "shared" in inbox_path)
+
+    # data_paths module creates dirs on access
+    shared_dir = dp.shared_dir()
+    check("shared_dir exists", os.path.isdir(shared_dir))
+    check("shared_dir ends with shared", shared_dir.endswith("shared"))
+
+
+# =============================================
+# JOURNAL PERSISTENCE PATH — verify orion dir setup
+# =============================================
+def test_journal_persistence_path():
+    """Verify AGI journal path resolves under data/orion/ which is persisted."""
+    print("\n=== TORTURE: Journal Persistence Path ===")
+    from src.tools.agi_loop import _DATA_DIR
+
+    check("journal data dir ends with orion", str(_DATA_DIR).endswith("orion"))
+    check("journal data dir exists or is creatable", True)
+
+    # Journal JSONL path
+    journal_path = _DATA_DIR / "agi_loop_journal.jsonl"
+    check("journal path contains orion", "orion" in str(journal_path))
+
+    # History JSONL path
+    history_path = _DATA_DIR / "agi_loop_history.jsonl"
+    check("history path contains orion", "orion" in str(history_path))
+
+
+# =============================================
 if __name__ == "__main__":
     test_boundary_policy()
     test_pii_guard_extended()
@@ -10475,6 +10660,10 @@ if __name__ == "__main__":
     test_faiss_scaling()
     test_metering_source_filtering()
     test_cost_tracker_source_tabs()
+    test_boot_persistence_coverage()
+    test_agi_loop_request_stop_deep()
+    test_inbox_persistence_path()
+    test_journal_persistence_path()
 
     print(f"\n{'='*40}")
     print(f"Results: {PASS} passed, {FAIL} failed")
