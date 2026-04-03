@@ -70,6 +70,14 @@ from web.key_vault import (
     save_user_keys, load_user_keys, load_user_keys_masked,
     delete_user_keys, mask_value,
 )
+from web.user_data import (
+    ensure_user_dirs,
+    user_chats_dir, user_memory_dir, user_faiss_dir, user_vault_path,
+    user_notes_dir, user_settings_path, user_profiles_dir,
+    user_prompts_dir, user_directives_dir, user_uploads_dir,
+    user_trash_dir, user_folders_file,
+    GLOBAL_PROFILES_DIR, GLOBAL_PROMPTS_DIR, GLOBAL_DIRECTIVES_DIR,
+)
 import contextvars
 
 # ── Per-request user identity (set by AuthMiddleware) ────────────
@@ -234,6 +242,13 @@ class AuthMiddleware(BaseHTTPMiddleware):
         _current_user_id.set(user_id or "__local__")
         touch_user_activity(user_id)
 
+        # Ensure per-user data directories exist (fast no-op after first login)
+        if user_id:
+            try:
+                ensure_user_dirs(user_id)
+            except Exception as exc:
+                log.warning("[auth] Failed to create user dirs for %s: %s", user_id, exc)
+
         # Attach trial info for templates
         trial = get_trial_status(user_id)
         sub_info = get_user_subscription(user_id)
@@ -292,6 +307,25 @@ _UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=str(_UPLOADS_DIR)), name="uploads")
 
 
+# ── Per-user upload serving ──────────────────────────────────────
+@app.get("/api/uploads/{filename:path}")
+async def api_user_upload(filename: str, request: Request):
+    """Serve a file from the authenticated user's uploads directory."""
+    uid = _get_user_id(request)
+    if uid and uid != "__local__":
+        path = user_uploads_dir(uid) / filename
+    else:
+        path = _UPLOADS_DIR / filename
+    if not path.exists() or not path.is_file():
+        # Fallback to global uploads
+        path = _UPLOADS_DIR / filename
+    if not path.exists() or not path.is_file():
+        return JSONResponse({"error": "Not found"}, 404)
+    import mimetypes
+    media_type = mimetypes.guess_type(str(path))[0] or "application/octet-stream"
+    return Response(content=path.read_bytes(), media_type=media_type)
+
+
 # ── Migrate base64 avatar images to files (one-time on startup) ─
 def _migrate_base64_avatars():
     """Convert any base64 data-URL avatars in settings.json to saved files."""
@@ -348,19 +382,44 @@ def _migrate_base64_avatars():
 
 _migrate_base64_avatars()
 
-# ── FAISS memory (lazy singleton) ────────────────────────────────
+# ── FAISS memory (per-user instances) ────────────────────────────
 _faiss_memory = None
 _vault_store = None
+_user_vault_stores: dict[str, object] = {}
+_user_faiss_memories: dict[str, object] = {}
 
-def _get_vault_store():
-    """Return a VaultStore instance (always works — no ML deps)."""
+def _get_vault_store(user_id: str | None = None):
+    """Return a VaultStore instance scoped to the given user."""
+    uid = user_id or _current_user_id.get("__local__")
+    if uid and uid != "__local__":
+        if uid not in _user_vault_stores:
+            from src.memory.vault import VaultStore
+            _user_vault_stores[uid] = VaultStore(str(user_vault_path(uid)))
+        return _user_vault_stores[uid]
+    # Fallback: global vault for local dev
     global _vault_store
     if _vault_store is None:
         from src.memory.vault import VaultStore
         _vault_store = VaultStore(str(_VAULT_PATH))
     return _vault_store
 
-def _get_faiss_memory():
+def _get_faiss_memory(user_id: str | None = None):
+    uid = user_id or _current_user_id.get("__local__")
+    if uid and uid != "__local__":
+        if uid not in _user_faiss_memories:
+            try:
+                from src.memory.faiss_memory import FAISSMemory
+                _user_faiss_memories[uid] = FAISSMemory(
+                    vault_path=str(user_vault_path(uid)),
+                    faiss_dir=str(user_faiss_dir(uid)),
+                )
+                log.info("[vault] FAISSMemory loaded for user %s — %d memories",
+                         uid[:8], len(_user_faiss_memories[uid].list_all()))
+            except Exception as exc:
+                log.warning("[vault] FAISSMemory unavailable for user %s (%s) — using VaultStore fallback", uid[:8], exc)
+                return None
+        return _user_faiss_memories[uid]
+    # Fallback: global FAISS for local dev
     global _faiss_memory
     if _faiss_memory is None:
         try:
@@ -610,18 +669,34 @@ def _get_user_id(request: Request | None = None) -> str:
             return user.get("id", "__local__") or "__local__"
     return _current_user_id.get("__local__")
 
-def _load_settings() -> dict:
-    cached = _cache_get("settings")
+def _load_settings(user_id: str | None = None) -> dict:
+    uid = user_id or _current_user_id.get("__local__")
+    cache_key = f"settings:{uid}"
+    cached = _cache_get(cache_key)
     if cached is not None:
         return cached
+    # Per-user settings file
+    if uid and uid != "__local__":
+        path = user_settings_path(uid)
+        if path.exists():
+            data = _read_json(path, {})
+            data = decrypt_settings_secrets(data)
+            _cache_set(cache_key, data)
+            return data
+    # Fallback to global settings (for backward compat / local dev)
     data = _read_json(SETTINGS_FILE, {})
     data = decrypt_settings_secrets(data)
-    _cache_set("settings", data)
+    _cache_set(cache_key, data)
     return data
 
-def _save_settings(data: dict):
-    _write_json(SETTINGS_FILE, encrypt_settings_secrets(data))
-    _cache_invalidate("settings")
+def _save_settings(data: dict, user_id: str | None = None):
+    uid = user_id or _current_user_id.get("__local__")
+    if uid and uid != "__local__":
+        path = user_settings_path(uid)
+        _write_json(path, encrypt_settings_secrets(data))
+    else:
+        _write_json(SETTINGS_FILE, encrypt_settings_secrets(data))
+    _cache_invalidate(f"settings:{uid}", "settings:")
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -761,8 +836,13 @@ async def _sync_openrouter_pricing(force: bool = False) -> dict:
 #  PROFILES
 # ═══════════════════════════════════════════════════════════════════
 
-def _list_agents() -> list[str]:
-    return sorted(p.stem for p in _PROFILES_DIR.glob("*.yaml"))
+def _list_agents(user_id: str | None = None) -> list[str]:
+    uid = user_id or _current_user_id.get("__local__")
+    agents = set(p.stem for p in _PROFILES_DIR.glob("*.yaml"))
+    # Include per-user custom agents
+    if uid and uid != "__local__":
+        agents |= set(p.stem for p in user_profiles_dir(uid).glob("*.yaml"))
+    return sorted(agents)
 
 def _list_unlocked_agents(request: Request) -> list[str]:
     """Return agents the current user can access.
@@ -797,11 +877,21 @@ def _prioritize_default_agent(agents: list[str]) -> list[str]:
         return ["codex_animus"] + [a for a in agents if a != "codex_animus"]
     return agents
 
-def _load_profile(name: str) -> dict:
-    key = f"profile:{name}"
+def _load_profile(name: str, user_id: str | None = None) -> dict:
+    uid = user_id or _current_user_id.get("__local__")
+    key = f"profile:{uid}:{name}"
     cached = _cache_get(key)
     if cached is not None:
         return cached
+    # Check per-user override first
+    if uid and uid != "__local__":
+        user_path = user_profiles_dir(uid) / f"{name}.yaml"
+        if user_path.exists():
+            with open(user_path, "r", encoding="utf-8") as f:
+                data = yaml.safe_load(f) or {}
+            _cache_set(key, data)
+            return data
+    # Fall back to global template
     path = _PROFILES_DIR / f"{name}.yaml"
     if not path.exists():
         return {}
@@ -810,27 +900,56 @@ def _load_profile(name: str) -> dict:
     _cache_set(key, data)
     return data
 
-def _save_profile(name: str, data: dict):
-    with open(_PROFILES_DIR / f"{name}.yaml", "w", encoding="utf-8") as f:
+def _save_profile(name: str, data: dict, user_id: str | None = None):
+    uid = user_id or _current_user_id.get("__local__")
+    if uid and uid != "__local__":
+        dest = user_profiles_dir(uid) / f"{name}.yaml"
+    else:
+        dest = _PROFILES_DIR / f"{name}.yaml"
+    with open(dest, "w", encoding="utf-8") as f:
         yaml.dump(data, f, default_flow_style=False, allow_unicode=True)
-    _cache_invalidate(f"profile:{name}")
+    _cache_invalidate(f"profile:{uid}:{name}")
 
-def _load_system_prompt(name: str) -> str:
+def _load_system_prompt(name: str, user_id: str | None = None) -> str:
+    uid = user_id or _current_user_id.get("__local__")
+    # Check per-user override first
+    if uid and uid != "__local__":
+        user_path = user_prompts_dir(uid) / f"{name}.system.md"
+        if user_path.exists():
+            return user_path.read_text(encoding="utf-8")
+    # Fall back to global template
     path = _PROMPTS_DIR / f"{name}.system.md"
     return path.read_text(encoding="utf-8") if path.exists() else ""
 
-def _save_system_prompt(name: str, text: str):
-    (_PROMPTS_DIR / f"{name}.system.md").write_text(text, encoding="utf-8")
+def _save_system_prompt(name: str, text: str, user_id: str | None = None):
+    uid = user_id or _current_user_id.get("__local__")
+    if uid and uid != "__local__":
+        dest = user_prompts_dir(uid) / f"{name}.system.md"
+    else:
+        dest = _PROMPTS_DIR / f"{name}.system.md"
+    dest.write_text(text, encoding="utf-8")
 
-def _load_soul_script(name: str) -> str:
+def _load_soul_script(name: str, user_id: str | None = None) -> str:
     """Load the soul script (directive) text for an agent."""
+    uid = user_id or _current_user_id.get("__local__")
+    # Check per-user override first
+    if uid and uid != "__local__":
+        user_path = user_directives_dir(uid) / f"{name}.md"
+        if user_path.exists():
+            return user_path.read_text(encoding="utf-8")
+    # Fall back to global template
     path = _DIRECTIVES_DIR / f"{name}.md"
     return path.read_text(encoding="utf-8") if path.exists() else ""
 
-def _save_soul_script(name: str, text: str):
+def _save_soul_script(name: str, text: str, user_id: str | None = None):
     """Save the soul script (directive) text for an agent."""
-    _DIRECTIVES_DIR.mkdir(parents=True, exist_ok=True)
-    (_DIRECTIVES_DIR / f"{name}.md").write_text(text, encoding="utf-8")
+    uid = user_id or _current_user_id.get("__local__")
+    if uid and uid != "__local__":
+        dest_dir = user_directives_dir(uid)
+    else:
+        dest_dir = _DIRECTIVES_DIR
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    (dest_dir / f"{name}.md").write_text(text, encoding="utf-8")
     # Re-index soul scripts into NotesFAISS so they are searchable at chat time
     try:
         _rebuild_notes_faiss()
@@ -839,13 +958,14 @@ def _save_soul_script(name: str, text: str):
     except Exception as exc:
         log.warning("[soul_script] FAISS reindex after soul script save failed: %s", exc)
 
-def _get_agent_config(agent: str) -> dict:
-    return _load_settings().get("agent_configs", {}).get(agent, {})
+def _get_agent_config(agent: str, user_id: str | None = None) -> dict:
+    return _load_settings(user_id=user_id).get("agent_configs", {}).get(agent, {})
 
-def _save_agent_config(agent: str, cfg: dict):
-    settings = _load_settings()
+def _save_agent_config(agent: str, cfg: dict, user_id: str | None = None):
+    uid = user_id or _current_user_id.get("__local__")
+    settings = _load_settings(user_id=uid)
     settings.setdefault("agent_configs", {})[agent] = cfg
-    _save_settings(settings)
+    _save_settings(settings, user_id=uid)
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -999,20 +1119,36 @@ _purge_expired_trash()
 #  CHATS
 # ═══════════════════════════════════════════════════════════════════
 
-def _load_chat_index() -> dict:
+def _load_chat_index(user_id: str | None = None) -> dict:
+    uid = user_id or _current_user_id.get("__local__")
+    if uid and uid != "__local__":
+        return _read_json(user_chats_dir(uid) / "index.json", {"folders": [], "chats": []})
     return _read_json(_CHATS_DIR / "index.json", {"folders": [], "chats": []})
 
-def _save_chat_index(data: dict):
-    _write_json(_CHATS_DIR / "index.json", data)
+def _save_chat_index(data: dict, user_id: str | None = None):
+    uid = user_id or _current_user_id.get("__local__")
+    if uid and uid != "__local__":
+        _write_json(user_chats_dir(uid) / "index.json", data)
+    else:
+        _write_json(_CHATS_DIR / "index.json", data)
 
-def _load_chat(chat_id: str) -> dict | None:
-    path = _CHATS_DIR / f"{chat_id}.json"
+def _load_chat(chat_id: str, user_id: str | None = None) -> dict | None:
+    uid = user_id or _current_user_id.get("__local__")
+    if uid and uid != "__local__":
+        path = user_chats_dir(uid) / f"{chat_id}.json"
+    else:
+        path = _CHATS_DIR / f"{chat_id}.json"
     return _read_json(path) if path.exists() else None
 
-def _save_chat(chat_id: str, data: dict):
-    _write_json(_CHATS_DIR / f"{chat_id}.json", data)
+def _save_chat(chat_id: str, data: dict, user_id: str | None = None):
+    uid = user_id or _current_user_id.get("__local__")
+    if uid and uid != "__local__":
+        _write_json(user_chats_dir(uid) / f"{chat_id}.json", data)
+    else:
+        _write_json(_CHATS_DIR / f"{chat_id}.json", data)
 
-def _create_new_chat(agent: str, mode: str = "chat", meta: dict | None = None) -> dict:
+def _create_new_chat(agent: str, mode: str = "chat", meta: dict | None = None, user_id: str | None = None) -> dict:
+    uid = user_id or _current_user_id.get("__local__")
     chat_id = str(uuid.uuid4())[:8]
     now = datetime.now(timezone.utc).isoformat()
     chat_data = {
@@ -1022,13 +1158,13 @@ def _create_new_chat(agent: str, mode: str = "chat", meta: dict | None = None) -
     }
     if meta:
         chat_data.update(meta)
-    _save_chat(chat_id, chat_data)
-    idx = _load_chat_index()
+    _save_chat(chat_id, chat_data, user_id=uid)
+    idx = _load_chat_index(user_id=uid)
     idx["chats"].append({
         "id": chat_id, "title": "New Chat", "folder_id": None,
         "agent": agent, "mode": mode, "created": now, "updated": now,
     })
-    _save_chat_index(idx)
+    _save_chat_index(idx, user_id=uid)
     return chat_data
 
 
@@ -1036,14 +1172,15 @@ def _create_new_chat(agent: str, mode: str = "chat", meta: dict | None = None) -
 _chat_sessions: dict[str, dict] = {}
 
 
-def _update_chat_index_entry(chat_id: str, updates: dict):
+def _update_chat_index_entry(chat_id: str, updates: dict, user_id: str | None = None):
     """Update a chat entry in the index."""
-    idx = _load_chat_index()
+    uid = user_id or _current_user_id.get("__local__")
+    idx = _load_chat_index(user_id=uid)
     for c in idx["chats"]:
         if c["id"] == chat_id:
             c.update(updates)
             break
-    _save_chat_index(idx)
+    _save_chat_index(idx, user_id=uid)
 
 
 def _append_agent_line_to_chat(chat_id: str, line: str):
@@ -1102,9 +1239,14 @@ _DEFAULT_FOLDERS: list[dict] = [
 ]
 
 
-def _load_folders() -> list[dict]:
+def _load_folders(user_id: str | None = None) -> list[dict]:
     """Load knowledge folders from disk, seeding defaults if missing."""
-    folders = _read_json(_FOLDERS_FILE, [])
+    uid = user_id or _current_user_id.get("__local__")
+    if uid and uid != "__local__":
+        fpath = user_folders_file(uid)
+    else:
+        fpath = _FOLDERS_FILE
+    folders = _read_json(fpath, [])
     # Ensure pinned defaults always present
     existing_ids = {f["id"] for f in folders}
     changed = False
@@ -1117,26 +1259,45 @@ def _load_folders() -> list[dict]:
         pinned = [f for f in folders if f.get("pinned")]
         regular = [f for f in folders if not f.get("pinned")]
         folders = pinned + regular
-        _save_folders(folders)
+        _save_folders(folders, user_id=uid)
     return folders
 
 
-def _save_folders(data: list[dict]):
-    _write_json(_FOLDERS_FILE, data)
+def _save_folders(data: list[dict], user_id: str | None = None):
+    uid = user_id or _current_user_id.get("__local__")
+    if uid and uid != "__local__":
+        _write_json(user_folders_file(uid), data)
+    else:
+        _write_json(_FOLDERS_FILE, data)
 
 
-def _load_notes_index() -> list[dict]:
+def _load_notes_index(user_id: str | None = None) -> list[dict]:
+    uid = user_id or _current_user_id.get("__local__")
+    if uid and uid != "__local__":
+        return _read_json(user_notes_dir(uid) / "index.json", [])
     return _read_json(_NOTES_DIR / "index.json", [])
 
-def _save_notes_index(data: list[dict]):
-    _write_json(_NOTES_DIR / "index.json", data)
+def _save_notes_index(data: list[dict], user_id: str | None = None):
+    uid = user_id or _current_user_id.get("__local__")
+    if uid and uid != "__local__":
+        _write_json(user_notes_dir(uid) / "index.json", data)
+    else:
+        _write_json(_NOTES_DIR / "index.json", data)
 
-def _load_note(note_id: str) -> dict | None:
-    path = _NOTES_DIR / f"{note_id}.json"
+def _load_note(note_id: str, user_id: str | None = None) -> dict | None:
+    uid = user_id or _current_user_id.get("__local__")
+    if uid and uid != "__local__":
+        path = user_notes_dir(uid) / f"{note_id}.json"
+    else:
+        path = _NOTES_DIR / f"{note_id}.json"
     return _read_json(path) if path.exists() else None
 
-def _save_note(note_id: str, data: dict):
-    _write_json(_NOTES_DIR / f"{note_id}.json", data)
+def _save_note(note_id: str, data: dict, user_id: str | None = None):
+    uid = user_id or _current_user_id.get("__local__")
+    if uid and uid != "__local__":
+        _write_json(user_notes_dir(uid) / f"{note_id}.json", data)
+    else:
+        _write_json(_NOTES_DIR / f"{note_id}.json", data)
 
 
 # Seed folders on import so the file exists on first run
@@ -3767,6 +3928,7 @@ _WIKI_README_MAP = {
     "orion-ui-standalone": Path(__file__).resolve().parent.parent / "README.md",
     "engine":             Path(__file__).resolve().parent.parent.parent / "engine" / "README.md",
     "web":                Path(__file__).resolve().parent / "README.md",
+    "user-data":           Path(__file__).resolve().parent / "USER_DATA.md",
     "data":               Path(__file__).resolve().parent.parent / "data" / "README.md",
     "src":                Path(__file__).resolve().parent.parent / "src" / "README.md",
     "src/memory":         Path(__file__).resolve().parent.parent / "src" / "memory" / "README.md",
@@ -4625,52 +4787,61 @@ async def _stream_chat_generator(req: ChatRequest, request: Request, user, conn,
 
 
 @app.get("/api/chat/history")
-async def api_chat_history():
-    return _load_chat_index()
+async def api_chat_history(request: Request):
+    uid = _get_user_id(request)
+    return _load_chat_index(user_id=uid)
 
 @app.post("/api/chat/new")
 async def api_chat_new(request: Request):
     body = await request.json()
+    uid = _get_user_id(request)
     agents = _list_agents()
     agent = body.get("agent", agents[0] if agents else "agent")
-    return _create_new_chat(agent)
+    return _create_new_chat(agent, user_id=uid)
 
 @app.get("/api/chat/{chat_id}")
-async def api_chat_get(chat_id: str):
-    data = _load_chat(chat_id)
+async def api_chat_get(chat_id: str, request: Request):
+    uid = _get_user_id(request)
+    data = _load_chat(chat_id, user_id=uid)
     return data if data else JSONResponse({"error": "Not found"}, 404)
 
 @app.delete("/api/chat/{chat_id}")
-async def api_chat_delete(chat_id: str):
-    path = _CHATS_DIR / f"{chat_id}.json"
+async def api_chat_delete(chat_id: str, request: Request):
+    uid = _get_user_id(request)
+    if uid and uid != "__local__":
+        path = user_chats_dir(uid) / f"{chat_id}.json"
+    else:
+        path = _CHATS_DIR / f"{chat_id}.json"
     if path.exists():
         path.unlink()
-    idx = _load_chat_index()
+    idx = _load_chat_index(user_id=uid)
     idx["chats"] = [c for c in idx["chats"] if c["id"] != chat_id]
-    _save_chat_index(idx)
+    _save_chat_index(idx, user_id=uid)
     return {"ok": True}
 
 @app.put("/api/chat/{chat_id}")
 async def api_chat_update(chat_id: str, request: Request):
     body = await request.json()
-    data = _load_chat(chat_id)
+    uid = _get_user_id(request)
+    data = _load_chat(chat_id, user_id=uid)
     if not data:
         return JSONResponse({"error": "Not found"}, 404)
     for key in ("title", "folder_id"):
         if key in body:
             data[key] = body[key]
-    _save_chat(chat_id, data)
-    idx = _load_chat_index()
+    _save_chat(chat_id, data, user_id=uid)
+    idx = _load_chat_index(user_id=uid)
     for c in idx["chats"]:
         if c["id"] == chat_id:
             c.update({k: body[k] for k in ("title", "folder_id") if k in body})
             break
-    _save_chat_index(idx)
+    _save_chat_index(idx, user_id=uid)
     return {"ok": True}
 
 @app.post("/api/chat/{chat_id}/title")
-async def api_chat_auto_title(chat_id: str):
-    data = _load_chat(chat_id)
+async def api_chat_auto_title(chat_id: str, request: Request):
+    uid = _get_user_id(request)
+    data = _load_chat(chat_id, user_id=uid)
     if not data or len(data.get("messages", [])) < 2:
         return {"title": None}
 
@@ -4680,8 +4851,8 @@ async def api_chat_auto_title(chat_id: str):
         return {"title": None}
 
     snippet = "\n".join(f"{m['role']}: {m['text'][:200]}" for m in data["messages"][:4])
-    profile = _load_profile(agent)
-    model = _get_agent_config(agent).get("model") or profile.get("model", "") or "gpt-4o-mini"
+    profile = _load_profile(agent, user_id=uid)
+    model = _get_agent_config(agent, user_id=uid).get("model") or profile.get("model", "") or "gpt-4o-mini"
 
     url = conn["url"].rstrip("/")
     if not url.endswith("/chat/completions"):
@@ -4725,7 +4896,8 @@ async def api_chat_auto_title(chat_id: str):
 async def api_profile_user(request: Request):
     """Update user profile (name, avatar, color, crop/position)."""
     body = await request.json()
-    settings = _load_settings()
+    uid = _get_user_id(request)
+    settings = _load_settings(user_id=uid)
     user_profile = settings.setdefault("user_profile", {})
     for key in ("name", "color"):
         if key in body:
@@ -4770,7 +4942,7 @@ async def api_profile_user(request: Request):
     for key in ("photo_zoom", "photo_x", "photo_y"):
         if key in body:
             user_profile[key] = body[key]
-    _save_settings(settings)
+    _save_settings(settings, user_id=uid)
     return {"ok": True, "image": user_profile.get("image", "")}
 
 # ── Trash routes must come BEFORE {name} wildcard ────────────────
@@ -4804,47 +4976,61 @@ async def api_trash_permanently_delete(trash_id: str):
     return {"ok": True}
 
 @app.get("/api/profiles/{name}")
-async def api_profile_get(name: str):
-    profile = _load_profile(name)
+async def api_profile_get(name: str, request: Request):
+    uid = _get_user_id(request)
+    profile = _load_profile(name, user_id=uid)
     if not profile:
         return JSONResponse({"error": "Not found"}, 404)
-    return {"name": name, "profile": profile, "config": _get_agent_config(name),
-            "system_prompt": _load_system_prompt(name),
-            "soul_script": _load_soul_script(name)}
+    return {"name": name, "profile": profile, "config": _get_agent_config(name, user_id=uid),
+            "system_prompt": _load_system_prompt(name, user_id=uid),
+            "soul_script": _load_soul_script(name, user_id=uid)}
 
 @app.put("/api/profiles/{name}")
 async def api_profile_update(name: str, request: Request):
     body = await request.json()
+    uid = _get_user_id(request)
     if "system_prompt" in body:
-        _save_system_prompt(name, body["system_prompt"])
-    profile = _load_profile(name)
+        _save_system_prompt(name, body["system_prompt"], user_id=uid)
+    profile = _load_profile(name, user_id=uid)
     for key in ("model", "temperature"):
         if key in body:
             profile[key] = body[key]
-    _save_profile(name, profile)
+    _save_profile(name, profile, user_id=uid)
     if "config" in body:
-        cfg = _get_agent_config(name)
+        cfg = _get_agent_config(name, user_id=uid)
         cfg.update(body["config"])
-        _save_agent_config(name, cfg)
+        _save_agent_config(name, cfg, user_id=uid)
     return {"ok": True}
 
 @app.post("/api/profiles")
 async def api_profile_create(request: Request):
     body = await request.json()
+    uid = _get_user_id(request)
     name = body.get("name", "").strip().lower().replace(" ", "_")
     if not name:
         return JSONResponse({"error": "Name required"}, 400)
+    # Check both global and per-user profiles
     if (_PROFILES_DIR / f"{name}.yaml").exists():
         return JSONResponse({"error": "Already exists"}, 400)
+    if uid and uid != "__local__":
+        if (user_profiles_dir(uid) / f"{name}.yaml").exists():
+            return JSONResponse({"error": "Already exists"}, 400)
     _save_profile(name, {"name": name, "model": body.get("model", ""), "temperature": 0.7,
-                         "system_prompt": f"{name}.system.md"})
-    _save_system_prompt(name, body.get("system_prompt", f"You are {name}."))
+                         "system_prompt": f"{name}.system.md"}, user_id=uid)
+    _save_system_prompt(name, body.get("system_prompt", f"You are {name}."), user_id=uid)
     return {"ok": True, "name": name}
 
 @app.delete("/api/profiles/{name}")
-async def api_profile_delete(name: str):
+async def api_profile_delete(name: str, request: Request):
     """Soft-delete: move agent to trash (30-day retention)."""
-    if not (_PROFILES_DIR / f"{name}.yaml").exists():
+    uid = _get_user_id(request)
+    # Check per-user profile first, then global
+    has_profile = False
+    if uid and uid != "__local__":
+        has_profile = (user_profiles_dir(uid) / f"{name}.yaml").exists()
+    if not has_profile:
+        has_profile = (_PROFILES_DIR / f"{name}.yaml").exists()
+    if not has_profile:
         return JSONResponse({"error": "Agent not found"}, 404)
     _trash_agent(name)
     return {"ok": True}
@@ -4853,14 +5039,15 @@ async def api_profile_delete(name: str):
 async def api_profile_config(name: str, request: Request):
     """Update individual config fields for an agent (display_name, description, model, etc.)."""
     body = await request.json()
-    cfg = _get_agent_config(name)
+    uid = _get_user_id(request)
+    cfg = _get_agent_config(name, user_id=uid)
     for key in ("display_name", "description", "model", "allowed_tools",
                 "voice_id", "edge_voice", "inworld_voice", "tts_paid_provider", "tts_free_provider",
                 "identity_faiss_profile", "memory_vault_profile"):
         if key in body:
             cfg[key] = body[key]
     # Also persist model + voice + allowed_tools + memory profiles to profile yaml for compatibility
-    profile = _load_profile(name)
+    profile = _load_profile(name, user_id=uid)
     if "model" in body:
         profile["model"] = body["model"]
     if "voice_id" in body:
@@ -4875,23 +5062,28 @@ async def api_profile_config(name: str, request: Request):
         profile["identity_faiss_profile"] = body["identity_faiss_profile"]
     if "memory_vault_profile" in body:
         profile["memory_vault_profile"] = body["memory_vault_profile"]
-    _save_profile(name, profile)
+    _save_profile(name, profile, user_id=uid)
     # Also persist system_prompt_text if sent
     if "system_prompt_text" in body:
-        _save_system_prompt(name, body["system_prompt_text"])
+        _save_system_prompt(name, body["system_prompt_text"], user_id=uid)
     # Also persist soul_script_text if sent
     if "soul_script_text" in body:
-        _save_soul_script(name, body["soul_script_text"])
-    _save_agent_config(name, cfg)
+        _save_soul_script(name, body["soul_script_text"], user_id=uid)
+    _save_agent_config(name, cfg, user_id=uid)
     return {"ok": True}
 
 @app.put("/api/profiles/{name}/avatar")
 async def api_profile_avatar(name: str, request: Request):
     """Update avatar image, colour, or photo crop/position for an agent."""
     body = await request.json()
-    settings = _load_settings()
+    uid = _get_user_id(request)
+    settings = _load_settings(user_id=uid)
     avatars = settings.setdefault("agent_avatars", {})
     entry = avatars.setdefault(name, {})
+    if uid and uid != "__local__":
+        uploads_dir = user_uploads_dir(uid)
+    else:
+        uploads_dir = _UPLOADS_DIR
     if "color" in body:
         entry["color"] = body["color"]
     if "image" in body:
@@ -4899,7 +5091,7 @@ async def api_profile_avatar(name: str, request: Request):
         if not img_data:
             old_img = entry.pop("image", None)
             if old_img and old_img.startswith("/uploads/"):
-                old_path = _UPLOADS_DIR / os.path.basename(old_img)
+                old_path = uploads_dir / os.path.basename(old_img)
                 if old_path.exists():
                     old_path.unlink(missing_ok=True)
         elif img_data.startswith("data:image"):
@@ -4912,10 +5104,10 @@ async def api_profile_avatar(name: str, request: Request):
                     ext = ".webp"
                 raw = _b64.b64decode(b64)
                 fname = f"avatar_{name}_{uuid.uuid4().hex[:8]}{ext}"
-                dest = _UPLOADS_DIR / fname
+                dest = uploads_dir / fname
                 old_img = entry.get("image", "")
                 if old_img.startswith("/uploads/avatar_"):
-                    old_path = _UPLOADS_DIR / os.path.basename(old_img)
+                    old_path = uploads_dir / os.path.basename(old_img)
                     if old_path.exists():
                         old_path.unlink(missing_ok=True)
                 with open(dest, "wb") as f:
@@ -4930,36 +5122,41 @@ async def api_profile_avatar(name: str, request: Request):
         if key in body:
             entry[key] = body[key]
     avatars[name] = entry
-    _save_settings(settings)
+    _save_settings(settings, user_id=uid)
     return {"ok": True, "image": entry.get("image", "")}
 
 @app.post("/api/profiles/create")
 async def api_profile_create_v2(request: Request):
     """Create a new agent (v2 — supports description and model)."""
     body = await request.json()
+    uid = _get_user_id(request)
     name = body.get("name", "").strip().lower().replace(" ", "_")
     if not name:
         return JSONResponse({"error": "Name required"}, 400)
     if (_PROFILES_DIR / f"{name}.yaml").exists():
         return JSONResponse({"error": "Already exists"}, 400)
+    if uid and uid != "__local__":
+        if (user_profiles_dir(uid) / f"{name}.yaml").exists():
+            return JSONResponse({"error": "Already exists"}, 400)
     model = body.get("model", "")
     desc = body.get("description", "")
     _save_profile(name, {"name": name, "model": model, "temperature": 0.7,
-                         "system_prompt": f"{name}.system.md"})
-    _save_system_prompt(name, f"You are {name}.")
+                         "system_prompt": f"{name}.system.md"}, user_id=uid)
+    _save_system_prompt(name, f"You are {name}.", user_id=uid)
     if desc or model:
-        cfg = _get_agent_config(name)
+        cfg = _get_agent_config(name, user_id=uid)
         if desc:
             cfg["description"] = desc
         if model:
             cfg["model"] = model
-        _save_agent_config(name, cfg)
+        _save_agent_config(name, cfg, user_id=uid)
     return {"ok": True, "name": name}
 
 @app.put("/api/profiles/{name}/knowledge")
 async def api_profile_knowledge(name: str, request: Request):
     body = await request.json()
-    cfg = _get_agent_config(name)
+    uid = _get_user_id(request)
+    cfg = _get_agent_config(name, user_id=uid)
     essential = set(cfg.get("essential_notes", []))
     # Preserve essential notes — they cannot be detached
     incoming = body.get("attached_notes", [])
@@ -4971,7 +5168,7 @@ async def api_profile_knowledge(name: str, request: Request):
             incoming_modes[eid] = cfg.get("note_modes", {}).get(eid, "directive")
     cfg["attached_notes"] = incoming
     cfg["note_modes"] = incoming_modes
-    _save_agent_config(name, cfg)
+    _save_agent_config(name, cfg, user_id=uid)
     try:
         from src.storage.note_collector import invalidate_notes_faiss
         invalidate_notes_faiss()
@@ -5086,7 +5283,8 @@ async def api_vault_add(request: Request):
     text = (body.get("text") or "").strip()
     if not text:
         return JSONResponse({"error": "Memory text is required"}, 400)
-    fm = _get_faiss_memory()
+    uid = _get_user_id(request)
+    fm = _get_faiss_memory(user_id=uid)
     if fm:
         try:
             mem = fm.add(
@@ -5100,7 +5298,7 @@ async def api_vault_add(request: Request):
         except Exception as exc:
             return JSONResponse({"error": str(exc)}, 500)
     # VaultStore fallback
-    vs = _get_vault_store()
+    vs = _get_vault_store(user_id=uid)
     if not vs:
         return JSONResponse({"error": "Vault not available"}, 500)
     try:
@@ -5122,7 +5320,8 @@ async def api_vault_batch_add(request: Request):
     items = body.get("memories")
     if not items or not isinstance(items, list):
         return JSONResponse({"error": "memories array is required"}, 400)
-    fm = _get_faiss_memory()
+    uid = _get_user_id(request)
+    fm = _get_faiss_memory(user_id=uid)
     if fm:
         try:
             created = fm.batch_add(items)
@@ -5134,7 +5333,7 @@ async def api_vault_batch_add(request: Request):
         except Exception as exc:
             return JSONResponse({"error": str(exc)}, 500)
     # VaultStore fallback
-    vs = _get_vault_store()
+    vs = _get_vault_store(user_id=uid)
     if not vs:
         return JSONResponse({"error": "Vault not available"}, 500)
     try:
@@ -5148,11 +5347,12 @@ async def api_vault_batch_add(request: Request):
         return JSONResponse({"error": str(exc)}, 500)
 
 @app.get("/api/vault/stats")
-async def api_vault_stats():
-    fm = _get_faiss_memory()
+async def api_vault_stats(request: Request):
+    uid = _get_user_id(request)
+    fm = _get_faiss_memory(user_id=uid)
     if fm:
         return fm.stats()
-    vs = _get_vault_store()
+    vs = _get_vault_store(user_id=uid)
     if vs:
         active = vs.read_active()
         all_raw = vs.read_all()
@@ -5163,24 +5363,26 @@ async def api_vault_stats():
 @app.post("/api/vault/delete")
 async def api_vault_delete(request: Request):
     body = await request.json()
-    fm = _get_faiss_memory()
+    uid = _get_user_id(request)
+    fm = _get_faiss_memory(user_id=uid)
     if fm:
         deleted = [mid for mid in body.get("ids", []) if fm.delete(mid)]
         return {"deleted": deleted}
-    vs = _get_vault_store()
+    vs = _get_vault_store(user_id=uid)
     if not vs:
         return {"error": "Vault not available"}
     result = vs.bulk_delete(body.get("ids", []))
     return {"deleted": result["deleted"]}
 
 @app.get("/api/vault/compact")
-async def api_vault_compact():
-    fm = _get_faiss_memory()
+async def api_vault_compact(request: Request):
+    uid = _get_user_id(request)
+    fm = _get_faiss_memory(user_id=uid)
     if fm:
         before = fm.stats().get("raw_lines", 0)
         fm.rebuild_index()
         return {"before_lines": before, "after_lines": fm.stats().get("raw_lines", 0)}
-    vs = _get_vault_store()
+    vs = _get_vault_store(user_id=uid)
     if not vs:
         return {"error": "Vault not available"}
     result = vs.compact()
@@ -5192,8 +5394,9 @@ async def api_vault_compact():
 # ═══════════════════════════════════════════════════════════════════
 
 @app.get("/api/knowledge/folders")
-async def api_knowledge_folders_list():
-    return JSONResponse(_load_folders())
+async def api_knowledge_folders_list(request: Request):
+    uid = _get_user_id(request)
+    return JSONResponse(_load_folders(user_id=uid))
 
 @app.post("/api/knowledge/folders")
 async def api_knowledge_folders_create(request: Request):
@@ -5201,7 +5404,8 @@ async def api_knowledge_folders_create(request: Request):
     name = (body.get("name") or "").strip()
     if not name:
         return JSONResponse({"error": "Folder name is required"}, 400)
-    folders = _load_folders()
+    uid = _get_user_id(request)
+    folders = _load_folders(user_id=uid)
     folder_id = str(uuid.uuid4())[:8]
     folder = {
         "id": folder_id,
@@ -5211,42 +5415,44 @@ async def api_knowledge_folders_create(request: Request):
         "color": body.get("color", "#6366f1"),
     }
     folders.append(folder)
-    _save_folders(folders)
+    _save_folders(folders, user_id=uid)
     return JSONResponse(folder)
 
 @app.put("/api/knowledge/folders/{folder_id}")
 async def api_knowledge_folders_update(folder_id: str, request: Request):
     body = await request.json()
-    folders = _load_folders()
+    uid = _get_user_id(request)
+    folders = _load_folders(user_id=uid)
     for f in folders:
         if f["id"] == folder_id:
             for key in ("name", "emoji", "color"):
                 if key in body:
                     f[key] = body[key]
-            _save_folders(folders)
+            _save_folders(folders, user_id=uid)
             return JSONResponse(f)
     return JSONResponse({"error": "Folder not found"}, 404)
 
 @app.delete("/api/knowledge/folders/{folder_id}")
-async def api_knowledge_folders_delete(folder_id: str):
-    folders = _load_folders()
+async def api_knowledge_folders_delete(folder_id: str, request: Request):
+    uid = _get_user_id(request)
+    folders = _load_folders(user_id=uid)
     target = next((f for f in folders if f["id"] == folder_id), None)
     if not target:
         return JSONResponse({"error": "Folder not found"}, 404)
     if target.get("pinned"):
         return JSONResponse({"error": "Cannot delete a pinned folder"}, 403)
     # Move notes in this folder to Uncategorized
-    idx = _load_notes_index()
+    idx = _load_notes_index(user_id=uid)
     for entry in idx:
         if entry.get("section") == folder_id:
             entry["section"] = "Uncategorized"
-            note = _load_note(entry["id"])
+            note = _load_note(entry["id"], user_id=uid)
             if note:
                 note["section"] = "Uncategorized"
-                _save_note(entry["id"], note)
-    _save_notes_index(idx)
+                _save_note(entry["id"], note, user_id=uid)
+    _save_notes_index(idx, user_id=uid)
     folders = [f for f in folders if f["id"] != folder_id]
-    _save_folders(folders)
+    _save_folders(folders, user_id=uid)
     return JSONResponse({"ok": True})
 
 
@@ -5257,6 +5463,7 @@ async def api_knowledge_folders_delete(folder_id: str):
 @app.post("/api/knowledge")
 async def api_knowledge_create(request: Request):
     body = await request.json()
+    uid = _get_user_id(request)
     note_id = str(uuid.uuid4())[:8]
     now = datetime.now(timezone.utc).isoformat()
     note = {
@@ -5267,51 +5474,54 @@ async def api_knowledge_create(request: Request):
         "section": body.get("section", "Uncategorized"),
         "created": now, "updated": now,
     }
-    _save_note(note_id, note)
-    idx = _load_notes_index()
+    _save_note(note_id, note, user_id=uid)
+    idx = _load_notes_index(user_id=uid)
     idx.append({k: note[k] for k in ("id", "title", "emoji", "preview", "section", "created", "updated")})
-    _save_notes_index(idx)
+    _save_notes_index(idx, user_id=uid)
     return note
 
 @app.put("/api/knowledge/{note_id}")
 async def api_knowledge_update(note_id: str, request: Request):
     body = await request.json()
-    note = _load_note(note_id)
+    uid = _get_user_id(request)
+    note = _load_note(note_id, user_id=uid)
     if not note:
         return JSONResponse({"error": "Not found"}, 404)
     for key in ("title", "emoji", "content_html", "preview", "section"):
         if key in body:
             note[key] = body[key]
     note["updated"] = datetime.now(timezone.utc).isoformat()
-    _save_note(note_id, note)
-    idx = _load_notes_index()
+    _save_note(note_id, note, user_id=uid)
+    idx = _load_notes_index(user_id=uid)
     for entry in idx:
         if entry["id"] == note_id:
             for key in ("title", "emoji", "preview", "section", "updated"):
                 if key in note:
                     entry[key] = note[key]
             break
-    _save_notes_index(idx)
+    _save_notes_index(idx, user_id=uid)
     return note
 
 @app.delete("/api/knowledge/{note_id}")
-async def api_knowledge_delete(note_id: str):
+async def api_knowledge_delete(note_id: str, request: Request):
+    uid = _get_user_id(request)
     now = datetime.now(timezone.utc).isoformat()
-    note = _load_note(note_id)
+    note = _load_note(note_id, user_id=uid)
     if note:
         note["trashed"] = now
-        _save_note(note_id, note)
-    idx = _load_notes_index()
+        _save_note(note_id, note, user_id=uid)
+    idx = _load_notes_index(user_id=uid)
     for entry in idx:
         if entry["id"] == note_id:
             entry["trashed"] = now
             break
-    _save_notes_index(idx)
+    _save_notes_index(idx, user_id=uid)
     return {"ok": True}
 
 @app.get("/api/knowledge/{note_id}")
-async def api_knowledge_get(note_id: str):
-    note = _load_note(note_id)
+async def api_knowledge_get(note_id: str, request: Request):
+    uid = _get_user_id(request)
+    note = _load_note(note_id, user_id=uid)
     return note if note else JSONResponse({"error": "Not found"}, 404)
 
 
@@ -5542,6 +5752,20 @@ async def api_admin_wipe_user(user_id: str, request: Request):
     if not _check_admin(request):
         return JSONResponse({"error": "Unauthorized"}, status_code=403)
     result = wipe_user_data(user_id)
+    # Also remove per-user data directory
+    import shutil
+    from web.user_data import user_root, _validate_user_id
+    try:
+        uid = _validate_user_id(user_id)
+        uroot = user_root(uid)
+        if uroot.exists():
+            shutil.rmtree(str(uroot), ignore_errors=True)
+            result["user_data_dir_removed"] = True
+    except Exception as exc:
+        result["user_data_dir_error"] = str(exc)
+    # Evict cached vault/faiss instances
+    _user_vault_stores.pop(user_id, None)
+    _user_faiss_memories.pop(user_id, None)
     return JSONResponse(result)
 
 
@@ -6580,34 +6804,43 @@ async def api_ollama_models(url: str = Query("http://orionforge-engine-ollama.fl
 # ═══════════════════════════════════════════════════════════════════
 
 @app.post("/api/settings/chat-background")
-async def api_upload_chat_background(file: UploadFile = File(...)):
+async def api_upload_chat_background(request: Request, file: UploadFile = File(...)):
     """Upload a background image for the chat page."""
+    uid = _get_user_id(request)
     allowed = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".avif"}
     ext = os.path.splitext(file.filename or "")[1].lower()
     if ext not in allowed:
         return JSONResponse({"error": f"File type {ext} not allowed"}, 400)
     filename = f"chat_bg{ext}"
-    dest = _UPLOADS_DIR / filename
+    if uid and uid != "__local__":
+        dest_dir = user_uploads_dir(uid)
+    else:
+        dest_dir = _UPLOADS_DIR
+    dest = dest_dir / filename
     content = await file.read()
     with open(dest, "wb") as f:
         f.write(content)
-    settings = _load_settings()
+    settings = _load_settings(user_id=uid)
     settings["chat_background"] = f"/uploads/{filename}"
-    _save_settings(settings)
+    _save_settings(settings, user_id=uid)
     return JSONResponse({"url": settings["chat_background"], "status": "ok"})
 
 
 @app.delete("/api/settings/chat-background")
-async def api_delete_chat_background():
+async def api_delete_chat_background(request: Request):
     """Remove the chat background image."""
-    settings = _load_settings()
+    uid = _get_user_id(request)
+    settings = _load_settings(user_id=uid)
     old_bg = settings.get("chat_background")
     if old_bg:
-        old_path = _UPLOADS_DIR / os.path.basename(old_bg)
+        if uid and uid != "__local__":
+            old_path = user_uploads_dir(uid) / os.path.basename(old_bg)
+        else:
+            old_path = _UPLOADS_DIR / os.path.basename(old_bg)
         if old_path.exists():
             old_path.unlink()
     settings["chat_background"] = None
-    _save_settings(settings)
+    _save_settings(settings, user_id=uid)
     return JSONResponse({"status": "ok"})
 
 
@@ -6615,13 +6848,14 @@ async def api_delete_chat_background():
 async def api_save_chat_defaults(request: Request):
     """Persist the user's last-selected agent, connection, and model."""
     body = await request.json()
-    settings = _load_settings()
+    uid = _get_user_id(request)
+    settings = _load_settings(user_id=uid)
     defaults = settings.get("chat_defaults", {})
     for key in ("last_agent", "last_connection", "last_model"):
         if key in body:
             defaults[key] = body[key]
     settings["chat_defaults"] = defaults
-    _save_settings(settings)
+    _save_settings(settings, user_id=uid)
     return JSONResponse({"status": "ok"})
 
 
@@ -6633,9 +6867,10 @@ async def api_save_default_agent(request: Request):
     allowed = _list_unlocked_agents(request)
     if agent and agent not in allowed:
         return JSONResponse({"error": "Agent not available"}, status_code=400)
-    settings = _load_settings()
+    uid = _get_user_id(request)
+    settings = _load_settings(user_id=uid)
     settings["default_agent"] = agent
-    _save_settings(settings)
+    _save_settings(settings, user_id=uid)
     return JSONResponse({"status": "ok"})
 
 
@@ -6643,11 +6878,12 @@ async def api_save_default_agent(request: Request):
 async def api_save_timezone(request: Request):
     """Save timezone preferences."""
     body = await request.json()
-    settings = _load_settings()
+    uid = _get_user_id(request)
+    settings = _load_settings(user_id=uid)
     settings["timezone"] = body.get("timezone", "auto")
     settings["timezone_name"] = body.get("timezone_name", None)
     settings["timezone_offset_hours"] = body.get("timezone_offset_hours", None)
-    _save_settings(settings)
+    _save_settings(settings, user_id=uid)
     return JSONResponse({"status": "ok"})
 
 
@@ -6658,9 +6894,10 @@ async def api_save_pinned_models(request: Request):
     pinned = body.get("pinned_models", [])
     if not isinstance(pinned, list):
         return JSONResponse({"error": "pinned_models must be a list"}, 400)
-    settings = _load_settings()
+    uid = _get_user_id(request)
+    settings = _load_settings(user_id=uid)
     settings["pinned_models"] = pinned[:50]  # cap at 50 favorites
-    _save_settings(settings)
+    _save_settings(settings, user_id=uid)
     return JSONResponse({"status": "ok", "pinned_models": settings["pinned_models"]})
 
 
@@ -6692,10 +6929,10 @@ async def api_save_api_keys(request: Request):
             new_keys[k] = existing.get(k, "")
     # Save to per-user encrypted store
     save_user_keys(user_id, "api_keys", new_keys)
-    # Also save to global settings (encrypted) for backward compat
-    settings = _load_settings()
+    # Also save to per-user settings for backward compat
+    settings = _load_settings(user_id=user_id)
     settings["api_keys"] = new_keys
-    _save_settings(settings)
+    _save_settings(settings, user_id=user_id)
     return JSONResponse({"status": "ok"})
 
 
@@ -6808,9 +7045,9 @@ async def api_save_image_settings(request: Request):
         if not image_keys.get(k):
             image_keys[k] = existing.get(k, "")
     save_user_keys(user_id, "image", image_keys)
-    settings = _load_settings()
+    settings = _load_settings(user_id=user_id)
     settings["image"] = image_keys
-    _save_settings(settings)
+    _save_settings(settings, user_id=user_id)
     return JSONResponse({"status": "ok"})
 
 

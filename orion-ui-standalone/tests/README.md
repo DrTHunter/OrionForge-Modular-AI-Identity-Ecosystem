@@ -1,11 +1,12 @@
 # tests/
 
-Comprehensive test suite for the OrionForge agent runtime. **276 test functions, ~4,129 assertions** across 11 test files.
+Comprehensive test suite for the OrionForge agent runtime. **295 test functions, ~4,350 assertions** across 12 test files.
 
 ## Test Files
 
 | File | Functions | Checks | What It Tests |
 |------|-----------|--------|---------------|
+| `test_multi_tenant.py` | 16 | 181 | Multi-tenant data isolation — path helpers, path traversal prevention (10+ attack vectors), directory isolation, chat CRUD isolation, settings isolation, knowledge/notes isolation, vault isolation, profile copy-on-write, prompt & soul script copy-on-write, uploads isolation, 5-user × 20-chat stress, VaultStore per-user instances, agent config isolation, admin wipe cleanup, trash isolation, 20-user massive isolation stress |
 | `test_torture.py` | 129 | ~3,188 | Deep torture of every code path — memory tool (13 actions), vault sort (8 modes, dict & object), max memory limits, utilization calc, template rendering (vault, tools, profiles, skins, about, admin_voices), boundary policy, PII guard, runtime policy, manifest system, directive parser/store/injector, tool registry, EmailTool, WebSearchTool, InboxTool, cost tracker, metering, LLM client factory, dynamic scopes, category policy, saved profiles, 6-tier model router, coding tiers, escalation chains, budget tracking, **sidecar service wiring** (SearXNG, TTS, Whisper — env-var override, URL normalization, fallback behavior, timeout config), **soul script helpers** (_load/_save round-trip, dir creation, unicode), **soul script API** (config endpoint save/update/empty/combined), **soul script FAISS indexing** (rebuild, doc_id format, agent discovery), **note collector soul script injection**, **profiles template collapsible sections** (toggleCollapse, FAISS badge, soul-script textarea), admin keys, **admin voices API & template** (save allowlist, get all voices, HTML structure, premium toggle, escHtml XSS protection), **admin user management** (list users, wipe by email, purge inactive, delete), **connections CRUD** (list, create, update, delete, Ollama URL normalization), **pricing CRUD** (get, full replace, single model update, delete, cost-summary, cost-log), chat 3-mode selector, user model catalog, `__userkey_` dynamic connections, Stripe state persistence, store catalog structure, tier & trial system, credit system, credit cost estimators, purchase flows (tool/skin/agent), agent ownership, user activity tracking, wipe user data, purge inactive, list all users, auth helpers, tier info structure, **runtime info tool** (definition, execute, diff tracking, set_context, reset, REQUIRED_FIELDS, base_url redaction), **TTS voice filter logic** (allowlist filtering, premium marking, empty allowlist passthrough), **ElevenLabs/inworld connection helpers** (_get_elevenlabs_conn, _seed_platform_keys_from_env, _resolve_connection, _get_inworld_api_key), **_check_admin helper** (admin email, non-admin, case-insensitive, empty/missing) |
 | `test_memory.py` | 23 | 155 | VaultStore CRUD, scoping, PII guard, bulk delete, versioning, resolve_latest, compact, stats, Memory dataclass, taxonomy constants, tiers & topics, tags & source, JSONL format |
 | `test_stress.py` | 29 | 238 | Rapid-fire operations, concurrent access, boundary conditions, cross-module integration, router presets, coding tier routing |
@@ -17,9 +18,9 @@ Comprehensive test suite for the OrionForge agent runtime. **276 test functions,
 | `test_storage_and_llm.py` | 14 | 45 | HTML stripping, note loading, LLMResponse dataclass |
 | `test_data_paths.py` | 5 | 31 | Canonical data directory layout, auto-creation, isolation, edge cases |
 | `test_tools.py` | 4 | 38 | EchoTool, ContinuationUpdateTool, EmailTool, RuntimePolicy |
-| `run_all.py` | — | — | Master runner — executes all suites in dependency order, consolidates results |
+| `run_all.py` | — | — | Master runner — executes all 12 suites in dependency order, consolidates results |
 
-**Total: 276 functions, ~4,129 checks across 11 test suites**
+**Total: 295 functions, ~4,350 checks across 12 test suites**
 
 ## Running Tests
 
@@ -30,6 +31,9 @@ $env:PYTHONIOENCODING="utf-8"; python tests/test_torture.py
 
 # Run ALL test suites via the master runner
 python tests/run_all.py
+
+# Run multi-tenant isolation tests
+python -m tests.test_multi_tenant
 
 # Run individual suites
 python tests/test_memory.py

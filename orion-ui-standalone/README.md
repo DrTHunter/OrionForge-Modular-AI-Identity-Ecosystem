@@ -22,8 +22,9 @@ Open **http://localhost:8989**.
 
 ```
 orion-ui-standalone/
-├── web/                # FastAPI application (~6,500 lines, 172 routes, 17 templates)
-│   ├── app.py          # Main application — all page & API routes
+├── web/                # FastAPI application (~7,500 lines, 172 routes, 17 templates)
+│   ├── app.py          # Main application — all page & API routes (multi-tenant aware)
+│   ├── user_data.py    # Per-user data isolation layer — path helpers, validation, directory builders
 │   ├── auth.py         # Supabase OAuth + JWT verification (142 lines)
 │   ├── stripe_billing.py  # Stripe subscriptions, credits, trial system (1,400 lines)
 │   ├── image_gen.py    # Image generation helper (9 providers)
@@ -77,8 +78,9 @@ orion-ui-standalone/
 ├── directives/         # Agent soul script / directive markdown files (auto-indexed into NotesFAISS)
 ├── notes/              # Developer notes per agent
 ├── scripts/            # Seed scripts (seed_memories.py, seed_ui_knowledge.py)
-├── data/               # Runtime data (chats, memory vault, FAISS indexes, uploads, knowledge notes, agent trash)
-└── tests/              # Test suite — 11 files, 279 functions, ~4,169 checks
+├── data/               # Runtime data (global templates + per-user isolated directories)
+│   └── users/          # Per-user isolated data trees (chats, memory, vault, notes, settings, profiles, uploads)
+└── tests/              # Test suite — 12 files, 295+ functions, ~4,350+ checks
 ```
 
 ---
@@ -148,6 +150,68 @@ The FastAPI app exposes 172 routes across these domains:
 
 ---
 
+## Multi-Tenant Data Isolation
+
+Every user gets a fully isolated data directory tree under `data/users/{user_id}/`. No data is shared between users except the global read-only agent templates (profiles, prompts, directives).
+
+### Per-User Directory Layout
+
+```
+data/users/{user_id}/
+├── chats/              # Chat histories & index
+│   ├── index.json
+│   └── {chat_id}.json
+├── memory/
+│   ├── vault.jsonl     # Memory vault (jsonlines)
+│   └── faiss/          # FAISS vector indexes
+├── notes/
+│   ├── index.json
+│   ├── folders.json
+│   └── {note_id}.json
+├── settings.json       # Preferences, agent configs, avatars
+├── profiles/           # Copy-on-write agent profile overrides
+├── prompts/            # Copy-on-write system prompt overrides
+├── directives/         # Copy-on-write soul script overrides
+├── uploads/            # User-uploaded images
+└── trash/
+    └── profiles/       # Soft-deleted agents (30-day retention)
+```
+
+### Architecture
+
+| Component | Mechanism |
+|---|---|
+| **Path routing** | `web/user_data.py` — 18 path helper functions, all validated with regex `^[a-zA-Z0-9_-]{1,128}$` |
+| **Path traversal prevention** | `_validate_user_id()` rejects `../`, `\`, slashes, null bytes, newlines, HTML, oversized IDs |
+| **Request scoping** | `contextvars.ContextVar` (`_current_user_id`) set by `AuthMiddleware` on each request |
+| **Data helpers** | All `_load_*` / `_save_*` helpers in `app.py` accept optional `user_id`, falling back to the contextvar |
+| **Copy-on-write** | Profiles, system prompts, and soul scripts fall back to global templates when no user override exists |
+| **Per-user instances** | FAISS indexes and VaultStore instances are cached per `user_id` — no cross-user contamination |
+| **Directory creation** | `ensure_user_dirs(user_id)` called by `AuthMiddleware` on every authenticated request |
+| **Admin wipe** | `DELETE /api/admin/users/{uid}` removes the entire user directory tree |
+
+### What's Isolated per User
+
+- Chat histories & index
+- Memory vault (jsonlines) & FAISS vector indexes
+- Knowledge notes & folders
+- Settings (preferences, agent configs, avatars, backgrounds)
+- Agent profile overrides (copy-on-write from global templates)
+- System prompt overrides
+- Soul script / directive overrides
+- Uploaded images (avatars, backgrounds)
+- Trash (soft-deleted agents)
+
+### What's Shared (Read-Only)
+
+- Global agent profiles (`profiles/*.yaml`)
+- Global system prompts (`prompts/*.system.md`)
+- Global soul scripts (`directives/*.md`)
+- Engine modules (`src/`)
+- Config files (`config/`)
+
+---
+
 ## Cloud Sidecar Services (Fly.io)
 
 Three sidecar services run on Fly.io with Flycast private IPv6 networking:
@@ -181,7 +245,7 @@ The main app discovers sidecars via environment variables (`TTS_URL`, `WHISPER_U
 
 ## Test Suite
 
-11 test files covering every engine module. Run all tests:
+12 test files covering every engine module. Run all tests:
 
 ```powershell
 cd orion-ui-standalone
@@ -194,9 +258,16 @@ Or run the torture suite:
 $env:PYTHONIOENCODING="utf-8"; python tests/test_torture.py
 ```
 
+Or run multi-tenant isolation tests:
+
+```powershell
+python -m tests.test_multi_tenant
+```
+
 | Test File | Functions | Checks | Coverage |
 |-----------|-----------|--------|----------|
 | `test_torture.py` | 132 | ~3,228 | Deep torture of all code paths — memory, vault, sort, policy, tools, templates, model router, presets, 6-tier routing, sidecar wiring, soul script helpers, soul script API, soul script FAISS indexing, note collector soul script injection, profiles template collapsible, admin keys, admin voices API & template, admin user management, connections CRUD, pricing CRUD, chat 3-mode selector, user model catalog, `__userkey_` dynamic connections, Stripe state persistence, store catalog structure, tier & trial system, credit system, credit cost estimators, purchase flows (tool/skin/agent), agent ownership, user activity tracking, wipe user data, purge inactive, list all users, auth helpers, tier info structure, runtime info tool, TTS voice filter logic, ElevenLabs/inworld connection helpers, `_check_admin` helper, AGI history disk persistence, journal popup modal, expandable loop log, VM storage paths |
+| `test_multi_tenant.py` | 16 | 181 | Multi-tenant data isolation — path helpers, path traversal prevention (10+ attack vectors), directory isolation, chat CRUD isolation, settings isolation, knowledge/notes isolation, vault isolation, profile copy-on-write, prompt & soul script copy-on-write, uploads isolation, 5-user × 20-chat stress, VaultStore per-user instances, agent config isolation, admin wipe cleanup, trash isolation, 20-user massive isolation stress |
 | `test_memory.py` | 23 | 155 | VaultStore, MemoryVault, Memory types, PII guard |
 | `test_stress.py` | 29 | 238 | Rapid-fire ops, concurrent access, boundary conditions, router presets, coding tiers |
 | `test_registry_and_tools.py` | 17 | 86 | Tool registry, cost tracker, web search |
@@ -207,7 +278,7 @@ $env:PYTHONIOENCODING="utf-8"; python tests/test_torture.py
 | `test_metering.py` | 11 | 115 | Token accounting, cost computation, aggregation, source tracking |
 | `test_data_paths.py` | 5 | 31 | Data directory layout, auto-creation, isolation |
 | `test_tools.py` | 4 | 38 | EchoTool, ContinuationUpdateTool, EmailTool, RuntimePolicy |
-| **Total** | **279** | **~4,169** | |
+| **Total** | **295** | **~4,350** | |
 
 ---
 

@@ -6,19 +6,38 @@ This directory holds all runtime-generated data for the OrionForge UI. Everythin
 
 ```
 data/
-├── chats/              # Chat session histories (JSON per session)
+├── chats/              # Legacy global chat histories (pre-multi-tenant)
 ├── memory/
-│   ├── faiss/          # FAISS index files (index.faiss, index_meta.json)
-│   └── vault.jsonl     # Memory vault — append-only JSONL of all Memory records
+│   ├── faiss/          # Global FAISS index files (NotesFAISS for soul scripts)
+│   └── vault.jsonl     # Legacy global memory vault
 ├── orion/              # Agent-specific working data
 ├── shared/
 │   ├── inbox.jsonl     # Email inbox storage (JSONL)
 │   └── inbox.md        # Inbox summary (markdown)
-├── uploads/            # User-uploaded files (chat backgrounds, attachments)
-└── user_notes/
-    ├── index.json      # Note index — maps note IDs to metadata
-    ├── folders.json    # Folder structure for the knowledge UI
-    └── *.json          # Individual note files (rich text, HTML content)
+├── uploads/            # Legacy global uploads
+├── user_notes/         # Legacy global knowledge notes
+│   ├── index.json
+│   ├── folders.json
+│   └── *.json
+└── users/              # Per-user isolated data trees (multi-tenant)
+    └── {user_id}/
+        ├── chats/              # User's chat histories & index
+        │   ├── index.json
+        │   └── {chat_id}.json
+        ├── memory/
+        │   ├── vault.jsonl     # User's memory vault
+        │   └── faiss/          # User's FAISS vector indexes
+        ├── notes/
+        │   ├── index.json
+        │   ├── folders.json
+        │   └── {note_id}.json
+        ├── settings.json       # User preferences, agent configs, avatars
+        ├── profiles/           # Copy-on-write agent profile overrides
+        ├── prompts/            # Copy-on-write system prompt overrides
+        ├── directives/         # Copy-on-write soul script overrides
+        ├── uploads/            # User-uploaded images
+        └── trash/
+            └── profiles/       # Soft-deleted agents (30-day retention)
 ```
 
 ## Key Files
@@ -31,6 +50,12 @@ data/
 | `user_notes/index.json` | JSON | Master index of all knowledge notes — title, scope, timestamps |
 | `shared/inbox.jsonl` | JSONL | Email inbox entries fetched via the Inbox tool |
 
+## Multi-Tenant Isolation
+
+All new user data lives under `data/users/{user_id}/`. Each user has their own chats, memory vault, FAISS indexes, notes, settings, profile overrides, prompt overrides, directive overrides, uploads, and trash. The global directories (`chats/`, `memory/`, `uploads/`, `user_notes/`) are legacy pre-tenant paths.
+
+Path routing is handled by `web/user_data.py` which validates user IDs and builds per-user paths. Copy-on-write means profiles, prompts, and directives fall back to the global templates (`profiles/`, `prompts/`, `directives/`) when no user override exists.
+
 ## Backup
 
-To back up all agent data, copy this entire `data/` directory. The `memory/faiss/` index can be rebuilt from `vault.jsonl` at any time.
+To back up all agent data, copy this entire `data/` directory. The `memory/faiss/` index can be rebuilt from `vault.jsonl` at any time. Per-user data lives under `data/users/` — back up this directory to preserve all tenant data.

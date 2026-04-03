@@ -14,7 +14,8 @@ python -m uvicorn web.app:app --host 0.0.0.0 --port 8989 --reload
 
 | File | Purpose |
 |------|---------|
-| `app.py` | FastAPI application — all routes, helpers, and API endpoints (172 routes, ~6,500 lines) |
+| `app.py` | FastAPI application — all routes, helpers, and API endpoints (172 routes, ~7,500 lines, multi-tenant aware) |
+| `user_data.py` | Per-user data isolation layer — path helpers, user_id validation, directory builders, copy-on-write support (152 lines) |
 | `auth.py` | Supabase OAuth + JWT verification — JWKS validation, session middleware, path whitelist (142 lines) |
 | `stripe_billing.py` | Stripe subscription system — checkout, webhooks, credits, trial management, tier gating (1,400 lines) |
 | `image_gen.py` | Image generation helper (9 providers: OpenAI DALL-E/GPT Image, Google Imagen, Stability, Ideogram, Replicate, FAL, Leonardo, Midjourney) |
@@ -244,6 +245,18 @@ python -m uvicorn web.app:app --host 0.0.0.0 --port 8989 --reload
 | `POST /api/admin/users/purge-inactive` | Purge inactive users |
 | `GET /api/admin/voices/all` | List all ElevenLabs voices |
 | `PUT /api/admin/voices/allowed` | Save voice allowlist |
+
+## Multi-Tenant Data Isolation
+
+All user data is fully isolated via `user_data.py`. Each authenticated user gets a private directory tree under `data/users/{user_id}/` containing their chats, memory vault, FAISS indexes, notes, settings, profiles, prompts, directives, uploads, and trash.
+
+| Component | Mechanism |
+|---|---|
+| **Path routing** | `user_data.py` — 18 validated path helpers, regex-enforced `user_id` |
+| **Request scoping** | `contextvars.ContextVar` set by `AuthMiddleware` on each request |
+| **Data helpers** | All `_load_*`/`_save_*` helpers accept optional `user_id`, fall back to contextvar |
+| **Copy-on-write** | Profiles, prompts, and directives fall back to global templates when no per-user override exists |
+| **Per-user instances** | FAISS indexes and VaultStore instances cached per `user_id` |
 
 ## Startup Behavior
 
