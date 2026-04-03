@@ -14,7 +14,8 @@ python -m uvicorn web.app:app --host 0.0.0.0 --port 8989 --reload
 
 | File | Purpose |
 |------|---------|
-| `app.py` | FastAPI application — all routes, helpers, and API endpoints (172 routes, ~6,500 lines) |
+| `app.py` | FastAPI application — all routes, helpers, and API endpoints (172 routes, ~7,500 lines, multi-tenant aware) |
+| `user_data.py` | Per-user data isolation layer — path helpers, user_id validation, directory builders, copy-on-write support (152 lines) |
 | `auth.py` | Supabase OAuth + JWT verification — JWKS validation, session middleware, path whitelist (142 lines) |
 | `stripe_billing.py` | Stripe subscription system — checkout, webhooks, credits, trial management, tier gating (1,400 lines) |
 | `image_gen.py` | Image generation helper (9 providers: OpenAI DALL-E/GPT Image, Google Imagen, Stability, Ideogram, Replicate, FAL, Leonardo, Midjourney) |
@@ -258,3 +259,12 @@ On startup, the app rebuilds the NotesFAISS index and initializes a lazy `FAISSM
 | faster-whisper | Speech-to-text | `http://localhost:8060` | `WHISPER_URL` env var → `.flycast` |
 
 Environment variables (`TTS_URL`, `WHISPER_URL`, `SEARXNG_URL`) take priority over `connections.json` entries.
+
+## Multi-Tenant Data Isolation
+
+The app is fully multi-tenant. `user_data.py` provides 18 path helpers that route all data reads/writes through `data/users/{user_id}/`. Every authenticated request sets the active user via `contextvars`, and all endpoints — chats, vault, knowledge, settings, profiles, uploads, trash — operate on the per-user tree.
+
+Key behaviors:
+- **Path validation** — user IDs are regex-validated; directory traversal attempts are blocked
+- **Copy-on-write** — profiles, prompts, and directives fall back to global templates until customized
+- **Per-user VaultStore** — each user gets an isolated memory vault and FAISS index

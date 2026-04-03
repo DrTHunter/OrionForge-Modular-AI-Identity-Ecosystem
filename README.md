@@ -84,6 +84,35 @@ Agents can also **save memories** during conversation using `[MEMORY_SAVE: ...]`
 
 ---
 
+## Multi-Tenant Data Isolation
+
+Every authenticated user gets a **fully isolated data tree** under `data/users/{user_id}/`:
+
+```
+data/users/{user_id}/
+├── chats/          # Chat histories & index
+├── memory/
+│   ├── vault.jsonl # User's memory vault
+│   └── faiss/      # User's FAISS vector indexes
+├── notes/          # Knowledge notes
+├── settings.json   # Preferences, agent configs, avatars
+├── profiles/       # Copy-on-write agent profile overrides
+├── prompts/        # Copy-on-write system prompt overrides
+├── directives/     # Copy-on-write soul script overrides
+├── uploads/        # User-uploaded images
+└── trash/          # Soft-deleted agents (30-day retention)
+```
+
+**Key design points:**
+
+- **Path validation** — regex-validated user IDs (`^[A-Za-z0-9_-]{1,128}$`), path traversal blocked
+- **Copy-on-write** — agents, prompts, and directives fall back to global templates until the user customizes them
+- **Context-variable scoping** — `contextvars` provides the active user ID to all request handlers
+- **Per-user VaultStore** — each user gets their own memory vault and FAISS index
+- The `web/user_data.py` module provides 18 path helpers for all isolated data paths
+
+---
+
 ## Project Structure
 
 OrionForge is organized into four directories — an active development branch, a stable frozen core, a production deployment build, and cloud sidecar services:
@@ -91,8 +120,9 @@ OrionForge is organized into four directories — an active development branch, 
 ```
 OrionForge/
 ├── orion-ui-standalone/  # 🔧 Active Development Branch
-│   ├── web/              # FastAPI app (~6,500 lines, 172 routes, 17 templates)
-│   │   ├── app.py        # Main application — all page & API routes
+│   ├── web/              # FastAPI app (~7,500 lines, 172 routes, 17 templates)
+│   │   ├── app.py        # Main application — all page & API routes (multi-tenant aware)
+│   │   ├── user_data.py  # Per-user data isolation — path helpers, validation, copy-on-write (152 lines)
 │   │   ├── auth.py       # Supabase OAuth + JWT verification (142 lines)
 │   │   ├── stripe_billing.py  # Stripe subscriptions, credits, trial (1,400 lines)
 │   │   ├── image_gen.py  # Image generation (9 providers)
@@ -109,13 +139,13 @@ OrionForge/
 │   │   ├── routing/      # 6-tier model router, budget tracking, escalation chains
 │   │   └── tools/        # 11 tool implementations + registry
 │   ├── config/           # 12 config files (connections, pricing, memory profile, auth, etc.)
-│   ├── data/             # Runtime data (chats, memory vault, FAISS indexes, uploads, trash)
+│   ├── data/             # Runtime data (chats, memory vault, FAISS indexes, uploads, trash, users/)
 │   ├── profiles/         # Agent identity YAML files (16 agents)
 │   ├── prompts/          # System prompt markdown (*.system.md)
 │   ├── directives/       # Agent soul script / directive markdown files
 │   ├── notes/            # Agent note markdown files
 │   ├── scripts/          # Seed scripts (seed_memories.py, seed_ui_knowledge.py)
-│   └── tests/            # Test suite (11 files, 276 functions, ~4,129 checks)
+│   └── tests/            # Test suite (12 files, 295 functions, ~4,350 checks)
 │
 ├── engine/               # ⚙️  Stable Frozen Core
 │   └── src/              # Synced from orion-ui-standalone after testing
@@ -173,7 +203,7 @@ OrionForge uses **Supabase OAuth** for authentication and **Stripe** for billing
 | **Login** | Supabase OAuth (Google, GitHub, email) via `/login` |
 | **JWT verification** | `auth.py` — JWKS-based token validation, session middleware |
 | **Subscription** | $9.99/month Pro plan via Stripe Checkout (`/plans`) |
-| **5-day trial** | Free trial on first sign-up, auto-expires. Trial state persisted across deploys via Fly.io volume |
+| **15-day trial** | Free trial on first sign-up, auto-expires. Trial state persisted across deploys via Fly.io volume |
 | **Credit system** | Buy credit packs in the store (`/store`) — spend on tools and LLM usage |
 | **LLM markup** | Platform-hosted LLM calls billed at 2× base cost, deducted from credits |
 | **TTS/STT billing** | Per-use billing for platform-hosted voice services (2× markup) |
@@ -296,7 +326,7 @@ Sidecar services communicate via Flycast private networking (`.flycast` URLs). T
 
 ## Test Suite
 
-11 test files with **276** test functions and **~4,129** assertions:
+12 test files with **295** test functions and **~4,350** assertions:
 
 ```powershell
 cd orion-ui-standalone
@@ -305,6 +335,7 @@ python tests/run_all.py
 
 | Test File | Functions | Checks | Coverage Area |
 |---|---|---|---|
+| `test_multi_tenant.py` | 16 | 181 | Multi-tenant data isolation — path helpers, path traversal prevention (10+ attack vectors), directory isolation, chat/settings/knowledge/vault isolation, profile/prompt/soul script copy-on-write, uploads isolation, 5-user × 20-chat stress, VaultStore per-user instances, admin wipe cleanup, trash isolation, 20-user massive isolation stress |
 | `test_torture.py` | 129 | ~3,188 | Deep torture of all code paths — memory, vault, sort, policy, tools, templates, model router, presets, 6-tier routing, sidecar wiring, soul script helpers, soul script API, soul script FAISS indexing, note collector soul script injection, profiles template collapsible sections, admin keys, admin voices API & template, admin user management, connections CRUD, pricing CRUD, chat 3-mode selector, user model catalog, `__userkey_` dynamic connections, Stripe state persistence, store catalog structure, tier & trial system, credit system, credit cost estimators, purchase flows (tool/skin/agent), agent ownership, user activity tracking, wipe user data, purge inactive, list all users, auth helpers, tier info structure, runtime info tool, TTS voice filter logic, ElevenLabs/inworld connection helpers, `_check_admin` helper, metering source filtering (platform/user), CostTrackerTool source tabs, FAISS scaling |
 | `test_memory.py` | 23 | 155 | VaultStore, MemoryVault, Memory types, PII guard |
 | `test_stress.py` | 29 | 238 | Rapid-fire ops, concurrent access, boundary conditions, router presets, coding tiers |
@@ -316,7 +347,7 @@ python tests/run_all.py
 | `test_metering.py` | 11 | 115 | Token accounting, cost computation, aggregation, source tracking |
 | `test_data_paths.py` | 5 | 31 | Data directory layout, auto-creation, isolation |
 | `test_tools.py` | 4 | 38 | EchoTool, ContinuationUpdateTool, EmailTool, RuntimePolicy |
-| **Total** | **276** | **~4,129** | |
+| **Total** | **295** | **~4,350** | |
 
 ---
 

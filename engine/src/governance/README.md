@@ -55,4 +55,4 @@ ChangeLog.append()  (optional — for governance-critical changes)
 
 ## Tests
 
-See `tests/test_governance.py` — 127 checks covering all modules and integration points.
+See `tests/test_governance.py` — 74 checks covering all modules and integration points.
