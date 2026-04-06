@@ -52,6 +52,9 @@ GLOBAL_DIRECTIVES_DIR = _PROJECT_ROOT / "directives"
 # Seed vault — canonical default memories copied into every new user vault
 SEED_VAULT_PATH = _DATA_DIR / "memory" / "seed_vault.jsonl"
 
+# Seed chats — example conversations copied into every new user's chat list
+SEED_CHATS_DIR = _DATA_DIR / "chats" / "seed"
+
 # Regex: Supabase UUIDs or short IDs.  Block path traversal.
 _SAFE_ID = re.compile(r"^[a-zA-Z0-9_-]{1,128}$")
 
@@ -183,4 +186,49 @@ def seed_user_vault(user_id: str) -> bool:
         return True
     except Exception as exc:
         log.warning("[seed] Failed to seed vault for %s: %s", user_id[:8], exc)
+        return False
+
+
+def seed_user_chats(user_id: str) -> bool:
+    """Copy seed chats into a new user's chat directory.
+
+    The seed directory (``data/chats/seed/``) contains an index.json
+    and individual chat JSON files that serve as example conversations
+    for new users.
+
+    Returns True if seeding was performed, False if skipped.
+    """
+    chats_dir = user_chats_dir(user_id)
+    index_path = chats_dir / "index.json"
+
+    # Skip if user already has a chat index with content
+    if index_path.exists() and index_path.stat().st_size > 0:
+        try:
+            existing = json.loads(index_path.read_text(encoding="utf-8"))
+            if existing.get("chats"):
+                return False
+        except Exception:
+            pass
+
+    seed_index = SEED_CHATS_DIR / "index.json"
+    if not seed_index.exists():
+        log.warning("[seed] Seed chats index not found at %s — skipping", seed_index)
+        return False
+
+    try:
+        # Copy index
+        shutil.copy2(seed_index, index_path)
+
+        # Copy each chat file referenced in the seed index
+        seed_data = json.loads(seed_index.read_text(encoding="utf-8"))
+        for chat in seed_data.get("chats", []):
+            chat_file = SEED_CHATS_DIR / f"{chat['id']}.json"
+            if chat_file.exists():
+                shutil.copy2(chat_file, chats_dir / chat_file.name)
+
+        log.info("[seed] Seeded chats for user %s (%d chats)",
+                 user_id[:8], len(seed_data.get("chats", [])))
+        return True
+    except Exception as exc:
+        log.warning("[seed] Failed to seed chats for %s: %s", user_id[:8], exc)
         return False

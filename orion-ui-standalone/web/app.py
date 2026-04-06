@@ -71,7 +71,7 @@ from web.key_vault import (
     delete_user_keys, mask_value,
 )
 from web.user_data import (
-    ensure_user_dirs, seed_user_vault,
+    ensure_user_dirs, seed_user_vault, seed_user_chats,
     user_chats_dir, user_memory_dir, user_faiss_dir, user_vault_path,
     user_notes_dir, user_settings_path, user_profiles_dir,
     user_prompts_dir, user_directives_dir, user_uploads_dir,
@@ -247,6 +247,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
             try:
                 ensure_user_dirs(user_id)
                 seed_user_vault(user_id)
+                seed_user_chats(user_id)
             except Exception as exc:
                 log.warning("[auth] Failed to create user dirs for %s: %s", user_id, exc)
 
