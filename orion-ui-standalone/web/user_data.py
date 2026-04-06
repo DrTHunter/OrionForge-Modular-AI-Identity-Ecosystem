@@ -34,6 +34,7 @@ import json
 import logging
 import os
 import re
+import shutil
 from pathlib import Path
 
 log = logging.getLogger("soulscript.user_data")
@@ -47,6 +48,9 @@ _USERS_DIR = _DATA_DIR / "users"
 GLOBAL_PROFILES_DIR = _PROJECT_ROOT / "profiles"
 GLOBAL_PROMPTS_DIR = _PROJECT_ROOT / "prompts"
 GLOBAL_DIRECTIVES_DIR = _PROJECT_ROOT / "directives"
+
+# Seed vault — canonical default memories copied into every new user vault
+SEED_VAULT_PATH = _DATA_DIR / "memory" / "seed_vault.jsonl"
 
 # Regex: Supabase UUIDs or short IDs.  Block path traversal.
 _SAFE_ID = re.compile(r"^[a-zA-Z0-9_-]{1,128}$")
@@ -149,3 +153,34 @@ def ensure_user_dirs(user_id: str) -> Path:
                 "trash/profiles"):
         (root / sub).mkdir(parents=True, exist_ok=True)
     return root
+
+
+def seed_user_vault(user_id: str) -> bool:
+    """Copy seed memories into a new user's vault if it is empty.
+
+    The seed file (``data/memory/seed_vault.jsonl``) contains the
+    canonical set of platform/operator memories that every user
+    should start with.  This is a byte-level copy — IDs and
+    timestamps are preserved so all users share the same baseline.
+
+    Returns True if seeding was performed, False if skipped (vault
+    already has content or no seed file exists).
+    """
+    vault = user_vault_path(user_id)
+
+    # Skip if vault already has content (not a new user)
+    if vault.exists() and vault.stat().st_size > 0:
+        return False
+
+    if not SEED_VAULT_PATH.exists():
+        log.warning("[seed] Seed vault not found at %s — skipping", SEED_VAULT_PATH)
+        return False
+
+    try:
+        shutil.copy2(SEED_VAULT_PATH, vault)
+        log.info("[seed] Seeded vault for user %s with %s",
+                 user_id[:8], SEED_VAULT_PATH.name)
+        return True
+    except Exception as exc:
+        log.warning("[seed] Failed to seed vault for %s: %s", user_id[:8], exc)
+        return False
