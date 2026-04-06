@@ -364,8 +364,9 @@ def handle_webhook_event(payload: bytes, sig_header: str) -> dict:
 # Web Search & Image Generation are FREE and don't appear here.
 TOOL_CREDIT_COSTS = {}
 
-# Credit packs users can purchase ($10, $20, $30)
+# Credit packs users can purchase ($5, $10, $20, $30)
 CREDIT_PACKS = {
+    "pack_5":   {"credits": 500,   "price":  5.00, "label": "500 credits",    "price_label": "$5",   "bonus": ""},
     "pack_10":  {"credits": 1000,  "price": 10.00, "label": "1,000 credits",  "price_label": "$10",  "bonus": ""},
     "pack_20":  {"credits": 2100,  "price": 20.00, "label": "2,100 credits",  "price_label": "$20",  "bonus": "+100 bonus"},
     "pack_30":  {"credits": 3200,  "price": 30.00, "label": "3,200 credits",  "price_label": "$30",  "bonus": "+200 bonus"},
