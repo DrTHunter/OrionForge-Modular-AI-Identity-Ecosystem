@@ -111,6 +111,15 @@ data/users/{user_id}/
 - **Per-user VaultStore** — each user gets their own memory vault and FAISS index
 - The `web/user_data.py` module provides 18 path helpers for all isolated data paths
 
+### New User Seeding
+
+Every new user is automatically seeded on first login with:
+
+- **66 platform knowledge memories** — 25 essential platform memories (identity, soul scripts, memory system, tools, agent architecture, LLM connections, store/pricing, voice/image, creator context, behavioral rules) + 41 UI knowledge memories (dashboard pages, API endpoints, FAISS architecture, PII guard). Source: `scripts/seed_essential_knowledge.py` + `scripts/seed_ui_knowledge.py`, bundled as `data/memory/seed_vault.jsonl`.
+- **Example chat** — "Morning Greetings with K_os" (3-turn conversation demonstrating agent personality and autonomous loop discussion). Bundled in `data/chats/seed/`.
+
+Seeding is idempotent — it only runs if the user's vault and chat index are empty. Seed assets are synced to the Fly.io persistent volume on every deploy via `boot.sh`.
+
 ---
 
 ## Project Structure
@@ -144,7 +153,7 @@ OrionForge/
 │   ├── prompts/          # System prompt markdown (*.system.md)
 │   ├── directives/       # Agent soul script / directive markdown files
 │   ├── notes/            # Agent note markdown files
-│   ├── scripts/          # Seed scripts (seed_memories.py, seed_ui_knowledge.py)
+│   ├── scripts/          # Seed scripts (seed_essential_knowledge.py, seed_ui_knowledge.py, seed_memories.py)
 │   └── tests/            # Test suite (12 files, 295 functions, ~4,350 checks)
 │
 ├── engine/               # ⚙️  Stable Frozen Core
@@ -203,8 +212,8 @@ OrionForge uses **Supabase OAuth** for authentication and **Stripe** for billing
 | **Login** | Supabase OAuth (Google, GitHub, email) via `/login` |
 | **JWT verification** | `auth.py` — JWKS-based token validation, session middleware |
 | **Subscription** | $9.99/month Pro plan via Stripe Checkout (`/plans`) |
-| **15-day trial** | Free trial on first sign-up, auto-expires. Trial state persisted across deploys via Fly.io volume |
-| **Credit system** | Buy credit packs in the store (`/store`) — spend on tools and LLM usage |
+| **5-day trial** | Free trial on first sign-up, auto-expires. Trial state persisted across deploys via Fly.io volume |
+| **Credit system** | Buy credit packs ($5 / $10 / $20 / $30) in the store (`/store`) — spend on tools and LLM usage |
 | **LLM markup** | Platform-hosted LLM calls billed at 2× base cost, deducted from credits |
 | **TTS/STT billing** | Per-use billing for platform-hosted voice services (2× markup) |
 | **One-time tool purchases** | Buy individual tool access from the store |
