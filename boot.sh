@@ -59,6 +59,11 @@ if [ -d "$BUNDLED_MEMORY" ]; then
     else
         echo "[boot] Persistent vault exists — preserving user memories."
     fi
+    # Always sync seed_vault.jsonl so new-user seeding picks up updates
+    if [ -f "$BUNDLED_MEMORY/seed_vault.jsonl" ]; then
+        cp -a "$BUNDLED_MEMORY/seed_vault.jsonl" "$PERSIST_MEMORY/seed_vault.jsonl"
+        echo "[boot] Synced seed_vault.jsonl to persistent volume."
+    fi
 fi
 
 # 6. Remove the real memory dir (or old symlink) and point to persistent volume
@@ -177,6 +182,14 @@ elif [ -d "$APP_CHATS" ]; then
     rm -rf "$APP_CHATS"
 fi
 ln -sfn "$PERSIST_CHATS" "$APP_CHATS"
+
+# Always sync seed chats directory so new-user seeding picks up updates
+BUNDLED_CHATS_SEED="/app/_bundled_chats_seed"
+if [ -d "$BUNDLED_CHATS_SEED" ]; then
+    mkdir -p "$PERSIST_CHATS/seed"
+    cp -a "$BUNDLED_CHATS_SEED"/* "$PERSIST_CHATS/seed/" 2>/dev/null || true
+    echo "[boot] Synced seed chats to persistent volume."
+fi
 
 echo "[boot] Chat history linked to persistent volume."
 
