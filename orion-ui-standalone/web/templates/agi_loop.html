@@ -1855,8 +1855,13 @@ function _initAGILoop() {
 /* ═══════════════════════════════════════════════════════════════════ */
 
 let _journalEntries = [];
-let _jnlSelectedSet = new Set();   // indices into the *filtered-reversed* array
+let _jnlSelectedSet = new Set();   // stable entry keys
 let _jnlLastClickIdx = null;       // for shift-click range select
+let _jnlExpandedSet = new Set();   // stable entry keys currently expanded inline
+
+function _jnlEntryKey(entry) {
+  return (entry.ts || '') + '|' + (entry.loop || '') + '|' + (entry.tick || '');
+}
 
 async function journalRefresh() {
   try {
@@ -1900,28 +1905,36 @@ function _jnlUpdateSelectionUI() {
     countEl.style.display = 'none';
     btnEl.style.display = 'none';
   }
+  const _selReversed = _jnlGetFiltered();
   document.querySelectorAll('.jnl-row').forEach(r => {
     const idx = parseInt(r.dataset.jnlIdx, 10);
-    r.classList.toggle('multi-selected', _jnlSelectedSet.has(idx));
+    const ent = _selReversed[idx];
+    r.classList.toggle('multi-selected', ent && _jnlSelectedSet.has(_jnlEntryKey(ent)));
   });
 }
 
 function jnlHandleClick(e, revIdx) {
+  const reversed = _jnlGetFiltered();
+  const entry = reversed[revIdx];
+  if (!entry) return;
+  const key = _jnlEntryKey(entry);
   const isCtrl = e.ctrlKey || e.metaKey;
   const isShift = e.shiftKey;
 
   if (isCtrl) {
     // Toggle individual selection
-    if (_jnlSelectedSet.has(revIdx)) {
-      _jnlSelectedSet.delete(revIdx);
+    if (_jnlSelectedSet.has(key)) {
+      _jnlSelectedSet.delete(key);
     } else {
-      _jnlSelectedSet.add(revIdx);
+      _jnlSelectedSet.add(key);
     }
     _jnlLastClickIdx = revIdx;
     _jnlUpdateSelectionUI();
     // If exactly one selected, show detail
     if (_jnlSelectedSet.size === 1) {
-      jnlShowDetail([..._jnlSelectedSet][0]);
+      const selKey = [..._jnlSelectedSet][0];
+      const selIdx = reversed.findIndex(e => _jnlEntryKey(e) === selKey);
+      if (selIdx >= 0) jnlShowDetail(selIdx);
     } else if (_jnlSelectedSet.size > 1) {
       jnlShowMultiDetail();
     }
@@ -1933,7 +1946,7 @@ function jnlHandleClick(e, revIdx) {
     const lo = Math.min(_jnlLastClickIdx, revIdx);
     const hi = Math.max(_jnlLastClickIdx, revIdx);
     for (let i = lo; i <= hi; i++) {
-      _jnlSelectedSet.add(i);
+      if (reversed[i]) _jnlSelectedSet.add(_jnlEntryKey(reversed[i]));
     }
     _jnlUpdateSelectionUI();
     if (_jnlSelectedSet.size > 1) {
@@ -1950,6 +1963,11 @@ function jnlHandleClick(e, revIdx) {
   const row = document.querySelector(`[data-jnl-idx="${revIdx}"]`);
   if (row) {
     row.classList.toggle('expanded');
+    if (row.classList.contains('expanded')) {
+      _jnlExpandedSet.add(key);
+    } else {
+      _jnlExpandedSet.delete(key);
+    }
   }
 }
 
@@ -1971,8 +1989,10 @@ function journalRender() {
   const costEl = document.getElementById('jnl-stat-cost');
   if (costEl) costEl.textContent = '$' + _journalEntries.reduce((s, e) => s + (e.cost || 0), 0).toFixed(4);
 
-  // Prune stale selections
-  _jnlSelectedSet.forEach(idx => { if (idx >= reversed.length) _jnlSelectedSet.delete(idx); });
+  // Prune stale selections and expansions by key
+  const _validKeys = new Set(reversed.map(e => _jnlEntryKey(e)));
+  _jnlSelectedSet.forEach(k => { if (!_validKeys.has(k)) _jnlSelectedSet.delete(k); });
+  _jnlExpandedSet.forEach(k => { if (!_validKeys.has(k)) _jnlExpandedSet.delete(k); });
   _jnlUpdateSelectionUI();
 
   if (!reversed.length) {
@@ -1995,7 +2015,9 @@ function journalRender() {
     const narrative = entry.narrative || '(no narrative)';
     const preview = tools.length ? ('Used ' + tools.join(', ')) : (entry.model || '—');
     const isErr = entry.had_error;
-    const isSelected = _jnlSelectedSet.has(i);
+    const _entryKey = _jnlEntryKey(entry);
+    const isSelected = _jnlSelectedSet.has(_entryKey);
+    const isExpanded = _jnlExpandedSet.has(_entryKey);
 
     // Build full expanded content from full_response/full_error + tool_calls
     const fullResp = entry.full_response || entry.narrative || '';
@@ -2010,7 +2032,7 @@ function journalRender() {
     const expandContent = expandParts.join('\n\n') || narrative;
 
     return `
-      <div class="jnl-row ${isErr ? 'has-error' : ''} ${isSelected ? 'multi-selected' : ''}" onclick="jnlHandleClick(event, ${i})" data-jnl-idx="${i}">
+      <div class="jnl-row ${isErr ? 'has-error' : ''} ${isSelected ? 'multi-selected' : ''} ${isExpanded ? 'expanded' : ''}" onclick="jnlHandleClick(event, ${i})" data-jnl-idx="${i}">
         <div class="jnl-select-indicator">${isSelected ? '✓' : ''}</div>
         <div class="jnl-row-icon ${isErr ? 'err' : 'ok'}">${isErr ? '&#9888;' : loopTick.replace(/^L/, '').charAt(0)}</div>
         <div class="jnl-row-body">
@@ -2065,8 +2087,7 @@ function jnlShowDetail(revIdx) {
 /* Show combined detail for multiple selected entries */
 function jnlShowMultiDetail() {
   const reversed = _jnlGetFiltered();
-  const selected = [..._jnlSelectedSet].sort((a, b) => a - b);
-  const entries = selected.map(i => reversed[i]).filter(Boolean);
+  const entries = reversed.filter(e => _jnlSelectedSet.has(_jnlEntryKey(e)));
   if (!entries.length) return;
 
   const card = document.getElementById('jnl-detail-card');
@@ -2116,6 +2137,7 @@ async function journalClear() {
     if (data.ok) {
       _journalEntries = [];
       _jnlSelectedSet.clear();
+      _jnlExpandedSet.clear();
       _jnlLastClickIdx = null;
       journalRender();
       jnlCloseDetail();
