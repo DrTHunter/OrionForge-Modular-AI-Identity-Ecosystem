@@ -46,6 +46,7 @@ from pydantic import BaseModel
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from web.image_gen import _generate_image
+from web.video_gen import _generate_video
 from web.auth import get_auth_config, verify_supabase_token, extract_user_from_token, is_public_path
 from web.stripe_billing import (
     get_user_tier, get_user_subscription, user_has_feature,
@@ -306,6 +307,8 @@ app.add_middleware(CSRFMiddleware)
 # ── Uploads directory (chat backgrounds, etc.) ──────────────────
 _UPLOADS_DIR = _DATA_DIR / "uploads"
 _UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+_VIDEO_UPLOADS_DIR = _UPLOADS_DIR / "videos"
+_VIDEO_UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=str(_UPLOADS_DIR)), name="uploads")
 
 
@@ -1493,6 +1496,30 @@ def _build_chat_messages(agent: str, messages: list[dict]) -> tuple[list[dict], 
             "You may include exactly ONE [IMAGE_GEN: ...] tag per response. "
             "Place it after your introductory text. The system will generate the image "
             "and display it inline in the chat. The tag itself will be hidden from the user."
+        )
+
+    # ── Video generation instruction (only if a provider is configured) ──
+    vid_cfg = _load_settings().get("video", {})
+    vid_preferred = vid_cfg.get("preferred", "none")
+    if vid_preferred and vid_preferred != "none":
+        _VID_MODEL_LABELS = {
+            "google_veo2":  "Google Veo 2",
+            "google_veo3":  "Google Veo 3",
+            "google_veo31": "Google Veo 3.1",
+        }
+        vid_model_label = _VID_MODEL_LABELS.get(vid_preferred, vid_preferred)
+        system_prompt += (
+            f"\n\n## Video Generation\n\n"
+            f"You can generate videos using {vid_model_label}. When the user asks you to "
+            "create, generate, make, or produce a video, include a video generation tag "
+            "in your response like this:\n\n"
+            "```\n[VIDEO_GEN: A cinematic aerial shot of a glowing city at night with light trails]\n```\n\n"
+            "Write a rich, detailed prompt inside the tag — describe the subject, action, "
+            "style, camera motion, and mood. You may include exactly ONE [VIDEO_GEN: ...] "
+            "tag per response. Place it after your introductory text. The system will "
+            "generate the video and display it inline in the chat. "
+            "The tag itself will be hidden from the user. "
+            "Video generation takes 1–3 minutes; let the user know to expect a wait."
         )
 
     # ── 5. Conversation history (truncated to budget) ──
@@ -4279,6 +4306,31 @@ async def api_chat_send(req: ChatRequest, request: Request):
             log.warning("[image-gen] Image generation failed: %s", exc)
             response_text += f"\n\n*Image generation failed: {exc}*"
 
+    # ── Video generation: detect [VIDEO_GEN: ...] tag ──
+    generated_video = None
+    vid_match = re.search(r'\[VIDEO_GEN:\s*(.+?)\]', response_text, re.DOTALL)
+    if vid_match:
+        vid_prompt = vid_match.group(1).strip()
+        response_text = response_text[:vid_match.start()] + response_text[vid_match.end():]
+        response_text = response_text.strip()
+        try:
+            settings = _load_settings()
+            vid_cfg = settings.get("video", {})
+            vid_provider = vid_cfg.get("preferred", "none")
+            if vid_provider and vid_provider != "none":
+                result = await _generate_video(
+                    vid_provider, vid_prompt, vid_cfg, settings,
+                    save_dir=_VIDEO_UPLOADS_DIR,
+                )
+                if "error" not in result:
+                    generated_video = {**result, "prompt": vid_prompt}
+                else:
+                    log.warning("[video-gen] %s", result["error"])
+                    response_text += f"\n\n*Video generation failed: {result['error']}*"
+        except Exception as exc:
+            log.warning("[video-gen] Video generation failed: %s", exc)
+            response_text += f"\n\n*Video generation failed: {exc}*"
+
     # Add tool layer to metadata
     _tier_label = getattr(_router_decision, "tier_name", None) if _router_decision else None
     layers["tools"]["calls"] = tool_call_log
@@ -4297,6 +4349,7 @@ async def api_chat_send(req: ChatRequest, request: Request):
             "usage": total_usage, "cost": cost_data,
             "tool_calls": tool_call_log,
             "generated_image": generated_image,
+            "generated_video": generated_video,
             "task_type": task_type,
             "router_tier": _tier_label,
         },
@@ -4334,6 +4387,7 @@ async def api_chat_send(req: ChatRequest, request: Request):
         "saved_memories": saved_memories,
         "tool_calls": tool_call_log,
         "generated_image": generated_image,
+        "generated_video": generated_video,
         "task_type": task_type,
         "router_tier": _tier_label,
         "credits": _credit_info,
@@ -4724,6 +4778,29 @@ async def _stream_chat_generator(req: ChatRequest, request: Request, user, conn,
         except Exception:
             pass
 
+    # Video generation
+    generated_video = None
+    vid_match = re.search(r'\[VIDEO_GEN:\s*(.+?)\]', response_text, re.DOTALL)
+    if vid_match:
+        vid_prompt = vid_match.group(1).strip()
+        response_text = response_text[:vid_match.start()] + response_text[vid_match.end():]
+        response_text = response_text.strip()
+        try:
+            settings = _load_settings()
+            vid_cfg = settings.get("video", {})
+            vid_provider = vid_cfg.get("preferred", "none")
+            if vid_provider and vid_provider != "none":
+                result = await _generate_video(
+                    vid_provider, vid_prompt, vid_cfg, settings,
+                    save_dir=_VIDEO_UPLOADS_DIR,
+                )
+                if "error" not in result:
+                    generated_video = {**result, "prompt": vid_prompt}
+                else:
+                    log.warning("[video-gen] %s", result["error"])
+        except Exception as exc:
+            log.warning("[video-gen] Streaming video gen failed: %s", exc)
+
     # Build layers metadata
     layers["tools"]["calls"] = tool_call_log
     _tier_label = getattr(_router_decision, "tier_name", None) if _router_decision else None
@@ -4743,6 +4820,7 @@ async def _stream_chat_generator(req: ChatRequest, request: Request, user, conn,
             "usage": total_usage, "cost": cost_data,
             "tool_calls": tool_call_log,
             "generated_image": generated_image,
+            "generated_video": generated_video,
             "task_type": task_type,
         },
         "layers": layers,
@@ -4783,6 +4861,7 @@ async def _stream_chat_generator(req: ChatRequest, request: Request, user, conn,
         "saved_memories": saved_memories,
         "tool_calls": tool_call_log,
         "generated_image": generated_image,
+        "generated_video": generated_video,
         "task_type": task_type,
         "credits": _credit_info,
     })
@@ -7086,6 +7165,80 @@ async def api_image_generate(request: Request):
         return JSONResponse({"error": "No image provider configured. Set one in Settings → Image Generation."}, 400)
 
     result = await _generate_image(provider, prompt, img_cfg, settings)
+    if "error" in result:
+        return JSONResponse(result, 502)
+    return JSONResponse(result)
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  VIDEO GENERATION SETTINGS & API
+# ═══════════════════════════════════════════════════════════════════
+
+@app.put("/api/settings/video")
+async def api_save_video_settings(request: Request):
+    """Save video-generation provider keys and preferred model."""
+    body = await request.json()
+    user_id = _get_user_id(request)
+    from web.key_vault import _SECRET_FIELDS as _SF
+    video_secret_fields = _SF.get("video", set())
+    video_keys = {
+        "preferred":         body.get("preferred", "none"),
+        "google_api_key":    body.get("google_api_key", ""),
+        "aspect_ratio":      body.get("aspect_ratio", "16:9"),
+        "duration_seconds":  body.get("duration_seconds", 8),
+    }
+    # Preserve existing secret values if empty fields are sent
+    existing = load_user_keys(user_id, "video")
+    if not existing:
+        existing = _load_settings().get("video", {})
+    for k in video_secret_fields:
+        if not video_keys.get(k):
+            video_keys[k] = existing.get(k, "")
+    save_user_keys(user_id, "video", video_keys)
+    settings = _load_settings(user_id=user_id)
+    settings["video"] = video_keys
+    _save_settings(settings, user_id=user_id)
+    return JSONResponse({"status": "ok"})
+
+
+@app.get("/api/settings/video")
+async def api_get_video_settings(request: Request):
+    """Return current video generation settings (keys masked)."""
+    user_id = _get_user_id(request)
+    from web.key_vault import _SECRET_FIELDS as _SF
+    keys = load_user_keys(user_id, "video")
+    if not keys:
+        settings = _load_settings()
+        keys = settings.get("video", {"preferred": "none"})
+    masked = dict(keys)
+    for field in _SF.get("video", set()):
+        raw = masked.get(field, "")
+        masked[field] = mask_value(raw) if raw else ""
+    return JSONResponse(masked)
+
+
+@app.post("/api/video/generate")
+async def api_video_generate(request: Request):
+    """Generate a video using the preferred (or requested) Veo provider."""
+    body = await request.json()
+    prompt = body.get("prompt", "").strip()
+    if not prompt:
+        return JSONResponse({"error": "No prompt provided"}, 400)
+
+    settings = _load_settings()
+    vid_cfg = settings.get("video", {})
+    provider = body.get("provider") or vid_cfg.get("preferred", "none")
+
+    if provider == "none":
+        return JSONResponse(
+            {"error": "No video provider configured. Set one in Settings → Video Generation."},
+            400,
+        )
+
+    result = await _generate_video(
+        provider, prompt, vid_cfg, settings,
+        save_dir=_VIDEO_UPLOADS_DIR,
+    )
     if "error" in result:
         return JSONResponse(result, 502)
     return JSONResponse(result)

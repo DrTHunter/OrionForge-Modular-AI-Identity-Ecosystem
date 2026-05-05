@@ -2278,12 +2278,31 @@ function _renderEntry(role, text, data, timeStr, layers) {
         </div>`;
       }
 
+      // Generated video (if present in data)
+      let videoHtml = '';
+      if (d.generated_video && d.generated_video.url) {
+        const gv = d.generated_video;
+        const provLabel = gv.provider || 'google_veo';
+        const provDisplay = {'google_veo2':'Veo 2','google_veo3':'Veo 3','google_veo31':'Veo 3.1'}[provLabel] || provLabel;
+        videoHtml = `<div class="msg-generated-video" style="margin:0.75rem 0 0.5rem; max-width:640px;">
+          <video src="${gv.url}" controls preload="metadata"
+                 style="width:100%; border-radius:0.5rem; border:1px solid rgba(255,255,255,0.08); background:#000;">
+            Your browser does not support the video tag.
+          </video>
+          <div style="display:flex; align-items:center; gap:0.375rem; margin-top:0.375rem; font-size:0.7rem; color:#71717a;">
+            <span>🎬</span>
+            <span>${esc(provDisplay)}</span>
+            <a href="${gv.url}" download style="color:#818cf8; text-decoration:none; margin-left:0.5rem;">⬇ Download</a>
+          </div>
+        </div>`;
+      }
+
       el.innerHTML = `<div class="msg-header">
         ${avatarHtml}
         <span class="msg-name">${agentLabel}</span>
         <span class="msg-time">${timeStr}</span>
       </div>
-      <div class="msg-body-wrap"><div class="msg-body">${formatAssistantText(text)}</div></div>${imageHtml}${metaHtml}${layersHtml}`;
+      <div class="msg-body-wrap"><div class="msg-body">${formatAssistantText(text)}</div></div>${imageHtml}${videoHtml}${metaHtml}${layersHtml}`;
       thread.appendChild(el);
 
       // Tool calls indicator
@@ -2879,6 +2898,25 @@ async function sendChatMsg() {
       el.appendChild(imgDiv);
     }
 
+    // Generated video
+    if (d.generated_video && d.generated_video.url) {
+      const gv = d.generated_video;
+      const provLabel = gv.provider || 'google_veo';
+      const provDisplay = {'google_veo2':'Veo 2','google_veo3':'Veo 3','google_veo31':'Veo 3.1'}[provLabel] || provLabel;
+      const vidDiv = document.createElement('div');
+      vidDiv.className = 'msg-generated-video';
+      vidDiv.style.cssText = 'margin:0.75rem 0 0.5rem; max-width:640px;';
+      vidDiv.innerHTML = `<video src="${gv.url}" controls preload="metadata"
+            style="width:100%; border-radius:0.5rem; border:1px solid rgba(255,255,255,0.08); background:#000;">
+          Your browser does not support the video tag.
+        </video>
+        <div style="display:flex; align-items:center; gap:0.375rem; margin-top:0.375rem; font-size:0.7rem; color:#71717a;">
+          <span>🎬</span><span>${esc(provDisplay)}</span>
+          <a href="${gv.url}" download style="color:#818cf8; text-decoration:none; margin-left:0.5rem;">⬇ Download</a>
+        </div>`;
+      el.appendChild(vidDiv);
+    }
+
     // Tool calls panel
     if (d.tool_calls && d.tool_calls.length > 0) {
       const tcId = 'tc-' + Date.now() + Math.random().toString(36).slice(2,6);
@@ -2960,7 +2998,7 @@ async function sendChatMsg() {
     el.appendChild(actionsBar);
 
     // Save to _msgs for history
-    const msgData = {agent, model: d.model||'', usage: d.usage||{}, cost: d.cost||{}, tool_calls: d.tool_calls||[], generated_image: d.generated_image||null, _live: true};
+    const msgData = {agent, model: d.model||'', usage: d.usage||{}, cost: d.cost||{}, tool_calls: d.tool_calls||[], generated_image: d.generated_image||null, generated_video: d.generated_video||null, _live: true};
     const m = { role: 'assistant', text: responseText, time: new Date().toISOString(), data: msgData, layers: d.layers };
     _msgs.push(m);
 

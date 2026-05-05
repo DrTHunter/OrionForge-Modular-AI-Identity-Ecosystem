@@ -116,6 +116,7 @@
   <div class="settings-tabs">
     <button class="settings-tab {{ 'active' if tab == 'api_keys' }}" onclick="switchSettingsTab('api_keys')">API Keys</button>
     <button class="settings-tab {{ 'active' if tab == 'image' }}" onclick="switchSettingsTab('image')">Image Generation</button>
+    <button class="settings-tab {{ 'active' if tab == 'video' }}" onclick="switchSettingsTab('video')">Video Generation</button>
     <button class="settings-tab {{ 'active' if tab == 'voice' }}" onclick="switchSettingsTab('voice')">Voice</button>
     <button class="settings-tab {{ 'active' if tab == 'chat' }}" onclick="switchSettingsTab('chat')">Chat</button>
     <button class="settings-tab {{ 'active' if tab == 'general' }}" onclick="switchSettingsTab('general')">General</button>
@@ -362,6 +363,78 @@
     </div>
 
     <button class="filter-btn active" onclick="saveImageSettings()" style="cursor:pointer;">Save Image Settings</button>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       TAB — Video Generation (Google Veo)
+       ═══════════════════════════════════════════════════════════ -->
+  <div class="settings-panel {{ 'active' if tab == 'video' }}" id="panel-video">
+
+    <p class="text-xs text-forge-muted mb-4" style="max-width:40rem;">
+      Generate videos directly in chat using Google Veo. When a Veo model is selected
+      as your preferred provider, agents will automatically produce videos whenever
+      you ask them to create or generate a video.
+    </p>
+
+    <!-- ── Preferred model ── -->
+    <div class="settings-section">
+      <div class="settings-section-title">Preferred Video Model</div>
+      <div class="settings-section-desc">
+        This model is used automatically when you ask an agent to generate a video in chat.
+        Requires a Google AI Studio API key below.
+      </div>
+      <div class="mb-3">
+        <select id="vid-preferred" class="search-input" style="max-width:28rem;">
+          <option value="none">Disabled — no video generation</option>
+          <option value="google_veo2">Google Veo 2 (stable, silent, 720p)</option>
+          <option value="google_veo3">Google Veo 3 Preview (audio, 720p)</option>
+          <option value="google_veo31">Google Veo 3.1 Preview (audio, portrait, 720p–4K)</option>
+        </select>
+      </div>
+    </div>
+
+    <hr style="border-color:rgba(255,255,255,0.06); margin:1.25rem 0;">
+
+    <!-- ── Google API Key ── -->
+    <div class="settings-section">
+      <div class="settings-section-title">Google AI Studio API Key</div>
+      <div class="settings-section-desc">
+        The same key used for Google Imagen 3. Get yours at
+        <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer"
+           style="color:#818cf8;">aistudio.google.com/apikey</a>.
+        Stored securely — enter a new value only to update it.
+      </div>
+      <div class="mb-3">
+        <input id="vid-google-key" type="password" class="search-input w-full" style="max-width:32rem;"
+               placeholder="AIza… (leave blank to keep existing)" value="">
+      </div>
+    </div>
+
+    <hr style="border-color:rgba(255,255,255,0.06); margin:1.25rem 0;">
+
+    <!-- ── Generation options ── -->
+    <div class="settings-section">
+      <div class="settings-section-title">Generation Options</div>
+      <div style="display:flex; gap:2rem; flex-wrap:wrap;">
+        <div>
+          <label class="block text-xs text-forge-muted mb-1">Aspect Ratio</label>
+          <select id="vid-aspect-ratio" class="search-input" style="max-width:14rem;">
+            <option value="16:9">16:9 — Landscape (default)</option>
+            <option value="9:16">9:16 — Portrait</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs text-forge-muted mb-1">Duration (seconds)</label>
+          <select id="vid-duration" class="search-input" style="max-width:14rem;">
+            <option value="4">4 seconds</option>
+            <option value="6">6 seconds</option>
+            <option value="8" selected>8 seconds (default)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <button class="filter-btn active" onclick="saveVideoSettings()" style="cursor:pointer; margin-top:1.5rem;">Save Video Settings</button>
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════
@@ -743,6 +816,41 @@ async function saveImageSettings() {
   showToast(data.status === 'ok' ? 'Image settings saved' : 'Error saving image settings', data.status === 'ok' ? 'ok' : 'error');
 }
 
+/* ── Video Generation (Google Veo) ────────────────────── */
+async function loadVideoSettings() {
+  try {
+    const resp = await fetch('/api/settings/video');
+    const data = await resp.json();
+    const pref = document.getElementById('vid-preferred');
+    if (pref) pref.value = data.preferred || 'none';
+    const ar = document.getElementById('vid-aspect-ratio');
+    if (ar) ar.value = data.aspect_ratio || '16:9';
+    const dur = document.getElementById('vid-duration');
+    if (dur) dur.value = String(data.duration_seconds || 8);
+    // Don't pre-fill API key — masked server-side, user must re-enter to change
+  } catch (e) { /* silent */ }
+}
+
+async function saveVideoSettings() {
+  const payload = {
+    preferred:        document.getElementById('vid-preferred').value,
+    google_api_key:   document.getElementById('vid-google-key').value,
+    aspect_ratio:     document.getElementById('vid-aspect-ratio').value,
+    duration_seconds: parseInt(document.getElementById('vid-duration').value, 10),
+  };
+  const resp = await fetch('/api/settings/video', {
+    method: 'PUT', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(payload),
+  });
+  const data = await resp.json();
+  showToast(data.status === 'ok' ? 'Video settings saved' : 'Error saving video settings', data.status === 'ok' ? 'ok' : 'error');
+}
+
+// Load video settings when the tab becomes visible
+document.addEventListener('DOMContentLoaded', () => {
+  if (document.getElementById('panel-video')) loadVideoSettings();
+});
+
 /* ── Voice (STT / TTS) ────────────────────────────────── */
 function toggleTtsFields() {
   const p = document.getElementById('tts-provider').value;
@@ -864,6 +972,8 @@ function switchSettingsTab(name) {
   if (panel) panel.classList.add('active');
   // Update URL without reload
   history.replaceState(null, '', '/settings?tab=' + name);
+  // Lazy-load video settings when the tab is first opened
+  if (name === 'video') loadVideoSettings();
 }
 
 /* ── Timezone ──────────────────────────────────────────── */

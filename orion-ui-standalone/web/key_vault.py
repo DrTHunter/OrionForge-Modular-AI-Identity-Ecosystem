@@ -93,6 +93,7 @@ _SECRET_FIELDS: dict[str, set[str]] = {
     "image": {"openai_api_key", "google_api_key", "stability_api_key",
               "ideogram_api_key", "replicate_api_key", "fal_api_key",
               "leonardo_api_key", "midjourney_api_key"},
+    "video": {"google_api_key"},
     "tts": {"elevenlabs_api_key", "openedai_cloud_api_key"},
 }
 
