@@ -279,5 +279,5 @@ ln -sfn "$PERSIST_ORION" "$APP_ORION"
 
 echo "[boot] Orion data (journal, history) linked to persistent volume."
 
-# 13. Start the app (3 workers — MiniLM model uses ~250MB each, fits in 4GB)
-exec python -m uvicorn web.app:app --host 0.0.0.0 --port 8989 --workers 3
+# 13. Start the app with a single worker for Fly stability
+exec python -m uvicorn web.app:app --host 0.0.0.0 --port 8989 --workers 1
