@@ -4306,13 +4306,21 @@ async def api_chat_send(req: ChatRequest, request: Request):
             log.warning("[image-gen] Image generation failed: %s", exc)
             response_text += f"\n\n*Image generation failed: {exc}*"
 
-    # ── Video generation: detect [VIDEO_GEN: ...] tag ──
+    # ── Video generation: detect [VIDEO_GEN: ...] tag, with user-intent fallback ──
     generated_video = None
+    vid_prompt = None
     vid_match = re.search(r'\[VIDEO_GEN:\s*(.+?)\]', response_text, re.DOTALL)
     if vid_match:
         vid_prompt = vid_match.group(1).strip()
         response_text = response_text[:vid_match.start()] + response_text[vid_match.end():]
         response_text = response_text.strip()
+    else:
+        p = (req.prompt or "").strip()
+        p_low = p.lower()
+        if p and any(k in p_low for k in ("video", "loop", "looping", "animate", "animation", "live wallpaper", "background")):
+            vid_prompt = p
+
+    if vid_prompt:
         try:
             settings = _load_settings()
             vid_cfg = settings.get("video", {})
@@ -4322,13 +4330,19 @@ async def api_chat_send(req: ChatRequest, request: Request):
                     vid_provider, vid_prompt, vid_cfg, settings,
                     save_dir=_VIDEO_UPLOADS_DIR,
                 )
-                if "error" not in result:
-                    generated_video = {**result, "prompt": vid_prompt}
-                else:
+                generated_video = {**result, "prompt": vid_prompt}
+                if "error" in result:
                     log.warning("[video-gen] %s", result["error"])
                     response_text += f"\n\n*Video generation failed: {result['error']}*"
+            else:
+                generated_video = {
+                    "error": "Video generation is disabled. Enable a Veo model in Settings -> Video Generation.",
+                    "prompt": vid_prompt,
+                }
+                response_text += "\n\n*Video generation is disabled. Enable a Veo model in Settings -> Video Generation.*"
         except Exception as exc:
             log.warning("[video-gen] Video generation failed: %s", exc)
+            generated_video = {"error": str(exc), "prompt": vid_prompt}
             response_text += f"\n\n*Video generation failed: {exc}*"
 
     # Add tool layer to metadata
@@ -4780,11 +4794,19 @@ async def _stream_chat_generator(req: ChatRequest, request: Request, user, conn,
 
     # Video generation
     generated_video = None
+    vid_prompt = None
     vid_match = re.search(r'\[VIDEO_GEN:\s*(.+?)\]', response_text, re.DOTALL)
     if vid_match:
         vid_prompt = vid_match.group(1).strip()
         response_text = response_text[:vid_match.start()] + response_text[vid_match.end():]
         response_text = response_text.strip()
+    else:
+        p = (req.prompt or "").strip()
+        p_low = p.lower()
+        if p and any(k in p_low for k in ("video", "loop", "looping", "animate", "animation", "live wallpaper", "background")):
+            vid_prompt = p
+
+    if vid_prompt:
         try:
             settings = _load_settings()
             vid_cfg = settings.get("video", {})
@@ -4794,12 +4816,20 @@ async def _stream_chat_generator(req: ChatRequest, request: Request, user, conn,
                     vid_provider, vid_prompt, vid_cfg, settings,
                     save_dir=_VIDEO_UPLOADS_DIR,
                 )
-                if "error" not in result:
-                    generated_video = {**result, "prompt": vid_prompt}
-                else:
+                generated_video = {**result, "prompt": vid_prompt}
+                if "error" in result:
                     log.warning("[video-gen] %s", result["error"])
+                    response_text += f"\n\n*Video generation failed: {result['error']}*"
+            else:
+                generated_video = {
+                    "error": "Video generation is disabled. Enable a Veo model in Settings -> Video Generation.",
+                    "prompt": vid_prompt,
+                }
+                response_text += "\n\n*Video generation is disabled. Enable a Veo model in Settings -> Video Generation.*"
         except Exception as exc:
             log.warning("[video-gen] Streaming video gen failed: %s", exc)
+            generated_video = {"error": str(exc), "prompt": vid_prompt}
+            response_text += f"\n\n*Video generation failed: {exc}*"
 
     # Build layers metadata
     layers["tools"]["calls"] = tool_call_log
