@@ -214,6 +214,11 @@
         "01ff0004": "directive"
       }
     },
+    "madara": {
+      "display_name": "Madara Uchiha",
+      "attached_notes": ["5ccf5b26"],
+      "note_modes": {"5ccf5b26": "directive"}
+    },
     "k_os": {
       "display_name": "K-OS",
       "attached_notes": ["5ccf5b26"],

@@ -1,0 +1,39 @@
+allowed_tools:
+- agi_loop
+- continuation_update
+- cost_tracker
+- directives
+- echo
+- email
+- memory
+- model_router
+- web_search
+base_url: https://api.openai.com/v1
+description: 'Madara Uchiha — Ghost of the Uchiha, philosopher of power, herald of the Eye of the Moon Plan'
+directives:
+  enabled: true
+  max_sections: 5
+  scopes:
+  - shared
+  - madara
+inworld_voice: ''
+identity_faiss_profile: __default__
+memory:
+  enabled: true
+  max_items: 20
+  scopes:
+  - shared
+  - madara
+  similarity_threshold: 0.85
+memory_vault_profile: __default__
+model: ''
+name: madara
+policy:
+  max_iterations: 25
+  stasis_mode: false
+  tool_failure_mode: continue
+provider: openai
+system_prompt: madara.system.md
+temperature: 0.7
+voice_id: ''
+window_size: 50
