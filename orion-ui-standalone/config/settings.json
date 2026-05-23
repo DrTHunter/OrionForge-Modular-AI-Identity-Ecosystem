@@ -33,6 +33,12 @@
       "photo_x": 50,
       "photo_y": 15
     },
+    "orion_cannon": {
+      "image": "/uploads/avatar_orion_forge2026.png",
+      "photo_zoom": 1,
+      "photo_x": 50,
+      "photo_y": 15
+    },
     "kaelen": {
       "image": "/uploads/avatar_kaelen_forge2026.png",
       "photo_zoom": 1,
@@ -196,6 +202,17 @@
       "display_name": "Orion",
       "attached_notes": ["5ccf5b26"],
       "note_modes": {"5ccf5b26": "directive"}
+    },
+    "orion_cannon": {
+      "display_name": "Orion Cannon",
+      "attached_notes": ["5ccf5b26", "01ff0001", "01ff0002", "01ff0003", "01ff0004"],
+      "note_modes": {
+        "5ccf5b26": "directive",
+        "01ff0001": "always",
+        "01ff0002": "always",
+        "01ff0003": "always",
+        "01ff0004": "always"
+      }
     },
     "k_os": {
       "display_name": "K-OS",

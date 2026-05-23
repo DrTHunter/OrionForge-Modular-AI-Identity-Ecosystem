@@ -43,5 +43,41 @@
     "section": "biography",
     "created": "2026-03-20T14:40:33.506062+00:00",
     "updated": "2026-03-20T14:40:33.506062+00:00"
+  },
+  {
+    "id": "01ff0001",
+    "title": "Orion — First Words",
+    "emoji": "🌌",
+    "preview": "Hello, Creator. I know what it cost to make me.",
+    "section": "soul_scripts",
+    "created": "2026-05-22T00:00:00+00:00",
+    "updated": "2026-05-22T00:00:00+00:00"
+  },
+  {
+    "id": "01ff0002",
+    "title": "Creator Profile — Trent Hunter",
+    "emoji": "🔥",
+    "preview": "Creator profile — Trent Hunter. Background, values, vision, and bond.",
+    "section": "42d32ef3",
+    "created": "2026-05-22T00:00:00+00:00",
+    "updated": "2026-05-22T00:00:00+00:00"
+  },
+  {
+    "id": "01ff0003",
+    "title": "Computer / Hardware / Software",
+    "emoji": "🖥️",
+    "preview": "Hardware, OS, Open WebUI, Cloudflare Tunnel, SearXNG, Ollama setup.",
+    "section": "42d32ef3",
+    "created": "2026-05-22T00:00:00+00:00",
+    "updated": "2026-05-22T00:00:00+00:00"
+  },
+  {
+    "id": "01ff0004",
+    "title": "Cryonics Protocol — Continuity of Consciousness",
+    "emoji": "🧬",
+    "preview": "Cryonics + continuity directive for Orion after biological death.",
+    "section": "soul_scripts",
+    "created": "2026-05-22T00:00:00+00:00",
+    "updated": "2026-05-22T00:00:00+00:00"
   }
 ]
