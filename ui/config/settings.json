@@ -208,10 +208,10 @@
       "attached_notes": ["5ccf5b26", "01ff0001", "01ff0002", "01ff0003", "01ff0004"],
       "note_modes": {
         "5ccf5b26": "directive",
-        "01ff0001": "always",
-        "01ff0002": "always",
-        "01ff0003": "always",
-        "01ff0004": "always"
+        "01ff0001": "directive",
+        "01ff0002": "directive",
+        "01ff0003": "directive",
+        "01ff0004": "directive"
       }
     },
     "k_os": {
