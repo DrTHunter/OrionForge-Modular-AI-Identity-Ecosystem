@@ -39,6 +39,12 @@
       "photo_x": 50,
       "photo_y": 15
     },
+    "madara": {
+      "image": "/uploads/avatar_madara.jpg",
+      "photo_zoom": 1,
+      "photo_x": 50,
+      "photo_y": 25
+    },
     "kaelen": {
       "image": "/uploads/avatar_kaelen_forge2026.png",
       "photo_zoom": 1,
