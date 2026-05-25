@@ -126,6 +126,34 @@ def extract_user_from_token(payload: dict) -> dict:
     }
 
 
+# ── Single-user allowlist ───────────────────────────────────────
+# Only emails in this list (case-insensitive) may log in.
+# Sources, in priority order:
+#   1. ALLOWED_EMAILS env var (comma-separated)
+#   2. auth.json -> "allowed_emails" array
+#   3. Hard-coded default below (owner email)
+_DEFAULT_ALLOWED_EMAILS = ("dr.trent.hunter@gmail.com",)
+
+
+def _allowed_emails() -> set[str]:
+    import os
+    env_val = os.environ.get("ALLOWED_EMAILS", "").strip()
+    if env_val:
+        return {e.strip().lower() for e in env_val.split(",") if e.strip()}
+    cfg = _load_auth_config()
+    cfg_list = cfg.get("allowed_emails") or []
+    if isinstance(cfg_list, list) and cfg_list:
+        return {str(e).strip().lower() for e in cfg_list if str(e).strip()}
+    return {e.lower() for e in _DEFAULT_ALLOWED_EMAILS}
+
+
+def is_email_allowed(email: str) -> bool:
+    """Return True only if the email is on the login allowlist."""
+    if not email:
+        return False
+    return email.strip().lower() in _allowed_emails()
+
+
 # ── Public paths that don't require authentication ──────────────
 PUBLIC_PATHS = {
     "/login",

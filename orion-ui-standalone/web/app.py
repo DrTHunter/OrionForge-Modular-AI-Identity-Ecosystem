@@ -47,7 +47,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from web.image_gen import _generate_image
 from web.video_gen import _generate_video
-from web.auth import get_auth_config, verify_supabase_token, extract_user_from_token, is_public_path
+from web.auth import get_auth_config, verify_supabase_token, extract_user_from_token, is_public_path, is_email_allowed
 from web.stripe_billing import (
     get_user_tier, get_user_subscription, user_has_feature,
     create_checkout_session, create_billing_portal_session,
@@ -237,6 +237,22 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
         # Attach user info to request state
         request.state.user = extract_user_from_token(payload)
+
+        # ── Single-user allowlist gate ──
+        # Only the configured owner email may access the app. Anyone else
+        # gets their auth cookie wiped and is bounced to /login.
+        if not is_email_allowed(request.state.user.get("email", "")):
+            log.warning(
+                "[auth] Denied login for non-allowlisted email: %s",
+                request.state.user.get("email", ""),
+            )
+            if path.startswith("/api/"):
+                resp = JSONResponse({"error": "Access denied for this account"}, status_code=403)
+            else:
+                resp = RedirectResponse(url="/login?denied=1", status_code=302)
+            resp.delete_cookie("sb_access_token", path="/")
+            resp.delete_cookie("sb_refresh_token", path="/")
+            return resp
 
         # Record user activity for inactive-account cleanup
         user_id = request.state.user.get("id", "")
@@ -1652,6 +1668,17 @@ async def api_auth_set_session(request: Request):
 
         user = extract_user_from_token(payload)
 
+        # Enforce single-user email allowlist before issuing a session cookie.
+        if not is_email_allowed(user.get("email", "")):
+            log.warning(
+                "[auth] set-session denied for non-allowlisted email: %s",
+                user.get("email", ""),
+            )
+            return JSONResponse(
+                {"error": "This account is not authorized to sign in."},
+                status_code=403,
+            )
+
         response = JSONResponse({"ok": True, "user": user})
 
         # Set httpOnly cookies (secure in production, lax for local dev)
@@ -1768,6 +1795,12 @@ async def auth_callback(request: Request):
         if (qp) {{ nextUrl = qp; }}
       }}
       window.location.href = nextUrl;
+    }} else if (resp.status === 403) {{
+      // Email not on allowlist — sign out of Supabase then bounce to login.
+      try {{ await sb.auth.signOut(); }} catch(e) {{}}
+      try {{ localStorage.removeItem('orion_auth_next'); }} catch(e) {{}}
+      document.getElementById('status').textContent = 'Access denied. Redirecting…';
+      setTimeout(() => window.location.href = '/login?denied=1', 1200);
     }} else {{
       document.getElementById('status').textContent = 'Session error. Redirecting…';
       setTimeout(() => window.location.href = '/login', 2000);

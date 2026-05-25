@@ -367,6 +367,10 @@
             }).then(function(resp) {
               if (resp.ok) {
                 window.location.href = _nextUrl;
+              } else if (resp.status === 403) {
+                try { _sb.auth.signOut(); } catch(e) {}
+                showError('This account is not authorized to sign in.');
+                setLoading(false);
               } else {
                 showError('Failed to establish session. Please try again.');
                 setLoading(false);
@@ -415,6 +419,11 @@
       document.getElementById('oauth-google').addEventListener('click', function() { oauthLogin('google'); });
       document.getElementById('oauth-github').addEventListener('click', function() { oauthLogin('github'); });
       document.getElementById('oauth-discord').addEventListener('click', function() { oauthLogin('discord'); });
+
+      // ── Show "access denied" banner when bounced from a restricted account ──
+      if (new URLSearchParams(window.location.search).get('denied') === '1') {
+        showError('This account is not authorized to sign in.');
+      }
 
       // ── Check if already logged in ──
       var _nextUrl2 = new URLSearchParams(window.location.search).get('next') || '/chat';
