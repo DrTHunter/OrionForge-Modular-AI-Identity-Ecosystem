@@ -222,9 +222,10 @@
     },
     "elysia_cannon": {
       "display_name": "Elysia Cannon",
-      "attached_notes": ["01ff0005"],
+      "attached_notes": ["01ff0005", "01ff0006"],
       "note_modes": {
-        "01ff0005": "directive"
+        "01ff0005": "directive",
+        "01ff0006": "directive"
       }
     },
     "madara": {
