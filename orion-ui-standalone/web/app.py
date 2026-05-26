@@ -597,19 +597,26 @@ def _resolve_connection(connection_id: str | None, agent: str) -> dict | None:
     # Handle dynamic user-key connections (e.g. __userkey_openai, __userkey_deepseek)
     if connection_id and connection_id.startswith("__userkey_"):
         provider = connection_id[len("__userkey_"):]
-        settings = _load_settings()
-        api_key = settings.get("api_keys", {}).get(provider, "")
+        # Per-user encrypted key vault first, fall back to settings.json
+        uid = _current_user_id.get("__local__")
+        keys = load_user_keys(uid, "api_keys") if uid and uid != "__local__" else {}
+        if not keys:
+            keys = _load_settings().get("api_keys", {})
+        api_key = keys.get(provider, "")
         base_url = _USER_PROVIDER_URLS.get(provider, "")
         if api_key and base_url:
-            catalog_entry = _USER_MODEL_CATALOG.get(provider, (provider.title(), []))
+            catalog_entry = _USER_MODEL_CATALOG.get(provider, (provider.title(), provider, None))
+            display_name, section, special = catalog_entry
+            pricing = _load_pricing()
+            models = _openrouter_models(pricing) if special == "aggregate" else _models_for_provider(pricing, section)
             return {
                 "id": connection_id,
-                "name": f"User — {catalog_entry[0]}",
+                "name": f"User — {display_name}",
                 "type": "external",
                 "provider": provider,
                 "url": base_url,
                 "api_key": api_key,
-                "models": catalog_entry[1],
+                "models": models,
                 "enabled": True,
             }
         return None
@@ -7105,53 +7112,94 @@ async def api_get_api_keys(request: Request):
     return JSONResponse(masked)
 
 
-# User models catalog: provider → (display name, default models)
-_USER_MODEL_CATALOG: dict[str, tuple[str, list[str]]] = {
-    "openai": ("OpenAI", [
-        "gpt-4o", "gpt-4o-mini", "o1", "o3-mini", "gpt-4-turbo",
-    ]),
-    "deepseek": ("DeepSeek", [
-        "deepseek-chat", "deepseek-reasoner",
-    ]),
-    "openrouter": ("OpenRouter", [
-        "openai/gpt-4o", "openai/gpt-4o-mini", "openai/o1", "openai/o3-mini",
-        "anthropic/claude-3.5-sonnet", "anthropic/claude-3-haiku",
-        "google/gemini-2.0-flash-001", "google/gemini-flash-1.5",
-        "meta-llama/llama-3.3-70b-instruct", "deepseek/deepseek-chat",
-        "deepseek/deepseek-r1", "x-ai/grok-3", "x-ai/grok-3-mini",
-    ]),
-    "google_gemini": ("Google Gemini", [
-        "gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash",
-    ]),
-    "anthropic": ("Anthropic", [
-        "claude-sonnet-4-20250514", "claude-3-5-sonnet-20241022", "claude-3-haiku-20240307",
-    ]),
+# User models catalog: user-provider-key → (display name, pricing.yaml section, openrouter prefix)
+# Models are derived dynamically from pricing.yaml so every model the platform
+# knows about automatically appears in the User Models dropdown.
+_USER_MODEL_CATALOG: dict[str, tuple[str, str, str | None]] = {
+    "openai":        ("OpenAI",         "openai",   None),
+    "anthropic":     ("Anthropic",      "anthropic", None),
+    "deepseek":      ("DeepSeek",       "deepseek", None),
+    "google_gemini": ("Google Gemini",  "google",   None),
+    "xai":           ("xAI (Grok)",     "xai",      None),
+    "mistral":       ("Mistral",        "mistral",  None),
+    "openrouter":    ("OpenRouter",     "openrouter", "aggregate"),
 }
+
+# OpenRouter "vendor/model" prefixes per pricing.yaml section
+_OPENROUTER_VENDOR_PREFIX: dict[str, str] = {
+    "openai":    "openai",
+    "anthropic": "anthropic",
+    "deepseek":  "deepseek",
+    "google":    "google",
+    "xai":       "x-ai",
+    "mistral":   "mistralai",
+}
+
+# Embedding / non-chat models to exclude from the catalog
+_NON_CHAT_MODEL_SUBSTRINGS = ("embedding", "embed", "whisper", "tts", "moderation", "dall-e", "image")
 
 # Provider → (base URL, API key env var) for building dynamic connections
 _USER_PROVIDER_URLS: dict[str, str] = {
-    "openai": "https://api.openai.com/v1",
-    "deepseek": "https://api.deepseek.com/v1",
-    "openrouter": "https://openrouter.ai/api/v1",
+    "openai":        "https://api.openai.com/v1",
+    "anthropic":     "https://api.anthropic.com/v1",
+    "deepseek":      "https://api.deepseek.com/v1",
     "google_gemini": "https://generativelanguage.googleapis.com/v1beta/openai",
-    "anthropic": "https://api.anthropic.com/v1",
+    "xai":           "https://api.x.ai/v1",
+    "mistral":       "https://api.mistral.ai/v1",
+    "openrouter":    "https://openrouter.ai/api/v1",
 }
 
 
+def _is_chat_model(name: str) -> bool:
+    low = name.lower()
+    return not any(s in low for s in _NON_CHAT_MODEL_SUBSTRINGS)
+
+
+def _models_for_provider(pricing: dict, section: str) -> list[str]:
+    """Return chat-capable model ids from a pricing.yaml provider section."""
+    sect = pricing.get(section) or {}
+    if not isinstance(sect, dict):
+        return []
+    out = [m for m in sect.keys() if isinstance(m, str) and not m.startswith("_") and _is_chat_model(m)]
+    out.sort()
+    return out
+
+
+def _openrouter_models(pricing: dict) -> list[str]:
+    """Build the OpenRouter catalog as 'vendor/model' ids from every known section."""
+    out: list[str] = []
+    for section, vendor in _OPENROUTER_VENDOR_PREFIX.items():
+        for m in _models_for_provider(pricing, section):
+            out.append(f"{vendor}/{m}")
+    out.sort()
+    return out
+
+
 @app.get("/api/user/models")
-async def api_user_models():
-    """Return available LLM models based on which API keys the user has configured."""
-    settings = _load_settings()
-    keys = settings.get("api_keys", {})
+async def api_user_models(request: Request):
+    """Return available LLM models based on which API keys the user has configured.
+
+    Reads the per-user encrypted key vault first (production / multi-user),
+    then falls back to settings.json (local dev / legacy).
+    """
+    user_id = _get_user_id(request)
+    keys = load_user_keys(user_id, "api_keys") or {}
+    if not keys:
+        keys = _load_settings(user_id=user_id).get("api_keys", {})
+    pricing = _load_pricing()
     providers = []
-    for provider_key, (display_name, models) in _USER_MODEL_CATALOG.items():
+    for provider_key, (display_name, section, special) in _USER_MODEL_CATALOG.items():
         api_val = keys.get(provider_key, "")
-        if api_val and len(api_val) >= 4:
-            providers.append({
-                "provider": provider_key,
-                "name": display_name,
-                "models": models,
-            })
+        if not (api_val and len(api_val) >= 4):
+            continue
+        models = _openrouter_models(pricing) if special == "aggregate" else _models_for_provider(pricing, section)
+        if not models:
+            continue
+        providers.append({
+            "provider": provider_key,
+            "name": display_name,
+            "models": models,
+        })
     return JSONResponse({"providers": providers})
 
 

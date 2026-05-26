@@ -8420,10 +8420,13 @@ def test_api_user_models():
         # Simulate the endpoint logic
         loaded = _app._load_settings()
         keys = loaded.get("api_keys", {})
+        pricing = _app._load_pricing()
         providers = []
-        for provider_key, (display_name, models) in _app._USER_MODEL_CATALOG.items():
+        for provider_key, (display_name, section, special) in _app._USER_MODEL_CATALOG.items():
             api_val = keys.get(provider_key, "")
             if api_val and len(api_val) >= 4:
+                models = (_app._openrouter_models(pricing) if special == "aggregate"
+                          else _app._models_for_provider(pricing, section))
                 providers.append({
                     "provider": provider_key,
                     "name": display_name,
@@ -8455,7 +8458,7 @@ def test_api_user_models():
         loaded2 = _app._load_settings()
         keys2 = loaded2.get("api_keys", {})
         providers2 = []
-        for pk, (dn, ms) in _app._USER_MODEL_CATALOG.items():
+        for pk, (dn, section, special) in _app._USER_MODEL_CATALOG.items():
             av = keys2.get(pk, "")
             if av and len(av) >= 4:
                 providers2.append({"provider": pk})
@@ -8468,7 +8471,7 @@ def test_api_user_models():
         loaded3 = _app._load_settings()
         keys3 = loaded3.get("api_keys", {})
         providers3 = []
-        for pk, (dn, ms) in _app._USER_MODEL_CATALOG.items():
+        for pk, (dn, section, special) in _app._USER_MODEL_CATALOG.items():
             av = keys3.get(pk, "")
             if av and len(av) >= 4:
                 providers3.append({"provider": pk})
@@ -8480,7 +8483,7 @@ def test_api_user_models():
         loaded4 = _app._load_settings()
         keys4 = loaded4.get("api_keys", {})
         providers4 = []
-        for pk, (dn, ms) in _app._USER_MODEL_CATALOG.items():
+        for pk, (dn, section, special) in _app._USER_MODEL_CATALOG.items():
             av = keys4.get(pk, "")
             if av and len(av) >= 4:
                 providers4.append({"provider": pk})
@@ -8492,8 +8495,8 @@ def test_api_user_models():
         check("catalog has deepseek", "deepseek" in _app._USER_MODEL_CATALOG)
         check("catalog has openrouter", "openrouter" in _app._USER_MODEL_CATALOG)
         check("catalog has google_gemini", "google_gemini" in _app._USER_MODEL_CATALOG)
-        check("catalog entries are (name, models) tuples",
-              all(isinstance(v, tuple) and len(v) == 2 for v in _app._USER_MODEL_CATALOG.values()))
+        check("catalog entries are (name, section, special) tuples",
+              all(isinstance(v, tuple) and len(v) == 3 for v in _app._USER_MODEL_CATALOG.values()))
 
         # ── 6. Provider URLs check ──
         check("URL map has openai", "openai" in _app._USER_PROVIDER_URLS)
