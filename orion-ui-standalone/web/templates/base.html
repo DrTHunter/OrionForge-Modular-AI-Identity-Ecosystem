@@ -6,6 +6,31 @@
   <title>{% block title %}SoulScript Engine{% endblock %}</title>
   <link rel="stylesheet" href="/static/tailwind.css">
   <link rel="stylesheet" href="/static/style.css">
+  <style>
+    /* ── Mobile (≤768px) global nav: slide-in overlay ── */
+    .nav-backdrop {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.55); z-index: 39;
+      backdrop-filter: blur(2px);
+    }
+    .nav-backdrop.open { display: block; }
+    @media (max-width: 768px) {
+      .main-nav {
+        transform: translateX(-100%);
+        transition: transform 0.25s ease;
+        width: 16rem;
+        box-shadow: 4px 0 20px rgba(0,0,0,0.4);
+      }
+      .main-nav.mobile-open { transform: translateX(0); }
+      .main-nav.collapsed { width: 16rem; padding: 1rem 0.75rem; } /* ignore desktop collapsed on mobile */
+      .main-content,
+      .main-content.nav-collapsed {
+        margin-left: 0 !important;
+        width: 100% !important;
+        padding: 1rem 1.5rem;
+      }
+    }
+  </style>
   <!-- Markdown + Syntax highlighting -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
@@ -97,17 +122,32 @@
       {% block content %}{% endblock %}
     </main>
   </div>
+  <div class="nav-backdrop" id="nav-backdrop" onclick="closeMobileNav()"></div>
 
   <script>
     function toggleMainNav() {
       const nav = document.getElementById('main-nav');
       const main = document.getElementById('main-content');
+      const bd = document.getElementById('nav-backdrop');
+      // Mobile (≤768px): slide-in overlay + backdrop, no content reflow
+      if (window.matchMedia('(max-width: 768px)').matches) {
+        const opening = !nav.classList.contains('mobile-open');
+        nav.classList.toggle('mobile-open', opening);
+        if (bd) bd.classList.toggle('open', opening);
+        return;
+      }
       nav.classList.toggle('collapsed');
       main.classList.toggle('nav-collapsed');
       localStorage.setItem('nav_collapsed', nav.classList.contains('collapsed') ? '1' : '0');
     }
-    // Restore collapsed state
-    if (localStorage.getItem('nav_collapsed') === '1') {
+    function closeMobileNav() {
+      const nav = document.getElementById('main-nav');
+      const bd = document.getElementById('nav-backdrop');
+      nav.classList.remove('mobile-open');
+      if (bd) bd.classList.remove('open');
+    }
+    // Restore collapsed state (desktop only — mobile starts hidden)
+    if (localStorage.getItem('nav_collapsed') === '1' && !window.matchMedia('(max-width: 768px)').matches) {
       document.getElementById('main-nav').classList.add('collapsed');
       document.getElementById('main-content').classList.add('nav-collapsed');
     }

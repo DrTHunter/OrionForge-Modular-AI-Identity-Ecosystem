@@ -809,21 +809,148 @@
   .tb-mobile-toggle.open { background: rgba(99,102,241,0.15); color: #818cf8; border-color: rgba(99,102,241,0.2); }
   .tb-collapsible { display: contents; }
 
-  @media (max-width: 640px) {
-    .tb-mobile-toggle { display: inline-flex; }
+  /* Mobile sidebar backdrop (chat history overlay) */
+  .chat-sidebar-backdrop {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.55); z-index: 49;
+    backdrop-filter: blur(2px);
+  }
+  .chat-sidebar-backdrop.open { display: block; }
+
+  @media (max-width: 768px) {
+    /* Full-bleed layout on mobile */
+    .chat-layout { margin: -1rem -1.5rem; height: 100dvh; }
+    .chat-container { padding: 0 0.75rem; }
+
+    /* Chat history sidebar becomes a slide-in overlay */
+    .chat-sidebar {
+      position: fixed; top: 0; left: 0; bottom: 0;
+      width: 80vw; max-width: 320px;
+      z-index: 50;
+      transform: translateX(-100%);
+      transition: transform 0.25s ease;
+      box-shadow: 4px 0 20px rgba(0,0,0,0.4);
+    }
+    .chat-sidebar:not(.collapsed) { transform: translateX(0); }
+    .chat-sidebar.collapsed { width: 80vw; max-width: 320px; min-width: 0; border-right: 1px solid #2a2a3a; }
+
+    /* Prominent hamburger top-left, ChatGPT pill style */
+    .sidebar-expand-float {
+      display: flex !important; align-items: center; justify-content: center;
+      top: 0.5rem; left: 0.5rem;
+      width: 2.5rem; height: 2.5rem; padding: 0;
+      border-radius: 999px;
+      background: rgba(24,24,27,0.92); color: #e4e4e7;
+      border: 1px solid rgba(99,102,241,0.25);
+      font-size: 1.1rem;
+    }
+
+    /* Topbar: give room for hamburger + compact */
+    .chat-topbar { padding: 0.5rem 0 0.5rem 3.25rem; gap: 0.25rem; }
+    .chat-topbar h1 { font-size: 1rem; }
+    #cost-ticker, #credit-balance { font-size: 0.6875rem; padding: 0.125rem 0.4rem; }
+
+    /* Compose: pill shape, all toolbar buttons collapsed behind + */
+    .chat-compose { padding: 0.5rem 0; border-top: none; padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem); }
+    .compose-box {
+      border-radius: 1.75rem;
+      box-shadow: 0 2px 14px rgba(0,0,0,0.3);
+    }
+    .compose-textarea {
+      padding: 0.875rem 3rem 0.875rem 1rem;
+      font-size: 1rem;
+      min-height: 1.5rem;
+    }
+    /* Mic stays inline on the right of the textarea */
+    .mic-btn {
+      right: 0.5rem; bottom: 50%; transform: translateY(50%);
+      width: 2rem; height: 2rem; padding: 0;
+      display: inline-flex; align-items: center; justify-content: center;
+      border-radius: 999px;
+    }
+
+    /* Compose toolbar: only [+] (left), spacer, [send] (right) */
+    .compose-toolbar {
+      padding: 0.25rem 0.5rem 0.5rem;
+      border-top: none;
+      gap: 0.25rem;
+    }
+    .tb-mobile-toggle {
+      display: inline-flex !important;
+      width: 2.25rem; height: 2.25rem;
+      font-size: 1.4rem; line-height: 1;
+      border-radius: 999px;
+      background: rgba(99,102,241,0.10);
+      border-color: rgba(99,102,241,0.25); color: #c7d2fe;
+    }
+    /* Hide the dedicated 📎 paperclip — moves into the + sheet via attach-input trigger */
+    .compose-toolbar > .attach-btn { display: none; }
+    .send-btn, .stop-btn { width: 2.25rem; height: 2.25rem; }
+
+    /* The collapsible toolbar becomes a bottom action sheet */
+    .compose-toolbar { position: relative; }
     .tb-collapsible {
       display: none;
-      position: absolute; bottom: 100%; left: 0; right: 0;
-      background: #18181b; border: 1px solid rgba(42,42,58,0.7);
-      border-radius: 0.5rem 0.5rem 0 0;
-      padding: 0.5rem 0.75rem;
-      flex-wrap: wrap; gap: 0.5rem; align-items: center;
-      box-shadow: 0 -4px 16px rgba(0,0,0,0.4);
-      z-index: 20;
+      position: fixed; left: 0; right: 0; bottom: 0;
+      background: #18181b;
+      border-top: 1px solid rgba(42,42,58,0.7);
+      border-radius: 1rem 1rem 0 0;
+      padding: 1rem 1rem calc(env(safe-area-inset-bottom, 0px) + 1rem);
+      flex-direction: column; align-items: stretch; gap: 0.75rem;
+      box-shadow: 0 -8px 28px rgba(0,0,0,0.6);
+      z-index: 60;
+      max-height: 70vh; overflow-y: auto;
     }
     .tb-collapsible.open { display: flex; }
+    .tb-collapsible::before {
+      content: ''; display: block;
+      width: 2.5rem; height: 4px; border-radius: 2px;
+      background: #3f3f46; margin: -0.25rem auto 0.25rem;
+      flex-shrink: 0;
+    }
     .tb-collapsible .tb-sep { display: none; }
-    .compose-toolbar { position: relative; }
+    .tb-collapsible .tb,
+    .tb-collapsible .tb-sel,
+    .tb-collapsible .pin-btn {
+      width: 100%; justify-content: flex-start;
+      padding: 0.75rem 0.875rem;
+      font-size: 0.9375rem;
+      border-radius: 0.625rem;
+      border: 1px solid rgba(42,42,58,0.6);
+    }
+    .tb-collapsible #chat-model { max-width: 100%; }
+    .tb-collapsible .tts-vol-wrap { width: 100%; }
+    .tb-collapsible .tts-vol-btn {
+      width: 100%; text-align: left;
+      padding: 0.75rem 0.875rem;
+      border: 1px solid rgba(42,42,58,0.6); border-radius: 0.625rem;
+    }
+    .tb-collapsible .tts-vol-popup {
+      position: static; transform: none;
+      width: 100%; flex-direction: row; align-items: center;
+      padding: 0.5rem 0.75rem; margin-top: 0.25rem;
+    }
+    .tb-collapsible .tts-vol-popup input[type=range] {
+      writing-mode: horizontal-tb; direction: ltr;
+      width: 100%; height: 20px;
+    }
+    /* Inject a "📎 Attach" trigger inside the sheet via ::before on the model select group?  Simpler: keep attach-btn but show it INSIDE the collapsible */
+    .tb-collapsible .attach-btn-sheet {
+      display: flex !important;
+      width: 100%; justify-content: flex-start; gap: 0.5rem;
+      padding: 0.75rem 0.875rem; font-size: 0.9375rem;
+      color: #d4d4d8; background: transparent;
+      border: 1px solid rgba(42,42,58,0.6); border-radius: 0.625rem;
+      cursor: pointer;
+    }
+    .tb-collapsible .attach-btn-sheet:hover { background: rgba(99,102,241,0.08); }
+
+    /* User/assistant message widths a bit wider on mobile */
+    .chat-entry.assistant-entry, .chat-entry.user-entry { max-width: 100%; }
+    .msg-body-wrap { margin-left: 2.75rem; }
+    .user-entry .msg-body-wrap { margin-right: 0; margin-left: 0; }
+    .msg-avatar { width: 2.25rem; height: 2.25rem; font-size: 0.875rem; }
+    .layers-toggle, .layer-bar { margin-left: 2.75rem; }
   }
 </style>
 
@@ -831,6 +958,7 @@
 <div class="chat-layout">
 
   <!-- ═══ SIDEBAR ═══ -->
+  <div class="chat-sidebar-backdrop" id="sidebar-backdrop" onclick="closeMobileSidebar()"></div>
   <div class="chat-sidebar" id="sidebar">
     <div class="sidebar-header">
       <button class="new-chat-btn" onclick="newChat()">
@@ -890,6 +1018,8 @@
             <input type="file" id="attach-input" multiple accept="image/*,.pdf,.txt,.md,.csv,.json,.yaml,.yml" style="display:none" onchange="handleAttach(this)">
             <button type="button" class="tb-mobile-toggle" id="btn-tb-menu" onclick="toggleToolbarMenu()" title="Options">+</button>
             <div class="tb-collapsible" id="tb-collapsible">
+              <!-- Mobile-only: attach trigger inside the action sheet (paperclip is hidden in the bar) -->
+              <button type="button" class="attach-btn-sheet" style="display:none" onclick="document.getElementById('attach-input').click(); toggleToolbarMenu();">📎 <span>Attach image or file</span></button>
               <!-- STT provider toggle hidden; ElevenLabs is the sole provider -->
               <button type="button" onclick="toggleSTTProvider()" id="btn-stt" class="tb stt-toggle on-elevenlabs" title="STT: ElevenLabs" style="display:none">
                 <span class="stt-dot"></span><span id="stt-label">🎤 ElevenLabs</span>
@@ -1518,11 +1648,35 @@ function setMode(mode) {
   _mode = 'chat';
 }
 function toggleSidebar() {
-  document.getElementById('sidebar').classList.toggle('collapsed');
+  const sb = document.getElementById('sidebar');
+  sb.classList.toggle('collapsed');
+  // On mobile, sync the backdrop visibility with the open state
+  if (window.matchMedia('(max-width: 768px)').matches) {
+    const bd = document.getElementById('sidebar-backdrop');
+    if (bd) bd.classList.toggle('open', !sb.classList.contains('collapsed'));
+  }
 }
+function closeMobileSidebar() {
+  const sb = document.getElementById('sidebar');
+  if (!sb.classList.contains('collapsed')) sb.classList.add('collapsed');
+  const bd = document.getElementById('sidebar-backdrop');
+  if (bd) bd.classList.remove('open');
+}
+// On mobile, default the chat sidebar to collapsed so chat is the main view
+(function initMobileSidebar() {
+  if (window.matchMedia('(max-width: 768px)').matches) {
+    const sb = document.getElementById('sidebar');
+    if (sb && !sb.classList.contains('collapsed')) sb.classList.add('collapsed');
+  }
+})();
 function toggleToolbarMenu() {
   document.getElementById('tb-collapsible').classList.toggle('open');
   document.getElementById('btn-tb-menu').classList.toggle('open');
+  // Mobile-only: reveal the in-sheet attach trigger when the sheet is open
+  const sheetAttach = document.querySelector('#tb-collapsible .attach-btn-sheet');
+  if (sheetAttach && window.matchMedia('(max-width: 768px)').matches) {
+    sheetAttach.style.display = document.getElementById('tb-collapsible').classList.contains('open') ? 'flex' : 'none';
+  }
 }
 function handleAttach(input) {
   for (const f of input.files) _attachedFiles.push(f);
