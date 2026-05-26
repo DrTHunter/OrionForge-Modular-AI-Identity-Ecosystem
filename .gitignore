@@ -37,6 +37,9 @@ orion-ui-standalone/data/users/
 
 # Secrets
 *.env
+.webui_secret_key
+fly_deploy.log
+_patch_*.py
 
 # Sentence-transformers cache
 .cache/
