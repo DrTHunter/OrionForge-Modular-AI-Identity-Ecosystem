@@ -2334,20 +2334,25 @@ async def page_vault(request: Request, q: str = "", scope: str = "", category: s
             stats = raw_stats
         except Exception:
             pass
-        if q:
-            raw_results = fm.search(q, scope=scope or None, top_k=50)
-            # Filter out low-relevance results (cosine similarity threshold)
-            MIN_SCORE = 0.25
-            memories = [r for r in raw_results if r.get("score", 0) >= MIN_SCORE]
-        else:
-            all_mems = fm.list_all(scope=scope or None)
-            if category:
-                all_mems = [m for m in all_mems if getattr(m, "category", "") == category]
-            memories = [m.__dict__ if hasattr(m, "__dict__") else m for m in all_mems]
+        try:
+            if q:
+                raw_results = fm.search(q, scope=scope or None, top_k=50)
+                # Filter out low-relevance results (cosine similarity threshold)
+                MIN_SCORE = 0.25
+                memories = [r for r in raw_results if r.get("score", 0) >= MIN_SCORE]
+            else:
+                all_mems = fm.list_all(scope=scope or None)
+                if category:
+                    all_mems = [m for m in all_mems if getattr(m, "category", "") == category]
+                memories = [m.__dict__ if hasattr(m, "__dict__") else m for m in all_mems]
 
-        all_raw = fm.list_all()
-        scopes = sorted({getattr(m, "scope", "") for m in all_raw} - {""})
-        categories = sorted({getattr(m, "category", "") for m in all_raw} - {""})
+            all_raw = fm.list_all()
+            scopes = sorted({getattr(m, "scope", "") for m in all_raw} - {""})
+            categories = sorted({getattr(m, "category", "") for m in all_raw} - {""})
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).exception("[vault] list failed: %s", e)
+            memories, scopes, categories = [], [], []
     elif vs:
         # ── VaultStore fallback (no FAISS / no semantic search) ──
         all_active = vs.read_active()

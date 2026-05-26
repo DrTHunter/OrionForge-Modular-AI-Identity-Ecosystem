@@ -331,15 +331,45 @@ class VaultStore:
     # ------------------------------------------------------------------
 
     def read_all(self) -> List[Memory]:
-        """Read every raw line (all versions, including tombstones)."""
+        """Read every raw line (all versions, including tombstones).
+
+        Resilient: skips blank lines and any line that fails to parse as JSON
+        or as a Memory record. A single corrupt/torn line (e.g. from a
+        concurrent partial write on Windows where we don't hold an exclusive
+        lock) used to abort the entire read and make the rest of the vault
+        appear empty in the UI. We now log and continue.
+        """
         if not os.path.exists(self.path):
             return []
         records: List[Memory] = []
+        skipped = 0
         with open(self.path, "r", encoding="utf-8") as f:
-            for line in f:
+            for line_no, line in enumerate(f, 1):
                 line = line.strip()
-                if line:
+                if not line:
+                    continue
+                try:
                     records.append(Memory.from_dict(json.loads(line)))
+                except Exception as e:
+                    skipped += 1
+                    try:
+                        import logging
+                        logging.getLogger(__name__).warning(
+                            "[vault] skipping malformed record at %s:%d (%s): %s",
+                            self.path, line_no, type(e).__name__, str(e)[:120],
+                        )
+                    except Exception:
+                        pass
+                    continue
+        if skipped:
+            try:
+                import logging
+                logging.getLogger(__name__).warning(
+                    "[vault] %s: skipped %d malformed line(s) during read",
+                    self.path, skipped,
+                )
+            except Exception:
+                pass
         return records
 
     def resolve_latest(self) -> Dict[str, Memory]:
