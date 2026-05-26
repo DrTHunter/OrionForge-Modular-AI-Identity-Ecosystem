@@ -1147,6 +1147,7 @@ function onConnectionChange(sel) {
     connSel.classList.add('cloud-conn');
     modelSel.style.display = '';
     modelSel.innerHTML = '<option value="">Loading user models…</option>';
+    if (pinBtn) pinBtn.style.display = '';
     fetchUserModels();
     return;
   }
@@ -1262,9 +1263,16 @@ async function togglePinModel() {
       body: JSON.stringify({ pinned_models: _pinnedModels }),
     });
   } catch (e) { /* best-effort */ }
-  // Re-render dropdown keeping selection
-  if (_lastPlatformData) {
+  // Re-render dropdown keeping selection (pick renderer matching the current value)
+  const isUserModel = val.startsWith('__userkey_');
+  if (isUserModel && _lastUserModelsData) {
+    _renderUserModelsDropdown(_lastUserModelsData);
+    modelSel.value = val;
+  } else if (_lastPlatformData) {
     _renderPlatformDropdown(_lastPlatformData);
+    modelSel.value = val;
+  } else if (_lastUserModelsData) {
+    _renderUserModelsDropdown(_lastUserModelsData);
     modelSel.value = val;
   }
   _updatePinButtonState();
@@ -1332,34 +1340,74 @@ async function fetchUserModels() {
   try {
     const resp = await fetch('/api/user/models');
     const data = await resp.json();
-    modelSel.innerHTML = '';
-    const defOpt = document.createElement('option');
-    defOpt.value = '';
-    defOpt.textContent = 'Select model…';
-    modelSel.appendChild(defOpt);
-
-    let added = 0;
-    (data.providers || []).forEach(prov => {
-      if (!prov.models || !prov.models.length) return;
-      const group = document.createElement('optgroup');
-      group.label = `👤 ${prov.name}`;
-      prov.models.forEach(m => {
-        const o = document.createElement('option');
-        o.value = `__userkey_${prov.provider}::${m}`;
-        o.textContent = m;
-        group.appendChild(o);
-        added += 1;
-      });
-      modelSel.appendChild(group);
-    });
-
-    if (!added) {
-      modelSel.innerHTML = '<option value="">No API keys configured — add them in Settings</option>';
-    }
-    _tryRestoreModel();
+    _lastUserModelsData = data;
+    _renderUserModelsDropdown(data);
   } catch (e) {
     modelSel.innerHTML = '<option value="">⚠ Failed to load user models</option>';
   }
+}
+
+let _lastUserModelsData = null;
+
+function _renderUserModelsDropdown(data) {
+  const modelSel = document.getElementById('chat-model');
+  const pinBtn = document.getElementById('btn-pin-model');
+  modelSel.innerHTML = '';
+  const defOpt = document.createElement('option');
+  defOpt.value = '';
+  defOpt.textContent = 'Select model…';
+  modelSel.appendChild(defOpt);
+
+  // Build lookup of all user-model values
+  const allModels = new Map(); // value → {provider, providerName, model}
+  (data.providers || []).forEach(prov => {
+    (prov.models || []).forEach(m => {
+      allModels.set(`__userkey_${prov.provider}::${m}`, { provider: prov.provider, providerName: prov.name, model: m });
+    });
+  });
+
+  // ⭐ Favorites group (only user-model entries)
+  if (_pinnedModels.length) {
+    const favGroup = document.createElement('optgroup');
+    favGroup.label = '⭐ Favorites';
+    favGroup.className = 'pinned-group';
+    let favAdded = 0;
+    _pinnedModels.forEach(val => {
+      const entry = allModels.get(val);
+      if (entry) {
+        const o = document.createElement('option');
+        o.value = val;
+        o.textContent = `${entry.model} — ${entry.providerName}`;
+        favGroup.appendChild(o);
+        favAdded++;
+      }
+    });
+    if (favAdded) modelSel.appendChild(favGroup);
+  }
+
+  let added = 0;
+  (data.providers || []).forEach(prov => {
+    if (!prov.models || !prov.models.length) return;
+    const group = document.createElement('optgroup');
+    group.label = `\uD83D\uDC64 ${prov.name}`;
+    prov.models.forEach(m => {
+      const o = document.createElement('option');
+      o.value = `__userkey_${prov.provider}::${m}`;
+      o.textContent = m;
+      group.appendChild(o);
+      added += 1;
+    });
+    modelSel.appendChild(group);
+  });
+
+  if (!added) {
+    modelSel.innerHTML = '<option value="">No API keys configured — add them in Settings</option>';
+    if (pinBtn) pinBtn.style.display = 'none';
+    return;
+  }
+  if (pinBtn) pinBtn.style.display = '';
+  _updatePinButtonState();
+  _tryRestoreModel();
 }
 
 function _buildChatRoutingPayload() {
