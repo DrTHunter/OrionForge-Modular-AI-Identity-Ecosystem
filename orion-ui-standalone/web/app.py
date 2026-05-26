@@ -4355,7 +4355,7 @@ async def api_chat_send(req: ChatRequest, request: Request):
         response_text = response_text[:vid_match.start()] + response_text[vid_match.end():]
         response_text = response_text.strip()
     else:
-        p = (req.prompt or "").strip()
+        p = (req.stimulus or "").strip()
         p_low = p.lower()
         if p and any(k in p_low for k in ("video", "loop", "looping", "animate", "animation", "live wallpaper", "background")):
             vid_prompt = p
@@ -4841,7 +4841,7 @@ async def _stream_chat_generator(req: ChatRequest, request: Request, user, conn,
         response_text = response_text[:vid_match.start()] + response_text[vid_match.end():]
         response_text = response_text.strip()
     else:
-        p = (req.prompt or "").strip()
+        p = (req.stimulus or "").strip()
         p_low = p.lower()
         if p and any(k in p_low for k in ("video", "loop", "looping", "animate", "animation", "live wallpaper", "background")):
             vid_prompt = p
