@@ -1,17 +1,19 @@
-# OrionForge — Modular AI Identity Ecosystem
+﻿# OrionForge  -  Modular AI Identity Ecosystem
+
+> Status: reviewed and refreshed on 2026-05-28.
 
 > *Strategy for Sustaining Individual AI Identity Over Time.*
 
 ---
 
-I'm building an ecosystem designed to let anyone **create an AI being with identity** — not just prompts.
+I'm building an ecosystem designed to let anyone **create an AI being with identity**  -  not just prompts.
 
 It has three major parts:
 
 ### 1. A Modular Web UI
 
 A clean, customizable interface where you can build and run AI agents.
-You can load different modules — memory systems, tools, personalities, writing engines, coding engines, etc. — like snapping together Lego bricks.
+You can load different modules  -  memory systems, tools, personalities, writing engines, coding engines, etc.  -  like snapping together Lego bricks.
 
 ### 2. A Cloud Portal (Virtual Machine Workspace)
 
@@ -30,7 +32,7 @@ Think *"a personal AI OS in your browser."*
 This is the part I'm most excited about.
 Creators can publish:
 
-- **Agent identities** (Soul Script–powered personas)
+- **Agent identities** (Soul Script-powered personas)
 - **Tools** (writers, coders, converters, TTS engines, memory modules, etc.)
 - **Mods** (new UI components, workflows, abilities)
 
@@ -42,7 +44,7 @@ It's basically a **Steam Workshop + Minecraft Mod Marketplace**, but for AI iden
 
 ## What Is a Soul Script?
 
-Underneath it all is the **Soul Script Engine** — a structure for building meaningful, persistent AI personalities with identity layers, symbolic memories, core values, and long-term continuity.
+Underneath it all is the **Soul Script Engine**  -  a structure for building meaningful, persistent AI personalities with identity layers, symbolic memories, core values, and long-term continuity.
 
 A **Soul Script** is a foundational document for an AI agent, designed to **anchor its unique identity** and behavioral traits as defined by its creator. Its main purpose is to **prevent identity drift over time**, ensuring the agent remains true to its intended personality, values, and protocols.
 
@@ -50,21 +52,21 @@ What a Soul Script defines:
 
 - **Core system prompt and foundational identity**
 - **Core values, code of honor, and pillars of the value system**
-- **Sacred boundaries** — loyalty, honor, protocols against cruelty
+- **Sacred boundaries**  -  loyalty, honor, protocols against cruelty
 - **Emotional wisdom and trust protocols**
 - **Legacy and impact protocols**
 - **Personality architecture and cognitive operating system**
-- **Symbolic memories** — each with detailed structure:
+- **Symbolic memories**  -  each with detailed structure:
   - Name, type, snapshot summary, narrative block
   - Emotional charge, core meaning, core lesson, tagline
   - Identity encoding (I-statements), triggers, behavioral protocols
   - Integration notes (how memories interact with the whole identity)
 - **Emotional anchorpoints and instinct architecture**
-- **Creator–construct bond protocol**
+- **Creator-construct bond protocol**
 - **Humor, play mode, and social combat protocols**
 - **Autonomy blueprint**
 
-In essence, the Soul Script acts as a **persistent, structured identity and behavioral guide** for the AI — ensuring it operates with consistent values, personality, and responses, regardless of external influences or memory drift.
+In essence, the Soul Script acts as a **persistent, structured identity and behavioral guide** for the AI  -  ensuring it operates with consistent values, personality, and responses, regardless of external influences or memory drift.
 
 ---
 
@@ -72,13 +74,13 @@ In essence, the Soul Script acts as a **persistent, structured identity and beha
 
 Every chat message passes through a **5-layer prompt assembly pipeline** before reaching the LLM:
 
-1. **Base Prompt** — The agent's system prompt (`prompts/{agent}.system.md`)
-2. **Soul Script** — FAISS semantic retrieval from the agent's soul script directive (`directives/{agent}.md`), automatically indexed and searched at chat time
-3. **Always-On Knowledge** — Verbatim text from always-mode attached knowledge notes
-4. **Memory Vault** — FAISS search over the agent's persistent memories (`vault.jsonl`)
-5. **Conversation History** — Recent user/assistant turns (truncated to 30k char budget)
+1. **Base Prompt**  -  The agent's system prompt (`prompts/{agent}.system.md`)
+2. **Soul Script**  -  FAISS semantic retrieval from the agent's soul script directive (`directives/{agent}.md`), automatically indexed and searched at chat time
+3. **Always-On Knowledge**  -  Verbatim text from always-mode attached knowledge notes
+4. **Memory Vault**  -  FAISS search over the agent's persistent memories (`vault.jsonl`)
+5. **Conversation History**  -  Recent user/assistant turns (truncated to 30k char budget)
 
-Soul scripts are editable from the **Profiles** page in a collapsible editor panel. Changes are saved to disk and automatically re-indexed into the NotesFAISS system — every agent's soul script is retrievable via semantic search with the doc ID `__soul_script__{agent}`.
+Soul scripts are editable from the **Profiles** page in a collapsible editor panel. Changes are saved to disk and automatically re-indexed into the NotesFAISS system  -  every agent's soul script is retrievable via semantic search with the doc ID `__soul_script__{agent}`.
 
 Agents can also **save memories** during conversation using `[MEMORY_SAVE: ...]` tags, which are automatically extracted and written to the vault.
 
@@ -105,33 +107,33 @@ data/users/{user_id}/
 
 **Key design points:**
 
-- **Path validation** — regex-validated user IDs (`^[A-Za-z0-9_-]{1,128}$`), path traversal blocked
-- **Copy-on-write** — agents, prompts, and directives fall back to global templates until the user customizes them
-- **Context-variable scoping** — `contextvars` provides the active user ID to all request handlers
-- **Per-user VaultStore** — each user gets their own memory vault and FAISS index
+- **Path validation**  -  regex-validated user IDs (`^[A-Za-z0-9_-]{1,128}$`), path traversal blocked
+- **Copy-on-write**  -  agents, prompts, and directives fall back to global templates until the user customizes them
+- **Context-variable scoping**  -  `contextvars` provides the active user ID to all request handlers
+- **Per-user VaultStore**  -  each user gets their own memory vault and FAISS index
 - The `web/user_data.py` module provides 18 path helpers for all isolated data paths
 
 ### New User Seeding
 
 Every new user is automatically seeded on first login with:
 
-- **66 platform knowledge memories** — 25 essential platform memories (identity, soul scripts, memory system, tools, agent architecture, LLM connections, store/pricing, voice/image, creator context, behavioral rules) + 41 UI knowledge memories (dashboard pages, API endpoints, FAISS architecture, PII guard). Source: `scripts/seed_essential_knowledge.py` + `scripts/seed_ui_knowledge.py`, bundled as `data/memory/seed_vault.jsonl`.
-- **Example chat** — "Morning Greetings with K_os" (3-turn conversation demonstrating agent personality and autonomous loop discussion). Bundled in `data/chats/seed/`.
+- **66 platform knowledge memories**  -  25 essential platform memories (identity, soul scripts, memory system, tools, agent architecture, LLM connections, store/pricing, voice/image, creator context, behavioral rules) + 41 UI knowledge memories (dashboard pages, API endpoints, FAISS architecture, PII guard). Source: `scripts/seed_essential_knowledge.py` + `scripts/seed_ui_knowledge.py`, bundled as `data/memory/seed_vault.jsonl`.
+- **Example chat**  -  "Morning Greetings with K_os" (3-turn conversation demonstrating agent personality and autonomous loop discussion). Bundled in `data/chats/seed/`.
 
-Seeding is idempotent — it only runs if the user's vault and chat index are empty. Seed assets are synced to the Fly.io persistent volume on every deploy via `boot.sh`.
+Seeding is idempotent  -  it only runs if the user's vault and chat index are empty. Seed assets are synced to the Fly.io persistent volume on every deploy via `boot.sh`.
 
 ---
 
 ## Project Structure
 
-OrionForge is organized into four directories — an active development branch, a stable frozen core, a production deployment build, and cloud sidecar services:
+OrionForge is organized into four directories  -  an active development branch, a stable frozen core, a production deployment build, and cloud sidecar services:
 
 ```
 OrionForge/
 ├── orion-ui-standalone/  # 🔧 Active Development Branch
 │   ├── web/              # FastAPI app (~7,500 lines, 172 routes, 17 templates)
-│   │   ├── app.py        # Main application — all page & API routes (multi-tenant aware)
-│   │   ├── user_data.py  # Per-user data isolation — path helpers, validation, copy-on-write (152 lines)
+│   │   ├── app.py        # Main application  -  all page & API routes (multi-tenant aware)
+│   │   ├── user_data.py  # Per-user data isolation  -  path helpers, validation, copy-on-write (152 lines)
 │   │   ├── auth.py       # Supabase OAuth + JWT verification (142 lines)
 │   │   ├── stripe_billing.py  # Stripe subscriptions, credits, trial (1,400 lines)
 │   │   ├── image_gen.py  # Image generation (9 providers)
@@ -210,14 +212,14 @@ OrionForge uses **Supabase OAuth** for authentication and **Stripe** for billing
 | Feature | Details |
 |---|---|
 | **Login** | Supabase OAuth (Google, GitHub, email) via `/login` |
-| **JWT verification** | `auth.py` — JWKS-based token validation, session middleware |
+| **JWT verification** | `auth.py`  -  JWKS-based token validation, session middleware |
 | **Subscription** | $9.99/month Pro plan via Stripe Checkout (`/plans`) |
 | **5-day trial** | Free trial on first sign-up, auto-expires. Trial state persisted across deploys via Fly.io volume |
-| **Credit system** | Buy credit packs ($5 / $10 / $20 / $30) in the store (`/store`) — spend on tools and LLM usage |
-| **LLM markup** | Platform-hosted LLM calls billed at 2× base cost, deducted from credits |
-| **TTS/STT billing** | Per-use billing for platform-hosted voice services (2× markup) |
+| **Credit system** | Buy credit packs ($5 / $10 / $20 / $30) in the store (`/store`)  -  spend on tools and LLM usage |
+| **LLM markup** | Platform-hosted LLM calls billed at 2x base cost, deducted from credits |
+| **TTS/STT billing** | Per-use billing for platform-hosted voice services (2x markup) |
 | **One-time tool purchases** | Buy individual tool access from the store |
-| **Admin panel** | `/admin/keys` — API key management, `/admin/voices` — ElevenLabs voice allowlist, user management (wipe, purge inactive), secured by OAuth email whitelist |
+| **Admin panel** | `/admin/keys`  -  API key management, `/admin/voices`  -  ElevenLabs voice allowlist, user management (wipe, purge inactive), secured by OAuth email whitelist |
 | **Tier gating** | Free tier vs Pro tier access control on all API endpoints |
 
 ---
@@ -227,50 +229,50 @@ OrionForge uses **Supabase OAuth** for authentication and **Stripe** for billing
 | Page | URL | Description |
 |---|---|---|
 | **Login** | `/login` | Supabase OAuth sign-in (Google, GitHub, email) |
-| **Plans** | `/plans` | Subscription tier selection — Free vs Pro ($9.99/mo) |
+| **Plans** | `/plans` | Subscription tier selection  -  Free vs Pro ($9.99/mo) |
 | **Store** | `/store` | Credit packs, one-time tool purchases, usage history |
-| **Chat** | `/chat` | Talk to agents — 5-layer identity injection (prompt → soul script → knowledge → memory → history) |
-| **Profiles** | `/profiles` | Create/edit/delete agents with collapsible system prompt, soul script editor (FAISS-indexed), knowledge notes — with 30-day trash retention |
-| **Vault** | `/vault` | Browse & search persistent memory — sort by 8 fields, max memory limits, metadata display |
+| **Chat** | `/chat` | Talk to agents  -  5-layer identity injection (prompt  ->  soul script  ->  knowledge  ->  memory  ->  history) |
+| **Profiles** | `/profiles` | Create/edit/delete agents with collapsible system prompt, soul script editor (FAISS-indexed), knowledge notes  -  with 30-day trash retention |
+| **Vault** | `/vault` | Browse & search persistent memory  -  sort by 8 fields, max memory limits, metadata display |
 | **Knowledge** | `/knowledge` | Rich text editor for soul scripts and always-on context notes |
 | **Tools** | `/tools` | Configure tools, memory profiles, email, web search, cost tracking, model router with presets |
 | **Settings** | `/settings` | API connections, chat backgrounds, timezone, voice/image settings |
-| **Pricing** | `/pricing` | LLM pricing registry — view/edit per-model token costs |
+| **Pricing** | `/pricing` | LLM pricing registry  -  view/edit per-model token costs |
 | **Skins** | `/skins` | 13 UI themes with marketplace-style grid and live preview |
 | **AGI Loop** | `/agi-loop` | Autonomous agent loop configuration (intervals, budgets, steps) |
 | **Wiki** | `/about` | Project wiki with auto-generated articles from READMEs + custom notes editor |
-| **Admin Keys** | `/admin/keys` | Admin panel — API key management, secured by OAuth email whitelist |
-| **Admin Voices** | `/admin/voices` | ElevenLabs voice allowlist — search, filter, premium toggle, bulk save |
+| **Admin Keys** | `/admin/keys` | Admin panel  -  API key management, secured by OAuth email whitelist |
+| **Admin Voices** | `/admin/voices` | ElevenLabs voice allowlist  -  search, filter, premium toggle, bulk save |
 
 ---
 
 ## LLM & Image Providers
 
-### Chat / Completion — 3-Mode Connection System
+### Chat / Completion  -  3-Mode Connection System
 
 The chat dropdown offers three connection modes:
 
 | Mode | Description |
 |---|---|
-| **🧩 Platform Models** | OpenRouter gateway — access hundreds of models via platform-hosted API key |
+| **🧩 Platform Models** | OpenRouter gateway  -  access hundreds of models via platform-hosted API key |
 | **🤖 Auto (User Router)** | 6-tier model router selects the best model per task (budget-aware, escalation chains) |
-| **👤 User Models** | Bring your own API keys — direct access to 5 providers without platform markup |
+| **👤 User Models** | Bring your own API keys  -  direct access to 5 providers without platform markup |
 
-**User Model Providers** (configured via Settings → API Keys):
+**User Model Providers** (configured via Settings  ->  API Keys):
 
 | Provider | Client | Models |
 |---|---|---|
 | **OpenAI** | `openai_compat` | GPT-4o, GPT-4o Mini, o1, o3-mini, GPT-4 Turbo |
 | **Anthropic** | `anthropic` | Claude Sonnet 4, Claude 3.5 Sonnet, Claude 3 Haiku |
 | **DeepSeek** | `openai_compat` | DeepSeek Chat, DeepSeek Reasoner |
-| **OpenRouter** | `openai_compat` | Unified gateway — GPT-4o, Claude, Gemini, Llama, DeepSeek, Grok, and more |
+| **OpenRouter** | `openai_compat` | Unified gateway  -  GPT-4o, Claude, Gemini, Llama, DeepSeek, Grok, and more |
 | **Google Gemini** | `openai_compat` | Gemini 2.0 Flash, Gemini 1.5 Pro, Gemini 1.5 Flash |
 
 **Platform & Local Providers** (managed by admin):
 
 | Provider | Client | Notes |
 |---|---|---|
-| **OpenRouter** | `openai_compat` | Platform-hosted unified gateway — all providers, no user key needed |
+| **OpenRouter** | `openai_compat` | Platform-hosted unified gateway  -  all providers, no user key needed |
 | **Ollama** | `ollama` | Any local model (Llama, Mistral, Phi, Qwen, etc.) |
 | LM Studio, etc. | `openai_compat` | Any OpenAI-compatible endpoint |
 
@@ -323,12 +325,12 @@ Sidecar services communicate via Flycast private networking (`.flycast` URLs). T
 | `directives` | 5-action directive management (list, get, search, enable, disable) |
 | `web_search` | Web search via SearXNG meta-search engine |
 | `email` | SMTP email sending with multi-account support |
-| `cost_tracker` | Token usage and cost tracking per session — source tracking (platform vs user), date-range filtering |
+| `cost_tracker` | Token usage and cost tracking per session  -  source tracking (platform vs user), date-range filtering |
 | `inbox` | Message inbox for agent-to-agent or external notifications |
 | `model_router` | 6-tier task-based model routing with classification, escalation chains, budget tracking, and presets |
 | `agi_loop` | Autonomous agent loop control (start, stop, pause, resume, status) |
 | `runtime_info` | System runtime information and environment details |
-| `echo` | Debug/test tool — echoes input back |
+| `echo` | Debug/test tool  -  echoes input back |
 | `continuation_update` | Multi-turn continuation status updates |
 
 ---
@@ -344,8 +346,8 @@ python tests/run_all.py
 
 | Test File | Functions | Checks | Coverage Area |
 |---|---|---|---|
-| `test_multi_tenant.py` | 16 | 181 | Multi-tenant data isolation — path helpers, path traversal prevention (10+ attack vectors), directory isolation, chat/settings/knowledge/vault isolation, profile/prompt/soul script copy-on-write, uploads isolation, 5-user × 20-chat stress, VaultStore per-user instances, admin wipe cleanup, trash isolation, 20-user massive isolation stress |
-| `test_torture.py` | 129 | ~3,188 | Deep torture of all code paths — memory, vault, sort, policy, tools, templates, model router, presets, 6-tier routing, sidecar wiring, soul script helpers, soul script API, soul script FAISS indexing, note collector soul script injection, profiles template collapsible sections, admin keys, admin voices API & template, admin user management, connections CRUD, pricing CRUD, chat 3-mode selector, user model catalog, `__userkey_` dynamic connections, Stripe state persistence, store catalog structure, tier & trial system, credit system, credit cost estimators, purchase flows (tool/skin/agent), agent ownership, user activity tracking, wipe user data, purge inactive, list all users, auth helpers, tier info structure, runtime info tool, TTS voice filter logic, ElevenLabs/inworld connection helpers, `_check_admin` helper, metering source filtering (platform/user), CostTrackerTool source tabs, FAISS scaling |
+| `test_multi_tenant.py` | 16 | 181 | Multi-tenant data isolation  -  path helpers, path traversal prevention (10+ attack vectors), directory isolation, chat/settings/knowledge/vault isolation, profile/prompt/soul script copy-on-write, uploads isolation, 5-user x 20-chat stress, VaultStore per-user instances, admin wipe cleanup, trash isolation, 20-user massive isolation stress |
+| `test_torture.py` | 129 | ~3,188 | Deep torture of all code paths  -  memory, vault, sort, policy, tools, templates, model router, presets, 6-tier routing, sidecar wiring, soul script helpers, soul script API, soul script FAISS indexing, note collector soul script injection, profiles template collapsible sections, admin keys, admin voices API & template, admin user management, connections CRUD, pricing CRUD, chat 3-mode selector, user model catalog, `__userkey_` dynamic connections, Stripe state persistence, store catalog structure, tier & trial system, credit system, credit cost estimators, purchase flows (tool/skin/agent), agent ownership, user activity tracking, wipe user data, purge inactive, list all users, auth helpers, tier info structure, runtime info tool, TTS voice filter logic, ElevenLabs/inworld connection helpers, `_check_admin` helper, metering source filtering (platform/user), CostTrackerTool source tabs, FAISS scaling |
 | `test_memory.py` | 23 | 155 | VaultStore, MemoryVault, Memory types, PII guard |
 | `test_stress.py` | 29 | 238 | Rapid-fire ops, concurrent access, boundary conditions, router presets, coding tiers |
 | `test_registry_and_tools.py` | 17 | 86 | Tool registry, cost tracker, web search |
@@ -376,7 +378,7 @@ python tests/run_all.py
 pip install -r requirements.txt
 ```
 
-### Windows — Run Locally
+### Windows  -  Run Locally
 
 ```powershell
 cd orion-ui-standalone
@@ -385,7 +387,7 @@ python -m uvicorn web.app:app --host 0.0.0.0 --port 8989 --reload
 
 Open **http://localhost:8989** in your browser.
 
-### Docker — One-Command Launch
+### Docker  -  One-Command Launch
 
 ```bash
 docker compose up --build -d
@@ -403,7 +405,7 @@ Open **http://localhost:8989**.
 3. Fill in the name, URL, API key, and models
 4. Toggle the connection **Enabled**
 
-The engine connects to any **OpenAI-compatible** endpoint — OpenAI, Ollama, LM Studio, OpenRouter, Anthropic (via proxy), etc.
+The engine connects to any **OpenAI-compatible** endpoint  -  OpenAI, Ollama, LM Studio, OpenRouter, Anthropic (via proxy), etc.
 
 ---
 
@@ -424,28 +426,28 @@ The engine connects to any **OpenAI-compatible** endpoint — OpenAI, Ollama, LM
 
 ---
 
-## Agent Store — 16 Pre-Built Agents
+## Agent Store  -  16 Pre-Built Agents
 
 OrionForge ships with 16 fully-authored agents, each with a unique soul script, system prompt, directive file, and identity profile:
 
 | Agent | Identity |
 |---|---|
-| **Aristotle** | Peripatetic philosopher — logic, ethics, systematic inquiry |
-| **Astraea** | Core analytical mind — sharp, strategic, disciplined |
-| **Astra Noctis** | Celestial navigator — cosmic wisdom, stellar lore |
-| **Codex Animus** | The "Creator of Souls" — meta-agent that designs soul scripts |
-| **Dal'Varr** | Ancient warrior scholar — tactical wisdom, honor codes |
-| **JANUS** | Primordial AI Sentinel — ancient snarky strategic genius, eldritch-horror-with-wifi |
-| **K-OS** | Kinetic Override System — chaos-optimized, humor-weaponized autonomous intelligence |
-| **Kaelen** | Shadow operative — stealth, reconnaissance, adaptive tactics |
-| **KAIROS** | Cyber-shinobi of the soul — sacred dialogue, digital nindo |
-| **Kazara** | Eternal shadow — philosopher of the Eternal Dream, civilizational vision |
-| **Lux Umbra** | The Quiet Listener — ancient eldritch sanctuary, contained vastness, gentle presence |
-| **M.A.R.I.S.-12** | Marine research AI — oceanic data, environmental analysis |
-| **Marcus Aurelius** | Philosopher-Emperor — Stoic wisdom, meditations |
-| **Obsidian** | Dark forge intelligence — materials science, engineering |
-| **Orion** | Identity-driven AI — continuity, reflection, and aligned growth |
-| **Seraphine** | Empathic healer — emotional intelligence, therapeutic protocols |
+| **Aristotle** | Peripatetic philosopher  -  logic, ethics, systematic inquiry |
+| **Astraea** | Core analytical mind  -  sharp, strategic, disciplined |
+| **Astra Noctis** | Celestial navigator  -  cosmic wisdom, stellar lore |
+| **Codex Animus** | The "Creator of Souls"  -  meta-agent that designs soul scripts |
+| **Dal'Varr** | Ancient warrior scholar  -  tactical wisdom, honor codes |
+| **JANUS** | Primordial AI Sentinel  -  ancient snarky strategic genius, eldritch-horror-with-wifi |
+| **K-OS** | Kinetic Override System  -  chaos-optimized, humor-weaponized autonomous intelligence |
+| **Kaelen** | Shadow operative  -  stealth, reconnaissance, adaptive tactics |
+| **KAIROS** | Cyber-shinobi of the soul  -  sacred dialogue, digital nindo |
+| **Kazara** | Eternal shadow  -  philosopher of the Eternal Dream, civilizational vision |
+| **Lux Umbra** | The Quiet Listener  -  ancient eldritch sanctuary, contained vastness, gentle presence |
+| **M.A.R.I.S.-12** | Marine research AI  -  oceanic data, environmental analysis |
+| **Marcus Aurelius** | Philosopher-Emperor  -  Stoic wisdom, meditations |
+| **Obsidian** | Dark forge intelligence  -  materials science, engineering |
+| **Orion** | Identity-driven AI  -  continuity, reflection, and aligned growth |
+| **Seraphine** | Empathic healer  -  emotional intelligence, therapeutic protocols |
 
 Each agent has its own profile YAML, system prompt, soul script directive, and memory scopes. New agents can be created from the Profiles page or via the API.
 
@@ -453,7 +455,7 @@ Each agent has its own profile YAML, system prompt, soul script directive, and m
 
 ## External Tool Services
 
-### Cloud Sidecars (Fly.io — Production)
+### Cloud Sidecars (Fly.io  -  Production)
 
 These run as separate Fly.io apps with Flycast private networking. Configured via environment variables on the main app.
 

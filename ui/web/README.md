@@ -1,6 +1,8 @@
-# web/
+﻿# web/
 
-Orion Forge — the web dashboard for the agent runtime. A full-featured browser-based control panel built with FastAPI, Jinja2, and vanilla JavaScript. Includes Supabase OAuth authentication, Stripe subscription billing, and a credit-based monetization system.
+> Status: reviewed and refreshed on 2026-05-28.
+
+Orion Forge  -  the web dashboard for the agent runtime. A full-featured browser-based control panel built with FastAPI, Jinja2, and vanilla JavaScript. Includes Supabase OAuth authentication, Stripe subscription billing, and a credit-based monetization system.
 
 ## Quick Start
 
@@ -14,13 +16,13 @@ python -m uvicorn web.app:app --host 0.0.0.0 --port 8989 --reload
 
 | File | Purpose |
 |------|---------|
-| `app.py` | FastAPI application — all routes, helpers, and API endpoints (172 routes, ~7,500 lines, multi-tenant aware) |
-| `user_data.py` | Per-user data isolation layer — path helpers, user_id validation, directory builders, copy-on-write support (152 lines) |
-| `auth.py` | Supabase OAuth + JWT verification — JWKS validation, session middleware, path whitelist (142 lines) |
-| `stripe_billing.py` | Stripe subscription system — checkout, webhooks, credits, trial management, tier gating (1,400 lines) |
+| `app.py` | FastAPI application  -  all routes, helpers, and API endpoints (172 routes, ~7,500 lines, multi-tenant aware) |
+| `user_data.py` | Per-user data isolation layer  -  path helpers, user_id validation, directory builders, copy-on-write support (152 lines) |
+| `auth.py` | Supabase OAuth + JWT verification  -  JWKS validation, session middleware, path whitelist (142 lines) |
+| `stripe_billing.py` | Stripe subscription system  -  checkout, webhooks, credits, trial management, tier gating (1,400 lines) |
 | `image_gen.py` | Image generation helper (9 providers: OpenAI DALL-E/GPT Image, Google Imagen, Stability, Ideogram, Replicate, FAL, Leonardo, Midjourney) |
 | `static/style.css` | Stylesheet for the dashboard |
-| `templates/` | Jinja2 HTML templates (17 files — 16 pages + base layout) |
+| `templates/` | Jinja2 HTML templates (17 files  -  16 pages + base layout) |
 
 ## Templates
 
@@ -28,19 +30,19 @@ python -m uvicorn web.app:app --host 0.0.0.0 --port 8989 --reload
 |----------|------|
 | `base.html` | Shared layout (nav, sidebar, footer, skin theming, auth state, trial banner) |
 | `login.html` | Supabase OAuth sign-in (Google, GitHub, email) |
-| `plans.html` | Subscription tier selection — Free vs Pro ($9.99/mo) |
+| `plans.html` | Subscription tier selection  -  Free vs Pro ($9.99/mo) |
 | `store.html` | Credit packs, one-time tool purchases, usage history |
-| `admin_keys.html` | Admin panel — API key management (secured by email whitelist) |
-| `admin_voices.html` | Admin panel — ElevenLabs voice allowlist (search, filter, premium toggle, bulk save) |
-| `chat.html` | Real-time chat with agents — streaming, tool execution, folders |
-| `vault.html` | Memory vault browser — sort by 8 fields, metadata display, max memory limits |
-| `profiles.html` | Agent profile viewer/editor — collapsible system prompt, soul script editor (FAISS-indexed badge), knowledge notes, avatar upload, create new agents |
+| `admin_keys.html` | Admin panel  -  API key management (secured by email whitelist) |
+| `admin_voices.html` | Admin panel  -  ElevenLabs voice allowlist (search, filter, premium toggle, bulk save) |
+| `chat.html` | Real-time chat with agents  -  streaming, tool execution, folders |
+| `vault.html` | Memory vault browser  -  sort by 8 fields, metadata display, max memory limits |
+| `profiles.html` | Agent profile viewer/editor  -  collapsible system prompt, soul script editor (FAISS-indexed badge), knowledge notes, avatar upload, create new agents |
 | `settings.html` | API connections, timezone, chat background, voice/image settings |
 | `tools.html` | Tool registry, memory profiles, email config, web search config, cost tracking |
 | `knowledge.html` | Knowledge notes browser with folders |
 | `knowledge_edit.html` | Rich text knowledge note editor |
-| `pricing.html` | LLM pricing registry — view/edit per-model token costs |
-| `skins.html` | 13 UI themes — marketplace grid with live preview |
+| `pricing.html` | LLM pricing registry  -  view/edit per-model token costs |
+| `skins.html` | 13 UI themes  -  marketplace grid with live preview |
 | `agi_loop.html` | AGI loop configuration (intervals, budgets, steps) |
 | `about.html` | Project wiki with auto-generated articles from READMEs + custom notes editor |
 
@@ -61,12 +63,12 @@ python -m uvicorn web.app:app --host 0.0.0.0 --port 8989 --reload
 | `GET /knowledge/{note_id}/edit` | Knowledge note editor |
 | `GET /settings` | Settings page |
 | `GET /tools` | Tool registry & config |
-| `GET /pricing` | Pricing → redirect |
+| `GET /pricing` | Pricing  ->  redirect |
 | `GET /skins` | UI skins marketplace |
 | `GET /agi-loop` | AGI loop config |
 | `GET /about` | Wiki page |
-| `GET /admin/keys` | Admin panel — API keys |
-| `GET /admin/voices` | Admin panel — voice allowlist |
+| `GET /admin/keys` | Admin panel  -  API keys |
+| `GET /admin/voices` | Admin panel  -  voice allowlist |
 
 ### Auth API (~6 routes)
 
@@ -254,17 +256,17 @@ On startup, the app rebuilds the NotesFAISS index and initializes a lazy `FAISSM
 
 | Service | Purpose | Local Default | Production (Fly.io) |
 |---------|---------|---------------|---------------------|
-| SearXNG | Web search for `web_search` tool | `http://localhost:3000` | `SEARXNG_URL` env var → `.flycast` |
-| openedai-speech | Text-to-speech | `http://localhost:5050` | `TTS_URL` env var → `.flycast` |
-| faster-whisper | Speech-to-text | `http://localhost:8060` | `WHISPER_URL` env var → `.flycast` |
+| SearXNG | Web search for `web_search` tool | `http://localhost:3000` | `SEARXNG_URL` env var  ->  `.flycast` |
+| openedai-speech | Text-to-speech | `http://localhost:5050` | `TTS_URL` env var  ->  `.flycast` |
+| faster-whisper | Speech-to-text | `http://localhost:8060` | `WHISPER_URL` env var  ->  `.flycast` |
 
 Environment variables (`TTS_URL`, `WHISPER_URL`, `SEARXNG_URL`) take priority over `connections.json` entries.
 
 ## Multi-Tenant Data Isolation
 
-The app is fully multi-tenant. `user_data.py` provides 18 path helpers that route all data reads/writes through `data/users/{user_id}/`. Every authenticated request sets the active user via `contextvars`, and all endpoints — chats, vault, knowledge, settings, profiles, uploads, trash — operate on the per-user tree.
+The app is fully multi-tenant. `user_data.py` provides 18 path helpers that route all data reads/writes through `data/users/{user_id}/`. Every authenticated request sets the active user via `contextvars`, and all endpoints  -  chats, vault, knowledge, settings, profiles, uploads, trash  -  operate on the per-user tree.
 
 Key behaviors:
-- **Path validation** — user IDs are regex-validated; directory traversal attempts are blocked
-- **Copy-on-write** — profiles, prompts, and directives fall back to global templates until customized
-- **Per-user VaultStore** — each user gets an isolated memory vault and FAISS index
+- **Path validation**  -  user IDs are regex-validated; directory traversal attempts are blocked
+- **Copy-on-write**  -  profiles, prompts, and directives fall back to global templates until customized
+- **Per-user VaultStore**  -  each user gets an isolated memory vault and FAISS index

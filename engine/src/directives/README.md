@@ -1,4 +1,6 @@
-# src/directives/
+﻿# src/directives/
+
+> Status: reviewed and refreshed on 2026-05-28.
 
 Parses, scores, and retrieves sections from user-authored directive markdown files.
 
@@ -6,10 +8,10 @@ Parses, scores, and retrieves sections from user-authored directive markdown fil
 
 | File | Purpose |
 |------|---------|
-| `parser.py` | `DirectiveSection` dataclass + `parse_directive_file()` — splits markdown on `## Headings` |
-| `store.py` | `DirectiveStore` — loads sections, scores relevance, provides search/list/get |
-| `injector.py` | `build_directives_block()` — formats relevant sections for system prompt injection |
-| `manifest.py` | `generate_manifest()` / `save_manifest()` / `load_manifest()` / `validate_manifest()` / `diff_manifest()` / `audit_changes()` — builds, persists, validates, and diffs `directives/manifest.json` |
+| `parser.py` | `DirectiveSection` dataclass + `parse_directive_file()`  -  splits markdown on `## Headings` |
+| `store.py` | `DirectiveStore`  -  loads sections, scores relevance, provides search/list/get |
+| `injector.py` | `build_directives_block()`  -  formats relevant sections for system prompt injection |
+| `manifest.py` | `generate_manifest()` / `save_manifest()` / `load_manifest()` / `validate_manifest()` / `diff_manifest()` / `audit_changes()`  -  builds, persists, validates, and diffs `directives/manifest.json` |
 
 ## How It Works
 
@@ -61,10 +63,10 @@ Agents can read the manifest via the `directives` tool's `manifest` action.
 ## Change Control
 
 `diff_manifest(old, new)` compares two manifests and returns structured deltas:
-- **added** — directives in *new* not in *old*
-- **removed** — directives in *old* not in *new*
-- **changed** — common directives whose SHA-256 hash differs
-- **unchanged_count** — count of identical entries
+- **added**  -  directives in *new* not in *old*
+- **removed**  -  directives in *old* not in *new*
+- **changed**  -  common directives whose SHA-256 hash differs
+- **unchanged_count**  -  count of identical entries
 
 `audit_changes()` is the convenience wrapper: loads the persisted manifest,
 generates a live one, and returns the diff.
@@ -87,7 +89,7 @@ Returns `{"valid": bool, "errors": [str]}`.
 ## Directive Files
 
 Located in `directives/` at the project root:
-- `shared.md` — all agents
-- `astraea.md` — Astraea only
-- `codex_animus.md` — Codex Animus only
-- `manifest.json` — auto-generated index (see above)
+- `shared.md`  -  all agents
+- `astraea.md`  -  Astraea only
+- `codex_animus.md`  -  Codex Animus only
+- `manifest.json`  -  auto-generated index (see above)

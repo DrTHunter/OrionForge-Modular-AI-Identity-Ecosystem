@@ -1,4 +1,6 @@
-# Storage — Note Collection & User Notes
+﻿# Storage  -  Note Collection & User Notes
+
+> Status: reviewed and refreshed on 2026-05-28.
 
 Handles loading, stripping, and injecting user-authored notes into agent context.
 
@@ -37,5 +39,5 @@ data/user_notes/*.json
 
 Note attachment behaviour is controlled via `config/settings.json`:
 
-- **always** — notes are injected into every prompt
-- **directive** — notes are only injected when referenced by active directives
+- **always**  -  notes are injected into every prompt
+- **directive**  -  notes are only injected when referenced by active directives

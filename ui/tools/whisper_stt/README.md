@@ -1,9 +1,11 @@
-# Whisper STT — Speech-to-Text (Docker)
+﻿# Whisper STT  -  Speech-to-Text (Docker)
+
+> Status: reviewed and refreshed on 2026-05-28.
 
 **Required by:** Voice transcription in chat  
 **Default URL:** `http://localhost:8060`  
 **Connection ID:** `whisper-stt-local`  
-**Configured in:** Dashboard → Connections → Whisper STT (Local)
+**Configured in:** Dashboard  ->  Connections  ->  Whisper STT (Local)
 
 ---
 
@@ -107,7 +109,7 @@ Set the model via the `WHISPER__MODEL` environment variable.
 |----------|--------|-------------|
 | `/v1/audio/transcriptions` | POST | Transcribe audio file (OpenAI-compatible) |
 
-### Example — Transcribe Audio
+### Example  -  Transcribe Audio
 
 ```bash
 curl -X POST http://localhost:8060/v1/audio/transcriptions \
@@ -141,7 +143,7 @@ The runtime connects via `config/connections.json`:
 }
 ```
 
-You can also manage this from **Dashboard → Connections**.
+You can also manage this from **Dashboard  ->  Connections**.
 
 ---
 

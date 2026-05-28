@@ -1,10 +1,12 @@
-# openedai-speech — Local Text-to-Speech (Docker + GPU)
+﻿# openedai-speech  -  Local Text-to-Speech (Docker + GPU)
+
+> Status: reviewed and refreshed on 2026-05-28.
 
 **Required by:** Agent TTS voice output  
 **Default URL:** `http://localhost:5050`  
 **Connection ID:** `edge-tts-local`  
-**Configured in:** Dashboard → Connections  
-**Privacy:** 100% local — no data leaves your machine
+**Configured in:** Dashboard  ->  Connections  
+**Privacy:** 100% local  -  no data leaves your machine
 
 ---
 
@@ -22,8 +24,8 @@ Both engines share the same voice names (`alloy`, `echo`, `fable`, `onyx`, `nova
 The `model` parameter in the API request determines which engine processes it.
 
 In the Dashboard chat, click the 🔊 toggle to cycle:
-- **🔊 Piper** (green) — `tts-1` → fast, CPU-only
-- **🔊 XTTS HD** (purple) — `tts-1-hd` → high quality, GPU-accelerated
+- **🔊 Piper** (green)  -  `tts-1`  ->  fast, CPU-only
+- **🔊 XTTS HD** (purple)  -  `tts-1-hd`  ->  high quality, GPU-accelerated
 
 ---
 
@@ -69,7 +71,7 @@ curl http://localhost:5050/v1/models
 | `/v1/audio/speech` | POST | Generate speech (OpenAI-compatible) |
 | `/v1/models` | GET | List available models (tts-1, tts-1-hd) |
 
-### Example — Generate Speech (Piper / CPU)
+### Example  -  Generate Speech (Piper / CPU)
 
 ```bash
 curl -X POST http://localhost:5050/v1/audio/speech \
@@ -78,7 +80,7 @@ curl -X POST http://localhost:5050/v1/audio/speech \
   --output speech.mp3
 ```
 
-### Example — Generate Speech (XTTS HD / GPU)
+### Example  -  Generate Speech (XTTS HD / GPU)
 
 ```bash
 curl -X POST http://localhost:5050/v1/audio/speech \
@@ -91,7 +93,7 @@ curl -X POST http://localhost:5050/v1/audio/speech \
 
 ## Available Voices
 
-### tts-1 (Piper — CPU, fast)
+### tts-1 (Piper  -  CPU, fast)
 
 | Voice | Model File |
 |-------|-----------|
@@ -103,7 +105,7 @@ curl -X POST http://localhost:5050/v1/audio/speech \
 | `nova` | en_US-libritts_r-medium.onnx (speaker 107) |
 | `shimmer` | en_US-libritts_r-medium.onnx (speaker 163) |
 
-### tts-1-hd (XTTS v2 — GPU, high quality)
+### tts-1-hd (XTTS v2  -  GPU, high quality)
 
 | Voice | Reference Audio | Notes |
 |-------|----------------|-------|
@@ -150,7 +152,7 @@ The runtime connects via `config/connections.json`:
 }
 ```
 
-Manage from **Dashboard → Connections**.
+Manage from **Dashboard  ->  Connections**.
 
 ---
 

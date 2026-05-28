@@ -1,4 +1,6 @@
-# src/llm_client/
+﻿# src/llm_client/
+
+> Status: reviewed and refreshed on 2026-05-28.
 
 LLM provider abstraction layer. Supports multiple providers through a common interface.
 
@@ -6,8 +8,8 @@ LLM provider abstraction layer. Supports multiple providers through a common int
 
 | File | Purpose |
 |------|---------|
-| `base.py` | `LLMClient` ABC + `LLMResponse` dataclass — the common interface |
-| `factory.py` | `create_client(profile)` — dispatches to the right provider class |
+| `base.py` | `LLMClient` ABC + `LLMResponse` dataclass  -  the common interface |
+| `factory.py` | `create_client(profile)`  -  dispatches to the right provider class |
 | `openai_compat.py` | OpenAI Chat Completions API client (also used by DeepSeek) |
 | `ollama.py` | Ollama `/api/chat` client |
 | `anthropic_client.py` | Native Anthropic API client (Claude models) |
@@ -23,11 +25,11 @@ class LLMClient(ABC):
 ```
 
 `LLMResponse` contains:
-- `content` — text response (str or None)
-- `tool_calls` — list of `{"call_id": str, "tool": str, "arguments": dict}`
-- `model` — model name string
-- `usage` — token counts (if available)
-- `raw` — full API response dict
+- `content`  -  text response (str or None)
+- `tool_calls`  -  list of `{"call_id": str, "tool": str, "arguments": dict}`
+- `model`  -  model name string
+- `usage`  -  token counts (if available)
+- `raw`  -  full API response dict
 
 ## Providers
 

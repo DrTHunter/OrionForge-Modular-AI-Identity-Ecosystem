@@ -1,16 +1,18 @@
-# directives/
+﻿# directives/
+
+> Status: reviewed and refreshed on 2026-05-28.
 
 User-editable directive files. Agents read these but cannot modify them.
 
 ## How It Works
 
-Each file is plain markdown organized by `## Headings`. Each heading is a searchable section. At session start, only sections **relevant to the last conversation topic** are injected into the agent's system prompt — the rest stay on disk and don't cost tokens.
+Each file is plain markdown organized by `## Headings`. Each heading is a searchable section. At session start, only sections **relevant to the last conversation topic** are injected into the agent's system prompt  -  the rest stay on disk and don't cost tokens.
 
 If there's no prior conversation (fresh session), the first `max_sections` sections are loaded (default: 5).
 
 Agents can also search directives mid-conversation using the `directives` tool (read-only: `search`, `list`, `get` actions).
 
-## Files — 16 Agent Directives + Shared
+## Files  -  16 Agent Directives + Shared
 
 | File | Who Sees It |
 |------|-------------|

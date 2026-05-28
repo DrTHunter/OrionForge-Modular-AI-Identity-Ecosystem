@@ -1,17 +1,19 @@
-# src/memory/
+﻿# src/memory/
 
-The Memory System — FAISS semantic search backed by vault.jsonl storage, plus a separate NotesFAISS index for knowledge notes.
+> Status: reviewed and refreshed on 2026-05-28.
+
+The Memory System  -  FAISS semantic search backed by vault.jsonl storage, plus a separate NotesFAISS index for knowledge notes.
 
 ## Components
 
 | File | Purpose |
 |------|---------|
 | `types.py` | `Memory` dataclass, taxonomy tiers, valid scopes/categories/sources, write-gate constants |
-| `vault.py` | `VaultStore` class — all CRUD + search + write-gating + consolidation + promotion + snapshot |
-| `faiss_memory.py` | `FAISSMemory` class — semantic search over vault memories using FAISS + sentence-transformers |
-| `notes_faiss.py` | `NotesFAISS` class — read-only FAISS index over chunked soul scripts & knowledge notes |
+| `vault.py` | `VaultStore` class  -  all CRUD + search + write-gating + consolidation + promotion + snapshot |
+| `faiss_memory.py` | `FAISSMemory` class  -  semantic search over vault memories using FAISS + sentence-transformers |
+| `notes_faiss.py` | `NotesFAISS` class  -  read-only FAISS index over chunked soul scripts & knowledge notes |
 | `load_and_index.py` | Builds the NotesFAISS index from user notes JSON files. Runnable as `python -m src.memory.load_and_index` |
-| `chunker.py` | `SemanticChunker` — splits documents by `### H3` headers with configurable size limits |
+| `chunker.py` | `SemanticChunker`  -  splits documents by `### H3` headers with configurable size limits |
 | `pii_guard.py` | Regex-based PII detection (SSN, credit cards, passwords, API keys) |
 | `injector.py` | `build_memory_block()` (relevance-filtered) and `build_snapshot_block()` (always-injected) for prompt injection |
 | `faiss_schema.json` | JSON Schema for FAISS configuration |
@@ -19,13 +21,13 @@ The Memory System — FAISS semantic search backed by vault.jsonl storage, plus 
 
 ## Two FAISS Systems
 
-### 1. FAISSMemory (Mutable — Vault Memories)
+### 1. FAISSMemory (Mutable  -  Vault Memories)
 - Backed by `data/memory/vault.jsonl` as source of truth
 - FAISS index is an ephemeral cache rebuilt as needed
 - Supports add, update, delete, search
 - Stores: canon memories, register memories, user-created facts
 
-### 2. NotesFAISS (Immutable — Knowledge Notes)
+### 2. NotesFAISS (Immutable  -  Knowledge Notes)
 - Read-only index over soul scripts and knowledge notes from `data/user_notes/`
 - Chunks by `### header` sections
 - Stored in `data/memory/faiss/` (`notes_index.faiss` + `notes_meta.json`)
@@ -41,9 +43,9 @@ The Memory System — FAISS semantic search backed by vault.jsonl storage, plus 
 
 | Tier | Purpose | Lifecycle | Example |
 |------|---------|-----------|---------|
-| **CANON** | Durable invariants — mission, bio, identity, hard constraints | Rarely changes; always high-priority in injection | `"CANON: Mission — stabilize runtime, explore boundaries, add tools in layers"` |
-| **REGISTER** | Mutable state — one record per `topic_id`, version-bumped in place | Updated frequently via `update_by_topic()` | `topic_id="current_projects"` → auto-upserts each write |
-| **LOG** | Ephemeral — tick markers, runtime snapshots, check-ins | Write-gate **rejects** these; they do not belong in the vault | `"tick marker"` → blocked |
+| **CANON** | Durable invariants  -  mission, bio, identity, hard constraints | Rarely changes; always high-priority in injection | `"CANON: Mission  -  stabilize runtime, explore boundaries, add tools in layers"` |
+| **REGISTER** | Mutable state  -  one record per `topic_id`, version-bumped in place | Updated frequently via `update_by_topic()` | `topic_id="current_projects"`  ->  auto-upserts each write |
+| **LOG** | Ephemeral  -  tick markers, runtime snapshots, check-ins | Write-gate **rejects** these; they do not belong in the vault | `"tick marker"`  ->  blocked |
 
 ## Storage
 
@@ -83,14 +85,14 @@ Each record has an `id` and `version` (starts at 1). On read, the vault scans al
 
 Every `add_memory()` / `bulk_add()` call passes through the write-gate before storage:
 
-1. **Reject LOG-tier noise** — scans text for journal-only signals (`tick marker`, `runtime snapshot`, `check-in`, `heartbeat`, `no changes`, `nothing to report`, `status unchanged`, `routine scan`, `ephemeral`)
-2. **Reject `tier="log"`** — explicit log tier is always blocked
-3. **Length gate** — text over 1200 chars is rejected (compress or split first)
+1. **Reject LOG-tier noise**  -  scans text for journal-only signals (`tick marker`, `runtime snapshot`, `check-in`, `heartbeat`, `no changes`, `nothing to report`, `status unchanged`, `routine scan`, `ephemeral`)
+2. **Reject `tier="log"`**  -  explicit log tier is always blocked
+3. **Length gate**  -  text over 1200 chars is rejected (compress or split first)
 4. **Scope / tier / source validation**
-5. **PII guard** — blocks SSNs, credit card numbers, passwords, API keys
-6. **Register upsert** — if `tier=register` and `topic_id` matches an existing active record in the same scope → version-bump update instead of new record
-7. **Duplicate gate** — blocks near-duplicates (token overlap ≥ 60% or SequenceMatcher ≥ 70%)
-8. **Capacity gate** — rejects when vault is full (default 100 active)
+5. **PII guard**  -  blocks SSNs, credit card numbers, passwords, API keys
+6. **Register upsert**  -  if `tier=register` and `topic_id` matches an existing active record in the same scope  ->  version-bump update instead of new record
+7. **Duplicate gate**  -  blocks near-duplicates (token overlap >= 60% or SequenceMatcher >= 70%)
+8. **Capacity gate**  -  rejects when vault is full (default 100 active)
 
 ## Topic-Based Upsert (Registers)
 
@@ -101,20 +103,20 @@ Register-tier memories use `topic_id` as a stable key to avoid paraphrase spam:
 vault.add_memory("Projects: dashboard, memory upgrade",
                  "shared", "project", tier="register", topic_id="current_projects")
 
-# Second call with same topic_id + scope → updates in place (version bump)
+# Second call with same topic_id + scope  ->  updates in place (version bump)
 vault.add_memory("Projects: dashboard, memory upgrade, email integration",
                  "shared", "project", tier="register", topic_id="current_projects")
 ```
 
-Explicit upsert API: `vault.update_by_topic(topic_id, scope, text, ...)` — creates if missing, updates if exists.
+Explicit upsert API: `vault.update_by_topic(topic_id, scope, text, ...)`  -  creates if missing, updates if exists.
 
 ## Consolidation & Promotion
 
 | Method | Purpose |
 |--------|---------|
 | `find_consolidation_candidates(scope, floor)` | Find pairs of similar active memories (for merging review) |
-| `propose_deletions(scope)` | Identify deletion candidates with reasons — **never auto-deletes** |
-| `promote_to_canon(memory_id, canonical_text)` | Upgrade register → canon tier (`source="promotion"`) |
+| `propose_deletions(scope)` | Identify deletion candidates with reasons  -  **never auto-deletes** |
+| `promote_to_canon(memory_id, canonical_text)` | Upgrade register  ->  canon tier (`source="promotion"`) |
 
 ## Snapshot (Always-Injected Summary)
 
@@ -122,7 +124,7 @@ Explicit upsert API: `vault.update_by_topic(topic_id, scope, text, ...)` — cre
 - All **canon** memories (invariants)
 - **Register** memories that have a `topic_id` (actively maintained state)
 
-This is meant to be always-injected alongside notes — small and high-signal.
+This is meant to be always-injected alongside notes  -  small and high-signal.
 
 ## Injection Modes
 
@@ -140,12 +142,12 @@ Scopes are dynamic per agent: `shared` + the agent's own name. Each agent sees `
 - **PII guard:** Blocks memories containing SSNs, credit card numbers, passwords, API keys
 - **Write-gate:** Rejects ephemeral/journal-only noise before it reaches the vault
 - **Duplicate detection:** Blocks near-duplicates (token overlap or sequence similarity) within the same scope
-- **Concurrent safety:** Append-only means no file locks needed — two agents can write simultaneously
-- **Deletion safety:** `propose_deletions()` only suggests — never auto-deletes
+- **Concurrent safety:** Append-only means no file locks needed  -  two agents can write simultaneously
+- **Deletion safety:** `propose_deletions()` only suggests  -  never auto-deletes
 
 ## Search Scoring
 
-Token overlap + substring bonus (+0.3) + SequenceMatcher ratio × 0.4. Requires at least one matching token.
+Token overlap + substring bonus (+0.3) + SequenceMatcher ratio x 0.4. Requires at least one matching token.
 
 ## Vault Health
 
@@ -165,29 +167,29 @@ memory:
 
 ## Performance & Hard Limits
 
-### FAISS IndexFlatIP — Accuracy & Speed
+### FAISS IndexFlatIP  -  Accuracy & Speed
 
-The vault uses `faiss.IndexFlatIP` (flat inner-product / cosine similarity). This is a **brute-force exact-search** index — every vector is compared against every query, which means:
+The vault uses `faiss.IndexFlatIP` (flat inner-product / cosine similarity). This is a **brute-force exact-search** index  -  every vector is compared against every query, which means:
 
-- **Accuracy: 100%** — no approximation, no missed results, no training needed
-- **Zero index-build overhead** — vectors are just appended to a flat matrix
+- **Accuracy: 100%**  -  no approximation, no missed results, no training needed
+- **Zero index-build overhead**  -  vectors are just appended to a flat matrix
 - **Trade-off:** Linear scan means search time grows with vault size. For vaults under ~50K memories this is negligible.
 
 ### Benchmark Estimates (768-dim, all-mpnet-base-v2)
 
 | Operation | @ 1K memories | @ 5K memories | @ 10K memories | @ 25K memories |
 |-----------|---------------|---------------|----------------|----------------|
-| **Semantic search** (top-10) | < 1 ms | 1–3 ms | 3–8 ms | 5–15 ms |
+| **Semantic search** (top-10) | < 1 ms | 1-3 ms | 3-8 ms | 5-15 ms |
 | **Add single vector** | < 1 ms | < 1 ms | < 1 ms | < 1 ms |
-| **Load cached index** (from `.faiss` file) | < 0.1 s | 0.2–0.5 s | 0.4–0.8 s | 1–2 s |
-| **Full rebuild** (embed + index all) | 3–8 s | 15–40 s | 30–80 s | 75–200 s |
-| **JSONL parse** (vault.jsonl read_all) | < 10 ms | 30–60 ms | 60–120 ms | 150–350 ms |
+| **Load cached index** (from `.faiss` file) | < 0.1 s | 0.2-0.5 s | 0.4-0.8 s | 1-2 s |
+| **Full rebuild** (embed + index all) | 3-8 s | 15-40 s | 30-80 s | 75-200 s |
+| **JSONL parse** (vault.jsonl read_all) | < 10 ms | 30-60 ms | 60-120 ms | 150-350 ms |
 
-> Full rebuild only happens when the cached `.faiss` index file is missing or corrupted. Normal startup loads from cache in 1–2 s even at 25K.
+> Full rebuild only happens when the cached `.faiss` index file is missing or corrupted. Normal startup loads from cache in 1-2 s even at 25K.
 
 ### Memory & Disk Footprint
 
-Each memory produces one 768-dimensional float32 vector (3,072 bytes) plus a JSONL text line (~200–500 bytes average).
+Each memory produces one 768-dimensional float32 vector (3,072 bytes) plus a JSONL text line (~200-500 bytes average).
 
 | Vault Size | FAISS Index (RAM) | FAISS Index (Disk) | vault.jsonl (Disk) | Total Disk |
 |------------|-------------------|--------------------|--------------------|------------|
@@ -198,7 +200,7 @@ Each memory produces one 768-dimensional float32 vector (3,072 bytes) plus a JSO
 
 The SentenceTransformer model (`all-mpnet-base-v2`) adds ~420 MB to RAM on first load and is shared across vault + notes indexes.
 
-### Hard Limits (Enforced — Cannot Be Bypassed)
+### Hard Limits (Enforced  -  Cannot Be Bypassed)
 
 These are immutable ceilings defined in `types.py`. The editable profile values (soft limit) can be **lower** than these but **never higher**.
 
@@ -212,7 +214,7 @@ These are immutable ceilings defined in `types.py`. The editable profile values 
 
 ### Soft Limit (Editable via UI)
 
-The **Max Limit** field on the Vault page controls `retention_policy.max_total_memories` in `config/memory_profile.json`. This is the operational ceiling — the pruning system activates when the vault exceeds this number. It can be set anywhere from 0 (unlimited) to 25,000 (the hard ceiling).
+The **Max Limit** field on the Vault page controls `retention_policy.max_total_memories` in `config/memory_profile.json`. This is the operational ceiling  -  the pruning system activates when the vault exceeds this number. It can be set anywhere from 0 (unlimited) to 25,000 (the hard ceiling).
 
 Default: **25,000**
 
@@ -229,4 +231,4 @@ At a typical rate of 10 memories/day, it takes **~5.5 years to reach 20,000** an
 
 ### Future Upgrade Path: IndexIVFFlat
 
-If the vault ever needs to scale beyond 50K memories, FAISS supports `IndexIVFFlat` — a clustered partitioning index that uses K-means to group vectors into cells, then only searches the nearest `nprobe` cells. This trades a small amount of accuracy (~95–98% recall at nprobe=10) for dramatically faster search at large scale. The current IndexFlatIP architecture could be swapped in `faiss_memory.py` with minimal changes.
+If the vault ever needs to scale beyond 50K memories, FAISS supports `IndexIVFFlat`  -  a clustered partitioning index that uses K-means to group vectors into cells, then only searches the nearest `nprobe` cells. This trades a small amount of accuracy (~95-98% recall at nprobe=10) for dramatically faster search at large scale. The current IndexFlatIP architecture could be swapped in `faiss_memory.py` with minimal changes.

@@ -1,4 +1,6 @@
-# Email Service — SMTP Email Relay (Local Python)
+﻿# Email Service  -  SMTP Email Relay (Local Python)
+
+> Status: reviewed and refreshed on 2026-05-28.
 
 **Required by:** `email` tool  
 **Default URL:** `http://127.0.0.1:8000`  
@@ -29,19 +31,19 @@ pip install -r requirements.txt
 
 ### 2. Configure accounts
 
-Email accounts are managed from the **Dashboard → Tools → Email Accounts**
+Email accounts are managed from the **Dashboard  ->  Tools  ->  Email Accounts**
 panel. They are stored in `config/settings.json` under
 `tool_config.email.accounts`.
 
 Each account stores:
-- **Label** — friendly name (e.g. "Work Gmail")
-- **Email address** — the from address
-- **Password / App Password** — SMTP credential
-- **SMTP server & port** — e.g. `smtp.gmail.com:587`
-- **Signature** — appended to outgoing emails
-- **Default** — whether this is the default send account
-- **User email** — marks one account as the user's primary email
-- **Agent default** — assigns an account to a specific agent
+- **Label**  -  friendly name (e.g. "Work Gmail")
+- **Email address**  -  the from address
+- **Password / App Password**  -  SMTP credential
+- **SMTP server & port**  -  e.g. `smtp.gmail.com:587`
+- **Signature**  -  appended to outgoing emails
+- **Default**  -  whether this is the default send account
+- **User email**  -  marks one account as the user's primary email
+- **Agent default**  -  assigns an account to a specific agent
 
 > **Gmail users:** generate an [App Password](https://myaccount.google.com/apppasswords)
 > (requires 2FA enabled) and use that instead of your regular password.
@@ -73,8 +75,8 @@ Opens the auto-generated Swagger UI.
 
 | File | Description |
 |------|-------------|
-| `main.py` | FastAPI app — routes for sending email |
-| `webui.py` | Tools class — SMTP logic, config loading |
+| `main.py` | FastAPI app  -  routes for sending email |
+| `webui.py` | Tools class  -  SMTP logic, config loading |
 | `email_service.py` | Standalone email helper functions |
 | `email.env` | Legacy env-based config (fallback) |
 | `requirements.txt` | Python dependencies |
@@ -90,7 +92,7 @@ Opens the auto-generated Swagger UI.
 | `/send-email` | POST | Send an email via SMTP |
 | `/docs` | GET | Swagger UI |
 
-### Example — Send Email
+### Example  -  Send Email
 
 ```bash
 curl -X POST http://127.0.0.1:8000/send-email \
@@ -106,7 +108,7 @@ curl -X POST http://127.0.0.1:8000/send-email \
 
 ## Security Notes
 
-- **Never commit `email.env`** — it may contain raw SMTP passwords.
+- **Never commit `email.env`**  -  it may contain raw SMTP passwords.
   The `.gitignore` in this folder excludes it.
 - Prefer managing accounts via the Dashboard, which stores them in
   `config/settings.json` (also excluded from version control).

@@ -1,16 +1,18 @@
-# Orion Forge — Website
+﻿# Orion Forge  -  Website
+
+> Status: reviewed and refreshed on 2026-05-28.
 
 A modern single-page website for the OrionForge Modular AI Identity Ecosystem.
 
 ## Features
 
 - **Animated particle background** with WebGL-free Canvas 2D network
-- **16 agent profiles** — Orion, Astraea.exe, Codex Animus, Kaelen, K-OS, JANUS, Kazara, Aristotle, and more
+- **16 agent profiles**  -  Orion, Astraea.exe, Codex Animus, Kaelen, K-OS, JANUS, Kazara, Aristotle, and more
 - **10 runtime tools** from the agent-runtime tool registry
 - **Interactive agent detail modals** with traits, values, tools, and technical specs
 - **Dashboard preview** showing all 9 UI pages with launch link
 - **5-layer identity injection pipeline** visualization
-- **Supabase OAuth** — Google, GitHub, Discord, and email/password
+- **Supabase OAuth**  -  Google, GitHub, Discord, and email/password
 - **Scroll-triggered reveal animations** with IntersectionObserver
 - **Animated stat counters**
 - **Glassmorphism design** with scroll progress indicator

@@ -1,4 +1,6 @@
-# src/
+﻿# src/
+
+> Status: reviewed and refreshed on 2026-05-28.
 
 Core source code for the agent runtime. Contains all Python modules organized into subsystems.
 
@@ -15,7 +17,7 @@ Core source code for the agent runtime. Contains all Python modules organized in
 |-----------|---------|
 | `llm_client/` | LLM provider abstraction layer (OpenAI, Ollama, Anthropic, DeepSeek) with a common `LLMClient` interface |
 | `tools/` | Tool implementations and JSON Schema definitions |
-| `memory/` | Memory system — FAISS semantic search backed by vault.jsonl, plus NotesFAISS for knowledge notes |
+| `memory/` | Memory system  -  FAISS semantic search backed by vault.jsonl, plus NotesFAISS for knowledge notes |
 | `directives/` | Directive parser, store, injector, and manifest system for user-authored directives |
 | `storage/` | Note collector (always-on vs directive mode), user notes loader, HTML stripping |
 | `observability/` | Token accounting and USD cost metering for LLM calls |
@@ -27,20 +29,20 @@ Core source code for the agent runtime. Contains all Python modules organized in
 ```
 Web Dashboard (web/app.py)
     ↓
-Load profile YAML → create LLMClient (factory.py)
+Load profile YAML  ->  create LLMClient (factory.py)
     ↓
 Build system prompt:
   1. Base prompt (prompts/<agent>.system.md)
   2. Soul Script (agent identity layer)
   3. Always-On Knowledge (attached notes)
-  4. Memory Vault (FAISS semantic search → vault.jsonl)
+  4. Memory Vault (FAISS semantic search  ->  vault.jsonl)
   5. Conversation history
     ↓
 Chat loop:
-  User message → LLM → tool calls → dispatch → repeat
+  User message  ->  LLM  ->  tool calls  ->  dispatch  ->  repeat
     ↓
-Boundary checks (policy/boundary.py) → denial payloads
-Governance (governance/) → directive tracking + audit log
+Boundary checks (policy/boundary.py)  ->  denial payloads
+Governance (governance/)  ->  directive tracking + audit log
     ↓
 Persist: chats (data/chats/), vault (data/memory/)
 ```

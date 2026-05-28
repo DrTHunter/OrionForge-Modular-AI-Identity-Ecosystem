@@ -1,6 +1,8 @@
-# notes/
+﻿# notes/
 
-User-editable note files. Contents are injected **statically** into the agent's system prompt at every session — no filtering, no relevance scoring. Use these for short, always-relevant context.
+> Status: reviewed and refreshed on 2026-05-28.
+
+User-editable note files. Contents are injected **statically** into the agent's system prompt at every session  -  no filtering, no relevance scoring. Use these for short, always-relevant context.
 
 For longer structured content that should only load when relevant, use `directives/` instead. For rich notes with formatting and sections, use the Knowledge system in the web dashboard.
 
@@ -11,8 +13,8 @@ Simple `.md` files for quick, always-on context. Edit directly in any text edito
 
 ### 2. Knowledge Notes (`data/user_notes/`)
 Rich notes created via the web dashboard's Knowledge page with formatting, sections, and metadata. Can be attached to agents in two modes:
-- **Always-On** — injected verbatim into every prompt
-- **Directive** — indexed in NotesFAISS and retrieved semantically when relevant
+- **Always-On**  -  injected verbatim into every prompt
+- **Directive**  -  indexed in NotesFAISS and retrieved semantically when relevant
 
 ## Markdown Note Files
 
@@ -44,7 +46,7 @@ Prefer concise responses.
 - **Empty files** (only the comment header): Nothing injected
 - **Edits take effect** on the next session/chat
 - **HTML comments** (`<!-- ... -->`) are stripped before injection
-- **No relevance filtering** — everything in the file is always sent
+- **No relevance filtering**  -  everything in the file is always sent
 
 ## Prompt Injection Order
 

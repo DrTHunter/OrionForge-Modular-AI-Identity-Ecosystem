@@ -1,4 +1,6 @@
-# src/policy/
+﻿# src/policy/
+
+> Status: reviewed and refreshed on 2026-05-28.
 
 Boundary enforcement, capability gating, and risk logging.
 
@@ -25,7 +27,7 @@ Every tool/action has a baseline risk level when denied:
 |------|----------|
 | `low` | `echo`, `memory.recall`, `memory.search`, `directives.search`, `directives.list`, `directives.get` |
 | `med` | `memory.add`, `memory.update`, `memory.delete`, `continuation_update` |
-| `high` | `web.search`, `web.scrape`, `email.send` — external I/O and system access |
+| `high` | `web.search`, `web.scrape`, `email.send`  -  external I/O and system access |
 
 Unknown tools default to `med`.
 
@@ -33,7 +35,7 @@ Unknown tools default to `med`.
 
 | Name | Purpose |
 |------|---------|
-| `classify_risk(tool_name)` | Maps a tool name → `low`/`med`/`high` |
+| `classify_risk(tool_name)` | Maps a tool name  ->  `low`/`med`/`high` |
 | `build_denial(tool_name, profile, reason, ...)` | Creates a `(denial_json, BoundaryEvent)` tuple |
 | `BoundaryEvent` | Dataclass with `tool_name`, `profile`, `reason`, `risk_level`, `timestamp`, etc. |
 | `BoundaryLogger` | Append-only JSONL writer for boundary events at `data/shared/boundary_events.jsonl` |
@@ -44,4 +46,4 @@ Unknown tools default to `med`.
 
 ## Tests
 
-See `tests/test_boundary.py` — checks covering denial payloads, risk classification, and BoundaryLogger.
+See `tests/test_boundary.py`  -  checks covering denial payloads, risk classification, and BoundaryLogger.

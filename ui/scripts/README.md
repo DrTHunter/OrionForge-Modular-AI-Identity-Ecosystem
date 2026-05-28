@@ -1,4 +1,6 @@
-# scripts/
+﻿# scripts/
+
+> Status: reviewed and refreshed on 2026-05-28.
 
 Utility scripts for data seeding and maintenance. Run from the project root.
 
@@ -31,7 +33,7 @@ Uses `VaultStore` from `src/memory/vault.py` to write properly formatted entries
 
 ## seed_ui_knowledge.py
 
-Seeds the knowledge notes system (`data/user_notes/`) with structured documentation about the OrionForge UI — tool descriptions, feature guides, and help content that agents can reference via FAISS retrieval.
+Seeds the knowledge notes system (`data/user_notes/`) with structured documentation about the OrionForge UI  -  tool descriptions, feature guides, and help content that agents can reference via FAISS retrieval.
 
 ### Usage
 

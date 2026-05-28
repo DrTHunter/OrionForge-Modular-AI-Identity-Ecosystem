@@ -1,4 +1,6 @@
-# UI — Production Deployment Build
+﻿# UI  -  Production Deployment Build
+
+> Status: reviewed and refreshed on 2026-05-28.
 
 The `ui/` directory is the **production-ready deployment build** of OrionForge. It mirrors the structure of `orion-ui-standalone/` but includes additional external tool services for speech, search, and email.
 
@@ -6,9 +8,9 @@ The `ui/` directory is the **production-ready deployment build** of OrionForge. 
 
 | Directory | Purpose |
 |-----------|---------|
-| `engine/` | Stable core — frozen reference modules |
-| `orion-ui-standalone/` | Active development — new features land here first |
-| **`ui/`** | **Production deployment** — includes external services, Docker configs, clean data dirs |
+| `engine/` | Stable core  -  frozen reference modules |
+| `orion-ui-standalone/` | Active development  -  new features land here first |
+| **`ui/`** | **Production deployment**  -  includes external services, Docker configs, clean data dirs |
 
 ## Structure
 

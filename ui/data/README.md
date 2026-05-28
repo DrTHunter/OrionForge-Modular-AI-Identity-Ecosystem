@@ -1,6 +1,8 @@
-# Data — Runtime Data Directory
+﻿# Data  -  Runtime Data Directory
 
-This directory holds all runtime-generated data for the production OrionForge deployment. Everything here is created and modified during normal operation — it is **not** checked into version control (except for directory structure).
+> Status: reviewed and refreshed on 2026-05-28.
+
+This directory holds all runtime-generated data for the production OrionForge deployment. Everything here is created and modified during normal operation  -  it is **not** checked into version control (except for directory structure).
 
 ## Directory Layout
 
@@ -44,10 +46,10 @@ data/
 
 | File | Format | Purpose |
 |------|--------|---------|
-| `memory/vault.jsonl` | JSONL | Append-only memory store — each line is a JSON `Memory` record. Supports soft-delete via `deleted_at` field. |
+| `memory/vault.jsonl` | JSONL | Append-only memory store  -  each line is a JSON `Memory` record. Supports soft-delete via `deleted_at` field. |
 | `memory/faiss/index.faiss` | Binary | FAISS vector index built from vault entries using `all-mpnet-base-v2` embeddings |
-| `memory/faiss/index_meta.json` | JSON | Metadata mapping FAISS vector IDs → memory record IDs |
-| `user_notes/index.json` | JSON | Master index of all knowledge notes — title, scope, timestamps |
+| `memory/faiss/index_meta.json` | JSON | Metadata mapping FAISS vector IDs  ->  memory record IDs |
+| `user_notes/index.json` | JSON | Master index of all knowledge notes  -  title, scope, timestamps |
 | `shared/inbox.jsonl` | JSONL | Email inbox entries fetched via the Inbox tool |
 
 ## Multi-Tenant Isolation

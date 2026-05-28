@@ -1,8 +1,10 @@
-# SearXNG — Web Search Engine (Docker)
+﻿# SearXNG  -  Web Search Engine (Docker)
+
+> Status: reviewed and refreshed on 2026-05-28.
 
 **Required by:** `web_search` tool  
 **Default URL:** `http://localhost:3000/search`  
-**Configurable in:** Dashboard → Tools → web_search → SearXNG URL
+**Configurable in:** Dashboard  ->  Tools  ->  web_search  ->  SearXNG URL
 
 ---
 
@@ -33,7 +35,7 @@ docker run -d \
   searxng/searxng:latest
 ```
 
-> **Windows PowerShell** — use backticks instead of backslashes:
+> **Windows PowerShell**  -  use backticks instead of backslashes:
 > ```powershell
 > docker run -d `
 >   --name searxng `
@@ -45,7 +47,7 @@ docker run -d \
 
 ### 3. Verify
 
-Open `http://localhost:3000` in your browser — you should see the SearXNG
+Open `http://localhost:3000` in your browser  -  you should see the SearXNG
 search page.
 
 ---
@@ -85,7 +87,7 @@ mounted `settings.yml`.
 
 ### Runtime URL Override
 
-- **Dashboard:** Tools → web_search → SearXNG URL
+- **Dashboard:** Tools  ->  web_search  ->  SearXNG URL
 - **Environment variable:** `SEARXNG_URL=http://localhost:3000/search`
 - **settings.json:** `tool_config.web_search.searxng_url`
 

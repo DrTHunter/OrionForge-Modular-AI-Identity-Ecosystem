@@ -1,4 +1,6 @@
-# orion-ui-standalone — Development Branch
+﻿# orion-ui-standalone  -  Development Branch
+
+> Status: reviewed and refreshed on 2026-05-28.
 
 > Active development workspace for the OrionForge Modular AI Identity Ecosystem.
 
@@ -23,21 +25,21 @@ Open **http://localhost:8989**.
 ```
 orion-ui-standalone/
 ├── web/                # FastAPI application (~7,500 lines, 172 routes, 17 templates)
-│   ├── app.py          # Main application — all page & API routes (multi-tenant aware)
-│   ├── user_data.py    # Per-user data isolation layer — path helpers, validation, directory builders
+│   ├── app.py          # Main application  -  all page & API routes (multi-tenant aware)
+│   ├── user_data.py    # Per-user data isolation layer  -  path helpers, validation, directory builders
 │   ├── auth.py         # Supabase OAuth + JWT verification (142 lines)
 │   ├── stripe_billing.py  # Stripe subscriptions, credits, trial system (1,400 lines)
 │   ├── image_gen.py    # Image generation helper (9 providers)
 │   ├── static/         # CSS
-│   └── templates/      # Jinja2 HTML (17 files — 16 pages + base layout)
+│   └── templates/      # Jinja2 HTML (17 files  -  16 pages + base layout)
 │       ├── base.html           # Shared layout (nav, sidebar, footer, skin theming, auth state)
 │       ├── login.html          # Supabase OAuth sign-in page
 │       ├── plans.html          # Subscription tier selection (Free vs Pro)
 │       ├── store.html          # Credit packs, one-time tool purchases, usage history
-│       ├── admin_keys.html     # Admin panel — API key management
-│       ├── admin_voices.html   # Admin panel — ElevenLabs voice allowlist management
+│       ├── admin_keys.html     # Admin panel  -  API key management
+│       ├── admin_voices.html   # Admin panel  -  ElevenLabs voice allowlist management
 │       ├── chat.html           # Real-time agent chat with streaming
-│       ├── profiles.html       # Agent profile manager — collapsible system prompt, soul script editor (FAISS-indexed), knowledge notes, avatar upload
+│       ├── profiles.html       # Agent profile manager  -  collapsible system prompt, soul script editor (FAISS-indexed), knowledge notes, avatar upload
 │       ├── vault.html          # Memory vault browser with 8-field sort
 │       ├── knowledge.html      # Knowledge notes browser
 │       ├── knowledge_edit.html # Rich text knowledge editor
@@ -45,18 +47,18 @@ orion-ui-standalone/
 │       ├── settings.html       # API connections, voice, image settings
 │       ├── pricing.html        # LLM pricing registry editor
 │       ├── skins.html          # 13 UI themes with live preview
-│       ├── agi_loop.html       # AGI loop — 8-tab dashboard, journal modal, expandable loop log, VM storage
+│       ├── agi_loop.html       # AGI loop  -  8-tab dashboard, journal modal, expandable loop log, VM storage
 │       └── about.html          # Project wiki with auto-generated articles
 │
 ├── src/                # Soul Script Engine modules (48 source files)
 │   ├── data_paths.py   # Canonical data directory layout & auto-creation
-│   ├── runtime_policy.py # RuntimePolicy dataclass — iteration limits, stasis, self-refine
+│   ├── runtime_policy.py # RuntimePolicy dataclass  -  iteration limits, stasis, self-refine
 │   ├── directives/     # Directive parsing, storage, injection, manifest system
 │   ├── governance/     # Session-scoped directive tracking & change control
 │   ├── llm_client/     # Multi-provider LLM abstraction (OpenAI, Anthropic, Ollama, DeepSeek)
-│   ├── memory/         # FAISS-backed semantic memory — vault, chunking, PII guard, injection
+│   ├── memory/         # FAISS-backed semantic memory  -  vault, chunking, PII guard, injection
 │   ├── observability/  # Token metering, cost tracking, pricing engine
-│   ├── policy/         # Boundary enforcement — risk classification, denial payloads
+│   ├── policy/         # Boundary enforcement  -  risk classification, denial payloads
 │   ├── routing/        # 6-tier model router, budget tracking, escalation chains
 │   ├── storage/        # Note collection & user notes loading
 │   └── tools/          # 11 tool implementations + registry (memory, directives, email, web search, inbox, model router, agi loop, runtime info, etc.)
@@ -73,14 +75,14 @@ orion-ui-standalone/
 │   └── saved_profiles/        # Named config profile snapshots
 │       └── router_presets/    # Named model router preset snapshots
 │
-├── profiles/           # Agent YAML profiles (16 agents — provider, model, parameters)
+├── profiles/           # Agent YAML profiles (16 agents  -  provider, model, parameters)
 ├── prompts/            # System prompt templates (*.system.md)
 ├── directives/         # Agent soul script / directive markdown files (auto-indexed into NotesFAISS)
 ├── notes/              # Developer notes per agent
 ├── scripts/            # Seed scripts (seed_memories.py, seed_ui_knowledge.py)
 ├── data/               # Runtime data (global templates + per-user isolated directories)
 │   └── users/          # Per-user isolated data trees (chats, memory, vault, notes, settings, profiles, uploads)
-└── tests/              # Test suite — 12 files, 295+ functions, ~4,350+ checks
+└── tests/              # Test suite  -  12 files, 295+ functions, ~4,350+ checks
 ```
 
 ---
@@ -90,14 +92,14 @@ orion-ui-standalone/
 | Feature | Details |
 |---|---|
 | **Login** | Supabase OAuth (Google, GitHub, email) via `/login` |
-| **JWT verification** | `auth.py` — JWKS-based token validation, path whitelist, session middleware |
+| **JWT verification** | `auth.py`  -  JWKS-based token validation, path whitelist, session middleware |
 | **Subscription** | $9.99/month Pro plan via Stripe Checkout (`/plans`) |
-| **15-day trial** | Free trial on first sign-up, auto-expires to free tier. Trial state persisted via Fly.io volume (`/persist`) |
+| **5-day trial** | Free trial on first sign-up, auto-expires to free tier. Trial state persisted via Fly.io volume (`/persist`) |
 | **Credit system** | Buy credit packs in the store (`/store`), spend on platform-hosted LLM calls and tools |
-| **LLM markup** | Platform-hosted calls billed at 2× base cost, deducted from credits |
-| **TTS/STT billing** | Per-use billing for platform-hosted voice services (2× markup) |
+| **LLM markup** | Platform-hosted calls billed at 2x base cost, deducted from credits |
+| **TTS/STT billing** | Per-use billing for platform-hosted voice services (2x markup) |
 | **One-time purchases** | Buy individual tool access from the store |
-| **Admin panel** | `/admin/keys` — API key management, `/admin/voices` — ElevenLabs voice allowlist, user management (wipe, purge inactive), secured by OAuth email whitelist |
+| **Admin panel** | `/admin/keys`  -  API key management, `/admin/voices`  -  ElevenLabs voice allowlist, user management (wipe, purge inactive), secured by OAuth email whitelist |
 | **Tier gating** | Free tier vs Pro tier access control on all API endpoints |
 
 ---
@@ -107,20 +109,20 @@ orion-ui-standalone/
 | Page | URL | Description |
 |------|-----|-------------|
 | **Login** | `/login` | Supabase OAuth sign-in (Google, GitHub, email) |
-| **Plans** | `/plans` | Subscription tier selection — Free vs Pro ($9.99/mo) |
+| **Plans** | `/plans` | Subscription tier selection  -  Free vs Pro ($9.99/mo) |
 | **Store** | `/store` | Credit packs, one-time tool purchases, usage history |
-| **Chat** | `/chat` | Talk to agents — 3-mode connection (Platform Models / Auto Router / User Models), 5-layer identity injection (prompt → soul script → knowledge → memory → history) |
-| **Profiles** | `/profiles` | Create/edit/delete agents — collapsible system prompt, soul script editor with FAISS-indexed badge, knowledge notes, model config, 30-day trash retention |
-| **Vault** | `/vault` | Browse & search persistent memory — sort by 8 fields, max memory limits, metadata display |
+| **Chat** | `/chat` | Talk to agents  -  3-mode connection (Platform Models / Auto Router / User Models), 5-layer identity injection (prompt  ->  soul script  ->  knowledge  ->  memory  ->  history) |
+| **Profiles** | `/profiles` | Create/edit/delete agents  -  collapsible system prompt, soul script editor with FAISS-indexed badge, knowledge notes, model config, 30-day trash retention |
+| **Vault** | `/vault` | Browse & search persistent memory  -  sort by 8 fields, max memory limits, metadata display |
 | **Knowledge** | `/knowledge` | Rich text editor for soul scripts and always-on context notes |
 | **Tools** | `/tools` | Configure tools, memory profiles, email, web search, cost tracking, model router with presets |
 | **Settings** | `/settings` | API connections, user API keys (OpenAI, Anthropic, DeepSeek, OpenRouter, Google Gemini), chat backgrounds, timezone, voice/image settings |
-| **Pricing** | `/pricing` | LLM pricing registry — view/edit per-model token costs |
+| **Pricing** | `/pricing` | LLM pricing registry  -  view/edit per-model token costs |
 | **Skins** | `/skins` | 13 UI themes with marketplace-style grid and live preview |
-| **AGI Loop** | `/agi-loop` | Autonomous agent loop — 8-tab dashboard (Dashboard, Inbox, Journal, Config, Pipeline, Model Router, Budget, Loop Log), journal popup modal with narrative details, expandable loop log entries, 6-tier model routing, VM-persistent tick history & journal |
+| **AGI Loop** | `/agi-loop` | Autonomous agent loop  -  8-tab dashboard (Dashboard, Inbox, Journal, Config, Pipeline, Model Router, Budget, Loop Log), journal popup modal with narrative details, expandable loop log entries, 6-tier model routing, VM-persistent tick history & journal |
 | **Wiki** | `/about` | Project wiki with auto-generated articles from READMEs + custom notes editor |
-| **Admin Keys** | `/admin/keys` | Admin panel — API key management, secured by OAuth email whitelist |
-| **Admin Voices** | `/admin/voices` | ElevenLabs voice allowlist — search, filter, premium toggle, bulk save |
+| **Admin Keys** | `/admin/keys` | Admin panel  -  API key management, secured by OAuth email whitelist |
+| **Admin Voices** | `/admin/voices` | ElevenLabs voice allowlist  -  search, filter, premium toggle, bulk save |
 
 ---
 
@@ -181,12 +183,12 @@ data/users/{user_id}/
 
 | Component | Mechanism |
 |---|---|
-| **Path routing** | `web/user_data.py` — 18 path helper functions, all validated with regex `^[a-zA-Z0-9_-]{1,128}$` |
+| **Path routing** | `web/user_data.py`  -  18 path helper functions, all validated with regex `^[a-zA-Z0-9_-]{1,128}$` |
 | **Path traversal prevention** | `_validate_user_id()` rejects `../`, `\`, slashes, null bytes, newlines, HTML, oversized IDs |
 | **Request scoping** | `contextvars.ContextVar` (`_current_user_id`) set by `AuthMiddleware` on each request |
 | **Data helpers** | All `_load_*` / `_save_*` helpers in `app.py` accept optional `user_id`, falling back to the contextvar |
 | **Copy-on-write** | Profiles, system prompts, and soul scripts fall back to global templates when no user override exists |
-| **Per-user instances** | FAISS indexes and VaultStore instances are cached per `user_id` — no cross-user contamination |
+| **Per-user instances** | FAISS indexes and VaultStore instances are cached per `user_id`  -  no cross-user contamination |
 | **Directory creation** | `ensure_user_dirs(user_id)` called by `AuthMiddleware` on every authenticated request |
 | **Admin wipe** | `DELETE /api/admin/users/{uid}` removes the entire user directory tree |
 
@@ -266,8 +268,8 @@ python -m tests.test_multi_tenant
 
 | Test File | Functions | Checks | Coverage |
 |-----------|-----------|--------|----------|
-| `test_torture.py` | 132 | ~3,228 | Deep torture of all code paths — memory, vault, sort, policy, tools, templates, model router, presets, 6-tier routing, sidecar wiring, soul script helpers, soul script API, soul script FAISS indexing, note collector soul script injection, profiles template collapsible, admin keys, admin voices API & template, admin user management, connections CRUD, pricing CRUD, chat 3-mode selector, user model catalog, `__userkey_` dynamic connections, Stripe state persistence, store catalog structure, tier & trial system, credit system, credit cost estimators, purchase flows (tool/skin/agent), agent ownership, user activity tracking, wipe user data, purge inactive, list all users, auth helpers, tier info structure, runtime info tool, TTS voice filter logic, ElevenLabs/inworld connection helpers, `_check_admin` helper, AGI history disk persistence, journal popup modal, expandable loop log, VM storage paths |
-| `test_multi_tenant.py` | 16 | 181 | Multi-tenant data isolation — path helpers, path traversal prevention (10+ attack vectors), directory isolation, chat CRUD isolation, settings isolation, knowledge/notes isolation, vault isolation, profile copy-on-write, prompt & soul script copy-on-write, uploads isolation, 5-user × 20-chat stress, VaultStore per-user instances, agent config isolation, admin wipe cleanup, trash isolation, 20-user massive isolation stress |
+| `test_torture.py` | 132 | ~3,228 | Deep torture of all code paths  -  memory, vault, sort, policy, tools, templates, model router, presets, 6-tier routing, sidecar wiring, soul script helpers, soul script API, soul script FAISS indexing, note collector soul script injection, profiles template collapsible, admin keys, admin voices API & template, admin user management, connections CRUD, pricing CRUD, chat 3-mode selector, user model catalog, `__userkey_` dynamic connections, Stripe state persistence, store catalog structure, tier & trial system, credit system, credit cost estimators, purchase flows (tool/skin/agent), agent ownership, user activity tracking, wipe user data, purge inactive, list all users, auth helpers, tier info structure, runtime info tool, TTS voice filter logic, ElevenLabs/inworld connection helpers, `_check_admin` helper, AGI history disk persistence, journal popup modal, expandable loop log, VM storage paths |
+| `test_multi_tenant.py` | 16 | 181 | Multi-tenant data isolation  -  path helpers, path traversal prevention (10+ attack vectors), directory isolation, chat CRUD isolation, settings isolation, knowledge/notes isolation, vault isolation, profile copy-on-write, prompt & soul script copy-on-write, uploads isolation, 5-user x 20-chat stress, VaultStore per-user instances, agent config isolation, admin wipe cleanup, trash isolation, 20-user massive isolation stress |
 | `test_memory.py` | 23 | 155 | VaultStore, MemoryVault, Memory types, PII guard |
 | `test_stress.py` | 29 | 238 | Rapid-fire ops, concurrent access, boundary conditions, router presets, coding tiers |
 | `test_registry_and_tools.py` | 17 | 86 | Tool registry, cost tracker, web search |
