@@ -908,6 +908,22 @@
       background: #3f3f46; margin: -0.25rem auto 0.25rem;
       flex-shrink: 0;
     }
+    .tb-sheet-close {
+      display: inline-flex !important;
+      align-items: center;
+      justify-content: center;
+      align-self: flex-end;
+      width: 2rem; height: 2rem;
+      margin: -0.25rem 0 -0.25rem auto;
+      border: 1px solid rgba(42,42,58,0.7);
+      border-radius: 999px;
+      background: rgba(24,24,27,0.95);
+      color: #d4d4d8;
+      font-size: 1rem;
+      line-height: 1;
+      cursor: pointer;
+    }
+    .tb-sheet-close:hover { background: rgba(63,63,70,0.9); color: #fff; }
     .tb-collapsible .tb-sep { display: none; }
     .tb-collapsible .tb,
     .tb-collapsible .tb-sel,
@@ -1016,10 +1032,11 @@
           <div class="compose-toolbar">
             <button type="button" class="attach-btn" onclick="document.getElementById('attach-input').click()" title="Attach image or file">📎</button>
             <input type="file" id="attach-input" multiple accept="image/*,.pdf,.txt,.md,.csv,.json,.yaml,.yml" style="display:none" onchange="handleAttach(this)">
-            <button type="button" class="tb-mobile-toggle" id="btn-tb-menu" onclick="toggleToolbarMenu()" title="Options">+</button>
+            <button type="button" class="tb-mobile-toggle" id="btn-tb-menu" onclick="toggleToolbarMenu(event)" title="Options">+</button>
             <div class="tb-collapsible" id="tb-collapsible">
+              <button type="button" class="tb-sheet-close" onclick="closeToolbarMenu(event)" aria-label="Close options" title="Close options">&times;</button>
               <!-- Mobile-only: attach trigger inside the action sheet (paperclip is hidden in the bar) -->
-              <button type="button" class="attach-btn-sheet" style="display:none" onclick="document.getElementById('attach-input').click(); toggleToolbarMenu();">📎 <span>Attach image or file</span></button>
+              <button type="button" class="attach-btn-sheet" style="display:none" onclick="document.getElementById('attach-input').click(); closeToolbarMenu(event);">📎 <span>Attach image or file</span></button>
               <!-- STT provider toggle hidden; ElevenLabs is the sole provider -->
               <button type="button" onclick="toggleSTTProvider()" id="btn-stt" class="tb stt-toggle on-elevenlabs" title="STT: ElevenLabs" style="display:none">
                 <span class="stt-dot"></span><span id="stt-label">🎤 ElevenLabs</span>
@@ -1669,14 +1686,26 @@ function closeMobileSidebar() {
     if (sb && !sb.classList.contains('collapsed')) sb.classList.add('collapsed');
   }
 })();
-function toggleToolbarMenu() {
-  document.getElementById('tb-collapsible').classList.toggle('open');
-  document.getElementById('btn-tb-menu').classList.toggle('open');
-  // Mobile-only: reveal the in-sheet attach trigger when the sheet is open
+function syncToolbarMenuState(isOpen) {
+  const collapsible = document.getElementById('tb-collapsible');
+  const toggle = document.getElementById('btn-tb-menu');
+  if (collapsible) collapsible.classList.toggle('open', isOpen);
+  if (toggle) toggle.classList.toggle('open', isOpen);
   const sheetAttach = document.querySelector('#tb-collapsible .attach-btn-sheet');
   if (sheetAttach && window.matchMedia('(max-width: 768px)').matches) {
-    sheetAttach.style.display = document.getElementById('tb-collapsible').classList.contains('open') ? 'flex' : 'none';
+    sheetAttach.style.display = isOpen ? 'flex' : 'none';
   }
+}
+
+function toggleToolbarMenu(event) {
+  if (event) event.stopPropagation();
+  const collapsible = document.getElementById('tb-collapsible');
+  syncToolbarMenuState(collapsible ? !collapsible.classList.contains('open') : false);
+}
+
+function closeToolbarMenu(event) {
+  if (event) event.stopPropagation();
+  syncToolbarMenuState(false);
 }
 function handleAttach(input) {
   for (const f of input.files) _attachedFiles.push(f);
@@ -1696,6 +1725,16 @@ function renderAttachPreview() {
     return `<div class="attach-chip">${icon}<span>${f.name}</span><button onclick="removeAttach(${i})">&times;</button></div>`;
   }).join('');
 }
+
+document.addEventListener('click', (event) => {
+  const collapsible = document.getElementById('tb-collapsible');
+  const toggle = document.getElementById('btn-tb-menu');
+  if (!collapsible || !toggle) return;
+  if (!window.matchMedia('(max-width: 768px)').matches) return;
+  if (!collapsible.classList.contains('open')) return;
+  if (collapsible.contains(event.target) || toggle.contains(event.target)) return;
+  closeToolbarMenu();
+});
 
 // ═══════════════════════════════════════════
 //  TTS
