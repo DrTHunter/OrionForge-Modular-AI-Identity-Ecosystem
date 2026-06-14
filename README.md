@@ -515,4 +515,4 @@ These run as separate Docker containers via `docker compose` inside their respec
 
 ## License
 
-OrionForge is proprietary software. All rights reserved. See [LICENSE](LICENSE) for details.
+OrionForge is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0). See [LICENSE](LICENSE) for details.
