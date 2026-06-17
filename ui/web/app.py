@@ -6017,8 +6017,8 @@ async def api_stt_elevenlabs(request: Request):
             except Exception as exc:
                 log.warning("[credits] STT credit deduction failed: %s", exc)
 
-        # Estimate USD cost for frontend session tracker (2x markup)
-        stt_usd = (estimated_seconds / 60) * 0.006 * 2
+        # Estimate USD cost for frontend session tracker (matches the LLM markup multiplier)
+        stt_usd = (estimated_seconds / 60) * 0.006 * LLM_MARKUP_MULTIPLIER
         return JSONResponse({"text": text, "provider": "elevenlabs",
                              "stt_cost": round(stt_usd, 6), "audio_seconds": round(estimated_seconds, 1)})
     except httpx.HTTPStatusError as e:

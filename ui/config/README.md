@@ -10,7 +10,7 @@ Configuration files for the runtime and web dashboard.
 |------|---------|
 | `config.example.yaml` | Example YAML config structure (default profile, data dir, global policy overrides) |
 | `state.example.json` | Example state file format (window size, message array) |
-| `connections.json` | LLM provider connections  -  API endpoints, keys, enabled models. Managed via Dashboard  ->  Settings. |
+| `connections.json` | LLM provider connections. Managed via Dashboard  ->  Settings. |
 | `settings.json` | UI settings  -  timezone, chat background, agent avatars, per-agent display/voice/model config. Auto-created on first save. |
 | `about.json` | About page content (editable from the web UI) |
 | `agi_loop.json` | AGI loop configuration  -  interval (30 min default), ticks/loop, steps/tick, budget caps ($20/mo hard, $16 soft, $2/session, $0.10/tick), tiered routing |

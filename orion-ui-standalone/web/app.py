@@ -55,6 +55,7 @@ from web.stripe_billing import (
     get_user_credits, add_user_credits, deduct_user_credits,
     CREDIT_PACKS, TOOL_CREDIT_COSTS, create_credits_checkout_session,
     STORE_CATALOG, LLM_MARKUP_MULTIPLIER, estimate_llm_credit_cost,
+    estimate_llm_credit_cost_safe, estimate_image_credit_cost, estimate_video_credit_cost,
     estimate_tts_credit_cost, estimate_stt_credit_cost,
     get_credit_history, get_trial_status, FREE_TRIAL_DAYS,
     get_user_purchases, user_owns_item, purchase_tool, purchase_skin,
@@ -4277,17 +4278,28 @@ async def api_chat_send(req: ChatRequest, request: Request):
             log.warning("[metering] cost computation failed: %s", exc)
 
         # ── Credit deduction for platform-hosted LLM keys ──
-        # If the connection is platform-hosted (not user's own key), deduct credits
-        if conn.get("platform_hosted") and user and cost_data.get("total_cost"):
+        # Charge whenever tokens were used — even if the model is missing from
+        # pricing.yaml (estimate_llm_credit_cost_safe applies a fallback rate so
+        # unpriced platform models are never billed as free).
+        if conn.get("platform_hosted") and user and total_usage.get("total_tokens", 0) > 0:
             try:
-                credit_cost = estimate_llm_credit_cost(cost_data["total_cost"])
+                credit_cost = estimate_llm_credit_cost_safe(
+                    cost_data.get("total_cost", 0), total_usage.get("total_tokens", 0)
+                )
                 if credit_cost > 0:
                     balance = get_user_credits(user["id"])
                     if balance < credit_cost:
+                        # Drain remaining balance so the next pre-flight (<= 0)
+                        # blocks further calls — prevents unlimited free calls
+                        # from users who can't cover the actual cost.
+                        if balance > 0:
+                            deduct_user_credits(user["id"], balance, f"llm:{model}:shortfall")
+                            _credits_deducted += balance
+                        _credits_balance = 0
                         return JSONResponse({
                             "error": "Insufficient credits for LLM usage",
                             "credits_needed": credit_cost,
-                            "credits_balance": balance,
+                            "credits_balance": 0,
                             "redirect": "/store",
                         }, status_code=402)
                     deduct_result = deduct_user_credits(user["id"], credit_cost, f"llm:{model}:{total_usage.get('total_tokens', 0)}tok")
@@ -4369,12 +4381,27 @@ async def api_chat_send(req: ChatRequest, request: Request):
             img_cfg = settings.get("image", {})
             provider = img_cfg.get("preferred", "none")
             if provider and provider != "none":
-                result = await _generate_image(provider, img_prompt, img_cfg, settings)
-                if "error" not in result:
-                    generated_image = {**result, "prompt": img_prompt}
+                # Image generation always uses platform keys — charge credits.
+                _img_credits = estimate_image_credit_cost(provider) if user else 0
+                if user and _img_credits > 0 and get_user_credits(user["id"]) < _img_credits:
+                    response_text += (
+                        f"\n\n*Image generation skipped — needs {_img_credits} credits. "
+                        f"Add more in the Store.*"
+                    )
                 else:
-                    log.warning("[image-gen] %s", result["error"])
-                    response_text += f"\n\n*Image generation failed: {result['error']}*"
+                    result = await _generate_image(provider, img_prompt, img_cfg, settings)
+                    if "error" not in result:
+                        generated_image = {**result, "prompt": img_prompt}
+                        if user and _img_credits > 0:
+                            try:
+                                _r = deduct_user_credits(user["id"], _img_credits, f"image:{provider}")
+                                _credits_deducted += _img_credits
+                                _credits_balance = _r.get("balance", _credits_balance)
+                            except Exception as exc:
+                                log.warning("[credits] image credit deduction failed: %s", exc)
+                    else:
+                        log.warning("[image-gen] %s", result["error"])
+                        response_text += f"\n\n*Image generation failed: {result['error']}*"
         except Exception as exc:
             log.warning("[image-gen] Image generation failed: %s", exc)
             response_text += f"\n\n*Image generation failed: {exc}*"
@@ -4399,14 +4426,34 @@ async def api_chat_send(req: ChatRequest, request: Request):
             vid_cfg = settings.get("video", {})
             vid_provider = vid_cfg.get("preferred", "none")
             if vid_provider and vid_provider != "none":
-                result = await _generate_video(
-                    vid_provider, vid_prompt, vid_cfg, settings,
-                    save_dir=_VIDEO_UPLOADS_DIR,
-                )
-                generated_video = {**result, "prompt": vid_prompt}
-                if "error" in result:
-                    log.warning("[video-gen] %s", result["error"])
-                    response_text += f"\n\n*Video generation failed: {result['error']}*"
+                # Veo video is billed per second — pre-check balance, then charge.
+                _vid_secs = vid_cfg.get("duration_seconds", 8)
+                _vid_credits = estimate_video_credit_cost(vid_provider, _vid_secs) if user else 0
+                if user and _vid_credits > 0 and get_user_credits(user["id"]) < _vid_credits:
+                    generated_video = {
+                        "error": f"Not enough credits for video ({_vid_credits} needed).",
+                        "prompt": vid_prompt,
+                    }
+                    response_text += (
+                        f"\n\n*Video generation skipped — needs {_vid_credits} credits. "
+                        f"Add more in the Store.*"
+                    )
+                else:
+                    result = await _generate_video(
+                        vid_provider, vid_prompt, vid_cfg, settings,
+                        save_dir=_VIDEO_UPLOADS_DIR,
+                    )
+                    generated_video = {**result, "prompt": vid_prompt}
+                    if "error" in result:
+                        log.warning("[video-gen] %s", result["error"])
+                        response_text += f"\n\n*Video generation failed: {result['error']}*"
+                    elif user and _vid_credits > 0:
+                        try:
+                            _r = deduct_user_credits(user["id"], _vid_credits, f"video:{vid_provider}:{int(_vid_secs)}s")
+                            _credits_deducted += _vid_credits
+                            _credits_balance = _r.get("balance", _credits_balance)
+                        except Exception as exc:
+                            log.warning("[credits] video credit deduction failed: %s", exc)
             else:
                 generated_video = {
                     "error": "Video generation is disabled. Enable a Veo model in Settings -> Video Generation.",
@@ -4778,12 +4825,22 @@ async def _stream_chat_generator(req: ChatRequest, request: Request, user, conn,
             pass
 
         # ── Credit deduction for platform-hosted keys ──
-        if conn.get("platform_hosted") and user and cost_data.get("total_cost"):
+        # Charge whenever tokens were used, even for models missing from
+        # pricing.yaml (safe estimator applies a fallback so they're never free).
+        if conn.get("platform_hosted") and user and total_usage.get("total_tokens", 0) > 0:
             try:
-                credit_cost = estimate_llm_credit_cost(cost_data["total_cost"])
+                credit_cost = estimate_llm_credit_cost_safe(
+                    cost_data.get("total_cost", 0), total_usage.get("total_tokens", 0)
+                )
                 if credit_cost > 0:
                     balance = get_user_credits(user["id"])
                     if balance < credit_cost:
+                        # Drain remaining balance so the next pre-flight blocks
+                        # further calls (prevents unlimited free calls).
+                        if balance > 0:
+                            deduct_user_credits(user["id"], balance, f"llm:{model}:shortfall")
+                            _credits_deducted += balance
+                        _credits_balance = 0
                         yield _sse({"type": "error", "message": "Insufficient credits for LLM usage"})
                         return
                     deduct_result = deduct_user_credits(user["id"], credit_cost, f"llm:{model}:{total_usage.get('total_tokens', 0)}tok")
@@ -4859,9 +4916,23 @@ async def _stream_chat_generator(req: ChatRequest, request: Request, user, conn,
             img_cfg = settings.get("image", {})
             img_provider = img_cfg.get("preferred", "none")
             if img_provider and img_provider != "none":
-                result = await _generate_image(img_provider, img_prompt, img_cfg, settings)
-                if "error" not in result:
-                    generated_image = {**result, "prompt": img_prompt}
+                _img_credits = estimate_image_credit_cost(img_provider) if user else 0
+                if user and _img_credits > 0 and get_user_credits(user["id"]) < _img_credits:
+                    response_text += (
+                        f"\n\n*Image generation skipped — needs {_img_credits} credits. "
+                        f"Add more in the Store.*"
+                    )
+                else:
+                    result = await _generate_image(img_provider, img_prompt, img_cfg, settings)
+                    if "error" not in result:
+                        generated_image = {**result, "prompt": img_prompt}
+                        if user and _img_credits > 0:
+                            try:
+                                _r = deduct_user_credits(user["id"], _img_credits, f"image:{img_provider}")
+                                _credits_deducted += _img_credits
+                                _credits_balance = _r.get("balance", _credits_balance)
+                            except Exception as exc:
+                                log.warning("[credits] image credit deduction failed: %s", exc)
         except Exception:
             pass
 
@@ -4885,14 +4956,34 @@ async def _stream_chat_generator(req: ChatRequest, request: Request, user, conn,
             vid_cfg = settings.get("video", {})
             vid_provider = vid_cfg.get("preferred", "none")
             if vid_provider and vid_provider != "none":
-                result = await _generate_video(
-                    vid_provider, vid_prompt, vid_cfg, settings,
-                    save_dir=_VIDEO_UPLOADS_DIR,
-                )
-                generated_video = {**result, "prompt": vid_prompt}
-                if "error" in result:
-                    log.warning("[video-gen] %s", result["error"])
-                    response_text += f"\n\n*Video generation failed: {result['error']}*"
+                # Veo video is billed per second — pre-check balance, then charge.
+                _vid_secs = vid_cfg.get("duration_seconds", 8)
+                _vid_credits = estimate_video_credit_cost(vid_provider, _vid_secs) if user else 0
+                if user and _vid_credits > 0 and get_user_credits(user["id"]) < _vid_credits:
+                    generated_video = {
+                        "error": f"Not enough credits for video ({_vid_credits} needed).",
+                        "prompt": vid_prompt,
+                    }
+                    response_text += (
+                        f"\n\n*Video generation skipped — needs {_vid_credits} credits. "
+                        f"Add more in the Store.*"
+                    )
+                else:
+                    result = await _generate_video(
+                        vid_provider, vid_prompt, vid_cfg, settings,
+                        save_dir=_VIDEO_UPLOADS_DIR,
+                    )
+                    generated_video = {**result, "prompt": vid_prompt}
+                    if "error" in result:
+                        log.warning("[video-gen] %s", result["error"])
+                        response_text += f"\n\n*Video generation failed: {result['error']}*"
+                    elif user and _vid_credits > 0:
+                        try:
+                            _r = deduct_user_credits(user["id"], _vid_credits, f"video:{vid_provider}:{int(_vid_secs)}s")
+                            _credits_deducted += _vid_credits
+                            _credits_balance = _r.get("balance", _credits_balance)
+                        except Exception as exc:
+                            log.warning("[credits] video credit deduction failed: %s", exc)
             else:
                 generated_video = {
                     "error": "Video generation is disabled. Enable a Veo model in Settings -> Video Generation.",
@@ -6714,8 +6805,8 @@ async def api_stt_elevenlabs(request: Request):
             except Exception as exc:
                 log.warning("[credits] STT credit deduction failed: %s", exc)
 
-        # Estimate USD cost for frontend session tracker (2x markup)
-        stt_usd = (estimated_seconds / 60) * 0.006 * 2
+        # Estimate USD cost for frontend session tracker (matches the LLM markup multiplier)
+        stt_usd = (estimated_seconds / 60) * 0.006 * LLM_MARKUP_MULTIPLIER
         return JSONResponse({"text": text, "provider": "elevenlabs",
                              "stt_cost": round(stt_usd, 6), "audio_seconds": round(estimated_seconds, 1)})
     except httpx.HTTPStatusError as e:
@@ -6852,8 +6943,9 @@ async def api_chat_status(session_id: str):
             )
             chat_events = [e for e in events if e.get("chat_id") == session["chat_id"]]
             total_usd = sum(e.get("cost", {}).get("total_cost", 0.0) for e in chat_events)
-            if total_usd > 0:
-                credit_cost = estimate_llm_credit_cost(total_usd)
+            total_tok = sum(e.get("usage", {}).get("total_tokens", 0) for e in chat_events)
+            credit_cost = estimate_llm_credit_cost_safe(total_usd, total_tok)
+            if credit_cost > 0:
                 balance = get_user_credits(session["user_id"])
                 if credit_cost >= balance:
                     # Kill the subprocess — user can't afford more calls
@@ -6896,15 +6988,15 @@ async def api_chat_status(session_id: str):
                 # Only charge for events belonging to this chat
                 chat_events = [e for e in events if e.get("chat_id") == session["chat_id"]]
                 total_usd = sum(e.get("cost", {}).get("total_cost", 0.0) for e in chat_events)
-                if total_usd > 0:
-                    credit_cost = estimate_llm_credit_cost(total_usd)
-                    if credit_cost > 0:
-                        deduct_user_credits(
-                            session["user_id"],
-                            credit_cost,
-                            f"agi_burst:{session.get('agent', '')}:{len(chat_events)}calls",
-                        )
-                        log.info("[credits] Burst deduction: %d credits for session %s", credit_cost, session_id)
+                total_tok = sum(e.get("usage", {}).get("total_tokens", 0) for e in chat_events)
+                credit_cost = estimate_llm_credit_cost_safe(total_usd, total_tok)
+                if credit_cost > 0:
+                    deduct_user_credits(
+                        session["user_id"],
+                        credit_cost,
+                        f"agi_burst:{session.get('agent', '')}:{len(chat_events)}calls",
+                    )
+                    log.info("[credits] Burst deduction: %d credits for session %s", credit_cost, session_id)
             except Exception as exc:
                 log.warning("[credits] Burst credit deduction failed: %s", exc)
 
@@ -7296,6 +7388,7 @@ async def api_get_image_settings(request: Request):
 @app.post("/api/image/generate")
 async def api_image_generate(request: Request):
     """Generate an image using the preferred (or requested) provider."""
+    user = getattr(request.state, "user", None)
     body = await request.json()
     prompt = body.get("prompt", "").strip()
     if not prompt:
@@ -7308,9 +7401,27 @@ async def api_image_generate(request: Request):
     if provider == "none":
         return JSONResponse({"error": "No image provider configured. Set one in Settings → Image Generation."}, 400)
 
+    # ── Credit pre-flight (image generation uses platform keys) ──
+    credit_cost = estimate_image_credit_cost(provider) if user else 0
+    if user and credit_cost > 0:
+        balance = get_user_credits(user["id"])
+        if balance < credit_cost:
+            return JSONResponse({
+                "error": "Insufficient credits for image generation",
+                "credits_needed": credit_cost,
+                "credits_balance": balance,
+                "redirect": "/store",
+            }, status_code=402)
+
     result = await _generate_image(provider, prompt, img_cfg, settings)
     if "error" in result:
         return JSONResponse(result, 502)
+
+    if user and credit_cost > 0:
+        try:
+            deduct_user_credits(user["id"], credit_cost, f"image:{provider}")
+        except Exception as exc:
+            log.warning("[credits] image credit deduction failed: %s", exc)
     return JSONResponse(result)
 
 
@@ -7364,6 +7475,7 @@ async def api_get_video_settings(request: Request):
 @app.post("/api/video/generate")
 async def api_video_generate(request: Request):
     """Generate a video using the preferred (or requested) Veo provider."""
+    user = getattr(request.state, "user", None)
     body = await request.json()
     prompt = body.get("prompt", "").strip()
     if not prompt:
@@ -7379,12 +7491,31 @@ async def api_video_generate(request: Request):
             400,
         )
 
+    # ── Credit pre-flight (Veo video is billed per second — the priciest media op) ──
+    _vid_secs = vid_cfg.get("duration_seconds", 8)
+    credit_cost = estimate_video_credit_cost(provider, _vid_secs) if user else 0
+    if user and credit_cost > 0:
+        balance = get_user_credits(user["id"])
+        if balance < credit_cost:
+            return JSONResponse({
+                "error": "Insufficient credits for video generation",
+                "credits_needed": credit_cost,
+                "credits_balance": balance,
+                "redirect": "/store",
+            }, status_code=402)
+
     result = await _generate_video(
         provider, prompt, vid_cfg, settings,
         save_dir=_VIDEO_UPLOADS_DIR,
     )
     if "error" in result:
         return JSONResponse(result, 502)
+
+    if user and credit_cost > 0:
+        try:
+            deduct_user_credits(user["id"], credit_cost, f"video:{provider}:{int(_vid_secs)}s")
+        except Exception as exc:
+            log.warning("[credits] video credit deduction failed: %s", exc)
     return JSONResponse(result)
 
 

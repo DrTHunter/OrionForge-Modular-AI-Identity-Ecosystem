@@ -72,13 +72,14 @@ In essence, the Soul Script acts as a **persistent, structured identity and beha
 
 ## How Identity Injection Works
 
-Every chat message passes through a **5-layer prompt assembly pipeline** before reaching the LLM:
+Every chat message passes through a **6-layer prompt assembly pipeline** before reaching the LLM:
 
 1. **Base Prompt**  -  The agent's system prompt (`prompts/{agent}.system.md`)
 2. **Soul Script**  -  FAISS semantic retrieval from the agent's soul script directive (`directives/{agent}.md`), automatically indexed and searched at chat time
 3. **Always-On Knowledge**  -  Verbatim text from always-mode attached knowledge notes
 4. **Memory Vault**  -  FAISS search over the agent's persistent memories (`vault.jsonl`)
 5. **Conversation History**  -  Recent user/assistant turns (truncated to 30k char budget)
+6. **Modular Tools**  -  Per-agent tool definitions resolved from the profile's `allowed_tools` list (`profiles/{agent}.yaml`) and passed to the LLM as OpenAI function-calling schemas. Each entry names the tool, describes what it does, and declares its parameters  -  the "commands" the agent uses to invoke it. The agent calls tools via structured tool calls, and authorization is enforced at execution time, so a tool not in the agent's profile is blocked. Built-in tools: `memory`, `directives`, `web_search`, `email`, `inbox`, `cost_tracker`, `model_router`, `agi_loop`, `runtime_info`, `echo`, `continuation_update`.
 
 Soul scripts are editable from the **Profiles** page in a collapsible editor panel. Changes are saved to disk and automatically re-indexed into the NotesFAISS system  -  every agent's soul script is retrievable via semantic search with the doc ID `__soul_script__{agent}`.
 
@@ -219,7 +220,7 @@ OrionForge uses **Supabase OAuth** for authentication and **Stripe** for billing
 | **LLM markup** | Platform-hosted LLM calls billed at 2x base cost, deducted from credits |
 | **TTS/STT billing** | Per-use billing for platform-hosted voice services (2x markup) |
 | **One-time tool purchases** | Buy individual tool access from the store |
-| **Admin panel** | `/admin/keys`  -  API key management, `/admin/voices`  -  ElevenLabs voice allowlist, user management (wipe, purge inactive), secured by OAuth email whitelist |
+| **Admin panel** | Owner-only management area for voices and user management (wipe, purge inactive), restricted to allowlisted accounts |
 | **Tier gating** | Free tier vs Pro tier access control on all API endpoints |
 
 ---
@@ -231,7 +232,7 @@ OrionForge uses **Supabase OAuth** for authentication and **Stripe** for billing
 | **Login** | `/login` | Supabase OAuth sign-in (Google, GitHub, email) |
 | **Plans** | `/plans` | Subscription tier selection  -  Free vs Pro ($9.99/mo) |
 | **Store** | `/store` | Credit packs, one-time tool purchases, usage history |
-| **Chat** | `/chat` | Talk to agents  -  5-layer identity injection (prompt  ->  soul script  ->  knowledge  ->  memory  ->  history) |
+| **Chat** | `/chat` | Talk to agents  -  6-layer identity injection (prompt  ->  soul script  ->  knowledge  ->  memory  ->  history  ->  tools) |
 | **Profiles** | `/profiles` | Create/edit/delete agents with collapsible system prompt, soul script editor (FAISS-indexed), knowledge notes  -  with 30-day trash retention |
 | **Vault** | `/vault` | Browse & search persistent memory  -  sort by 8 fields, max memory limits, metadata display |
 | **Knowledge** | `/knowledge` | Rich text editor for soul scripts and always-on context notes |
@@ -241,8 +242,7 @@ OrionForge uses **Supabase OAuth** for authentication and **Stripe** for billing
 | **Skins** | `/skins` | 13 UI themes with marketplace-style grid and live preview |
 | **AGI Loop** | `/agi-loop` | Autonomous agent loop configuration (intervals, budgets, steps) |
 | **Wiki** | `/about` | Project wiki with auto-generated articles from READMEs + custom notes editor |
-| **Admin Keys** | `/admin/keys` | Admin panel  -  API key management, secured by OAuth email whitelist |
-| **Admin Voices** | `/admin/voices` | ElevenLabs voice allowlist  -  search, filter, premium toggle, bulk save |
+| **Admin** | Owner only | Owner-only management area (voices, user management), restricted to allowlisted accounts |
 
 ---
 

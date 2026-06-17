@@ -605,6 +605,7 @@
   }
   .sidebar-toggle:hover { color: #e4e4e7; }
 
+  .main-menu-float,
   .sidebar-expand-float {
     position: absolute; top: 0.625rem; left: 0.75rem; z-index: 10;
     background: rgba(26,26,36,0.85); border: 1px solid rgba(42,42,58,0.5);
@@ -612,7 +613,9 @@
     font-size: 1.1rem; padding: 0.25rem 0.4rem; display: none;
     backdrop-filter: blur(4px);
   }
+  .main-menu-float:hover,
   .sidebar-expand-float:hover { color: #e4e4e7; background: rgba(26,26,36,0.95); }
+  .main-menu-float { left: 0.75rem; }
   .chat-sidebar.collapsed ~ .chat-main .sidebar-expand-float { display: flex; }
 
   /* ── Prompt Inspector (kept from existing) ── */
@@ -835,6 +838,7 @@
     .chat-sidebar.collapsed { width: 80vw; max-width: 320px; min-width: 0; border-right: 1px solid #2a2a3a; }
 
     /* Prominent hamburger top-left, ChatGPT pill style */
+    .main-menu-float,
     .sidebar-expand-float {
       display: flex !important; align-items: center; justify-content: center;
       top: 0.5rem; left: 0.5rem;
@@ -844,9 +848,10 @@
       border: 1px solid rgba(99,102,241,0.25);
       font-size: 1.1rem;
     }
+    .sidebar-expand-float { left: 3.25rem; }
 
     /* Topbar: give room for hamburger + compact */
-    .chat-topbar { padding: 0.5rem 0 0.5rem 3.25rem; gap: 0.25rem; }
+    .chat-topbar { padding: 0.5rem 0 0.5rem 6rem; gap: 0.25rem; }
     .chat-topbar h1 { font-size: 1rem; }
     #cost-ticker, #credit-balance { font-size: 0.6875rem; padding: 0.125rem 0.4rem; }
 
@@ -987,6 +992,7 @@
 
   <!-- ═══ MAIN CHAT ═══ -->
   <div class="chat-main">
+    <button class="main-menu-float" onclick="openMainMenu()" title="Open main menu">⚙</button>
     <button class="sidebar-expand-float" onclick="toggleSidebar()" title="Show sidebar">☰</button>
     {% if chat_background %}
     <div class="chat-bg-overlay" style="background-image: url('{{ chat_background }}');"></div>
@@ -1663,6 +1669,11 @@ function autoResize(el) {
 }
 function setMode(mode) {
   _mode = 'chat';
+}
+function openMainMenu() {
+  if (typeof toggleMainNav === 'function') {
+    toggleMainNav();
+  }
 }
 function toggleSidebar() {
   const sb = document.getElementById('sidebar');

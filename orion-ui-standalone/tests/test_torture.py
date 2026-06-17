@@ -8825,10 +8825,33 @@ def test_credit_cost_estimators():
     check("llm negative → 0 credits", billing.estimate_llm_credit_cost(-1) == 0)
     check("llm $0.01 → 2 credits (2x markup)",
           billing.estimate_llm_credit_cost(0.01) == 2)
-    check("llm $1.00 → 200 credits",
+    check("llm $0.10 → 20 credits (2x markup)",
+          billing.estimate_llm_credit_cost(0.10) == 20)
+    check("llm $1.00 → 200 credits (2x markup)",
           billing.estimate_llm_credit_cost(1.0) == 200)
     check("llm minimum 1 credit",
           billing.estimate_llm_credit_cost(0.0001) >= 1)
+
+    # ── Unpriced-model fallback (never $0 when tokens were used) ──
+    check("llm safe: $0 cost + 0 tokens → 0",
+          billing.estimate_llm_credit_cost_safe(0, 0) == 0)
+    check("llm safe: priced cost passes through",
+          billing.estimate_llm_credit_cost_safe(1.0, 5000) == 200)
+    check("llm safe: unpriced ($0) but tokens used → charged",
+          billing.estimate_llm_credit_cost_safe(0, 100000) > 0)
+
+    # ── Image credits ──
+    check("image dalle3 > 0", billing.estimate_image_credit_cost("openai_dalle3") > 0)
+    check("image stability prefix match > 0",
+          billing.estimate_image_credit_cost("stability_ultra") > 0)
+    check("image unknown provider → default > 0",
+          billing.estimate_image_credit_cost("totally_unknown") > 0)
+
+    # ── Video credits (priciest media op) ──
+    check("video veo2 8s > one image",
+          billing.estimate_video_credit_cost("google_veo2", 8) > billing.estimate_image_credit_cost("openai_dalle3"))
+    check("video longer duration costs more",
+          billing.estimate_video_credit_cost("google_veo3", 16) > billing.estimate_video_credit_cost("google_veo3", 4))
 
     # ── TTS credits ──
     check("tts 0 chars → 0", billing.estimate_tts_credit_cost(0) == 0)

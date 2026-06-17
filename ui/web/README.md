@@ -32,7 +32,7 @@ python -m uvicorn web.app:app --host 0.0.0.0 --port 8989 --reload
 | `login.html` | Supabase OAuth sign-in (Google, GitHub, email) |
 | `plans.html` | Subscription tier selection  -  Free vs Pro ($9.99/mo) |
 | `store.html` | Credit packs, one-time tool purchases, usage history |
-| `admin_keys.html` | Admin panel  -  API key management (secured by email whitelist) |
+| `admin_keys.html` | Owner-only admin page (restricted to allowlisted accounts) |
 | `admin_voices.html` | Admin panel  -  ElevenLabs voice allowlist (search, filter, premium toggle, bulk save) |
 | `chat.html` | Real-time chat with agents  -  streaming, tool execution, folders |
 | `vault.html` | Memory vault browser  -  sort by 8 fields, metadata display, max memory limits |
@@ -67,7 +67,6 @@ python -m uvicorn web.app:app --host 0.0.0.0 --port 8989 --reload
 | `GET /skins` | UI skins marketplace |
 | `GET /agi-loop` | AGI loop config |
 | `GET /about` | Wiki page |
-| `GET /admin/keys` | Admin panel  -  API keys |
 | `GET /admin/voices` | Admin panel  -  voice allowlist |
 
 ### Auth API (~6 routes)

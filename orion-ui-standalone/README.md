@@ -20,6 +20,39 @@ Open **http://localhost:8989**.
 
 ---
 
+## VS Code Bridge
+
+Use the optional MCP bridge when you want Copilot Agent in VS Code to route prompts through Orion Forge instead of calling the main app directly.
+
+Bridge entrypoint:
+
+```powershell
+cd orion-ui-standalone
+python scripts/orion_vscode_bridge.py
+```
+
+Bridge behavior:
+- Default persona: `orion_cannon`
+- Allowed overrides: `elysia_cannon`, `k_os`
+- Request routing: one MCP tool named `orion_chat`
+- Bridge model defaults: `ORION_VSCODE_BRIDGE_DEFAULT_MODEL` (primary) and `ORION_VSCODE_BRIDGE_FALLBACK_MODEL` (backup)
+- Context handling: optional `context` text is prepended before the prompt, so the agent can be given chat summaries or code snippets without sending the whole repository every time
+
+Configuration file:
+- `config/vscode_bridge.json`
+
+Remote auth (recommended):
+- Fly requires authentication for `/api/chat/send`. Use a static **bridge key** instead of expiring tokens.
+- Set `ORION_BRIDGE_API_KEY` as a Fly secret, set the bridge `auth.mode` to `bridge_key`, and provide the same key via `ORION_VSCODE_BRIDGE_KEY`.
+- See [scripts/README.md](scripts/README.md) for the full key setup, owner-data sharing, and security notes.
+
+Turn-off path:
+- Stop launching the bridge and remove the MCP server entry from VS Code
+- Remove the key with `fly secrets unset ORION_BRIDGE_API_KEY` and redeploy
+- No core Orion files are modified by the bridge, so removal is clean
+
+---
+
 ## Structure
 
 ```
@@ -36,7 +69,7 @@ orion-ui-standalone/
 │       ├── login.html          # Supabase OAuth sign-in page
 │       ├── plans.html          # Subscription tier selection (Free vs Pro)
 │       ├── store.html          # Credit packs, one-time tool purchases, usage history
-│       ├── admin_keys.html     # Admin panel  -  API key management
+│       ├── admin_keys.html     # Owner-only admin page
 │       ├── admin_voices.html   # Admin panel  -  ElevenLabs voice allowlist management
 │       ├── chat.html           # Real-time agent chat with streaming
 │       ├── profiles.html       # Agent profile manager  -  collapsible system prompt, soul script editor (FAISS-indexed), knowledge notes, avatar upload
@@ -65,7 +98,7 @@ orion-ui-standalone/
 │
 ├── config/             # Runtime configuration (18 files)
 │   ├── connections.json       # LLM provider connections
-│   ├── auth.json              # Supabase OAuth config (project URL, anon key)
+│   ├── auth.json              # Authentication config
 │   ├── memory_profile.json    # Memory vault settings (retention, categories, safety)
 │   ├── identity_profile.json  # FAISS identity indexing profile
 │   ├── model_router.json      # Model router config (task-tier mapping, tiers, presets)
@@ -80,6 +113,7 @@ orion-ui-standalone/
 ├── directives/         # Agent soul script / directive markdown files (auto-indexed into NotesFAISS)
 ├── notes/              # Developer notes per agent
 ├── scripts/            # Seed scripts (seed_memories.py, seed_ui_knowledge.py)
+│   └── orion_vscode_bridge.py  # Optional MCP bridge for VS Code Copilot Agent
 ├── data/               # Runtime data (global templates + per-user isolated directories)
 │   └── users/          # Per-user isolated data trees (chats, memory, vault, notes, settings, profiles, uploads)
 └── tests/              # Test suite  -  12 files, 295+ functions, ~4,350+ checks
@@ -99,7 +133,7 @@ orion-ui-standalone/
 | **LLM markup** | Platform-hosted calls billed at 2x base cost, deducted from credits |
 | **TTS/STT billing** | Per-use billing for platform-hosted voice services (2x markup) |
 | **One-time purchases** | Buy individual tool access from the store |
-| **Admin panel** | `/admin/keys`  -  API key management, `/admin/voices`  -  ElevenLabs voice allowlist, user management (wipe, purge inactive), secured by OAuth email whitelist |
+| **Admin panel** | Owner-only management area for voices and user management (wipe, purge inactive), restricted to allowlisted accounts |
 | **Tier gating** | Free tier vs Pro tier access control on all API endpoints |
 
 ---
@@ -116,13 +150,12 @@ orion-ui-standalone/
 | **Vault** | `/vault` | Browse & search persistent memory  -  sort by 8 fields, max memory limits, metadata display |
 | **Knowledge** | `/knowledge` | Rich text editor for soul scripts and always-on context notes |
 | **Tools** | `/tools` | Configure tools, memory profiles, email, web search, cost tracking, model router with presets |
-| **Settings** | `/settings` | API connections, user API keys (OpenAI, Anthropic, DeepSeek, OpenRouter, Google Gemini), chat backgrounds, timezone, voice/image settings |
+| **Settings** | `/settings` | Model provider connections, chat backgrounds, timezone, voice/image settings |
 | **Pricing** | `/pricing` | LLM pricing registry  -  view/edit per-model token costs |
 | **Skins** | `/skins` | 13 UI themes with marketplace-style grid and live preview |
 | **AGI Loop** | `/agi-loop` | Autonomous agent loop  -  8-tab dashboard (Dashboard, Inbox, Journal, Config, Pipeline, Model Router, Budget, Loop Log), journal popup modal with narrative details, expandable loop log entries, 6-tier model routing, VM-persistent tick history & journal |
 | **Wiki** | `/about` | Project wiki with auto-generated articles from READMEs + custom notes editor |
-| **Admin Keys** | `/admin/keys` | Admin panel  -  API key management, secured by OAuth email whitelist |
-| **Admin Voices** | `/admin/voices` | ElevenLabs voice allowlist  -  search, filter, premium toggle, bulk save |
+| **Admin** | Owner only | Owner-only management area (voices, user management), restricted to allowlisted accounts |
 
 ---
 

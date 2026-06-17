@@ -372,8 +372,13 @@ CREDIT_PACKS = {
     "pack_30":  {"credits": 3200,  "price": 30.00, "label": "3,200 credits",  "price_label": "$30",  "bonus": "+200 bonus"},
 }
 
-# LLM markup multiplier: users pay 2× the actual token cost when using platform keys
+# LLM markup multiplier: users pay 2× the actual token cost when using platform keys.
+# This is the single source of truth for LLM, TTS, STT, image, and video credit markup.
 LLM_MARKUP_MULTIPLIER = 2.0
+
+# Fallback price (USD per 1M tokens) used ONLY for platform-hosted models that are
+# missing from pricing.yaml, so unpriced models are never billed as $0 (free).
+UNPRICED_LLM_FALLBACK_PER_1M = 15.0
 
 # ── Voice API pricing (USD) ──────────────────────────────────────
 # TTS cost per 1,000 characters by provider
@@ -393,6 +398,32 @@ STT_COST_PER_MINUTE = {
     "whisper":     0.006,   # OpenAI Whisper pricing
     "elevenlabs":  0.007,   # ElevenLabs Scribe (~$0.42/hr)
     "default":     0.006,
+}
+
+# ── Image generation pricing (USD per generated image) by provider ──
+# Image generation always uses platform keys, so it is always metered.
+# Keys are matched by prefix (e.g. "stability_ultra" → "stability").
+IMAGE_COST_PER_IMAGE = {
+    "openai_dalle3":    0.04,   # DALL·E 3 standard 1024²
+    "openai_dalle2":    0.02,
+    "openai_gpt_image": 0.04,   # gpt-image-1 (medium quality)
+    "google_imagen":    0.04,   # Imagen 3/4
+    "stability":        0.04,   # Stable Image Ultra/Core/SD3
+    "ideogram":         0.08,   # Ideogram V2 / Turbo
+    "replicate":        0.02,   # Flux family via Replicate
+    "fal":              0.05,   # Flux family via FAL
+    "leonardo":         0.02,   # Leonardo XL family
+    "midjourney":       0.05,
+    "default":          0.05,
+}
+
+# ── Video generation pricing (USD per second of output) by provider ──
+# Veo is billed per second and is by far the most expensive media op.
+VIDEO_COST_PER_SECOND = {
+    "google_veo2":  0.35,   # Veo 2 (silent 720p)
+    "google_veo3":  0.75,   # Veo 3 (audio, 720p)
+    "google_veo31": 0.40,   # Veo 3.1 (audio)
+    "default":      0.50,
 }
 
 # ══════════════════════════════════════════════════════════════════
@@ -1117,7 +1148,7 @@ def estimate_llm_credit_cost(usd_cost: float) -> int:
     if usd_cost <= 0:
         return 0
     # Convert USD to credits: $0.01 = 1 credit base
-    # Apply 2× markup
+    # Apply the LLM markup multiplier, then round up to whole credits
     credits = int((usd_cost * 100) * LLM_MARKUP_MULTIPLIER + 0.99)  # round up
     return max(credits, 1)  # minimum 1 credit
 
@@ -1148,6 +1179,56 @@ def estimate_stt_credit_cost(audio_seconds: float, provider: str = "whisper") ->
         return 0
     rate = STT_COST_PER_MINUTE.get(provider, STT_COST_PER_MINUTE["default"])
     usd_cost = (audio_seconds / 60) * rate
+    return estimate_llm_credit_cost(usd_cost)
+
+
+def estimate_llm_credit_cost_safe(usd_cost: float, total_tokens: int = 0) -> int:
+    """Like estimate_llm_credit_cost, but never returns 0 when tokens were used.
+
+    Protects the operator from models that are missing from pricing.yaml
+    (which compute a $0 cost and would otherwise bill nothing).  When the
+    metered USD cost is 0 but tokens were consumed, falls back to a
+    conservative per-token rate so platform usage is always charged.
+    """
+    if usd_cost and usd_cost > 0:
+        return estimate_llm_credit_cost(usd_cost)
+    if total_tokens and total_tokens > 0:
+        fallback_usd = total_tokens * UNPRICED_LLM_FALLBACK_PER_1M / 1_000_000
+        return estimate_llm_credit_cost(fallback_usd)
+    return 0
+
+
+def estimate_image_credit_cost(provider: str = "default") -> int:
+    """Credits charged for one generated image, at the platform markup.
+
+    Image generation always uses the platform's provider keys, so every
+    image a user generates costs the operator money.  Provider keys are
+    matched by prefix (e.g. "stability_ultra" → "stability").
+    """
+    p = provider or "default"
+    rate = IMAGE_COST_PER_IMAGE.get(p)
+    if rate is None:
+        for key, val in IMAGE_COST_PER_IMAGE.items():
+            if key != "default" and p.startswith(key):
+                rate = val
+                break
+    if rate is None:
+        rate = IMAGE_COST_PER_IMAGE["default"]
+    return estimate_llm_credit_cost(rate)
+
+
+def estimate_video_credit_cost(provider: str = "default", duration_seconds: int = 8) -> int:
+    """Credits charged for one generated video, at the platform markup.
+
+    Veo video generation is billed per second of output and is by far the
+    most expensive media operation, so it is always metered.
+    """
+    rate = VIDEO_COST_PER_SECOND.get(provider, VIDEO_COST_PER_SECOND["default"])
+    try:
+        secs = max(1, int(duration_seconds))
+    except (TypeError, ValueError):
+        secs = 8
+    usd_cost = rate * secs
     return estimate_llm_credit_cost(usd_cost)
 
 

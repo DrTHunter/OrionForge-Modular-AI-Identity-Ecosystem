@@ -357,7 +357,8 @@ CREDIT_PACKS = {
     "pack_30":  {"credits": 3200,  "price": 30.00, "label": "3,200 credits",  "price_label": "$30",  "bonus": "+200 bonus"},
 }
 
-# LLM markup multiplier: users pay 2× the actual token cost when using platform keys
+# LLM markup multiplier: users pay 2× the actual token cost when using platform keys.
+# This is the single source of truth for LLM, TTS, and STT credit markup.
 LLM_MARKUP_MULTIPLIER = 2.0
 
 # ── Voice API pricing (USD) ──────────────────────────────────────
@@ -1096,7 +1097,7 @@ def estimate_llm_credit_cost(usd_cost: float) -> int:
     if usd_cost <= 0:
         return 0
     # Convert USD to credits: $0.01 = 1 credit base
-    # Apply 2× markup
+    # Apply the LLM markup multiplier, then round up to whole credits
     credits = int((usd_cost * 100) * LLM_MARKUP_MULTIPLIER + 0.99)  # round up
     return max(credits, 1)  # minimum 1 credit
 
