@@ -5,6 +5,7 @@ stores the access_token in an httpOnly cookie;
 verifies tokens server-side via Supabase JWKS or shared JWT secret.
 """
 
+import hmac
 import json
 import logging
 from pathlib import Path
@@ -148,10 +149,76 @@ def _allowed_emails() -> set[str]:
 
 
 def is_email_allowed(email: str) -> bool:
-    """Return True only if the email is on the login allowlist."""
+    """Return True if the email is permitted to log in.
+
+    When open_registration is enabled in auth.json (or OPEN_REGISTRATION=1 env),
+    all emails are allowed and the allowlist is ignored.
+    When the allowlist is empty, registration is also open (opt-in default).
+    """
     if not email:
         return False
-    return email.strip().lower() in _allowed_emails()
+    import os
+    if os.environ.get("OPEN_REGISTRATION", "").strip() in ("1", "true", "yes"):
+        return True
+    cfg = _load_auth_config()
+    if cfg.get("open_registration"):
+        return True
+    emails = _allowed_emails()
+    if not emails:
+        return True  # empty list = open
+    return email.strip().lower() in emails
+
+
+# ── Optional VS Code bridge API key ─────────────────────────────
+# A static key that lets the VS Code bridge authenticate without a
+# short-lived Supabase JWT. Entirely opt-in: when no key is configured
+# the whole mechanism is inert and the normal login flow is untouched.
+# Sources, in priority order:
+#   1. ORION_BRIDGE_API_KEY env var
+#   2. auth.json -> "bridge_api_key"
+def get_bridge_api_key() -> str:
+    """Return the configured bridge API key, or "" when disabled."""
+    import os
+    env_val = os.environ.get("ORION_BRIDGE_API_KEY", "").strip()
+    if env_val:
+        return env_val
+    cfg = _load_auth_config()
+    return str(cfg.get("bridge_api_key", "") or "").strip()
+
+
+def verify_bridge_key(provided: str) -> Optional[dict]:
+    """Return the owner identity if the provided key matches, else None.
+
+    Uses a constant-time comparison and maps a valid key to the owner
+    account so bridge calls share the same chats and memory vault.
+    Returns None when bridge-key auth is disabled (no key configured).
+
+    The owner user id is resolved from, in priority order:
+      1. ORION_BRIDGE_USER_ID env var (keeps the id out of the repo)
+      2. auth.json -> "bridge_user_id"
+      3. "__bridge__" (isolated data space) when neither is set
+    """
+    import os
+    expected = get_bridge_api_key()
+    if not expected or not provided:
+        return None
+    if not hmac.compare_digest(provided.strip(), expected):
+        return None
+    cfg = _load_auth_config()
+    emails = sorted(_allowed_emails())
+    owner_email = emails[0] if emails else ""
+    user_id = (
+        os.environ.get("ORION_BRIDGE_USER_ID", "").strip()
+        or str(cfg.get("bridge_user_id", "") or "").strip()
+        or "__bridge__"
+    )
+    return {
+        "id": user_id,
+        "email": owner_email,
+        "role": "authenticated",
+        "aud": "authenticated",
+        "via": "bridge",
+    }
 
 
 # ── Public paths that don't require authentication ──────────────

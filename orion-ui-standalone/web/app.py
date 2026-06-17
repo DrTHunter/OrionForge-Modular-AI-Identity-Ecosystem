@@ -47,7 +47,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from web.image_gen import _generate_image
 from web.video_gen import _generate_video
-from web.auth import get_auth_config, verify_supabase_token, extract_user_from_token, is_public_path, is_email_allowed
+from web.auth import get_auth_config, verify_supabase_token, extract_user_from_token, is_public_path, is_email_allowed, verify_bridge_key
 from web.stripe_billing import (
     get_user_tier, get_user_subscription, user_has_feature,
     create_checkout_session, create_billing_portal_session,
@@ -220,6 +220,30 @@ class AuthMiddleware(BaseHTTPMiddleware):
             response = await call_next(request)
             return response
 
+        # ── Optional VS Code bridge key auth (isolated, opt-in) ──
+        # Active only when a bridge key is configured server-side
+        # (ORION_BRIDGE_API_KEY env or auth.json "bridge_api_key").
+        # When the X-Bridge-Key header is absent, this block is skipped
+        # entirely and the normal Supabase login flow runs unchanged.
+        if path.startswith("/api/"):
+            bridge_key = request.headers.get("x-bridge-key", "")
+            if bridge_key:
+                bridge_user = verify_bridge_key(bridge_key)
+                if bridge_user is None:
+                    return JSONResponse({"error": "Invalid bridge key"}, status_code=401)
+                request.state.user = bridge_user
+                user_id = bridge_user.get("id", "") or "__bridge__"
+                _current_user_id.set(user_id)
+                try:
+                    ensure_user_dirs(user_id)
+                    seed_user_vault(user_id)
+                    seed_user_chats(user_id)
+                except Exception as exc:
+                    log.warning("[auth] bridge dir init failed for %s: %s", user_id, exc)
+                request.state.trial = get_trial_status(user_id)
+                request.state.is_subscribed = True
+                return await call_next(request)
+
         # Check for auth cookie
         token = request.cookies.get("sb_access_token")
         if not token:
@@ -262,9 +286,13 @@ class AuthMiddleware(BaseHTTPMiddleware):
         # Ensure per-user data directories exist (fast no-op after first login)
         if user_id:
             try:
-                ensure_user_dirs(user_id)
+                is_new = ensure_user_dirs(user_id)
                 seed_user_vault(user_id)
                 seed_user_chats(user_id)
+                # Seed welcome credits ($5 = 500 credits) on first ever login
+                if get_user_credits(user_id) == 0:
+                    add_user_credits(user_id, 500, reason="welcome_grant:new_user_$5")
+                    log.info("[auth] Seeded 500 welcome credits for new user %s", user_id[:8])
             except Exception as exc:
                 log.warning("[auth] Failed to create user dirs for %s: %s", user_id, exc)
 
