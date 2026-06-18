@@ -992,6 +992,8 @@ section { position: relative; z-index: 1; }
 .ws-card-thumb.skin i { color: #60a5fa; }
 .ws-card-thumb.pack::before { background: linear-gradient(135deg, #2a2a0a, #141400); }
 .ws-card-thumb.pack i { color: #fbbf24; }
+.ws-card-thumb.included::before { background: linear-gradient(135deg, #0a2a26, #04140f); opacity: 0.4; }
+.ws-card-thumb.included i { color: #2dd4bf; }
 .ws-card-badge {
     position: absolute;
     top: 10px; right: 10px;
@@ -1016,6 +1018,32 @@ section { position: relative; z-index: 1; }
     background: linear-gradient(135deg, #6366f1, #8b5cf6);
     color: #fff;
 }
+.ws-card-badge.included {
+    background: linear-gradient(135deg, #22c55e, #10b981);
+    color: #04140a;
+}
+/* Coming Soon watermark over marketplace previews */
+.ws-soon-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: rgba(4, 6, 14, 0.62);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    color: #fff;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    font-size: 0.78rem;
+    font-weight: 800;
+}
+.ws-soon-overlay i { font-size: 1.2rem; color: var(--amber); filter: drop-shadow(0 0 10px rgba(245,158,11,0.5)); }
+.ws-card.soon { cursor: default; }
+.ws-card.soon:hover { transform: translateY(-2px); border-color: var(--border-glass); box-shadow: none; }
 .ws-card-body {
     padding: 18px 20px;
 }
@@ -1061,6 +1089,11 @@ section { position: relative; z-index: 1; }
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     background-clip: text;
 }
+.ws-card-price.soon-price {
+    font-size: 0.82rem; font-weight: 700; color: var(--text-muted);
+    text-transform: none; letter-spacing: 0;
+}
+.ws-stat.live { color: #4ade80; font-weight: 700; }
 .ws-card-stats {
     display: flex;
     gap: 12px;
@@ -2776,12 +2809,15 @@ section { position: relative; z-index: 1; }
         <div class="workshop-hero reveal">
             <div class="section-label"><i class="fas fa-hammer"></i> Creator Workshop</div>
             <h2 class="section-title">The SoulScript Workshop <span style="background: linear-gradient(135deg, var(--amber), var(--rose)); -webkit-background-clip: text; background-clip: text; color: transparent; font-size: 0.6em; vertical-align: middle; margin-left: 12px;">Coming Soon</span></h2>
-            <p class="section-subtitle" style="max-width: 780px; margin: 0 auto;">The SoulScript Workshop is a creator-driven marketplace where you can browse, install, and publish AI identities, tools, mods, memory packs, and soul script parts. Creators build and upload their own agents, personality layers, symbolic memory sets, UI skins, and tool extensions — then list them for free or for sale. Buyers get one-click installs directly into their Orion Forge instance. Revenue is split automatically via Stripe Connect, so creators get paid instantly with zero hassle. Think Steam Workshop meets an AI identity store — built by creators, for creators.</p>
+            <p class="section-subtitle" style="max-width: 780px; margin: 0 auto;">Everything in the <strong style="color:#4ade80;">Included Tools</strong> tab is live in your account right now — voice, transcription, web search, image generation, and more, at no extra charge. The full creator marketplace, where anyone can publish and sell AI identities, tools, mods, and soul-script parts, is on the way. Here's a preview of what's coming.</p>
         </div>
 
         <!-- Category Tabs -->
         <div class="workshop-tabs" id="workshop-tabs">
-            <button class="workshop-tab active" data-cat="all">
+            <button class="workshop-tab active" data-cat="included">
+                <i class="fas fa-circle-check"></i> Included Tools <span class="tab-count" id="count-included">0</span>
+            </button>
+            <button class="workshop-tab" data-cat="all">
                 <i class="fas fa-th"></i> All <span class="tab-count" id="count-all">0</span>
             </button>
             <button class="workshop-tab" data-cat="identity">
@@ -3705,6 +3741,18 @@ function renderTools() {
 // WORKSHOP DATA
 // -------------------------------------------------------
 const workshopItems = [
+    // --- INCLUDED TOOLS (live in every account, no extra charge) ---
+    { id: 'inc-tts', cat: 'included', name: 'Text-to-Speech', creator: 'Orion Forge', icon: 'fas fa-volume-high', badge: 'included', desc: 'Give any agent a real voice. Natural, expressive speech powered by ElevenLabs, Edge-TTS, or your own self-hosted engine.', price: 0, likes: 0, downloads: 0, date: '2026-06-01', tags: ['Voice', 'Included'] },
+    { id: 'inc-stt', cat: 'included', name: 'Speech-to-Text', creator: 'Orion Forge', icon: 'fas fa-microphone-lines', badge: 'included', desc: 'Just talk. Fast, accurate transcription turns what you say into messages your agents understand — hands-free.', price: 0, likes: 0, downloads: 0, date: '2026-06-01', tags: ['Voice', 'Included'] },
+    { id: 'inc-voices', cat: 'included', name: 'Customizable Voices', creator: 'Orion Forge', icon: 'fas fa-sliders', badge: 'included', desc: 'Find the perfect voice from the full ElevenLabs library — thousands of voices across every accent, age, and mood.', price: 0, likes: 0, downloads: 0, date: '2026-06-01', tags: ['Voice', 'Included'] },
+    { id: 'inc-clone', cat: 'included', name: 'Custom Voice Clones', creator: 'Orion Forge', icon: 'fas fa-clone', badge: 'included', desc: 'Clone any voice and assign it to an agent, so it sounds exactly the way you imagine it — yours, a character, anyone.', price: 0, likes: 0, downloads: 0, date: '2026-06-01', tags: ['Voice', 'Included'] },
+    { id: 'inc-sidecar', cat: 'included', name: 'Affordable Self-Hosted Voice', creator: 'Orion Forge', icon: 'fas fa-server', badge: 'included', desc: 'Run voice for next to nothing. Optional self-hosted speech engines (Piper + XTTS v2 and faster-whisper) keep costs tiny.', price: 0, likes: 0, downloads: 0, date: '2026-06-01', tags: ['Voice', 'Included'] },
+    { id: 'inc-search', cat: 'included', name: 'Web Search', creator: 'Orion Forge', icon: 'fas fa-globe', badge: 'included', desc: 'Give agents real-time access to the internet — to research, fact-check, and pull in fresh information as you chat.', price: 0, likes: 0, downloads: 0, date: '2026-06-01', tags: ['Tool', 'Included'] },
+    { id: 'inc-image', cat: 'included', name: 'Image Generation', creator: 'Orion Forge', icon: 'fas fa-image', badge: 'included', desc: 'Create images right inside the conversation across nine providers — DALL·E, Imagen, Stability, Flux, and more.', price: 0, likes: 0, downloads: 0, date: '2026-06-01', tags: ['Tool', 'Included'] },
+    { id: 'inc-agi', cat: 'included', name: 'AGI Loop', creator: 'Orion Forge', icon: 'fas fa-infinity', badge: 'included', desc: 'Let an agent run on its own — planning, acting, and iterating toward a goal, with budgets and guardrails you control.', price: 0, likes: 0, downloads: 0, date: '2026-06-01', tags: ['Tool', 'Included'] },
+    { id: 'inc-email', cat: 'included', name: 'Email & Inbox', creator: 'Orion Forge', icon: 'fas fa-envelope', badge: 'included', desc: 'Agents can read and send email, so they can act for you out in the world — not just inside the chat window.', price: 0, likes: 0, downloads: 0, date: '2026-06-01', tags: ['Tool', 'Included'] },
+    { id: 'inc-cost', cat: 'included', name: 'Cost Tracker', creator: 'Orion Forge', icon: 'fas fa-chart-line', badge: 'included', desc: 'See exactly what you spend, per model and per agent, in real time. Full transparency, zero surprises.', price: 0, likes: 0, downloads: 0, date: '2026-06-01', tags: ['Tool', 'Included'] },
+
     // --- AI IDENTITIES ---
     { id: 'ws-storyteller', cat: 'identity', name: 'Storyteller AI', creator: 'Orion Forge', icon: 'fas fa-film', badge: 'featured', desc: 'Transform your words into narrated videos. AI-powered media studio in a box.', price: 15, likes: 342, downloads: 1280, date: '2026-02-15', tags: ['Creative', 'Productivity'] },
     { id: 'ws-muse', cat: 'identity', name: 'Muse AI', creator: 'Orion Forge', icon: 'fas fa-paint-brush', badge: '', desc: 'Creative assistant for visual projects, idea generation, and artistic collaboration.', price: 6, likes: 218, downloads: 890, date: '2026-02-10', tags: ['Creative'] },
@@ -3790,6 +3838,11 @@ function getFilteredWorkshop() {
         case 'price-high': items.sort((a, b) => b.price - a.price); break;
     }
 
+    // Keep included (live) tools showing first in the "All" view
+    if (activeCat === 'all') {
+        items = [...items.filter(i => i.cat === 'included'), ...items.filter(i => i.cat !== 'included')];
+    }
+
     return items;
 }
 
@@ -3799,7 +3852,7 @@ function renderWorkshop() {
 
     // Update tab counts
     document.getElementById('count-all').textContent = workshopItems.length;
-    ['identity', 'tool', 'memory', 'mod', 'skin', 'pack'].forEach(cat => {
+    ['included', 'identity', 'tool', 'memory', 'mod', 'skin', 'pack'].forEach(cat => {
         const el = document.getElementById('count-' + cat);
         if (el) el.textContent = workshopItems.filter(i => i.cat === cat).length;
     });
@@ -3812,18 +3865,32 @@ function renderWorkshop() {
     grid.innerHTML = items.map(item => {
         const isLiked = wsLikes[item.id];
         const totalLikes = item.likes + (isLiked ? 1 : 0);
-        const priceHTML = (item.price === 0 || item.creator === 'Orion Forge')
+        const isIncluded = item.cat === 'included';
+        const priceHTML = isIncluded
             ? '<span class="ws-card-price free-price">Included</span>'
-            : `<span class="ws-card-price">$${item.price}</span>`;
-        const badgeHTML = item.badge
-            ? `<span class="ws-card-badge ${item.badge}">${item.badge === 'featured' ? 'Featured' : item.badge === 'new' ? 'New' : item.badge === 'founder' ? 'Founder' : item.badge}</span>`
+            : '<span class="ws-card-price soon-price"><i class="fas fa-clock" style="margin-right:5px;"></i>Coming soon</span>';
+        const badgeHTML = isIncluded
+            ? '<span class="ws-card-badge included">Included</span>'
             : '';
+        const overlayHTML = isIncluded
+            ? ''
+            : '<div class="ws-soon-overlay"><i class="fas fa-clock"></i><span>Coming Soon</span></div>';
+        const statsHTML = isIncluded
+            ? '<div class="ws-card-stats"><span class="ws-stat live"><i class="fas fa-circle-check"></i> In every account</span></div>'
+            : `<div class="ws-card-stats">
+                        <span class="ws-stat"><i class="fas fa-heart"></i> ${totalLikes}</span>
+                        <span class="ws-stat"><i class="fas fa-download"></i> ${item.downloads}</span>
+                        <button class="ws-like-btn ${isLiked ? 'liked' : ''}" onclick="toggleWSLike(event, '${item.id}')" title="Like">
+                            <i class="fas fa-heart"></i>
+                        </button>
+                    </div>`;
 
         return `
-        <div class="ws-card reveal">
+        <div class="ws-card reveal${isIncluded ? '' : ' soon'}">
             <div class="ws-card-thumb ${item.cat}">
                 <i class="${item.icon}"></i>
                 ${badgeHTML}
+                ${overlayHTML}
             </div>
             <div class="ws-card-body">
                 <h4>${item.name}</h4>
@@ -3831,13 +3898,7 @@ function renderWorkshop() {
                 <div class="ws-card-desc">${item.desc}</div>
                 <div class="ws-card-meta">
                     ${priceHTML}
-                    <div class="ws-card-stats">
-                        <span class="ws-stat"><i class="fas fa-heart"></i> ${totalLikes}</span>
-                        <span class="ws-stat"><i class="fas fa-download"></i> ${item.downloads}</span>
-                        <button class="ws-like-btn ${isLiked ? 'liked' : ''}" onclick="toggleWSLike(event, '${item.id}')" title="Like">
-                            <i class="fas fa-heart"></i>
-                        </button>
-                    </div>
+                    ${statsHTML}
                 </div>
             </div>
         </div>`;
