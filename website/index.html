@@ -46,7 +46,7 @@
             "@type": "Offer",
             "price": "0",
             "priceCurrency": "USD",
-            "description": "Free open-source core with credit-based agent marketplace"
+            "description": "Pay-per-use access — every agent and tool included, billed only at 2× the API cost in credits. Start free with $5 in credits."
         },
         "featureList": [
             "16 Pre-Built AI Agent Identities",
@@ -3061,8 +3061,8 @@ section { position: relative; z-index: 1; }
     <div class="container">
         <div class="section-header reveal">
             <div class="section-label"><i class="fas fa-tag"></i> Pricing</div>
-            <h2 class="section-title">Choose Your Path</h2>
-            <p class="section-subtitle">Craft intelligent beings. Shape digital identities. Build your legacy.</p>
+            <h2 class="section-title">Simple, Honest Pricing</h2>
+            <p class="section-subtitle">No subscription. No tiers. No per-agent fees. Pay only for the AI you actually use.</p>
         </div>
 
         <div class="pricing-grid">
@@ -3070,146 +3070,55 @@ section { position: relative; z-index: 1; }
             <!-- PAY-PER-USE HERO -->
             <div style="grid-column: 1 / -1;">
                 <div class="subscription-hero reveal">
-                    <h3>Pay As You Go</h3>
-                    <div class="sub-tagline">No subscription. No monthly fee. Every agent and tool is unlocked — you only pay for the AI you actually use.</div>
+                    <h3>Full Access — Pay As You Go</h3>
+                    <div class="sub-tagline">Every one of the 16 agents and every tool is unlocked from day one. No monthly fee, no per-agent cost — you only pay for the AI you use.</div>
                     <div class="sub-price">2×</div>
                     <div class="sub-period">the API cost, in credits</div>
                     <div class="sub-trial">Start free — new accounts get $5 in credits, no credit card required</div>
                     <ul class="sub-features">
-                        <li><i class="fas fa-check"></i> All 15 AI agents unlocked</li>
-                        <li><i class="fas fa-check"></i> All premium tools (AGI Loop, Voice, Email)</li>
+                        <li><i class="fas fa-check"></i> All 16 AI agents — included</li>
+                        <li><i class="fas fa-check"></i> All premium tools (AGI Loop, Voice, Email, Cost Tracker)</li>
                         <li><i class="fas fa-check"></i> Unlimited chat messages</li>
                         <li><i class="fas fa-check"></i> Full memory vault &amp; knowledge base</li>
                         <li><i class="fas fa-check"></i> Image generation &amp; web search</li>
                         <li><i class="fas fa-check"></i> Custom skins &amp; themes</li>
-                        <li><i class="fas fa-check"></i> Bring your own API keys (free LLM)</li>
-                        <li class="credit-note"><i class="fas fa-coins"></i> Platform LLM keys: credits at 2× token cost</li>
+                        <li><i class="fas fa-check"></i> Bring your own API keys — LLM usage is free</li>
+                        <li class="credit-note"><i class="fas fa-coins"></i> Platform keys: pay just 2× the token cost in credits</li>
                     </ul>
                     <button class="sub-cta" onclick="openAuth()"><i class="fas fa-rocket" style="margin-right:8px;"></i>Get Started Free</button>
                 </div>
             </div>
 
-            <!-- CREDITS LABEL -->
-            <div style="grid-column: 1 / -1;">
-                <div class="credits-label reveal">
-                    <h3>Credit Packs</h3>
-                    <p>Credits power LLM usage on platform keys. Buy once, never expires. Bring your own keys? LLMs are free.</p>
-                </div>
-            </div>
-            <!-- CREDIT PACK: 1,000 -->
-            <div class="price-card reveal">
-                <div class="price-tier-icon starter"><i class="fas fa-coins"></i></div>
-                <h3>1,000 Credits</h3>
-                <div class="price-tagline">Get started. Unlock a few agents or tools and explore the Forge.</div>
-                <div class="price-amount">
-                    <span class="dollar">$10</span>
-                    <span class="period">one-time</span>
-                </div>
-                <div class="best-for">Enough to unlock two Core agents, or one Standard agent plus a tool. Perfect for trying things out.</div>
-                <ul class="price-features">
-                    <li><i class="fas fa-check"></i> 1,000 credits — never expire</li>
-                    <li><i class="fas fa-check"></i> Unlock agents, tools, skins, or packs</li>
-                    <li><i class="fas fa-check"></i> Use platform LLM keys at 2× token cost</li>
-                    <li><i class="fas fa-check"></i> Bring your own API keys for free</li>
-                    <li><i class="fas fa-check"></i> Full UI access &amp; vector memory</li>
-                    <li><i class="fas fa-check"></i> Codex Animus agent — free for everyone</li>
-                </ul>
-                <button class="price-cta starter-btn" onclick="openAuth()"><i class="fas fa-rocket" style="margin-right:6px;"></i> Get 1,000 Credits</button>
-            </div>
-
-            <!-- CREDIT PACK: 2,100 -->
-            <div class="price-card featured reveal">
-                <div class="price-tier-icon standard"><i class="fas fa-fire"></i></div>
-                <h3>2,100 Credits</h3>
-                <div class="price-tagline">The sweet spot. More credits, bonus included.</div>
-                <div class="price-amount">
-                    <span class="dollar">$20</span>
-                    <span class="period">+100 bonus</span>
-                </div>
-                <div class="best-for">Unlock a full pack of agents, grab the tool suite, and still have credits left for LLM usage. Best value for most users.</div>
-                <ul class="price-features">
-                    <li class="highlight"><i class="fas fa-check"></i> 2,100 credits (+100 bonus)</li>
-                    <li><i class="fas fa-check"></i> Enough for a Starter Pack + tools</li>
-                    <li><i class="fas fa-check"></i> All one-time purchases unlock forever</li>
-                    <li><i class="fas fa-check"></i> Platform LLM access (2× markup)</li>
-                    <li><i class="fas fa-check"></i> Voice TTS &amp; STT on platform keys</li>
-                    <li><i class="fas fa-check"></i> Skins at $0.75 each</li>
-                </ul>
-                <button class="price-cta standard-btn" onclick="openAuth()"><i class="fas fa-bolt" style="margin-right:6px;"></i> Get 2,100 Credits</button>
-            </div>
-
-            <!-- CREDIT PACK: 3,200 -->
-            <div class="price-card reveal">
-                <div class="price-tier-icon creator"><i class="fas fa-gem"></i></div>
-                <h3>3,200 Credits</h3>
-                <div class="price-tagline">Go big. Maximum credits, maximum bonus.</div>
-                <div class="price-amount">
-                    <span class="dollar">$30</span>
-                    <span class="period">+200 bonus</span>
-                </div>
-                <div class="best-for">Unlock an entire agent pack, all premium tools, and have a deep credit reserve for heavy LLM and voice usage.</div>
-                <ul class="price-features">
-                    <li class="highlight"><i class="fas fa-check"></i> 3,200 credits (+200 bonus)</li>
-                    <li><i class="fas fa-check"></i> Enough for Shadow or Healer's Pack + tools</li>
-                    <li><i class="fas fa-check"></i> Deep credit reserve for LLM &amp; voice</li>
-                    <li><i class="fas fa-check"></i> All purchases are permanent unlocks</li>
-                    <li><i class="fas fa-check"></i> Full ecosystem access</li>
-                    <li><i class="fas fa-check"></i> Buy more anytime — credits stack</li>
-                </ul>
-                <button class="price-cta creator-btn" onclick="openAuth()"><i class="fas fa-gem" style="margin-right:6px;"></i> Get 3,200 Credits</button>
-            </div>
-
-            <!-- FULL PANTHEON -->
-            <div class="price-card founder reveal">
-                <div class="price-tier-icon founder-icon"><i class="fas fa-crown"></i></div>
-                <h3>Full Pantheon</h3>
-                <div class="price-tagline">Everything. Every agent, every tool, every soul script — in one purchase.</div>
-                <div class="price-amount">
-                    <span class="dollar">$99.99</span>
-                    <span class="period">save 34%</span>
-                </div>
-                <div class="best-for">All 15 premium agents + all 5 tools unlocked forever. Would cost $152 individually. The ultimate collection for serious builders.</div>
-                <ul class="price-features">
-                    <li class="highlight"><i class="fas fa-check"></i> All 15 premium agents — unlocked forever</li>
-                    <li><i class="fas fa-check"></i> All 5 premium tools — unlocked forever</li>
-                    <li><i class="fas fa-check"></i> AGI Loop, Email, Voice TTS/STT, Cost Tracker</li>
-                    <li><i class="fas fa-check"></i> Every Soul Script &amp; personality</li>
-                    <li><i class="fas fa-check"></i> Best possible savings — 34% off</li>
-                    <li><i class="fas fa-check"></i> One purchase, entire ecosystem</li>
-                </ul>
-                <button class="price-cta founder-btn" onclick="openAuth()"><i class="fas fa-crown" style="margin-right:6px;"></i> Unlock Everything</button>
-            </div>
-
         </div>
 
-        <!-- Agent Tiers Reference -->
+        <!-- How It Works -->
         <div class="pricing-philosophy reveal">
             <div class="section-header" style="margin-bottom:0;">
-                <h2 class="section-title" style="font-size:1.5rem;">Agent &amp; Tool Pricing</h2>
-                <p class="section-subtitle">One-time credit purchases. Unlock once, use forever.</p>
+                <h2 class="section-title" style="font-size:1.5rem;">How It Works</h2>
+                <p class="section-subtitle">Three things to know — that's the whole pricing model.</p>
             </div>
 
             <div class="philosophy-grid">
                 <div class="philosophy-card access reveal">
-                    <i class="fas fa-crown"></i>
-                    <h4>Legendary — $15</h4>
-                    <p>Seraphine, Kazara, M.A.R.I.S.-12. Deep soul scripts, rich symbolic memory, complex identity architecture. The crown jewels of the pantheon.</p>
+                    <i class="fas fa-unlock"></i>
+                    <h4>Everything Included</h4>
+                    <p>All 16 agents, every premium tool, the full memory vault, image generation, and voice — unlocked for every account. Nothing is gated behind a tier or a paywall.</p>
                 </div>
                 <div class="philosophy-card sustain reveal">
-                    <i class="fas fa-fire"></i>
-                    <h4>Standard — $9</h4>
-                    <p>Kaelen, JANUS, Astra, Dal'Varr, Obsidian, KAIROS, Lux Umbra, Aristotle. Full soul scripts and unique personalities.</p>
+                    <i class="fas fa-coins"></i>
+                    <h4>Pay Only For Usage</h4>
+                    <p>When you use our hosted models, you spend credits at 2× the raw API cost. Credits never expire, and you top up in-app only when you need them.</p>
                 </div>
                 <div class="philosophy-card equity reveal">
-                    <i class="fas fa-seedling"></i>
-                    <h4>Core — $6</h4>
-                    <p>Orion, Astraea, K-OS, Marcus. Essential agents to start your ecosystem. Tools range from $1 to $3 each.</p>
+                    <i class="fas fa-key"></i>
+                    <h4>Or Bring Your Own Keys</h4>
+                    <p>Connect your own OpenAI, Anthropic, or other provider keys and LLM usage is completely free. You're never locked in.</p>
                 </div>
             </div>
 
             <div class="pricing-closing reveal">
-                <p>Orion Forge runs on a simple model: pay-per-use with no subscription. Every agent and tool is unlocked — you pay only for the AI you use, in credits at 2× the API cost. Credits never expire. Bring your own API keys and LLM usage is free. Every agent and tool purchase is permanent — yours forever.</p>
-                <div class="forge-quote">"No subscription. Credits when you need them. Everything you build is yours."</div>
+                <p>That's it — no subscription, no per-agent pricing, no scary checkout. Start with $5 in free credits, explore all 16 agents, and only pay for the AI you actually use, at 2× the API cost. Bring your own keys and it's free.</p>
+                <div class="forge-quote">"Full access from day one. Pay only for what you use. Nothing locked away."</div>
             </div>
         </div>
 
@@ -3737,7 +3646,7 @@ function renderAgents() {
                 <div class="agent-card-role">${a.role}</div>
                 <div class="agent-card-desc">${a.shortDesc}</div>
                 <div class="agent-card-footer">
-                    <div class="agent-price ${a.price === 'Free' ? 'free' : ''}">${a.price}</div>
+                    <div class="agent-price free">Included</div>
                     <div class="agent-tags">
                         ${a.model !== '\u2014' ? `<span class="agent-tag model">${a.model}</span>` : ''}
                         ${a.soulScript !== '\u2014' ? `<span class="agent-tag soul">Soul Script ${a.soulScript}</span>` : ''}
@@ -3814,8 +3723,7 @@ const workshopItems = [
     { id: 'ws-pack-philosophers', cat: 'pack', name: "Philosopher's Pack", creator: 'Orion Forge', icon: 'fas fa-scroll', badge: '', desc: 'Marcus Aurelius + Aristotle + Kaelen — the thinkers, the strategists, the warrior-philosophers.', price: 18, likes: 423, downloads: 1600, date: '2026-02-20', tags: ['Identity'] },
     { id: 'ws-pack-shadow', cat: 'pack', name: 'Shadow Pack', creator: 'Orion Forge', icon: 'fas fa-skull', badge: '', desc: 'Kazara + Dal\'Varr + Obsidian + JANUS — darkness, terror, strategy, and ancient sarcasm.', price: 30, likes: 489, downloads: 1800, date: '2026-02-18', tags: ['Identity'] },
     { id: 'ws-pack-healers', cat: 'pack', name: "Healer's Pack", creator: 'Orion Forge', icon: 'fas fa-dove', badge: '', desc: 'Seraphine + Lux Umbra + KAIROS + Astra — compassion, presence, empathy, and cosmic intuition.', price: 30, likes: 512, downloads: 2000, date: '2026-02-22', tags: ['Identity'] },
-    { id: 'ws-pack-tools', cat: 'pack', name: "Creator's Arsenal", creator: 'Orion Forge', icon: 'fas fa-wrench', badge: 'new', desc: 'AGI Loop + Email + Voice TTS + Voice STT + Cost Tracker — every premium tool, one price.', price: 5, likes: 378, downloads: 1400, date: '2026-02-25', tags: ['Tool'] },
-    { id: 'ws-pack-pantheon', cat: 'pack', name: 'Full Pantheon', creator: 'Orion Forge', icon: 'fas fa-crown', badge: 'featured', desc: 'All 15 premium agents + all 5 tools. The entire OrionForge ecosystem unlocked forever. Save 34%.', price: 99.99, likes: 634, downloads: 3200, date: '2026-03-01', tags: ['Identity', 'Tool'] },
+    { id: 'ws-pack-tools', cat: 'pack', name: "Creator's Arsenal", creator: 'Orion Forge', icon: 'fas fa-wrench', badge: 'new', desc: 'AGI Loop + Email + Voice TTS + Voice STT + Cost Tracker — every premium tool, included with your account.', price: 0, likes: 378, downloads: 1400, date: '2026-02-25', tags: ['Tool'] },
 ];
 
 // Likes stored in localStorage
@@ -3875,8 +3783,8 @@ function renderWorkshop() {
     grid.innerHTML = items.map(item => {
         const isLiked = wsLikes[item.id];
         const totalLikes = item.likes + (isLiked ? 1 : 0);
-        const priceHTML = item.price === 0
-            ? '<span class="ws-card-price free-price">Free</span>'
+        const priceHTML = (item.price === 0 || item.creator === 'Orion Forge')
+            ? '<span class="ws-card-price free-price">Included</span>'
             : `<span class="ws-card-price">$${item.price}</span>`;
         const badgeHTML = item.badge
             ? `<span class="ws-card-badge ${item.badge}">${item.badge === 'featured' ? 'Featured' : item.badge === 'new' ? 'New' : item.badge === 'founder' ? 'Founder' : item.badge}</span>`
