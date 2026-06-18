@@ -103,16 +103,6 @@
         <button onclick="doLogout()" class="nav-label" style="margin-bottom:0.5rem; font-size:0.72rem; color:#ef4444; background:rgba(239,68,68,0.06); border:1px solid rgba(239,68,68,0.15); border-radius:0.4rem; cursor:pointer; padding:0.35rem 0.5rem; width:100%; text-align:center; transition:all 0.15s;" onmouseover="this.style.background='rgba(239,68,68,0.12)';this.style.color='#f87171'" onmouseout="this.style.background='rgba(239,68,68,0.06)';this.style.color='#ef4444'">
           ↪ Sign Out
         </button>
-        <!-- Trial countdown (visible when on trial) -->
-        {% set trial = request.state.trial if request.state.trial is defined else none %}
-        {% set is_subscribed = request.state.is_subscribed if request.state.is_subscribed is defined else false %}
-        {% if trial and trial.active and not is_subscribed %}
-        <a href="/plans" style="display:block; text-decoration:none; margin-bottom:0.5rem; padding:0.5rem 0.6rem; background:rgba(99,102,241,0.08); border:1px solid rgba(99,102,241,0.2); border-radius:0.5rem; text-align:center;">
-          <div style="font-size:0.7rem; color:#a5b4fc; font-weight:700; letter-spacing:0.03em;">FREE TRIAL</div>
-          <div style="font-size:1rem; font-weight:800; color:#fff;">{{ trial.days_left }} day{{ 's' if trial.days_left != 1 else '' }} left</div>
-          <div class="nav-label" style="font-size:0.65rem; color:#71717a; margin-top:2px;">Upgrade to Pro →</div>
-        </a>
-        {% endif %}
         <p class="text-xs text-forge-muted">v0.2 · SoulScript Engine</p>
       </div>
     </nav>

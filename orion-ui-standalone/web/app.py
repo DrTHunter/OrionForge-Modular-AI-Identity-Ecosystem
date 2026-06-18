@@ -305,18 +305,9 @@ class AuthMiddleware(BaseHTTPMiddleware):
             sub_info.get("subscription") and sub_info["subscription"].get("status") in ("active", "trialing")
         )
 
-        # ── Subscription gate ────────────────────────────────────
-        # Exempt paths (plans page, stripe endpoints) skip this check
-        if not _is_subscription_exempt(path):
-            tier = get_user_tier(user_id)
-            if tier != "pro":
-                # Non-subscribed users are walled off to /plans
-                if path.startswith("/api/"):
-                    return JSONResponse(
-                        {"error": "Subscription required", "redirect": "/plans"},
-                        status_code=403,
-                    )
-                return RedirectResponse(url="/plans", status_code=302)
+        # No subscription paywall (pay-per-use) ────────────────────────────────────
+        # Every authenticated user has full access; usage is billed in
+        # credits at 2× the API cost per request — no monthly ($9.99/mo) plan.
 
         response = await call_next(request)
         return response
@@ -1878,21 +1869,15 @@ async def api_stripe_subscription(request: Request):
 
 @app.post("/api/stripe/checkout")
 async def api_stripe_checkout(request: Request):
-    """Create a Stripe Checkout session for Pro upgrade."""
-    user = getattr(request.state, "user", None)
-    if not user:
-        return JSONResponse({"error": "Not authenticated"}, status_code=401)
-
-    base_url = str(request.base_url).rstrip("/")
-    result = create_checkout_session(
-        user_id=user["id"],
-        user_email=user.get("email", ""),
-        success_url=f"{base_url}/plans?success=1",
-        cancel_url=f"{base_url}/plans?canceled=1",
+    """Pro subscriptions are disabled — Orion Forge is pay-per-use (credits)."""
+    return JSONResponse(
+        {
+            "error": "Monthly subscriptions are disabled. Orion Forge is pay-per-use — "
+                     "buy credits in the Store and pay only 2× the API cost.",
+            "redirect": "/store",
+        },
+        status_code=400,
     )
-    if "error" in result:
-        return JSONResponse(result, status_code=400)
-    return JSONResponse(result)
 
 
 @app.post("/api/stripe/portal")
@@ -2204,26 +2189,11 @@ async def api_store_purchases(request: Request):
     return JSONResponse(purchases)
 
 
-@app.get("/plans", response_class=HTMLResponse)
+@app.get("/plans")
 async def page_plans(request: Request):
-    """Subscription plans / upgrade page."""
-    user = getattr(request.state, "user", None)
-    sub_info = get_user_subscription(user["id"]) if user else {"tier": "free", "tier_info": TIER_INFO["free"], "subscription": None, "stripe_configured": bool(STRIPE_PUBLISHABLE_KEY), "trial": {"active": False, "days_left": 0}, "is_trial": False}
-    auth_cfg = get_auth_config()
-    credits = get_user_credits(user["id"]) if user else 0
-    trial = get_trial_status(user["id"]) if user else {"active": False, "days_left": 0}
-    return templates.TemplateResponse(request, "plans.html", {
-        "page": "plans",
-        "user": user,
-        "subscription": sub_info,
-        "tiers": TIER_INFO,
-        "stripe_publishable_key": STRIPE_PUBLISHABLE_KEY,
-        "auth_config": auth_cfg,
-        "credits": credits,
-        "credit_packs": CREDIT_PACKS,
-        "trial": trial,
-        "free_trial_days": FREE_TRIAL_DAYS,
-    })
+    """Legacy subscription page — Orion Forge is now pay-per-use, so this
+    redirects to the credits Store. There is no monthly subscription."""
+    return RedirectResponse(url="/store", status_code=302)
 
 
 # ═══════════════════════════════════════════════════════════════════

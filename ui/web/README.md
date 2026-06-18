@@ -30,7 +30,7 @@ python -m uvicorn web.app:app --host 0.0.0.0 --port 8989 --reload
 |----------|------|
 | `base.html` | Shared layout (nav, sidebar, footer, skin theming, auth state, trial banner) |
 | `login.html` | Supabase OAuth sign-in (Google, GitHub, email) |
-| `plans.html` | Subscription tier selection  -  Free vs Pro ($9.99/mo) |
+| `plans.html` | Legacy plans page  -  redirects to the Store (no subscription) |
 | `store.html` | Credit packs, one-time tool purchases, usage history |
 | `admin_keys.html` | Owner-only admin page (restricted to allowlisted accounts) |
 | `admin_voices.html` | Admin panel  -  ElevenLabs voice allowlist (search, filter, premium toggle, bulk save) |

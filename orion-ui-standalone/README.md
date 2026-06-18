@@ -61,13 +61,13 @@ orion-ui-standalone/
 │   ├── app.py          # Main application  -  all page & API routes (multi-tenant aware)
 │   ├── user_data.py    # Per-user data isolation layer  -  path helpers, validation, directory builders
 │   ├── auth.py         # Supabase OAuth + JWT verification (142 lines)
-│   ├── stripe_billing.py  # Stripe subscriptions, credits, trial system (1,400 lines)
+│   ├── stripe_billing.py  # Stripe credit purchases, billing & credits (1,400 lines)
 │   ├── image_gen.py    # Image generation helper (9 providers)
 │   ├── static/         # CSS
 │   └── templates/      # Jinja2 HTML (17 files  -  16 pages + base layout)
 │       ├── base.html           # Shared layout (nav, sidebar, footer, skin theming, auth state)
 │       ├── login.html          # Supabase OAuth sign-in page
-│       ├── plans.html          # Subscription tier selection (Free vs Pro)
+│       ├── plans.html          # Legacy plans page (redirects to Store)
 │       ├── store.html          # Credit packs, one-time tool purchases, usage history
 │       ├── admin_keys.html     # Owner-only admin page
 │       ├── admin_voices.html   # Admin panel  -  ElevenLabs voice allowlist management
@@ -127,14 +127,14 @@ orion-ui-standalone/
 |---|---|
 | **Login** | Supabase OAuth (Google, GitHub, email) via `/login` |
 | **JWT verification** | `auth.py`  -  JWKS-based token validation, path whitelist, session middleware |
-| **Subscription** | $9.99/month Pro plan via Stripe Checkout (`/plans`) |
-| **5-day trial** | Free trial on first sign-up, auto-expires to free tier. Trial state persisted via Fly.io volume (`/persist`) |
+| **Billing** | Pay-per-use — no monthly subscription. Usage billed in credits at 2× the API cost |
+| **Free credits** | New accounts start with $5 in credits on first sign-up. No credit card required |
 | **Credit system** | Buy credit packs in the store (`/store`), spend on platform-hosted LLM calls and tools |
 | **LLM markup** | Platform-hosted calls billed at 2x base cost, deducted from credits |
 | **TTS/STT billing** | Per-use billing for platform-hosted voice services (2x markup) |
 | **One-time purchases** | Buy individual tool access from the store |
 | **Admin panel** | Owner-only management area for voices and user management (wipe, purge inactive), restricted to allowlisted accounts |
-| **Tier gating** | Free tier vs Pro tier access control on all API endpoints |
+| **Access** | Full access for every account — usage constrained only by credit balance |
 
 ---
 
@@ -143,7 +143,7 @@ orion-ui-standalone/
 | Page | URL | Description |
 |------|-----|-------------|
 | **Login** | `/login` | Supabase OAuth sign-in (Google, GitHub, email) |
-| **Plans** | `/plans` | Subscription tier selection  -  Free vs Pro ($9.99/mo) |
+| **Plans** | `/plans` | Legacy page  -  redirects to the Store (no subscription) |
 | **Store** | `/store` | Credit packs, one-time tool purchases, usage history |
 | **Chat** | `/chat` | Talk to agents  -  3-mode connection (Platform Models / Auto Router / User Models), 5-layer identity injection (prompt  ->  soul script  ->  knowledge  ->  memory  ->  history) |
 | **Profiles** | `/profiles` | Create/edit/delete agents  -  collapsible system prompt, soul script editor with FAISS-indexed badge, knowledge notes, model config, 30-day trash retention |

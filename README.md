@@ -136,7 +136,7 @@ OrionForge/
 │   │   ├── app.py        # Main application  -  all page & API routes (multi-tenant aware)
 │   │   ├── user_data.py  # Per-user data isolation  -  path helpers, validation, copy-on-write (152 lines)
 │   │   ├── auth.py       # Supabase OAuth + JWT verification (142 lines)
-│   │   ├── stripe_billing.py  # Stripe subscriptions, credits, trial (1,400 lines)
+│   │   ├── stripe_billing.py  # Stripe credit purchases, billing & credits (1,400 lines)
 │   │   ├── image_gen.py  # Image generation (9 providers)
 │   │   ├── static/       # CSS
 │   │   └── templates/    # Jinja2 HTML templates (17 files, 16 pages + base layout)
@@ -214,14 +214,14 @@ OrionForge uses **Supabase OAuth** for authentication and **Stripe** for billing
 |---|---|
 | **Login** | Supabase OAuth (Google, GitHub, email) via `/login` |
 | **JWT verification** | `auth.py`  -  JWKS-based token validation, session middleware |
-| **Subscription** | $9.99/month Pro plan via Stripe Checkout (`/plans`) |
-| **5-day trial** | Free trial on first sign-up, auto-expires. Trial state persisted across deploys via Fly.io volume |
+| **Billing** | Pay-per-use — no monthly subscription. Usage billed in credits at 2× the API cost |
+| **Free credits** | New accounts start with $5 in credits on first sign-up. No credit card required |
 | **Credit system** | Buy credit packs ($5 / $10 / $20 / $30) in the store (`/store`)  -  spend on tools and LLM usage |
 | **LLM markup** | Platform-hosted LLM calls billed at 2x base cost, deducted from credits |
 | **TTS/STT billing** | Per-use billing for platform-hosted voice services (2x markup) |
 | **One-time tool purchases** | Buy individual tool access from the store |
 | **Admin panel** | Owner-only management area for voices and user management (wipe, purge inactive), restricted to allowlisted accounts |
-| **Tier gating** | Free tier vs Pro tier access control on all API endpoints |
+| **Access** | Full access for every account — usage constrained only by credit balance |
 
 ---
 
@@ -230,7 +230,7 @@ OrionForge uses **Supabase OAuth** for authentication and **Stripe** for billing
 | Page | URL | Description |
 |---|---|---|
 | **Login** | `/login` | Supabase OAuth sign-in (Google, GitHub, email) |
-| **Plans** | `/plans` | Subscription tier selection  -  Free vs Pro ($9.99/mo) |
+| **Plans** | `/plans` | Legacy page  -  redirects to the Store (no subscription) |
 | **Store** | `/store` | Credit packs, one-time tool purchases, usage history |
 | **Chat** | `/chat` | Talk to agents  -  6-layer identity injection (prompt  ->  soul script  ->  knowledge  ->  memory  ->  history  ->  tools) |
 | **Profiles** | `/profiles` | Create/edit/delete agents with collapsible system prompt, soul script editor (FAISS-indexed), knowledge notes  -  with 30-day trash retention |
@@ -421,7 +421,7 @@ The engine connects to any **OpenAI-compatible** endpoint  -  OpenAI, Ollama, LM
 | `STRIPE_SECRET_KEY` | Stripe secret key | `sk_live_...` |
 | `STRIPE_PUBLISHABLE_KEY` | Stripe publishable key | `pk_live_...` |
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret | `whsec_...` |
-| `STRIPE_PRICE_ID` | Stripe Pro plan price ID | `price_...` |
+| `STRIPE_PRICE_ID` | Stripe price ID (legacy  -  monthly subscriptions disabled) | `price_...` |
 | `ADMIN_EMAILS` | Comma-separated admin email list | `admin@example.com` |
 
 ---
@@ -488,7 +488,7 @@ These run as separate Docker containers via `docker compose` inside their respec
 | **Jinja2** | HTML templates (17 files) |
 | **Fly.io Volumes** | 1 GB persistent volume (`/persist`) for billing & trial state across deploys |
 | **Supabase** | OAuth authentication + JWT verification |
-| **Stripe** | Subscription billing, credit system, webhook handling |
+| **Stripe** | Credit-pack purchases, credit system, webhook handling |
 | **Fly.io** | Cloud hosting with Flycast private networking for sidecar services |
 | **PyYAML** | Agent profile parsing |
 | **httpx** | Async HTTP for model fetching & LLM proxy calls |

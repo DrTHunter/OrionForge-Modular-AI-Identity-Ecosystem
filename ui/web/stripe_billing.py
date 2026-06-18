@@ -135,22 +135,16 @@ def get_trial_status(user_id: str) -> dict:
 
 
 def get_user_tier(user_id: str) -> str:
-    """Get the subscription tier for a user ('free' or 'pro').
+    """Get the access tier for a user.
 
-    Pro is granted if the user has an active subscription OR is within
-    the free trial period.
+    The platform is pay-per-use with no subscription paywall: every
+    authenticated user has full ('pro') access and is billed in credits
+    (2× the API cost) per request. Returns 'free' only for an anonymous
+    (empty) user id.
     """
     if not user_id:
         return "free"
-    state = _load_stripe_state()
-    sub = state.get("subscriptions", {}).get(user_id, {})
-    if sub.get("status") in ("active", "trialing"):
-        return "pro"
-    # Check free trial
-    trial = get_trial_status(user_id)
-    if trial["active"]:
-        return "pro"
-    return "free"
+    return "pro"
 
 
 def get_user_subscription(user_id: str) -> dict:
@@ -159,7 +153,7 @@ def get_user_subscription(user_id: str) -> dict:
     sub = state.get("subscriptions", {}).get(user_id, {})
     has_sub = sub.get("status") in ("active", "trialing")
     trial = get_trial_status(user_id)
-    tier = "pro" if (has_sub or trial["active"]) else "free"
+    tier = get_user_tier(user_id)
     return {
         "tier": tier,
         "tier_info": TIER_INFO[tier],

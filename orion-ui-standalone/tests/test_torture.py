@@ -8709,21 +8709,21 @@ def test_tier_and_trial_system():
         check("subscription is_trial during trial", sub["is_trial"] is True)
         check("subscription tier_info has features", "features" in sub["tier_info"])
 
-        # ── 6. Expired trial → free tier ──
+        # ── 6. Expired trial → still full access (pay-per-use, no paywall) ──
         state = billing._load_stripe_state()
         state["trials"][uid]["started_at"] = time.time() - (20 * 86400)  # 20 days ago
         billing._save_stripe_state(state)
         tier_after = billing.get_user_tier(uid)
-        check("expired trial → free tier", tier_after == "free")
+        check("expired trial → still pro (pay-per-use)", tier_after == "pro")
 
-        # Free tier lacks pro features
-        check("free lacks agi_loop", billing.user_has_feature(uid, "agi_loop") is False)
-        check("free has chat", billing.user_has_feature(uid, "chat") is True)
+        # Full access regardless of trial — billed via credits
+        check("full access: agi_loop", billing.user_has_feature(uid, "agi_loop") is True)
+        check("full access: chat", billing.user_has_feature(uid, "chat") is True)
 
-        # Free tier has limits
-        check("free: message limit enforced",
-              billing.check_tier_limit(uid, "messages_per_day", 100) is False)
-        check("free: under limit ok",
+        # No tier message limits under pay-per-use
+        check("no message limit (unlimited)",
+              billing.check_tier_limit(uid, "messages_per_day", 100) is True)
+        check("under limit ok",
               billing.check_tier_limit(uid, "messages_per_day", 10) is True)
 
         # ── 7. Active subscription → pro regardless of trial ──
