@@ -2249,7 +2249,12 @@ section { position: relative; z-index: 1; }
     .vision-grid { grid-template-columns: 1fr; }
     .soulscript-grid { grid-template-columns: repeat(2, 1fr); }
     .ui-dashboard-body { grid-template-columns: 1fr; }
-    .ui-sidebar { flex-direction: row; flex-wrap: wrap; }
+    .ui-sidebar {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+        gap: 8px;
+    }
+    .ui-sidebar-item { justify-content: center; }
     .footer-grid { grid-template-columns: 1fr 1fr; }
     #vision, #ui-access, #agents, #tools, #marketplace,
     #pipeline, #soulscript, #pricing, #cta { padding: 80px 0; }
@@ -2313,8 +2318,25 @@ section { position: relative; z-index: 1; }
 
     /* --- UI DASHBOARD --- */
     .ui-dashboard-body { padding: 20px; gap: 16px; }
-    .ui-sidebar { flex-direction: row; flex-wrap: wrap; gap: 4px; }
-    .ui-sidebar-item { padding: 10px 14px; font-size: 0.82rem; }
+    .ui-sidebar {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+    }
+    .ui-sidebar-item {
+        justify-content: center;
+        gap: 8px;
+        padding: 12px 10px;
+        font-size: 0.82rem;
+        white-space: nowrap;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid var(--border-glass);
+        border-radius: var(--radius-xs);
+    }
+    .ui-sidebar-item.active {
+        grid-column: 1 / -1;
+        background: rgba(99,102,241,0.14);
+        border-color: var(--border-glow);
+    }
     .ui-main-area { padding: 24px 16px; }
     .ui-main-area h3 { font-size: 1.25rem; }
 
@@ -2667,7 +2689,7 @@ section { position: relative; z-index: 1; }
                 <div class="ui-main-area">
                     <i class="fas fa-rocket" style="font-size:2.5rem; color:var(--primary-light); margin-bottom:20px; animation: float 3s ease-in-out infinite;"></i>
                     <h3>Launch the Dashboard</h3>
-                    <p>Start the UI server locally or via Docker to access all 9 pages and 36 API endpoints.</p>
+                    <p>Open the full workspace — chat, profiles, memory vault, knowledge, tools, and settings, all in one place.</p>
                     <a href="https://orionforge-engine.fly.dev" target="_blank" class="ui-launch-btn">
                         <i class="fas fa-external-link-alt"></i> Open Dashboard
                     </a>
