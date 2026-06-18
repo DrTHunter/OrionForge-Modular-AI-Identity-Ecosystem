@@ -2932,52 +2932,52 @@ section { position: relative; z-index: 1; }
 <section id="pipeline">
     <div class="container">
         <div class="section-header reveal">
-            <div class="section-label"><i class="fas fa-layer-group"></i> Identity Injection</div>
-            <h2 class="section-title">The 6-Layer Pipeline</h2>
-            <p class="section-subtitle">Every message passes through six identity layers before reaching the LLM</p>
+            <div class="section-label"><i class="fas fa-layer-group"></i> Behind Every Message</div>
+            <h2 class="section-title">It Answers as Someone Who Knows You</h2>
+            <p class="section-subtitle">Before a single word reaches you, six layers come together so your agent responds as itself — with history, memory, and the ability to act.</p>
         </div>
 
         <div class="pipeline-steps reveal">
             <div class="pipeline-step">
                 <div class="pipeline-num">1</div>
                 <div class="pipeline-step-content">
-                    <h4>Base System Prompt</h4>
-                    <p>The foundational personality document — loaded from <code>prompts/{agent}.system.md</code></p>
+                    <h4>It shows up as itself</h4>
+                    <p>Every reply begins from your agent's core character — the voice, values, and temperament that make it this one and no other. It never forgets who it is.</p>
                 </div>
             </div>
             <div class="pipeline-step">
                 <div class="pipeline-num">2</div>
                 <div class="pipeline-step-content">
-                    <h4>Soul Script (FAISS Retrieval)</h4>
-                    <p>Semantically relevant identity fragments retrieved from directive-mode knowledge — the agent's core values, symbolic memories, and behavioral protocols.</p>
+                    <h4>It draws on its soul</h4>
+                    <p>Its Soul Script — the values, formative memories, and boundaries that define it — surfaces the parts most relevant to what you just said, so it stays true to itself over time.</p>
                 </div>
             </div>
             <div class="pipeline-step">
                 <div class="pipeline-num">3</div>
                 <div class="pipeline-step-content">
-                    <h4>Always-On Knowledge</h4>
-                    <p>Verbatim text from knowledge notes marked as "always" — facts, preferences, and context injected every turn.</p>
+                    <h4>It keeps what matters to you in mind</h4>
+                    <p>The things you've asked it to always remember — your name, your projects, your preferences — are there in every single message, never lost between chats.</p>
                 </div>
             </div>
             <div class="pipeline-step">
                 <div class="pipeline-num">4</div>
                 <div class="pipeline-step-content">
-                    <h4>Memory Vault (FAISS Search)</h4>
-                    <p>Persistent memories from <code>vault.jsonl</code> — experiences, learnings, and saved moments retrieved by vector similarity.</p>
+                    <h4>It remembers your history together</h4>
+                    <p>It searches everything it has saved from past conversations and brings back the moments that matter right now — so you pick up where you left off, not from scratch.</p>
                 </div>
             </div>
             <div class="pipeline-step">
                 <div class="pipeline-num">5</div>
                 <div class="pipeline-step-content">
-                    <h4>Conversation History</h4>
-                    <p>Recent user/assistant turns truncated to a 30k character budget — the live context the agent builds on.</p>
+                    <h4>It follows the conversation</h4>
+                    <p>The flow of your current chat stays in view, so each reply builds naturally on what was just said instead of starting cold.</p>
                 </div>
             </div>
             <div class="pipeline-step">
                 <div class="pipeline-num">6</div>
                 <div class="pipeline-step-content">
-                    <h4>Modular Tools</h4>
-                    <p>Per-agent tools from the profile's <code>allowed_tools</code> list — passed to the LLM as function-calling schemas and authorized at execution time, so any unlisted tool stays blocked.</p>
+                    <h4>It can take action</h4>
+                    <p>When it helps, your agent reaches for real abilities — searching the web, sending email, saving a memory, and more. It only ever uses the tools you've switched on, and nothing else.</p>
                 </div>
             </div>
         </div>
