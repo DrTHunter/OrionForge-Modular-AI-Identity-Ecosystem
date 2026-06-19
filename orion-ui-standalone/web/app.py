@@ -892,6 +892,29 @@ def _list_agents(user_id: str | None = None) -> list[str]:
         agents |= set(p.stem for p in user_profiles_dir(uid).glob("*.yaml"))
     return sorted(agents)
 
+# Private agents restricted to specific user IDs. Even though their profile
+# files live in the shared profiles dir, they stay hidden from everyone except
+# the listed UIDs. "__local__" (single-user local mode) always retains access.
+RESTRICTED_AGENTS: dict[str, set[str]] = {
+    "elysia_cannon": {"a2cddfbd-dabb-4d50-b515-b600a08ce8e8"},
+    "orion_cannon": {"a2cddfbd-dabb-4d50-b515-b600a08ce8e8"},
+}
+
+
+def _can_access_agent(agent: str, user_id: str | None) -> bool:
+    """Whether `agent` is visible to `user_id`.
+
+    Non-restricted agents are always allowed here (their visibility is still
+    governed by the store/unlock rules in _list_unlocked_agents).
+    """
+    allowed = RESTRICTED_AGENTS.get(agent)
+    if allowed is None:
+        return True
+    if user_id == "__local__":
+        return True
+    return bool(user_id) and user_id in allowed
+
+
 def _list_unlocked_agents(request: Request) -> list[str]:
     """Return agents the current user can access.
 
@@ -900,15 +923,23 @@ def _list_unlocked_agents(request: Request) -> list[str]:
     - Purchased store agents
     - User-created agents (not in the store catalog)
 
-    codex_animus is always placed first so it's the default selection.
+    Restricted agents (RESTRICTED_AGENTS) are filtered out for everyone except
+    their allowed UIDs, regardless of admin status. codex_animus is always
+    placed first so it's the default selection.
     """
     all_agents = _list_agents()
-    if _check_admin(request):
-        return _prioritize_default_agent(all_agents)
     user = getattr(request.state, "user", None)
+    user_id = (user.get("id", "") if user else "") or _current_user_id.get("__local__")
+
+    def _finalize(agents: list[str]) -> list[str]:
+        return _prioritize_default_agent(
+            [a for a in agents if _can_access_agent(a, user_id)]
+        )
+
+    if _check_admin(request):
+        return _finalize(all_agents)
     if not user:
-        return _prioritize_default_agent(all_agents)
-    user_id = user.get("id", "")
+        return _finalize(all_agents)
     store_ids = get_store_agent_ids()
     unlocked = get_user_unlocked_agents(user_id)
     agents = [
@@ -916,7 +947,7 @@ def _list_unlocked_agents(request: Request) -> list[str]:
         if a not in store_ids  # user-created agents (not in store)
         or a in unlocked       # free or purchased store agents
     ]
-    return _prioritize_default_agent(agents)
+    return _finalize(agents)
 
 
 def _prioritize_default_agent(agents: list[str]) -> list[str]:
@@ -4092,6 +4123,8 @@ class FolderCreate(BaseModel):
 @app.post("/api/chat/send")
 async def api_chat_send(req: ChatRequest, request: Request):
     user = getattr(request.state, "user", None)
+    if not _can_access_agent(req.agent, _get_user_id(request)):
+        return JSONResponse({"error": "Agent not available"}, status_code=403)
     conn = _resolve_connection(req.connection_id, req.agent)
     if not conn:
         return JSONResponse({"error": "No API connection available. Add one in Settings."}, 400)
@@ -4565,6 +4598,8 @@ async def api_chat_stream(req: ChatRequest, request: Request):
     """Streaming chat endpoint — returns Server-Sent Events with real-time
     thinking display and incremental text."""
     user = getattr(request.state, "user", None)
+    if not _can_access_agent(req.agent, _get_user_id(request)):
+        return JSONResponse({"error": "Agent not available"}, status_code=403)
     conn = _resolve_connection(req.connection_id, req.agent)
     if not conn:
         return JSONResponse({"error": "No API connection available. Add one in Settings."}, 400)
@@ -6796,6 +6831,8 @@ async def api_stt_elevenlabs(request: Request):
 async def api_chat_run(req: ChatRequest, request: Request):
     """Launch a burst session and return the session ID."""
     user = getattr(request.state, "user", None)
+    if not _can_access_agent(req.agent, _get_user_id(request)):
+        return JSONResponse({"error": "Agent not available"}, status_code=403)
 
     # Resolve connection to check platform_hosted status
     conn = _resolve_connection(req.connection_id, req.agent)
