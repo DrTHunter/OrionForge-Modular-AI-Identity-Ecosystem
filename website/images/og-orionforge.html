@@ -10,101 +10,202 @@
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     color: #fff;
     position: relative;
-    display: flex; align-items: center; justify-content: center;
   }
 
-  /* Background grid */
   .grid {
     position: absolute; inset: 0;
     background-image:
-      linear-gradient(rgba(99,102,241,0.08) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(99,102,241,0.08) 1px, transparent 1px);
-    background-size: 60px 60px;
+      linear-gradient(rgba(99,102,241,0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99,102,241,0.07) 1px, transparent 1px);
+    background-size: 48px 48px;
   }
-
-  /* Glow */
-  .blob1 {
-    position: absolute; top: -200px; left: -200px;
-    width: 700px; height: 700px; border-radius: 50%;
-    background: radial-gradient(circle, rgba(99,102,241,0.25) 0%, transparent 65%);
-    filter: blur(60px);
-  }
-  .blob2 {
-    position: absolute; bottom: -150px; right: -100px;
-    width: 500px; height: 500px; border-radius: 50%;
-    background: radial-gradient(circle, rgba(147,51,234,0.2) 0%, transparent 65%);
+  .blob-left {
+    position: absolute; top: -140px; left: -140px;
+    width: 600px; height: 600px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(99,102,241,0.22) 0%, transparent 68%);
     filter: blur(50px);
   }
-
-  /* Center content */
-  .inner {
-    position: relative; z-index: 2;
-    text-align: center;
-    display: flex; flex-direction: column; align-items: center;
-    gap: 0;
+  .blob-right {
+    position: absolute; bottom: -100px; right: -60px;
+    width: 440px; height: 440px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(147,51,234,0.16) 0%, transparent 68%);
+    filter: blur(40px);
   }
 
-  .eyebrow {
-    display: inline-flex; align-items: center; gap: 10px;
+  /* ── LEFT: hero content ── */
+  .hero-side {
+    position: absolute;
+    left: 68px; top: 50%; transform: translateY(-50%);
+    max-width: 560px;
+    display: flex; flex-direction: column; gap: 0;
+  }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 8px;
     background: rgba(99,102,241,0.12);
-    border: 1px solid rgba(99,102,241,0.35);
+    border: 1px solid rgba(99,102,241,0.3);
     border-radius: 999px;
-    padding: 8px 20px;
-    font-size: 15px; font-weight: 700; letter-spacing: 0.1em;
+    padding: 5px 14px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
     color: #818cf8; text-transform: uppercase;
-    margin-bottom: 28px;
+    margin-bottom: 20px;
+    width: fit-content;
   }
-  .eyebrow-dot {
-    width: 8px; height: 8px; border-radius: 50%;
-    background: #6366f1; box-shadow: 0 0 8px #6366f1;
+  .badge-pulse {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #6366f1; box-shadow: 0 0 0 0 rgba(99,102,241,0.7);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(99,102,241,0.7); }
+    70%  { box-shadow: 0 0 0 6px rgba(99,102,241,0); }
+    100% { box-shadow: 0 0 0 0 rgba(99,102,241,0); }
   }
 
   h1 {
-    font-size: 88px; font-weight: 900; line-height: 1.0;
-    letter-spacing: -0.04em;
-    margin-bottom: 24px;
+    font-size: 62px; font-weight: 900; line-height: 1.0;
+    letter-spacing: -0.035em;
+    margin-bottom: 18px;
   }
-  h1 .accent { color: #818cf8; }
-
-  .subtitle {
-    font-size: 26px; color: #a1a1aa; font-weight: 400;
-    line-height: 1.4; margin-bottom: 36px;
-    max-width: 700px;
+  h1 .gradient {
+    background: linear-gradient(135deg, #818cf8 0%, #a78bfa 50%, #c084fc 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 
-  .pills {
-    display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;
+  .sub {
+    font-size: 17px; color: #a1a1aa; line-height: 1.6;
+    margin-bottom: 28px;
+    max-width: 480px;
   }
-  .pill {
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 999px;
-    padding: 8px 20px;
-    font-size: 14px; font-weight: 600; color: #71717a;
-    letter-spacing: 0.02em;
+  .sub strong { color: #e4e4e7; font-weight: 600; }
+
+  .stats {
+    display: flex; gap: 28px;
   }
+  .stat-val {
+    font-size: 28px; font-weight: 900; color: #fff;
+    letter-spacing: -0.02em; line-height: 1;
+    margin-bottom: 4px;
+  }
+  .stat-val span { color: #6366f1; }
+  .stat-lbl {
+    font-size: 11px; font-weight: 600; color: #52525b;
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+
+  /* ── RIGHT: features ── */
+  .features-side {
+    position: absolute;
+    right: 64px; top: 50%; transform: translateY(-50%);
+    width: 310px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+
+  .feat {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 10px;
+    padding: 11px 14px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .feat-icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; flex-shrink: 0;
+  }
+  .feat-icon.indigo  { background: rgba(99,102,241,0.18); color: #818cf8; }
+  .feat-icon.purple  { background: rgba(147,51,234,0.18); color: #c084fc; }
+  .feat-icon.blue    { background: rgba(59,130,246,0.18);  color: #93c5fd; }
+  .feat-icon.emerald { background: rgba(16,185,129,0.18);  color: #6ee7b7; }
+  .feat-icon.amber   { background: rgba(245,158,11,0.18);  color: #fcd34d; }
+  .feat-icon.pink    { background: rgba(236,72,153,0.18);  color: #f9a8d4; }
+
+  .feat-text { flex: 1; }
+  .feat-name {
+    font-size: 12px; font-weight: 700; color: #e4e4e7;
+    margin-bottom: 2px; letter-spacing: 0.01em;
+  }
+  .feat-desc { font-size: 11px; color: #52525b; line-height: 1.4; }
 
   .domain {
-    position: absolute; bottom: 28px; right: 40px; z-index: 2;
-    font-size: 14px; font-weight: 600; color: #3f3f46;
+    position: absolute; bottom: 26px; left: 68px;
+    font-size: 12px; font-weight: 600; color: #3f3f46;
     letter-spacing: 0.06em;
   }
 </style>
 </head>
 <body>
   <div class="grid"></div>
-  <div class="blob1"></div>
-  <div class="blob2"></div>
+  <div class="blob-left"></div>
+  <div class="blob-right"></div>
 
-  <div class="inner">
-    <div class="eyebrow"><span class="eyebrow-dot"></span> Orion Forge</div>
-    <h1>Build AI Beings.<br><span class="accent">Not Just Bots.</span></h1>
-    <p class="subtitle">Persistent identity · Symbolic memory · 16 agents included</p>
-    <div class="pills">
-      <span class="pill">Soul Script Engine</span>
-      <span class="pill">6-Layer Context</span>
-      <span class="pill">Memory Vault</span>
-      <span class="pill">Free to start</span>
+  <div class="hero-side">
+    <div class="badge"><span class="badge-pulse"></span> Soul Script Engine v2.0</div>
+    <h1>Create AI Beings<br>With <span class="gradient">Identity</span></h1>
+    <p class="sub">Not just prompts. Not just chatbots.<br><strong>Persistent, evolving digital minds</strong> with layered identity, symbolic memory, and behavioral continuity.</p>
+    <div class="stats">
+      <div>
+        <div class="stat-val">16<span>+</span></div>
+        <div class="stat-lbl">Core Agents</div>
+      </div>
+      <div>
+        <div class="stat-val">11</div>
+        <div class="stat-lbl">Runtime Tools</div>
+      </div>
+      <div>
+        <div class="stat-val">6</div>
+        <div class="stat-lbl">Identity Layers</div>
+      </div>
+      <div>
+        <div class="stat-val" style="color:#10b981;">$0</div>
+        <div class="stat-lbl">To Start</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="features-side">
+    <div class="feat">
+      <div class="feat-icon indigo"><i>🧠</i></div>
+      <div class="feat-text">
+        <div class="feat-name">Soul Script Engine</div>
+        <div class="feat-desc">Identity DNA — values, memory, emotional architecture</div>
+      </div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon purple"><i>📚</i></div>
+      <div class="feat-text">
+        <div class="feat-name">Memory Vault</div>
+        <div class="feat-desc">FAISS vector memory that persists across every session</div>
+      </div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon blue"><i>⚡</i></div>
+      <div class="feat-text">
+        <div class="feat-name">6-Layer Context Pipeline</div>
+        <div class="feat-desc">Identity → Soul → Knowledge → Memory → Chat → Tools</div>
+      </div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon emerald"><i>🛠️</i></div>
+      <div class="feat-text">
+        <div class="feat-name">11 Runtime Tools</div>
+        <div class="feat-desc">Web search, email, memory, model router, AGI loop & more</div>
+      </div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon amber"><i>🏪</i></div>
+      <div class="feat-text">
+        <div class="feat-name">Identity Marketplace</div>
+        <div class="feat-desc">Browse & install agents, tools, and mods</div>
+      </div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon pink"><i>🎙️</i></div>
+      <div class="feat-text">
+        <div class="feat-name">Voice + 9 Image Providers</div>
+        <div class="feat-desc">TTS, STT, DALL-E, Midjourney, Flux, and more</div>
+      </div>
     </div>
   </div>
 
