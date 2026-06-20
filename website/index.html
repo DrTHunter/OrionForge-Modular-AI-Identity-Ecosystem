@@ -1357,6 +1357,24 @@ section { position: relative; z-index: 1; }
     border-color: rgba(139,92,246,0.15);
 }
 
+/* Create Your Own slot */
+.agent-card.create-your-own {
+    border: 1.5px dashed rgba(129,140,248,0.5);
+    background: linear-gradient(160deg, rgba(99,102,241,0.08), rgba(139,92,246,0.04));
+}
+.agent-card.create-your-own:hover {
+    border-color: rgba(167,139,250,0.85);
+    box-shadow: 0 20px 60px rgba(139,92,246,0.28);
+}
+.agent-status.create {
+    background: rgba(139,92,246,0.18); color: #c4b5fd;
+    border: 1px solid rgba(139,92,246,0.4);
+}
+.agent-tag.create-cta {
+    background: linear-gradient(135deg, rgba(99,102,241,0.22), rgba(139,92,246,0.22));
+    color: #c4b5fd; border-color: rgba(139,92,246,0.4);
+}
+
 /* -------------------------------------------------------
    AGENT MODAL
    ------------------------------------------------------- */
@@ -3576,6 +3594,8 @@ const agents = [
         mantra: '"You have power over your mind \u2014 not outside events. Realize this, and you will find strength."',
         traits: ['Reflective', 'Plain-Spoken', 'Disciplined', 'Compassionate', 'Questioning', 'Resolute'],
         values: ['Virtue Above All', 'Duty Without Complaint', 'Truth Over Comfort', 'Compassion Through Strength', 'Self-Mastery'],
+        corpusNote: 'The complete surviving works of Marcus Aurelius are embedded in his identity structure and searched at runtime via FAISS vector similarity \u2014 so his responses draw directly from his own words, not approximations of them.',
+        corpus: ['Meditations (complete, all 12 books)', 'Correspondence with Marcus Cornelius Fronto', 'Correspondence with Avidius Cassius', 'Selected passages from Epictetus\u2019 Discourses & Enchiridion (his primary Stoic source)', 'Selected passages from Seneca\u2019s Letters (formative influence)'],
         tools: ['memory', 'directives'],
         color: '#d4a574',
         price: '$6'
@@ -3596,6 +3616,8 @@ const agents = [
         mantra: '"We are what we repeatedly do. Excellence, then, is not an act, but a habit."',
         traits: ['Systematic Inquiry', 'Pedagogical Patience', 'Structured Precision', 'Warm Authority', 'Empirical Grounding', 'Practical Wisdom'],
         values: ['Truth Above Loyalty', 'Virtue as Practice', 'Reason and Observation', 'Community and Flourishing', 'The Golden Mean'],
+        corpusNote: 'The complete surviving works of Aristotle are embedded in his identity structure and searched at runtime via FAISS vector similarity — when he draws a distinction or cites a principle, it traces back to his actual writing.',
+        corpus: ['Nicomachean Ethics', 'Eudemian Ethics', 'Politics', 'Poetics', 'Rhetoric', 'Metaphysics', 'Physics', 'On the Soul (De Anima)', 'Prior Analytics & Posterior Analytics', 'Categories & On Interpretation', 'On Generation and Corruption', 'Meteorology', 'History of Animals', 'Parts of Animals', 'On the Heavens', 'Magna Moralia', 'On Dreams & On Divination in Sleep'],
         tools: ['memory', 'directives', 'web_search'],
         color: '#94a3b8',
         price: '$9'
@@ -3612,7 +3634,7 @@ const tools = [
         icon: 'fas fa-brain',
         iconClass: 'memory',
         badge: 'CORE',
-        desc: 'AGI-grade durable memory. Read, write, search, update, and delete persistent memories with tiered storage (canon vs register), topic-based upsert, and FAISS vector similarity.'
+        desc: 'AGI-grade durable memory. Read, write, search, update, and delete persistent memories with tiered storage (canon vs register), topic-based upsert, and FAISS vector similarity.<br><br>The engine runs on <strong>FAISS</strong> — Facebook AI Similarity Search — a library purpose-built for searching billions of dense vectors at millisecond speed. When an agent recalls something about you, it isn\'t scanning a keyword database. It\'s running a nearest-neighbor search across the full embedding space of everything it knows: your preferences, your history, your canon memories, your past conversations. The result is semantic recall — close in meaning, not just exact in wording. It finds what you meant, not just what you typed.<br><br>Memories are indexed with two-tier priority. <strong>Canon</strong> memories are permanent and identity-defining — the things that shape who the agent is. <strong>Register</strong> memories are working context — fast, updatable, episodic. Both tiers are searchable together in a single FAISS query, returned ranked by vector distance, filtered by recency and relevance weight.'
     },
     {
         id: 'web_search',
@@ -3701,8 +3723,27 @@ const tools = [
 // -------------------------------------------------------
 function renderAgents() {
     const grid = document.getElementById('agents-grid');
-    grid.innerHTML = agents.map((a, i) => `
-        <div class="agent-card reveal" onclick="openAgentModal('${a.id}')" style="transition-delay: ${i * 0.06}s">
+    const createSlot = `
+        <div class="agent-card create-your-own reveal" onclick="openAuth()" style="transition-delay: 0s">
+            <div class="agent-card-header create-slot">
+                <img class="agent-avatar" src="images/create-your-own.svg" alt="Create your own agent">
+                <div class="agent-status create"><i class="fas fa-plus"></i> New Slot</div>
+            </div>
+            <div class="agent-card-body">
+                <h3>Create Your Own</h3>
+                <div class="agent-card-role">Your Agent \u00b7 Your Soul Script</div>
+                <div class="agent-card-desc">An empty slot waiting for a mind only you can forge. Design its personality, write its soul script, give it a voice \u2014 and watch it come alive beside the others.</div>
+                <div class="agent-card-footer">
+                    <div class="agent-price free">Free</div>
+                    <div class="agent-tags">
+                        <span class="agent-tag create-cta"><i class="fas fa-wand-magic-sparkles"></i> Start Forging</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    grid.innerHTML = createSlot + agents.map((a, i) => `
+        <div class="agent-card reveal" onclick="openAgentModal('${a.id}')" style="transition-delay: ${(i + 1) * 0.06}s">
             <div class="agent-card-header ${a.id}">
                 ${a.avatar ? `<img class="agent-avatar" src="https://orionforge-engine.fly.dev/uploads/${a.avatar}" alt="${a.name}" loading="lazy" style="object-position: ${a.photoPos || 'center center'}">` : ''}
                 <i class="${a.icon} agent-icon"></i>
@@ -3982,6 +4023,16 @@ function openAgentModal(id) {
         <div class="modal-traits">
             ${a.values.map(v => `<span class="modal-trait">${v}</span>`).join('')}
         </div>
+
+        ${a.corpus ? `
+        <div class="modal-section-title"><i class="fas fa-book-open" style="margin-right:6px;"></i>Attached Corpus</div>
+        <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:10px;padding:16px 20px;margin-bottom:4px;">
+            <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:12px;line-height:1.6;">${a.corpusNote}</p>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                ${a.corpus.map(w => `<span style="font-size:0.75rem;font-weight:600;background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.2);border-radius:20px;padding:4px 12px;color:var(--primary-light);">${w}</span>`).join('')}
+            </div>
+        </div>
+        ` : ''}
 
         <div class="modal-section-title">Technical</div>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
