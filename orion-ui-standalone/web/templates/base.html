@@ -135,6 +135,10 @@
         <a href="/about" class="nav-link {% if page == 'about' %}active{% endif %}">
           <span class="nav-icon">ℹ</span><span class="nav-label">About</span>
         </a>
+        <!-- Admin — revealed by JS only for the owner account -->
+        <a href="/admin/keys" id="nav-admin-link" class="nav-link {% if page == 'admin' %}active{% endif %}" style="display:none;">
+          <span class="nav-icon">🔑</span><span class="nav-label">Admin</span>
+        </a>
       </div>
 
       <div class="nav-footer">
@@ -599,6 +603,13 @@ select optgroup{color:${tm}!important}
             emailEl.textContent = d.user.email || 'User';
             emailEl.title = d.user.email || '';
             section.style.display = 'block';
+          }
+          // ── Admin-only sidebar tab (owner account) ──
+          const _adminEmail = 'dr.trent.hunter@gmail.com';
+          const _adminUid   = 'a2cddfbd-dabb-4d50-b515-b600a08ce8e8';
+          if ((d.user.email || '').toLowerCase() === _adminEmail || d.user.id === _adminUid) {
+            const adminLink = document.getElementById('nav-admin-link');
+            if (adminLink) adminLink.style.display = '';
           }
         }
       }).catch(() => {});
