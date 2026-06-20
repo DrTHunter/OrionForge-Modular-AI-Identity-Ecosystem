@@ -4,6 +4,39 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}SoulScript Engine{% endblock %}</title>
+
+  {% set _host = request.headers.get('host', '') %}
+  {% if 'soulscript' in _host %}
+    {% set _og_title = "Soul Script Engine — The DNA of an AI Identity" %}
+    {% set _og_desc  = "A structured framework for building AI agents with persistent personality, symbolic memory, and behavioral continuity. Open source. Free to explore." %}
+    {% set _og_url   = "https://soulscript.orionforge.chat/" %}
+    {% set _og_img   = "https://soulscript.orionforge.chat/static/og-soulscript.png" %}
+    {% set _og_alt   = "Soul Script Engine — The DNA of an AI Identity. Identity Anchor, Symbolic Memory, Emotional Architecture, Anti-Drift Engine." %}
+  {% else %}
+    {% set _og_title = "Orion Forge — Build AI Beings, Not Just Bots" %}
+    {% set _og_desc  = "Persistent identity. Symbolic memory. 16 agents and every tool included — start free, pay only for the AI you use." %}
+    {% set _og_url   = "https://orionforge.chat/" %}
+    {% set _og_img   = "https://orionforge.chat/static/og-orionforge.png" %}
+    {% set _og_alt   = "Orion Forge — Build AI Beings, Not Just Bots. 6-layer identity pipeline." %}
+  {% endif %}
+
+  <!-- Open Graph -->
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="{{ _og_url }}">
+  <meta property="og:title"       content="{{ _og_title }}">
+  <meta property="og:description" content="{{ _og_desc }}">
+  <meta property="og:image"       content="{{ _og_img }}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt"   content="{{ _og_alt }}">
+  <meta property="og:site_name"   content="Orion Forge">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card"        content="summary_large_image">
+  <meta name="twitter:title"       content="{{ _og_title }}">
+  <meta name="twitter:description" content="{{ _og_desc }}">
+  <meta name="twitter:image"       content="{{ _og_img }}">
+  <meta name="twitter:image:alt"   content="{{ _og_alt }}">
   <link rel="stylesheet" href="/static/tailwind.css">
   <link rel="stylesheet" href="/static/style.css">
   <style>
