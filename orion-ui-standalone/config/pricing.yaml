@@ -1,6 +1,6 @@
 # ──────────────────────────────────────────────────────────
 #  Orion Forge — LLM Pricing Registry
-#  Last updated: 2026-06-12
+#  Last updated: 2026-06-20
 # ──────────────────────────────────────────────────────────
 #
 #  All prices are in USD per 1 million tokens.
@@ -585,9 +585,9 @@ openrouter:
     output_per_1m: 3.0
     training_per_1m: 0.0
   minimax/minimax-m2.7:
-    input_per_1m: 0.279
-    cached_input_per_1m: 0.1395
-    output_per_1m: 1.2
+    input_per_1m: 0.25
+    cached_input_per_1m: 0.125
+    output_per_1m: 1.0
     training_per_1m: 0.0
   openai/gpt-5.4-nano:
     input_per_1m: 0.2
@@ -635,8 +635,8 @@ openrouter:
     output_per_1m: 2.0
     training_per_1m: 0.0
   qwen/qwen3.5-9b:
-    input_per_1m: 0.04
-    cached_input_per_1m: 0.02
+    input_per_1m: 0.1
+    cached_input_per_1m: 0.05
     output_per_1m: 0.15
     training_per_1m: 0.0
   openai/gpt-5.4-pro:
@@ -675,8 +675,8 @@ openrouter:
     output_per_1m: 3.0
     training_per_1m: 0.0
   qwen/qwen3.5-35b-a3b:
-    input_per_1m: 0.139
-    cached_input_per_1m: 0.0695
+    input_per_1m: 0.14
+    cached_input_per_1m: 0.07
     output_per_1m: 1.0
     training_per_1m: 0.0
   qwen/qwen3.5-27b:
@@ -730,9 +730,9 @@ openrouter:
     output_per_1m: 1.56
     training_per_1m: 0.0
   qwen/qwen3.5-397b-a17b:
-    input_per_1m: 0.39
-    cached_input_per_1m: 0.195
-    output_per_1m: 2.34
+    input_per_1m: 0.385
+    cached_input_per_1m: 0.1925
+    output_per_1m: 2.45
     training_per_1m: 0.0
   minimax/minimax-m2.5:free:
     input_per_1m: 0.0
@@ -742,7 +742,7 @@ openrouter:
   minimax/minimax-m2.5:
     input_per_1m: 0.15
     cached_input_per_1m: 0.075
-    output_per_1m: 1.15
+    output_per_1m: 0.9
     training_per_1m: 0.0
   z-ai/glm-5:
     input_per_1m: 0.6
@@ -785,9 +785,9 @@ openrouter:
     output_per_1m: 0.0
     training_per_1m: 0.0
   moonshotai/kimi-k2.5:
-    input_per_1m: 0.4
-    cached_input_per_1m: 0.2
-    output_per_1m: 1.9
+    input_per_1m: 0.375
+    cached_input_per_1m: 0.1875
+    output_per_1m: 2.025
     training_per_1m: 0.0
   upstage/solar-pro-3:
     input_per_1m: 0.15
@@ -934,11 +934,6 @@ openrouter:
     cached_input_per_1m: 0.075
     output_per_1m: 0.15
     training_per_1m: 0.0
-  openrouter/bodybuilder:
-    input_per_1m: -1000000.0
-    cached_input_per_1m: -500000.0
-    output_per_1m: -1000000.0
-    training_per_1m: 0.0
   openai/gpt-5.1-codex-max:
     input_per_1m: 1.25
     cached_input_per_1m: 0.625
@@ -985,9 +980,9 @@ openrouter:
     output_per_1m: 0.431
     training_per_1m: 0.0
   deepseek/deepseek-v3.2:
-    input_per_1m: 0.252
-    cached_input_per_1m: 0.126
-    output_per_1m: 0.378
+    input_per_1m: 0.2288
+    cached_input_per_1m: 0.1144
+    output_per_1m: 0.3432
     training_per_1m: 0.0
   prime-intellect/intellect-3:
     input_per_1m: 0.2
@@ -1155,8 +1150,8 @@ openrouter:
     output_per_1m: 8.0
     training_per_1m: 0.0
   nvidia/llama-3.3-nemotron-super-49b-v1.5:
-    input_per_1m: 0.1
-    cached_input_per_1m: 0.05
+    input_per_1m: 0.4
+    cached_input_per_1m: 0.2
     output_per_1m: 0.4
     training_per_1m: 0.0
   baidu/ernie-4.5-21b-a3b-thinking:
@@ -1395,8 +1390,8 @@ openrouter:
     output_per_1m: 0.0
     training_per_1m: 0.0
   openai/gpt-oss-20b:
-    input_per_1m: 0.03
-    cached_input_per_1m: 0.015
+    input_per_1m: 0.029
+    cached_input_per_1m: 0.0145
     output_per_1m: 0.14
     training_per_1m: 0.0
   anthropic/claude-opus-4.1:
@@ -1415,9 +1410,9 @@ openrouter:
     output_per_1m: 0.27
     training_per_1m: 0.0
   qwen/qwen3-30b-a3b-instruct-2507:
-    input_per_1m: 0.09
-    cached_input_per_1m: 0.045
-    output_per_1m: 0.3
+    input_per_1m: 0.0481
+    cached_input_per_1m: 0.0241
+    output_per_1m: 0.193
     training_per_1m: 0.0
   z-ai/glm-4.5:
     input_per_1m: 0.6
@@ -1435,9 +1430,9 @@ openrouter:
     output_per_1m: 0.85
     training_per_1m: 0.0
   qwen/qwen3-235b-a22b-thinking-2507:
-    input_per_1m: 0.1495
-    cached_input_per_1m: 0.0748
-    output_per_1m: 1.495
+    input_per_1m: 0.1
+    cached_input_per_1m: 0.05
+    output_per_1m: 0.1
     training_per_1m: 0.0
   z-ai/glm-4-32b:
     input_per_1m: 0.1
@@ -1465,8 +1460,8 @@ openrouter:
     output_per_1m: 0.4
     training_per_1m: 0.0
   qwen/qwen3-235b-a22b-2507:
-    input_per_1m: 0.071
-    cached_input_per_1m: 0.0355
+    input_per_1m: 0.09
+    cached_input_per_1m: 0.045
     output_per_1m: 0.1
     training_per_1m: 0.0
   switchpoint/router:
@@ -1650,9 +1645,9 @@ openrouter:
     output_per_1m: 0.18
     training_per_1m: 0.0
   qwen/qwen3-30b-a3b:
-    input_per_1m: 0.09
-    cached_input_per_1m: 0.045
-    output_per_1m: 0.45
+    input_per_1m: 0.12
+    cached_input_per_1m: 0.06
+    output_per_1m: 0.5
     training_per_1m: 0.0
   qwen/qwen3-8b:
     input_per_1m: 0.05
@@ -1740,8 +1735,8 @@ openrouter:
     output_per_1m: 0.6
     training_per_1m: 0.0
   meta-llama/llama-4-scout:
-    input_per_1m: 0.08
-    cached_input_per_1m: 0.04
+    input_per_1m: 0.1
+    cached_input_per_1m: 0.05
     output_per_1m: 0.3
     training_per_1m: 0.0
   qwen/qwen2.5-vl-32b-instruct:
@@ -1780,9 +1775,9 @@ openrouter:
     output_per_1m: 0.0
     training_per_1m: 0.0
   google/gemma-3-4b-it:
-    input_per_1m: 0.04
-    cached_input_per_1m: 0.02
-    output_per_1m: 0.08
+    input_per_1m: 0.05
+    cached_input_per_1m: 0.025
+    output_per_1m: 0.1
     training_per_1m: 0.0
   google/gemma-3-12b-it:free:
     input_per_1m: 0.0
@@ -1790,9 +1785,9 @@ openrouter:
     output_per_1m: 0.0
     training_per_1m: 0.0
   google/gemma-3-12b-it:
-    input_per_1m: 0.04
-    cached_input_per_1m: 0.02
-    output_per_1m: 0.13
+    input_per_1m: 0.05
+    cached_input_per_1m: 0.025
+    output_per_1m: 0.15
     training_per_1m: 0.0
   cohere/command-a:
     input_per_1m: 2.5
@@ -1910,9 +1905,9 @@ openrouter:
     output_per_1m: 0.13
     training_per_1m: 0.0
   qwen/qwen2.5-vl-72b-instruct:
-    input_per_1m: 0.25
-    cached_input_per_1m: 0.125
-    output_per_1m: 0.75
+    input_per_1m: 0.8
+    cached_input_per_1m: 0.4
+    output_per_1m: 1.0
     training_per_1m: 0.0
   qwen/qwen-plus:
     input_per_1m: 0.26
@@ -1945,8 +1940,8 @@ openrouter:
     output_per_1m: 1.0
     training_per_1m: 0.0
   deepseek/deepseek-r1-distill-llama-70b:
-    input_per_1m: 0.7
-    cached_input_per_1m: 0.35
+    input_per_1m: 0.8
+    cached_input_per_1m: 0.4
     output_per_1m: 0.8
     training_per_1m: 0.0
   deepseek/deepseek-r1:
@@ -1970,9 +1965,9 @@ openrouter:
     output_per_1m: 3.0
     training_per_1m: 0.0
   deepseek/deepseek-chat:
-    input_per_1m: 0.2288
-    cached_input_per_1m: 0.1144
-    output_per_1m: 0.9144
+    input_per_1m: 0.2002
+    cached_input_per_1m: 0.1001
+    output_per_1m: 0.8001
     training_per_1m: 0.0
   sao10k/l3.3-euryale-70b:
     input_per_1m: 0.65
@@ -2100,9 +2095,9 @@ openrouter:
     output_per_1m: 0.201
     training_per_1m: 0.0
   meta-llama/llama-3.2-11b-vision-instruct:
-    input_per_1m: 0.245
-    cached_input_per_1m: 0.1225
-    output_per_1m: 0.245
+    input_per_1m: 0.345
+    cached_input_per_1m: 0.1725
+    output_per_1m: 0.345
     training_per_1m: 0.0
   qwen/qwen-2.5-72b-instruct:
     input_per_1m: 0.36
@@ -2135,9 +2130,9 @@ openrouter:
     output_per_1m: 0.2
     training_per_1m: 0.0
   nousresearch/hermes-3-llama-3.1-70b:
-    input_per_1m: 0.3
-    cached_input_per_1m: 0.15
-    output_per_1m: 0.3
+    input_per_1m: 0.7
+    cached_input_per_1m: 0.35
+    output_per_1m: 0.7
     training_per_1m: 0.0
   nousresearch/hermes-3-llama-3.1-405b:free:
     input_per_1m: 0.0
@@ -2167,7 +2162,7 @@ openrouter:
   meta-llama/llama-3.1-8b-instruct:
     input_per_1m: 0.02
     cached_input_per_1m: 0.01
-    output_per_1m: 0.05
+    output_per_1m: 0.03
     training_per_1m: 0.0
   meta-llama/llama-3.1-70b-instruct:
     input_per_1m: 0.4
@@ -2230,9 +2225,9 @@ openrouter:
     output_per_1m: 0.74
     training_per_1m: 0.0
   meta-llama/llama-3-8b-instruct:
-    input_per_1m: 0.04
-    cached_input_per_1m: 0.02
-    output_per_1m: 0.04
+    input_per_1m: 0.14
+    cached_input_per_1m: 0.07
+    output_per_1m: 0.14
     training_per_1m: 0.0
   mistralai/mixtral-8x22b-instruct:
     input_per_1m: 2.0
@@ -2278,11 +2273,6 @@ openrouter:
     input_per_1m: 3.75
     cached_input_per_1m: 1.875
     output_per_1m: 7.5
-    training_per_1m: 0.0
-  openrouter/auto:
-    input_per_1m: -1000000.0
-    cached_input_per_1m: -500000.0
-    output_per_1m: -1000000.0
     training_per_1m: 0.0
   openai/gpt-4-1106-preview:
     input_per_1m: 10.0
@@ -2365,9 +2355,9 @@ openrouter:
     output_per_1m: 0.2
     training_per_1m: 0.0
   x-ai/grok-4.20-multi-agent:
-    input_per_1m: 2.0
-    cached_input_per_1m: 1.0
-    output_per_1m: 6.0
+    input_per_1m: 1.25
+    cached_input_per_1m: 0.625
+    output_per_1m: 2.5
     training_per_1m: 0.0
   x-ai/grok-4.20:
     input_per_1m: 1.25
@@ -2385,9 +2375,9 @@ openrouter:
     output_per_1m: 4.0
     training_per_1m: 0.0
   arcee-ai/trinity-large-thinking:
-    input_per_1m: 0.22
-    cached_input_per_1m: 0.11
-    output_per_1m: 0.85
+    input_per_1m: 0.25
+    cached_input_per_1m: 0.125
+    output_per_1m: 0.8
     training_per_1m: 0.0
   qwen/qwen3.6-plus:free:
     input_per_1m: 0.0
@@ -2397,7 +2387,7 @@ openrouter:
   google/gemma-4-31b-it:
     input_per_1m: 0.12
     cached_input_per_1m: 0.06
-    output_per_1m: 0.37
+    output_per_1m: 0.35
     training_per_1m: 0.0
   google/gemma-4-26b-a4b-it:
     input_per_1m: 0.06
@@ -2495,9 +2485,9 @@ openrouter:
     output_per_1m: 12.0
     training_per_1m: 0.0
   ~moonshotai/kimi-latest:
-    input_per_1m: 0.73
-    cached_input_per_1m: 0.365
-    output_per_1m: 3.49
+    input_per_1m: 0.66
+    cached_input_per_1m: 0.33
+    output_per_1m: 3.5
     training_per_1m: 0.0
   ~google/gemini-flash-latest:
     input_per_1m: 1.5
@@ -2525,8 +2515,8 @@ openrouter:
     output_per_1m: 1.125
     training_per_1m: 0.0
   qwen/qwen3.6-35b-a3b:
-    input_per_1m: 0.15
-    cached_input_per_1m: 0.075
+    input_per_1m: 0.14
+    cached_input_per_1m: 0.07
     output_per_1m: 1.0
     training_per_1m: 0.0
   qwen/qwen3.6-max-preview:
@@ -2535,9 +2525,9 @@ openrouter:
     output_per_1m: 6.24
     training_per_1m: 0.0
   qwen/qwen3.6-27b:
-    input_per_1m: 0.3
-    cached_input_per_1m: 0.15
-    output_per_1m: 2.0
+    input_per_1m: 0.2885
+    cached_input_per_1m: 0.1443
+    output_per_1m: 3.17
     training_per_1m: 0.0
   openai/gpt-5.5-pro:
     input_per_1m: 30.0
@@ -2555,9 +2545,9 @@ openrouter:
     output_per_1m: 0.87
     training_per_1m: 0.0
   deepseek/deepseek-v4-flash:
-    input_per_1m: 0.1
-    cached_input_per_1m: 0.05
-    output_per_1m: 0.2
+    input_per_1m: 0.09
+    cached_input_per_1m: 0.045
+    output_per_1m: 0.18
     training_per_1m: 0.0
   inclusionai/ling-2.6-1t:free:
     input_per_1m: 0.0
@@ -2570,14 +2560,14 @@ openrouter:
     output_per_1m: 0.0
     training_per_1m: 0.0
   xiaomi/mimo-v2.5-pro:
-    input_per_1m: 1.0
-    cached_input_per_1m: 0.5
-    output_per_1m: 3.0
+    input_per_1m: 0.435
+    cached_input_per_1m: 0.2175
+    output_per_1m: 0.87
     training_per_1m: 0.0
   xiaomi/mimo-v2.5:
-    input_per_1m: 0.4
-    cached_input_per_1m: 0.2
-    output_per_1m: 2.0
+    input_per_1m: 0.14
+    cached_input_per_1m: 0.07
+    output_per_1m: 0.28
     training_per_1m: 0.0
   openai/gpt-5.4-image-2:
     input_per_1m: 8.0
@@ -2594,20 +2584,15 @@ openrouter:
     cached_input_per_1m: 2.5
     output_per_1m: 25.0
     training_per_1m: 0.0
-  openrouter/pareto-code:
-    input_per_1m: -1000000.0
-    cached_input_per_1m: -500000.0
-    output_per_1m: -1000000.0
-    training_per_1m: 0.0
   baidu/qianfan-ocr-fast:free:
     input_per_1m: 0.0
     cached_input_per_1m: 0.0
     output_per_1m: 0.0
     training_per_1m: 0.0
   moonshotai/kimi-k2.6:
-    input_per_1m: 0.73
-    cached_input_per_1m: 0.365
-    output_per_1m: 3.49
+    input_per_1m: 0.66
+    cached_input_per_1m: 0.33
+    output_per_1m: 3.5
     training_per_1m: 0.0
   arcee-ai/trinity-large-preview:
     input_per_1m: 0.15
@@ -2620,9 +2605,9 @@ openrouter:
     output_per_1m: 0.35
     training_per_1m: 0.0
   qwen/qwen3.7-max:
-    input_per_1m: 2.5
-    cached_input_per_1m: 1.25
-    output_per_1m: 7.5
+    input_per_1m: 1.25
+    cached_input_per_1m: 0.625
+    output_per_1m: 3.75
     training_per_1m: 0.0
   x-ai/grok-build-0.1:
     input_per_1m: 1.0
@@ -2670,9 +2655,9 @@ openrouter:
     output_per_1m: 0.625
     training_per_1m: 0.0
   tencent/hy3-preview:
-    input_per_1m: 0.066
-    cached_input_per_1m: 0.033
-    output_per_1m: 0.26
+    input_per_1m: 0.063
+    cached_input_per_1m: 0.0315
+    output_per_1m: 0.21
     training_per_1m: 0.0
   baidu/qianfan-ocr-fast:
     input_per_1m: 0.68
@@ -2683,6 +2668,96 @@ openrouter:
     input_per_1m: 0.0
     cached_input_per_1m: 0.0
     output_per_1m: 0.0
+    training_per_1m: 0.0
+  google/gemini-3.1-flash-image:
+    input_per_1m: 0.5
+    cached_input_per_1m: 0.25
+    output_per_1m: 3.0
+    training_per_1m: 0.0
+  google/gemini-3-pro-image:
+    input_per_1m: 2.0
+    cached_input_per_1m: 1.0
+    output_per_1m: 12.0
+    training_per_1m: 0.0
+  cohere/north-mini-code:free:
+    input_per_1m: 0.0
+    cached_input_per_1m: 0.0
+    output_per_1m: 0.0
+    training_per_1m: 0.0
+  z-ai/glm-5.2:
+    input_per_1m: 1.2
+    cached_input_per_1m: 0.6
+    output_per_1m: 4.1
+    training_per_1m: 0.0
+  moonshotai/kimi-k2.7-code:
+    input_per_1m: 0.612
+    cached_input_per_1m: 0.306
+    output_per_1m: 3.069
+    training_per_1m: 0.0
+  ~anthropic/claude-fable-latest:
+    input_per_1m: 10.0
+    cached_input_per_1m: 5.0
+    output_per_1m: 50.0
+    training_per_1m: 0.0
+  anthropic/claude-fable-5:
+    input_per_1m: 10.0
+    cached_input_per_1m: 5.0
+    output_per_1m: 50.0
+    training_per_1m: 0.0
+  nex-agi/nex-n2-pro:free:
+    input_per_1m: 0.0
+    cached_input_per_1m: 0.0
+    output_per_1m: 0.0
+    training_per_1m: 0.0
+  nvidia/nemotron-3.5-content-safety:free:
+    input_per_1m: 0.0
+    cached_input_per_1m: 0.0
+    output_per_1m: 0.0
+    training_per_1m: 0.0
+  nvidia/nemotron-3-ultra-550b-a55b:free:
+    input_per_1m: 0.0
+    cached_input_per_1m: 0.0
+    output_per_1m: 0.0
+    training_per_1m: 0.0
+  nvidia/nemotron-3-ultra-550b-a55b:
+    input_per_1m: 0.5
+    cached_input_per_1m: 0.25
+    output_per_1m: 2.2
+    training_per_1m: 0.0
+  qwen/qwen3.7-plus:
+    input_per_1m: 0.32
+    cached_input_per_1m: 0.16
+    output_per_1m: 1.28
+    training_per_1m: 0.0
+  minimax/minimax-m3:
+    input_per_1m: 0.3
+    cached_input_per_1m: 0.15
+    output_per_1m: 1.2
+    training_per_1m: 0.0
+  stepfun/step-3.7-flash:
+    input_per_1m: 0.2
+    cached_input_per_1m: 0.1
+    output_per_1m: 1.15
+    training_per_1m: 0.0
+  anthropic/claude-opus-4.8-fast:
+    input_per_1m: 10.0
+    cached_input_per_1m: 5.0
+    output_per_1m: 50.0
+    training_per_1m: 0.0
+  anthropic/claude-opus-4.8:
+    input_per_1m: 5.0
+    cached_input_per_1m: 2.5
+    output_per_1m: 25.0
+    training_per_1m: 0.0
+  poolside/laguna-xs.2:
+    input_per_1m: 0.1
+    cached_input_per_1m: 0.05
+    output_per_1m: 0.2
+    training_per_1m: 0.0
+  poolside/laguna-m.1:
+    input_per_1m: 0.2
+    cached_input_per_1m: 0.1
+    output_per_1m: 0.4
     training_per_1m: 0.0
 ollama:
   _default:
