@@ -57,6 +57,12 @@ _patch_*.py
 *.old
 *.bak
 
+# OG card render tooling (not for deployment)
+website/images/node_modules/
+website/images/package.json
+website/images/package-lock.json
+website/images/render-og.js
+
 # Test output artifacts
 **/torture_result.txt
 **/test_torture_output.txt

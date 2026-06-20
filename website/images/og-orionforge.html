@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1200px; height: 630px; overflow: hidden;
+    background: #0d0d14;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: #fff;
+    position: relative;
+  }
+
+  /* Background grid */
+  .grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(99,102,241,0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99,102,241,0.07) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+
+  /* Glow blobs */
+  .blob-left {
+    position: absolute; top: -120px; left: -120px;
+    width: 560px; height: 560px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(99,102,241,0.22) 0%, transparent 70%);
+    filter: blur(40px);
+  }
+  .blob-right {
+    position: absolute; bottom: -80px; right: -80px;
+    width: 480px; height: 480px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(147,51,234,0.18) 0%, transparent 70%);
+    filter: blur(40px);
+  }
+
+  /* Layer stack illustration */
+  .layers {
+    position: absolute;
+    right: 80px; top: 50%;
+    transform: translateY(-50%);
+    display: flex; flex-direction: column; gap: 7px;
+    opacity: 0.9;
+  }
+  .layer {
+    width: 340px; height: 44px; border-radius: 10px;
+    display: flex; align-items: center; gap: 14px;
+    padding: 0 16px;
+    border: 1px solid;
+    font-size: 13px; font-weight: 600; letter-spacing: 0.02em;
+    backdrop-filter: blur(4px);
+  }
+  .layer-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .layer-num { font-size: 11px; font-weight: 800; opacity: 0.5; margin-left: auto; }
+
+  .l1 { background: rgba(99,102,241,0.18); border-color: rgba(99,102,241,0.45); color: #a5b4fc; }
+  .l1 .layer-dot { background: #6366f1; }
+  .l2 { background: rgba(147,51,234,0.16); border-color: rgba(147,51,234,0.4); color: #c4b5fd; }
+  .l2 .layer-dot { background: #9333ea; }
+  .l3 { background: rgba(59,130,246,0.15); border-color: rgba(59,130,246,0.35); color: #93c5fd; }
+  .l3 .layer-dot { background: #3b82f6; }
+  .l4 { background: rgba(16,185,129,0.14); border-color: rgba(16,185,129,0.35); color: #6ee7b7; }
+  .l4 .layer-dot { background: #10b981; }
+  .l5 { background: rgba(245,158,11,0.13); border-color: rgba(245,158,11,0.3); color: #fcd34d; }
+  .l5 .layer-dot { background: #f59e0b; }
+  .l6 { background: rgba(239,68,68,0.13); border-color: rgba(239,68,68,0.3); color: #fca5a5; }
+  .l6 .layer-dot { background: #ef4444; }
+
+  /* Main content */
+  .content {
+    position: absolute;
+    left: 72px; top: 50%;
+    transform: translateY(-50%);
+    max-width: 580px;
+  }
+
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(99,102,241,0.12);
+    border: 1px solid rgba(99,102,241,0.3);
+    border-radius: 999px;
+    padding: 5px 14px;
+    font-size: 12px; font-weight: 700; letter-spacing: 0.08em;
+    color: #818cf8; text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+  .eyebrow-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #6366f1;
+    box-shadow: 0 0 6px #6366f1;
+  }
+
+  h1 {
+    font-size: 58px; font-weight: 900; line-height: 1.05;
+    letter-spacing: -0.03em;
+    margin-bottom: 20px;
+  }
+  h1 span { color: #818cf8; }
+
+  .subtitle {
+    font-size: 19px; color: #a1a1aa; line-height: 1.55;
+    font-weight: 400;
+    margin-bottom: 32px;
+  }
+
+  .pills { display: flex; gap: 10px; flex-wrap: wrap; }
+  .pill {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 12px; font-weight: 600; color: #71717a;
+  }
+
+  /* Domain badge */
+  .domain {
+    position: absolute;
+    bottom: 32px; left: 72px;
+    font-size: 13px; font-weight: 700; color: #3f3f46;
+    letter-spacing: 0.05em;
+    text-transform: lowercase;
+  }
+</style>
+</head>
+<body>
+  <div class="grid"></div>
+  <div class="blob-left"></div>
+  <div class="blob-right"></div>
+
+  <div class="content">
+    <div class="eyebrow"><span class="eyebrow-dot"></span> Modular AI Identity Ecosystem</div>
+    <h1>Build AI Beings.<br><span>Not Just Bots.</span></h1>
+    <p class="subtitle">Persistent identity. Symbolic memory.<br>16 agents. Every tool included.</p>
+    <div class="pills">
+      <span class="pill">Soul Script Engine</span>
+      <span class="pill">6-Layer Context</span>
+      <span class="pill">Memory Vault</span>
+      <span class="pill">Free to start</span>
+    </div>
+  </div>
+
+  <div class="layers">
+    <div class="layer l1"><span class="layer-dot"></span> Core Identity <span class="layer-num">01</span></div>
+    <div class="layer l2"><span class="layer-dot"></span> Soul Script <span class="layer-num">02</span></div>
+    <div class="layer l3"><span class="layer-dot"></span> Pinned Knowledge <span class="layer-num">03</span></div>
+    <div class="layer l4"><span class="layer-dot"></span> Memory Vault <span class="layer-num">04</span></div>
+    <div class="layer l5"><span class="layer-dot"></span> Conversation <span class="layer-num">05</span></div>
+    <div class="layer l6"><span class="layer-dot"></span> Tools <span class="layer-num">06</span></div>
+  </div>
+
+  <div class="domain">orionforge.chat</div>
+</body>
+</html>
