@@ -57,7 +57,7 @@ from web.stripe_billing import (
     STORE_CATALOG, LLM_MARKUP_MULTIPLIER, estimate_llm_credit_cost,
     estimate_llm_credit_cost_safe, estimate_image_credit_cost, estimate_video_credit_cost,
     estimate_tts_credit_cost, estimate_stt_credit_cost,
-    get_credit_history, get_trial_status, FREE_TRIAL_DAYS,
+    get_credit_history, get_trial_status, FREE_TRIAL_DAYS, user_has_purchased_credits,
     get_user_purchases, user_owns_item, purchase_tool, purchase_skin,
     purchase_agent, purchase_pack, user_owns_agent, user_has_tool_access, SKIN_PRICES,
     get_store_agent_ids, get_user_unlocked_agents, FREE_AGENT_IDS,
@@ -290,10 +290,10 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 is_new = ensure_user_dirs(user_id)
                 seed_user_vault(user_id)
                 seed_user_chats(user_id)
-                # Seed welcome credits ($5 = 500 credits) on first ever login
+                # Seed welcome credits ($2 = 200 credits) on first ever login
                 if get_user_credits(user_id) == 0:
-                    add_user_credits(user_id, 500, reason="welcome_grant:new_user_$5")
-                    log.info("[auth] Seeded 500 welcome credits for new user %s", user_id[:8])
+                    add_user_credits(user_id, 200, reason="welcome_grant:new_user_$2")
+                    log.info("[auth] Seeded 200 welcome credits for new user %s", user_id[:8])
             except Exception as exc:
                 log.warning("[auth] Failed to create user dirs for %s: %s", user_id, exc)
 
@@ -6310,13 +6310,64 @@ async def api_connections_all_models():
     return result
 
 
+# Curated "likely effectiveness" tiers for the free-trial model pin (lower =
+# pinned higher). DeepSeek is pinned ahead of everything (handled in the sort
+# key). The rest balance capability against credit burn: strong-yet-cheap
+# workhorses first, credit-hungry flagships last.
+def _trial_effectiveness_rank(name: str) -> int:
+    """Rank a model by likely usefulness to a trial user (lower = better)."""
+    n = name.lower()
+    # 4 — credit-hungry flagships: drain the free balance fastest.
+    if ("opus" in n or "gpt-5.5" in n or "gpt-5.4-pro" in n
+            or "gpt-5.2-pro" in n or "gpt-5-pro" in n or "gpt-4.5" in n):
+        return 4
+    # 1 — strong + inexpensive workhorses: best value for a trial.
+    # ("-mini" so the "mini" inside "gemini" is not matched here.)
+    if "haiku" in n or "flash" in n or "-mini" in n:
+        return 1
+    # 3 — light / lower-capability (cheap but limited).
+    if "-nano" in n or "gemma" in n or "-lite" in n:
+        return 3
+    # 2 — capable mid-tier.
+    if ("sonnet" in n or "gemini" in n or "grok" in n or "llama" in n
+            or "qwen" in n or "mistral" in n or "gpt-5" in n):
+        return 2
+    # Unknown — mid-tier by default.
+    return 2
+
+
+def _trial_model_sort_key(m: dict) -> tuple:
+    """Sort key for the free-trial pin: DeepSeek first, then by likely
+    effectiveness (capability per credit), with cost then name as tiebreakers."""
+    name = str(m.get("model", "")).lower()
+    est = m.get("est_credits_per_1k_tok", 0) or 0
+    # Unpriced models (est == 0) sink within their tier rather than look free.
+    cost_rank = est if est > 0 else 10 ** 9
+    return (0 if "deepseek" in name else 1, _trial_effectiveness_rank(name), cost_rank, name)
+
+
+def _trial_provider_sort_key(p: dict) -> tuple:
+    """Sort key that floats DeepSeek-bearing / cheapest providers first (free-trial)."""
+    models = p.get("models", []) or []
+    has_deepseek = any("deepseek" in str(m.get("model", "")).lower() for m in models)
+    priced = [m.get("est_credits_per_1k_tok", 0) for m in models if (m.get("est_credits_per_1k_tok", 0) or 0) > 0]
+    min_cost = min(priced) if priced else 10 ** 9
+    return (0 if has_deepseek else 1, min_cost)
+
+
 @app.get("/api/platform/models")
 async def api_platform_models(request: Request):
     """Public endpoint: Return available platform models for the chat dropdown.
     Groups models by provider with pricing hints and credit cost estimates.
-    No admin access required — all authenticated users can see platform models."""
+    No admin access required — all authenticated users can see platform models.
+
+    While a user is still spending their free welcome credits (has never bought a
+    credit pack), cheap models — DeepSeek first, then by likely effectiveness (capability per credit) — are
+    pinned to the top so the free balance stretches further. Every model stays
+    selectable; only the ordering changes."""
     user = getattr(request.state, "user", None)
     credits = get_user_credits(user["id"]) if user else 0
+    on_trial = bool(user) and not user_has_purchased_credits(user["id"])
     store = _load_connections()
     providers = []
     for conn in store.get("connections", []):
@@ -6339,15 +6390,22 @@ async def api_platform_models(request: Request):
                 "output_per_1m": output_rate,
                 "est_credits_per_1k_tok": est_credits,
             })
+        # On the free trial balance, pin DeepSeek + cheapest models to the top.
+        if on_trial:
+            models_with_pricing.sort(key=_trial_model_sort_key)
         providers.append({
             "connection_id": conn["id"],
             "provider": prov,
             "name": conn.get("name", prov),
             "models": models_with_pricing,
         })
+    # On trial, float providers that carry DeepSeek / the cheapest models first.
+    if on_trial:
+        providers.sort(key=_trial_provider_sort_key)
     return JSONResponse({
         "providers": providers,
         "credits_balance": credits,
+        "trial": on_trial,
         "markup": LLM_MARKUP_MULTIPLIER,
     })
 

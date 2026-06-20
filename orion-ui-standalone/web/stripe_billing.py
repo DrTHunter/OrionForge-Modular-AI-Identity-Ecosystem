@@ -1293,6 +1293,24 @@ def get_credit_history(user_id: str, limit: int = 50) -> list:
     return list(reversed(history[-limit:]))
 
 
+def user_has_purchased_credits(user_id: str) -> bool:
+    """Whether a user has ever bought a credit pack (vs. only the free welcome grant).
+
+    Used to decide if a user is still spending their free "trial" balance. Returns
+    True once any credit-history entry has a ``purchase`` reason (set by the Stripe
+    webhook on a successful credit-pack checkout).
+    """
+    if not user_id:
+        return False
+    state = _load_stripe_state()
+    history = state.get("credits", {}).get(user_id, {}).get("history", [])
+    return any(
+        entry.get("type") == "credit"
+        and str(entry.get("reason", "")).startswith("purchase")
+        for entry in history
+    )
+
+
 def create_credits_checkout_session(
     user_id: str, user_email: str, pack_id: str,
     success_url: str, cancel_url: str

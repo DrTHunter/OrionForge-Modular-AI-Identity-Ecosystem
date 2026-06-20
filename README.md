@@ -215,7 +215,7 @@ OrionForge uses **Supabase OAuth** for authentication and **Stripe** for billing
 | **Login** | Supabase OAuth (Google, GitHub, email) via `/login` |
 | **JWT verification** | `auth.py`  -  JWKS-based token validation, session middleware |
 | **Billing** | Pay-per-use — no monthly subscription. Usage billed in credits at 2× the API cost |
-| **Free credits** | New accounts start with $5 in credits on first sign-up. No credit card required |
+| **Free credits** | New accounts start with $2 in credits on first sign-up. No credit card required |
 | **Credit system** | Buy credit packs ($5 / $10 / $20 / $30) in the store (`/store`)  -  spend on tools and LLM usage |
 | **LLM markup** | Platform-hosted LLM calls billed at 2x base cost, deducted from credits |
 | **TTS/STT billing** | Per-use billing for platform-hosted voice services (2x markup) |
