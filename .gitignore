@@ -35,11 +35,20 @@ ui/data/users/
 orion-ui-standalone/data/users/
 !ui/data/**/.gitkeep
 
-# Secrets
+# Secrets & credentials
 *.env
 .webui_secret_key
 fly_deploy.log
 _patch_*.py
+
+# Runtime config with personal data / billing state — use *.example.json as templates
+**/config/auth.json
+**/config/stripe_state.json
+**/config/connections.json
+**/config/vscode_bridge.json
+
+# Encrypted per-user API key files
+**/*.enc.json
 
 # Sentence-transformers cache
 .cache/

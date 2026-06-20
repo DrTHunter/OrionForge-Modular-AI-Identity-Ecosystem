@@ -1,0 +1,23 @@
+{
+  "supabase_url": "",
+  "supabase_anon_key": "",
+  "jwt_secret": "",
+  "auth_enabled": true,
+  "open_registration": true,
+  "bridge_api_key": "",
+  "bridge_user_id": "",
+  "allowed_emails": [],
+  "free_tier_features": [
+    "chat",
+    "profiles",
+    "knowledge",
+    "vault",
+    "tools",
+    "skins_default"
+  ],
+  "paid_features": [
+    "agi_loop",
+    "cost_tracker",
+    "skins_premium"
+  ]
+}
