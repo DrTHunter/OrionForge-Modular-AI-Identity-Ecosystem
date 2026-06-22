@@ -1941,15 +1941,59 @@ section { position: relative; z-index: 1; }
 @media (max-width: 1024px) { .mem-arch { grid-template-columns: 1fr; } .mem-why-grid { grid-template-columns: 1fr; } }
 @media (max-width: 768px) { #memory { padding: 56px 0; } .mem-examples { grid-template-columns: 1fr; } }
 
-/* Desktop shows the polished infographic image; mobile keeps the responsive HTML build */
-.ss-infographic, .mem-infographic, .pipe-infographic {
-    display: none; width: 100%; height: auto;
-    border-radius: var(--radius); border: 1px solid var(--border-glass);
-    box-shadow: var(--shadow-lg);
-}
-@media (min-width: 769px) {
-    .ss-infographic, .mem-infographic, .pipe-infographic { display: block; }
-    .ss-build, .mem-build, .pipe-build { display: none; }
+/* -------------------------------------------------------
+   INFOGRAPHIC SECTIONS — ANIMATED CSS (all screen sizes)
+   ------------------------------------------------------- */
+/* Floating, glowing stores & engine cores */
+@keyframes of-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+@keyframes of-pulse-purple { 0%,100% { box-shadow: 0 0 36px rgba(139,92,246,0.22); } 50% { box-shadow: 0 0 58px rgba(139,92,246,0.45); } }
+@keyframes of-pulse-green { 0%,100% { box-shadow: 0 0 36px rgba(52,211,153,0.20); } 50% { box-shadow: 0 0 58px rgba(52,211,153,0.42); } }
+@keyframes of-pulse-cyan { 0%,100% { box-shadow: 0 0 50px rgba(34,211,238,0.30); } 50% { box-shadow: 0 0 74px rgba(34,211,238,0.55); } }
+@keyframes of-spin { to { transform: rotate(360deg); } }
+
+.ss-crystal { animation: of-float 4.5s ease-in-out infinite, of-pulse-purple 4.5s ease-in-out infinite; }
+.mem-col.identity .mem-cyl { animation: of-float 5s ease-in-out infinite, of-pulse-purple 5s ease-in-out infinite; }
+.mem-col.dynamic .mem-cyl { animation: of-float 5s ease-in-out infinite 0.6s, of-pulse-green 5s ease-in-out infinite; }
+.mem-col.dynamic .mem-cyl i { animation: of-spin 9s linear infinite; }
+.mem-engine-core { animation: of-float 4s ease-in-out infinite, of-pulse-cyan 3.2s ease-in-out infinite; }
+
+/* Injection pipeline: flowing connector line + travelling pulse on the step numbers */
+.pipeline-steps::before { background-size: 100% 220%; animation: of-flow 3.2s linear infinite; }
+@keyframes of-flow { 0% { background-position: 0 100%; } 100% { background-position: 0 -120%; } }
+@keyframes of-num { 0%,100% { box-shadow: 0 0 0 rgba(99,102,241,0); border-color: var(--primary); } 50% { box-shadow: 0 0 20px rgba(99,102,241,0.55); border-color: var(--primary-light); } }
+.pipeline-step .pipeline-num { animation: of-num 2.6s ease-in-out infinite; }
+.pipeline-step:nth-child(1) .pipeline-num { animation-delay: 0s; }
+.pipeline-step:nth-child(2) .pipeline-num { animation-delay: 0.35s; }
+.pipeline-step:nth-child(3) .pipeline-num { animation-delay: 0.70s; }
+.pipeline-step:nth-child(4) .pipeline-num { animation-delay: 1.05s; }
+.pipeline-step:nth-child(5) .pipeline-num { animation-delay: 1.40s; }
+.pipeline-step:nth-child(6) .pipeline-num { animation-delay: 1.75s; }
+
+/* Soul Script assembly flow: arrows drift, engine chips light up in sequence */
+@keyframes of-arrow { 0%,100% { transform: translateX(0); opacity: 0.5; } 50% { transform: translateX(3px); opacity: 1; } }
+.ss-flow-arrow i { animation: of-arrow 1.8s ease-in-out infinite; }
+@keyframes of-chip { 0%,100% { background: rgba(99,102,241,0.08); border-color: rgba(99,102,241,0.15); } 50% { background: rgba(99,102,241,0.18); border-color: rgba(99,102,241,0.35); } }
+.mem-pipe span { animation: of-chip 3s ease-in-out infinite; }
+.mem-pipe span:nth-child(1) { animation-delay: 0s; }
+.mem-pipe span:nth-child(2) { animation-delay: 0.3s; }
+.mem-pipe span:nth-child(3) { animation-delay: 0.6s; }
+.mem-pipe span:nth-child(4) { animation-delay: 0.9s; }
+.mem-pipe span:nth-child(5) { animation-delay: 1.2s; }
+
+/* Hover micro-interactions */
+.ss-flow-step, .mem-chip, .mem-why-card i { transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease; }
+.ss-flow-step:hover { transform: translateY(-3px); border-color: var(--border-glow); box-shadow: var(--shadow-glow); }
+.mem-chip:hover { transform: translateY(-2px); }
+.mem-why-card:hover i { transform: scale(1.12); }
+
+/* Banners get a soft animated sheen */
+@keyframes of-sheen { 0%,100% { box-shadow: 0 0 0 rgba(99,102,241,0); } 50% { box-shadow: 0 0 30px rgba(99,102,241,0.18); } }
+.ss-banner, .mem-banner { animation: of-sheen 4s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+    .ss-crystal, .mem-cyl, .mem-col.dynamic .mem-cyl i, .mem-engine-core,
+    .pipeline-steps::before, .pipeline-num, .ss-flow-arrow i, .mem-pipe span,
+    .ss-banner, .mem-banner { animation: none !important; }
 }
 
 /* -------------------------------------------------------
@@ -3179,7 +3223,6 @@ section { position: relative; z-index: 1; }
      ------------------------------------------------------- -->
 <section id="pipeline">
     <div class="container">
-        <img class="pipe-infographic" src="images/llm-loading-injection-flow.png" alt="LLM Loading and Injection Flow — how identity, soul script, pinned knowledge, memories, conversation, and tools are loaded and injected into the final prompt." onerror="this.style.display='none'; if (this.nextElementSibling) this.nextElementSibling.style.display='block';">
         <div class="pipe-build">
         <div class="section-header reveal">
             <div class="section-label"><i class="fas fa-layer-group"></i> Behind Every Message</div>
@@ -3240,7 +3283,6 @@ section { position: relative; z-index: 1; }
      ------------------------------------------------------- -->
 <section id="soulscript">
     <div class="container">
-        <img class="ss-infographic" src="images/soul-scripts.png" alt="Soul Scripts — Emotional and Behavioral DNA. Soul Script structure, read-only FAISS store, automatic relevance scanning, and the injection and assembly pipeline." onerror="this.style.display='none'; if (this.nextElementSibling) this.nextElementSibling.style.display='block';">
         <div class="ss-build">
         <div class="section-header reveal">
             <div class="section-label"><i class="fas fa-dna"></i> Soul Scripts</div>
@@ -3375,7 +3417,6 @@ section { position: relative; z-index: 1; }
      ------------------------------------------------------- -->
 <section id="memory">
     <div class="container">
-        <img class="mem-infographic" src="images/dual-faiss-memory.png" alt="Dual FAISS Memory Architecture — a read-only identity FAISS and a dynamic long-term FAISS routed by the Soul Script Engine." onerror="this.style.display='none'; if (this.nextElementSibling) this.nextElementSibling.style.display='block';">
         <div class="mem-build">
         <div class="section-header reveal">
             <div class="section-label"><i class="fas fa-database"></i> Memory Architecture</div>
