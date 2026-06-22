@@ -1602,6 +1602,15 @@ section { position: relative; z-index: 1; }
     font-size: 0.85rem; color: var(--text-muted);
     line-height: 1.6;
 }
+.tool-card.has-detail { cursor: pointer; }
+.tool-more {
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-top: 14px;
+    font-size: 0.75rem; font-weight: 600;
+    color: var(--primary-light);
+    transition: var(--transition);
+}
+.tool-card.has-detail:hover .tool-more { color: var(--accent); }
 .tool-badge {
     position: absolute; top: 16px; right: 16px;
     font-family: var(--font-mono);
@@ -3634,7 +3643,8 @@ const tools = [
         icon: 'fas fa-brain',
         iconClass: 'memory',
         badge: 'CORE',
-        desc: 'AGI-grade durable memory. Read, write, search, update, and delete persistent memories with tiered storage (canon vs register), topic-based upsert, and FAISS vector similarity.<br><br>The engine runs on <strong>FAISS</strong> — Facebook AI Similarity Search — a library purpose-built for searching billions of dense vectors at millisecond speed. When an agent recalls something about you, it isn\'t scanning a keyword database. It\'s running a nearest-neighbor search across the full embedding space of everything it knows: your preferences, your history, your canon memories, your past conversations. The result is semantic recall — close in meaning, not just exact in wording. It finds what you meant, not just what you typed.<br><br>Memories are indexed with two-tier priority. <strong>Canon</strong> memories are permanent and identity-defining — the things that shape who the agent is. <strong>Register</strong> memories are working context — fast, updatable, episodic. Both tiers are searchable together in a single FAISS query, returned ranked by vector distance, filtered by recency and relevance weight.'
+        desc: 'Durable persistent memory with full CRUD operations, two-tier storage (canon vs register), topic-based upsert, and FAISS vector-similarity retrieval.',
+        fullDesc: 'Durable persistent memory exposing full CRUD operations — create, read, search, update, and delete — over a two-tier store with topic-based upsert and FAISS vector-similarity retrieval.<br><br>Retrieval runs on <strong>FAISS</strong> (Facebook AI Similarity Search), a library optimized for approximate nearest-neighbor search across dense embedding vectors at millisecond latency. Queries are embedded and matched against the full vector space by cosine/L2 distance rather than keyword lookup, yielding semantic recall — results ranked by meaning rather than exact token overlap.<br><br>Records are partitioned into two priority tiers. <strong>Canon</strong> entries are permanent, identity-defining facts; <strong>register</strong> entries are fast, mutable, episodic working context. Both tiers are queried in a single FAISS pass and returned ranked by vector distance, then re-weighted by recency and relevance before injection into the agent context window.'
     },
     {
         id: 'web_search',
@@ -3773,14 +3783,38 @@ function renderAgents() {
 function renderTools() {
     const grid = document.getElementById('tools-grid');
     grid.innerHTML = tools.map((t, i) => `
-        <div class="tool-card reveal" style="transition-delay: ${i * 0.05}s">
+        <div class="tool-card reveal${t.fullDesc ? ' has-detail' : ''}" style="transition-delay: ${i * 0.05}s"${t.fullDesc ? ` onclick="openToolModal('${t.id}')"` : ''}>
             <div class="tool-card-icon ${t.iconClass}"><i class="${t.icon}"></i></div>
             <span class="tool-badge">${t.badge}</span>
             <h4>${t.name}</h4>
             <p>${t.desc}</p>
+            ${t.fullDesc ? '<span class="tool-more"><i class="fas fa-circle-info"></i> Details</span>' : ''}
         </div>
     `).join('');
 }
+
+// -------------------------------------------------------
+// TOOL MODAL
+// -------------------------------------------------------
+function openToolModal(id) {
+    const t = tools.find(x => x.id === id);
+    if (!t) return;
+    const modal = document.getElementById('agent-modal');
+    const header = modal.querySelector('.modal-header');
+    const body = modal.querySelector('.modal-body');
+
+    header.innerHTML = `
+        <button class="modal-close" onclick="closeAgentModal()">&times;</button>
+        <div class="tool-card-icon ${t.iconClass}" style="margin:0 0 12px;"><i class="${t.icon}"></i></div>
+        <h2>${t.name}</h2>
+        <div class="agent-card-role">Runtime Tool \u00b7 ${t.badge}</div>
+    `;
+    body.innerHTML = `<p>${t.fullDesc}</p>`;
+
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
 
 // -------------------------------------------------------
 // WORKSHOP DATA
