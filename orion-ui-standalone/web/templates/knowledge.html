@@ -97,7 +97,30 @@
     border-radius:0.375rem; padding:0.25rem 0.5rem; font-size:0.8125rem;
     color:#e4e4e7; outline:none; width:100%;
   }
-</style>
+  /* ── Mobile: collapsible folder sidebar ────────────── */
+  .folder-toggle {
+    display:none; align-items:center; justify-content:space-between;
+    gap:0.5rem; width:100%; margin-bottom:0.75rem;
+    padding:0.625rem 0.875rem; border-radius:0.5rem;
+    background:rgba(99,102,241,0.1); border:1px solid rgba(99,102,241,0.25);
+    color:#c7d2fe; font-size:0.85rem; font-weight:600; cursor:pointer;
+  }
+  .folder-toggle .chev { transition:transform 0.2s; }
+  .folder-toggle.open .chev { transform:rotate(180deg); }
+  @media (max-width: 768px) {
+    .knowledge-layout { flex-direction:column; gap:0.75rem; min-height:auto; }
+    .folder-toggle { display:flex; }
+    .folder-sidebar {
+      width:100%; min-width:0;
+      max-height:0; overflow:hidden; gap:0;
+      transition:max-height 0.25s ease;
+    }
+    .folder-sidebar.open {
+      max-height:60vh; overflow-y:auto; gap:0.375rem;
+      margin-bottom:0.25rem;
+    }
+    .notes-grid { grid-template-columns:1fr; }
+  }</style>
 
 <div>
   <div class="mb-6">
@@ -116,9 +139,15 @@
     </div>
   </div>
 
+  <!-- ── Mobile folder toggle ── -->
+  <button class="folder-toggle" id="folder-toggle" onclick="toggleFolders()">
+    <span>📁 <span id="folder-toggle-label">All Notes</span></span>
+    <span class="chev">▾</span>
+  </button>
+
   <div class="knowledge-layout">
     <!-- ── Folder Sidebar ── -->
-    <div class="folder-sidebar">
+    <div class="folder-sidebar" id="folder-sidebar">
       <div class="folder-item active" data-folder="__all__" onclick="selectFolder('__all__', this)">
         <span class="folder-emoji">📚</span>
         <span class="folder-name">All Notes</span>
@@ -240,8 +269,27 @@ function selectFolder(folderId, el) {
     if (f) title = f.name;
   }
   document.getElementById('folder-title').textContent = title;
+  // Sync mobile toggle label, then collapse the folder list on mobile
+  const tl = document.getElementById('folder-toggle-label');
+  if (tl) tl.textContent = title;
+  if (window.matchMedia('(max-width: 768px)').matches) {
+    const sb = document.getElementById('folder-sidebar');
+    const tg = document.getElementById('folder-toggle');
+    if (sb) sb.classList.remove('open');
+    if (tg) tg.classList.remove('open');
+  }
   renderNotes();
 }
+
+// ── Toggle folder sidebar (mobile) ───────────────────────────────
+function toggleFolders() {
+  const sb = document.getElementById('folder-sidebar');
+  const tg = document.getElementById('folder-toggle');
+  const open = !sb.classList.contains('open');
+  sb.classList.toggle('open', open);
+  tg.classList.toggle('open', open);
+}
+
 
 // ── Create note in current folder ────────────────────────────────
 async function createNote() {
