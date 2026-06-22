@@ -8,6 +8,21 @@
   .tab-btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.25rem; font-size: 0.875rem; font-weight: 600; color: #71717a; background: none; border: none; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; position: relative; top: 1px; }
   .tab-btn:hover { color: #a1a1aa; }
   .tab-btn.active { color: #fff; border-bottom-color: #6366f1; }
+  /* Mobile: swap the overflowing tab bar for a dropdown selector */
+  .tab-select {
+    display: none; width: 100%; padding: 0.7rem 2.25rem 0.7rem 0.875rem; margin-bottom: 1.5rem;
+    background-color: #1a1a24; border: 1px solid #2a2a3a; border-radius: 0.5rem;
+    color: #e4e4e7; font-size: 0.9rem; font-weight: 600; outline: none; cursor: pointer;
+    -webkit-appearance: none; -moz-appearance: none; appearance: none;
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 0.875rem center; background-size: 0.85rem;
+  }
+  .tab-select:focus { border-color: #6366f1; }
+  .tab-select option { background: #1a1a24; color: #e4e4e7; }
+  @media (max-width: 768px) {
+    .tab-bar { display: none; }
+    .tab-select { display: block; }
+  }
   .view-panel { display: none; animation: viewFade 0.2s ease; }
   .view-panel.active { display: block; }
   @keyframes viewFade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
@@ -563,15 +578,26 @@
 
   <!-- â”€â”€ Tabs â”€â”€ -->
   <div class="tab-bar">
-    <button class="tab-btn active" onclick="switchTab('dashboard', this)">Dashboard</button>
-    <button class="tab-btn" onclick="switchTab('inbox', this)">Inbox <span class="inbox-badge empty" id="inbox-tab-badge">0</span></button>
-    <button class="tab-btn" onclick="switchTab('journal', this)">Journal</button>
-    <button class="tab-btn" onclick="switchTab('config', this)">Configuration</button>
-    <button class="tab-btn" onclick="switchTab('pipeline', this)">Pipeline</button>
-    <button class="tab-btn" onclick="switchTab('routing', this)">Model Router</button>
-    <button class="tab-btn" onclick="switchTab('budget', this)">Budget</button>
-    <button class="tab-btn" onclick="switchTab('log', this)">Loop Log</button>
+    <button class="tab-btn active" data-tab="dashboard" onclick="switchTab('dashboard', this)">Dashboard</button>
+    <button class="tab-btn" data-tab="inbox" onclick="switchTab('inbox', this)">Inbox <span class="inbox-badge empty" id="inbox-tab-badge">0</span></button>
+    <button class="tab-btn" data-tab="journal" onclick="switchTab('journal', this)">Journal</button>
+    <button class="tab-btn" data-tab="config" onclick="switchTab('config', this)">Configuration</button>
+    <button class="tab-btn" data-tab="pipeline" onclick="switchTab('pipeline', this)">Pipeline</button>
+    <button class="tab-btn" data-tab="routing" onclick="switchTab('routing', this)">Model Router</button>
+    <button class="tab-btn" data-tab="budget" onclick="switchTab('budget', this)">Budget</button>
+    <button class="tab-btn" data-tab="log" onclick="switchTab('log', this)">Loop Log</button>
   </div>
+  <!-- Mobile tab selector (shown instead of the tab bar on small screens) -->
+  <select class="tab-select" id="agi-tab-select" aria-label="Select section" onchange="switchTab(this.value)">
+    <option value="dashboard">Dashboard</option>
+    <option value="inbox">Inbox</option>
+    <option value="journal">Journal</option>
+    <option value="config">Configuration</option>
+    <option value="pipeline">Pipeline</option>
+    <option value="routing">Model Router</option>
+    <option value="budget">Budget</option>
+    <option value="log">Loop Log</option>
+  </select>
 
   <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
   <!--  TAB: Dashboard                                                  -->
@@ -1643,11 +1669,15 @@ function toggleBudgetPause() {
 function switchTab(id, btnEl) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
-  // Use explicitly passed button, or fallback to event.currentTarget
-  const btn = btnEl || (typeof event !== 'undefined' ? event.currentTarget : null);
+  // Use the explicit tab button, or resolve it by data-tab (e.g. when called from the mobile dropdown)
+  let btn = (btnEl && btnEl.classList && btnEl.classList.contains('tab-btn')) ? btnEl : null;
+  if (!btn) btn = document.querySelector('.tab-btn[data-tab="' + id + '"]');
   if (btn) btn.classList.add('active');
   const panel = document.getElementById('panel-' + id);
   if (panel) panel.classList.add('active');
+  // Keep the mobile dropdown in sync
+  const sel = document.getElementById('agi-tab-select');
+  if (sel && sel.value !== id) sel.value = id;
   // Trigger data refresh for that tab
   if (id === 'journal') journalRefresh();
   else if (id === 'log') _loadHistory();
@@ -3022,6 +3052,10 @@ function _updateInboxBadges() {
     badge.textContent = active;
     badge.classList.toggle('empty', active === 0);
   }
+
+  // Mobile dropdown option label
+  const opt = document.querySelector('#agi-tab-select option[value="inbox"]');
+  if (opt) opt.textContent = active > 0 ? ('Inbox (' + active + ')') : 'Inbox';
 
   // Dashboard bubble
   const statEl = document.getElementById('stat-inbox');

@@ -908,6 +908,54 @@
     color: #64748b; font-size: 1.25rem; cursor: pointer; padding: 0.25rem;
   }
   .embed-popup .ep-close:hover { color: #e2e8f0; }
+
+  /* ── Mobile optimization (≤768px): keep tool detail views inside the viewport ── */
+  @media (max-width: 768px) {
+    .tools-shell { padding: 1rem 0.75rem; }
+
+    /* Tab bars (top tabs + memory sub-tabs): scroll instead of overflowing */
+    .tab-bar { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .tab-bar::-webkit-scrollbar { display: none; }
+    .tab-btn { flex-shrink: 0; padding: 0.625rem 0.875rem; font-size: 0.8125rem; }
+
+    /* Detail header + cards: tighter padding so content fits */
+    .tool-detail-header { gap: 0.75rem; }
+    .tool-detail-icon { width: 2.5rem; height: 2.5rem; font-size: 1.15rem; }
+    .tool-detail-title { font-size: 1.05rem; }
+    .section-card { padding: 1rem; }
+
+    /* Parameters table → stacked rows (no horizontal overflow) */
+    .param-table, .param-table tbody, .param-table tr, .param-table td { display: block; width: 100%; }
+    .param-table thead { display: none; }
+    .param-table tr {
+      border: 1px solid rgba(42,42,58,0.5); border-radius: 0.5rem;
+      background: rgba(24,24,27,0.4); padding: 0.625rem 0.75rem; margin-bottom: 0.625rem;
+    }
+    .param-table td { border: none !important; padding: 0.2rem 0; }
+    .param-table td::before {
+      display: block; margin-bottom: 0.1rem;
+      font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.05em; color: #52525b;
+    }
+    .param-table td:nth-child(1)::before { content: 'Parameter'; }
+    .param-table td:nth-child(2)::before { content: 'Type'; }
+    .param-table td:nth-child(3)::before { content: 'Required'; }
+    .param-table td:nth-child(4)::before { content: 'Description'; }
+    .param-name { white-space: normal; }
+
+    /* Wide data tables (cost tracker, router) → horizontal scroll instead of clipping */
+    .ct-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .ct-table { min-width: 540px; }
+    .ct-prov-tabs { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .ct-prov-tabs::-webkit-scrollbar { display: none; }
+    .ct-prov-tab { flex-shrink: 0; }
+    .rt-section { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .rt-table { min-width: 560px; }
+
+    /* Action bars stack full-width */
+    .action-bar { flex-direction: column-reverse; }
+    .action-bar .btn { width: 100%; }
+  }
 </style>
 
 <div class="tools-shell p-6 md:p-10">
