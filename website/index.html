@@ -2151,14 +2151,14 @@ section { position: relative; z-index: 1; }
 }
 
 /* Desktop shows the polished infographic image; mobile keeps the responsive HTML build */
-.ss-infographic, .mem-infographic, .pipe-infographic {
+.ss-infographic, .mem-infographic {
     display: none; width: 100%; height: auto;
     border-radius: var(--radius); border: 1px solid var(--border-glass);
     box-shadow: var(--shadow-lg);
 }
 @media (min-width: 769px) {
-    .ss-infographic, .mem-infographic, .pipe-infographic { display: block; }
-    .ss-build, .mem-build, .pif-build { display: none; }
+    .ss-infographic, .mem-infographic { display: block; }
+    .ss-build, .mem-build { display: none; }
 }
 
 /* -------------------------------------------------------
@@ -3388,7 +3388,6 @@ section { position: relative; z-index: 1; }
      ------------------------------------------------------- -->
 <section id="pipeline">
     <div class="container">
-        <img class="pipe-infographic" src="images/llm-loading-injection-flow.png" alt="LLM Loading and Injection Flow — how identity, soul script, pinned knowledge, memories, conversation, and tools are loaded and injected into the final prompt." onerror="this.style.display='none'; if (this.nextElementSibling) this.nextElementSibling.style.display='block';">
         <div class="pif-build">
         <div class="section-header reveal">
             <div class="section-label"><i class="fas fa-diagram-project"></i> The Prompt Injection Flow</div>
