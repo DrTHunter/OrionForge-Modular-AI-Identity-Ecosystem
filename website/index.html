@@ -1982,7 +1982,10 @@ section { position: relative; z-index: 1; }
 .pif-prompt .pif-panel-head { justify-content: center; color: #c4b5fd; margin-bottom: 4px; }
 .pif-prompt .pif-n { background: rgba(139,92,246,0.25); color: #ddd6fe; }
 .pif-prompt p { font-size: 0.85rem; color: var(--text-secondary); margin: 0; }
-.pif-down { text-align: center; color: var(--text-muted); font-size: 1.05rem; padding: 8px 0; }
+.pif-build { max-width: 1120px; margin: 0 auto; }
+.pif-down { text-align: center; color: #818cf8; font-size: 1.4rem; padding: 10px 0; }
+.pif-down i, .pif-arrow-down i { animation: of-bounce 1.8s ease-in-out infinite; filter: drop-shadow(0 0 6px rgba(129,140,248,0.55)); }
+@keyframes of-bounce { 0%,100% { transform: translateY(0); opacity: 0.7; } 50% { transform: translateY(5px); opacity: 1; } }
 
 /* 3-column grid */
 .pif-grid { display: grid; grid-template-columns: 1fr 1.3fr 1fr; gap: 18px; align-items: start; }
@@ -2043,7 +2046,7 @@ section { position: relative; z-index: 1; }
 .pif-vault-foot { font-size: 0.68rem; color: var(--text-muted); font-style: italic; }
 
 /* center stack arrows */
-.pif-arrow-down { text-align: center; color: var(--text-muted); font-size: 1rem; padding: 8px 0; }
+.pif-arrow-down { text-align: center; color: #818cf8; font-size: 1.35rem; padding: 4px 0; }
 
 /* merged context equation */
 .pif-equation { display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; }
@@ -2054,10 +2057,15 @@ section { position: relative; z-index: 1; }
 
 /* fused constellation */
 .pif-constellation {
-    height: 76px; border-radius: var(--radius-sm); margin-top: 4px;
-    background: radial-gradient(circle at 50% 50%, rgba(34,211,238,0.14), transparent 70%), radial-gradient(circle, rgba(129,140,248,0.7) 1px, transparent 1.6px) 0 0 / 26px 26px;
-    opacity: 0.7;
+    position: relative; height: 96px; border-radius: var(--radius-sm); margin-top: 8px; overflow: hidden;
+    border: 1px solid rgba(34,211,238,0.18);
+    background:
+      radial-gradient(circle at 50% 50%, rgba(34,211,238,0.22), transparent 60%),
+      radial-gradient(circle, rgba(196,181,253,0.9) 1.3px, transparent 2px) 0 0 / 24px 24px,
+      radial-gradient(circle, rgba(129,140,248,0.6) 1px, transparent 1.8px) 12px 12px / 38px 38px;
+    animation: of-twinkle 4s ease-in-out infinite;
 }
+@keyframes of-twinkle { 0%,100% { opacity: 0.5; } 50% { opacity: 1; } }
 
 /* tool list */
 .pif-tool-reg { display: flex; gap: 12px; padding-bottom: 12px; margin-bottom: 8px; border-bottom: 1px solid var(--border-glass); }
@@ -2105,7 +2113,7 @@ section { position: relative; z-index: 1; }
     .pif-benefits { grid-template-columns: 1fr; }
 }
 @media (prefers-reduced-motion: reduce) {
-    .pif-cyl i, .pif-loop-robot::before { animation: none !important; }
+    .pif-cyl i, .pif-loop-robot::before, .pif-down i, .pif-arrow-down i, .pif-constellation { animation: none !important; }
 }
 
 /* Desktop shows the polished infographic image; mobile keeps the responsive HTML build */
