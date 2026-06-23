@@ -5054,11 +5054,21 @@ ADMIN_EMAILS = set(
     if e.strip()
 )
 
+# Admin access by Supabase user id (comma-separated env override). Lets a specific
+# account be admin even when its OAuth email isn't in ADMIN_EMAILS.
+ADMIN_USER_IDS = set(
+    u.strip()
+    for u in os.environ.get("ADMIN_USER_IDS", "a2cddfbd-dabb-4d50-b515-b600a08ce8e8").split(",")
+    if u.strip()
+)
+
 def _check_admin(request: Request) -> bool:
-    """Verify the logged-in user is an admin (by OAuth email)."""
+    """Verify the logged-in user is an admin (by OAuth email or user id)."""
     user = getattr(request.state, "user", None)
     if not user:
         return False
+    if user.get("id") in ADMIN_USER_IDS:
+        return True
     return user.get("email", "").lower() in ADMIN_EMAILS
 
 
