@@ -1996,10 +1996,13 @@ section { position: relative; z-index: 1; }
     text-shadow: 0 0 12px rgba(180,210,255,0.7), 0 0 28px rgba(73,166,255,0.35);
 }
 .pif-live-head p { margin: 0; color: #d3def1; font-size: clamp(0.95rem, 1.35vw, 1.45rem); }
+.pif-live-stage { position: relative; width: 100%; overflow: hidden; aspect-ratio: 1520 / 880; }
 .pif-live-board {
     position: relative;
-    width: 100%;
-    aspect-ratio: 16 / 9;
+    width: 1520px;
+    height: 880px;
+    transform-origin: top left;
+    transform: scale(var(--pif-scale, 1));
     border-radius: 22px;
     overflow: hidden;
     background:
@@ -2037,14 +2040,14 @@ section { position: relative; z-index: 1; }
     align-items: center;
     justify-content: center;
     gap: 8px;
-    margin-bottom: 3px;
-    font-size: clamp(0.72rem, 0.88vw, 1.02rem);
+    margin-bottom: 4px;
+    font-size: 1.12rem;
     font-weight: 900;
     letter-spacing: 0.04em;
     text-align: center;
     text-transform: uppercase;
 }
-.pif-live-sub { margin-bottom: 9px; color: var(--pif-muted); font-size: clamp(0.62rem, 0.72vw, 0.85rem); text-align: center; }
+.pif-live-sub { margin-bottom: 10px; color: var(--pif-muted); font-size: 0.92rem; text-align: center; }
 .pif-live-blue .pif-live-title { color: #63b6ff; }
 .pif-live-green .pif-live-title { color: #7dff9e; }
 .pif-live-purple .pif-live-title { color: #d999ff; }
@@ -2088,14 +2091,14 @@ section { position: relative; z-index: 1; }
     animation: pif-live-soft-pulse 3.4s ease-in-out infinite;
 }
 .pif-live-subicon { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.04); font-size: 1rem; }
-.pif-live-subhead { color: #69b9ff; font-size: clamp(0.55rem, 0.62vw, 0.72rem); font-weight: 800; line-height: 1.15; text-transform: uppercase; }
-.pif-live-subtext, .pif-live-mini { color: #d4e5ff; font-size: clamp(0.48rem, 0.55vw, 0.68rem); line-height: 1.2; }
+.pif-live-subhead { color: #69b9ff; font-size: 0.86rem; font-weight: 800; line-height: 1.18; text-transform: uppercase; }
+.pif-live-subtext, .pif-live-mini { color: #d4e5ff; font-size: 0.8rem; line-height: 1.25; }
 .pif-live-mini { color: var(--pif-muted); }
 .pif-live-memory-grid { display: grid; grid-template-columns: 1.05fr 1fr 1.2fr; gap: 11px; height: calc(100% - 48px); }
 .pif-live-memory-left { display: grid; grid-template-rows: 1fr 1fr; gap: 11px; }
 .pif-live-mini-green { padding: 11px; border-radius: 12px; border: 1px solid rgba(99,255,142,0.45); background: linear-gradient(180deg, rgba(13,42,26,0.56), rgba(8,18,20,0.62)); }
-.pif-live-mini-green h4 { margin: 0 0 5px; color: #8aff9f; font-size: clamp(0.58rem, 0.68vw, 0.82rem); }
-.pif-live-mini-green p, .pif-live-mini-green li { margin: 0; color: #ddffe4; font-size: clamp(0.5rem, 0.58vw, 0.7rem); line-height: 1.24; }
+.pif-live-mini-green h4 { margin: 0 0 6px; color: #8aff9f; font-size: 0.95rem; }
+.pif-live-mini-green p, .pif-live-mini-green li { margin: 0; color: #ddffe4; font-size: 0.82rem; line-height: 1.3; }
 .pif-live-mini-green ul { margin: 2px 0 0 14px; padding: 0; }
 .pif-live-cylinder-wrap { display: flex; align-items: center; justify-content: center; min-height: 100%; }
 .pif-live-cylinder { position: relative; width: 108px; height: 148px; filter: drop-shadow(0 0 18px rgba(99,255,142,0.3)); animation: pif-live-spin-glow 5s ease-in-out infinite; }
@@ -2106,10 +2109,10 @@ section { position: relative; z-index: 1; }
 .pif-live-refresh { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #caffd4; font-size: 2.4rem; text-shadow: 0 0 18px rgba(132,255,159,0.55); animation: pif-live-rotate 3.3s linear infinite; }
 .pif-live-tools-list { display: grid; grid-template-rows: auto repeat(6, 1fr) auto; gap: 6px; height: calc(100% - 46px); }
 .pif-live-tool-head { display: grid; grid-template-columns: 40px 1fr; gap: 9px; align-items: center; padding: 10px; border-radius: 12px; border: 1px solid rgba(196,107,255,0.45); background: linear-gradient(180deg, rgba(41,20,58,0.55), rgba(17,12,35,0.55)); }
-.pif-live-tool-row { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 9px; border: 1px solid rgba(196,107,255,0.32); background: rgba(255,255,255,0.03); color: #f1deff; font-size: clamp(0.52rem, 0.62vw, 0.78rem); animation: pif-live-tool-pulse 3.2s ease-in-out infinite; }
-.pif-live-tool-foot { color: #dfb6ff; font-size: clamp(0.5rem, 0.58vw, 0.7rem); text-align: center; }
+.pif-live-tool-row { display: flex; align-items: center; gap: 9px; padding: 8px 11px; border-radius: 9px; border: 1px solid rgba(196,107,255,0.32); background: rgba(255,255,255,0.03); color: #f1deff; font-size: 0.92rem; animation: pif-live-tool-pulse 3.2s ease-in-out infinite; }
+.pif-live-tool-foot { color: #dfb6ff; font-size: 0.84rem; text-align: center; }
 .pif-live-flow5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; align-items: center; height: calc(100% - 43px); }
-.pif-live-flow-item { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; color: #dbe9ff; text-align: center; font-size: clamp(0.5rem, 0.58vw, 0.72rem); }
+.pif-live-flow-item { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: #dbe9ff; text-align: center; font-size: 0.84rem; }
 .pif-live-glyph { display: flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 12px; border: 1px solid rgba(98,170,255,0.45); background: rgba(255,255,255,0.03); font-size: 1.25rem; animation: pif-live-pop 2.8s ease-in-out infinite; }
 .pif-live-network { position: relative; height: calc(100% - 40px); overflow: hidden; border-radius: 12px; background: radial-gradient(circle at 50% 50%, rgba(73,166,255,0.24), transparent 34%), linear-gradient(180deg, rgba(4,20,57,0.3), rgba(7,12,28,0.15)); }
 .pif-live-network svg { width: 100%; height: 100%; }
@@ -2118,11 +2121,11 @@ section { position: relative; z-index: 1; }
 .pif-live-pulse.p3 { animation-delay: 4s; }
 .pif-live-response { display: flex; align-items: center; gap: 12px; height: 100%; padding: 0 12px; }
 .pif-live-check { display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; flex: 0 0 auto; border-radius: 50%; border: 2px solid rgba(216,145,255,0.75); box-shadow: 0 0 18px rgba(216,145,255,0.26), inset 0 0 18px rgba(216,145,255,0.12); color: #e2b4ff; font-size: 1.4rem; animation: pif-live-good 2.8s ease-in-out infinite; }
-.pif-live-response h3 { margin: 0; color: #e2b4ff; font-size: clamp(0.74rem, 0.9vw, 1rem); }
-.pif-live-response p { margin: 3px 0 0; color: #dbe4ff; font-size: clamp(0.55rem, 0.65vw, 0.78rem); }
+.pif-live-response h3 { margin: 0; color: #e2b4ff; font-size: 1.15rem; }
+.pif-live-response p { margin: 4px 0 0; color: #dbe4ff; font-size: 0.9rem; }
 .pif-live-loop-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 10px; height: calc(100% - 52px); }
 .pif-live-loop-left { display: grid; grid-template-rows: repeat(4, 1fr); gap: 7px; }
-.pif-live-loop-item { display: grid; grid-template-columns: 24px 1fr; gap: 7px; align-items: center; padding: 7px 8px; border-radius: 10px; border: 1px solid rgba(255,191,67,0.32); background: rgba(255,255,255,0.03); font-size: clamp(0.48rem, 0.56vw, 0.68rem); animation: pif-live-amber-pulse 3.6s ease-in-out infinite; }
+.pif-live-loop-item { display: grid; grid-template-columns: 26px 1fr; gap: 8px; align-items: center; padding: 8px 10px; border-radius: 10px; border: 1px solid rgba(255,191,67,0.32); background: rgba(255,255,255,0.03); font-size: 0.82rem; animation: pif-live-amber-pulse 3.6s ease-in-out infinite; }
 .pif-live-loop-label { color: #ffe0a1; font-weight: 800; }
 .pif-live-loop-sub { color: #ffeccd; }
 .pif-live-robot-wrap { position: relative; display: flex; align-items: center; justify-content: center; }
@@ -2130,11 +2133,11 @@ section { position: relative; z-index: 1; }
 .pif-live-hud::before, .pif-live-hud::after { content: ''; position: absolute; inset: 14px; border-radius: 50%; border: 1px dashed rgba(255,191,67,0.58); animation: pif-live-hud-spin 6s linear infinite reverse; }
 .pif-live-hud::after { inset: 28px; border-style: solid; opacity: 0.7; animation-duration: 4s; }
 .pif-live-robot { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #ffd780; font-size: 2.4rem; text-shadow: 0 0 18px rgba(255,191,67,0.45); animation: pif-live-robot-pulse 2.6s ease-in-out infinite; }
-.pif-live-loop-foot { position: absolute; left: 14px; right: 14px; bottom: 14px; padding: 7px 10px; border-radius: 10px; border: 1px solid rgba(255,191,67,0.4); background: rgba(255,191,67,0.06); color: #ffd984; font-size: clamp(0.48rem, 0.58vw, 0.7rem); font-weight: 800; text-align: center; }
+.pif-live-loop-foot { position: absolute; left: 14px; right: 14px; bottom: 14px; padding: 8px 11px; border-radius: 10px; border: 1px solid rgba(255,191,67,0.4); background: rgba(255,191,67,0.06); color: #ffd984; font-size: 0.84rem; font-weight: 800; text-align: center; }
 .pif-live-badge { display: grid; grid-template-columns: 38px 1fr; gap: 8px; align-items: center; min-width: 0; padding: 10px; overflow: hidden; border-radius: 12px; background: linear-gradient(180deg, rgba(8,18,40,0.88), rgba(7,13,28,0.92)); border: 1px solid rgba(255,255,255,0.08); }
 .pif-live-bicon { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); font-size: 1.2rem; }
-.pif-live-badge-title { font-size: clamp(0.48rem, 0.58vw, 0.68rem); font-weight: 900; }
-.pif-live-badge-text { margin-top: 3px; color: #dce8ff; font-size: clamp(0.43rem, 0.52vw, 0.62rem); line-height: 1.22; }
+.pif-live-badge-title { font-size: 0.86rem; font-weight: 900; }
+.pif-live-badge-text { margin-top: 4px; color: #dce8ff; font-size: 0.76rem; line-height: 1.25; }
 @keyframes pif-live-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
 @keyframes pif-live-scan { 0%,70%,100% { left: -42%; } 82% { left: 115%; } }
 @keyframes pif-live-dash { to { stroke-dashoffset: -50; } }
@@ -2148,9 +2151,6 @@ section { position: relative; z-index: 1; }
 @keyframes pif-live-amber-pulse { 0%,100% { box-shadow: inset 0 0 0 rgba(255,191,67,0); } 50% { box-shadow: inset 0 0 18px rgba(255,191,67,0.08); } }
 @keyframes pif-live-hud-spin { to { transform: rotate(360deg); } }
 @keyframes pif-live-robot-pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
-@media (max-width: 1180px) {
-    .pif-live { display: none; }
-}
 @media (prefers-reduced-motion: reduce) {
     .pif-live-card, .pif-live-card::after, .pif-live-path, .pif-live-subcard, .pif-live-cylinder,
     .pif-live-refresh, .pif-live-tool-row, .pif-live-glyph, .pif-live-pulse, .pif-live-check,
@@ -3389,6 +3389,7 @@ section { position: relative; z-index: 1; }
                 <h2>LLM Loading &amp; Injection Flow</h2>
                 <p>Identity-First. Memory-Aware. Tool-Enabled. Continuously Evolving.</p>
             </div>
+            <div class="pif-live-stage">
             <div class="pif-live-board">
                 <svg class="pif-live-flow" viewBox="0 0 1600 900" preserveAspectRatio="none" aria-hidden="true">
                     <defs>
@@ -3511,6 +3512,10 @@ section { position: relative; z-index: 1; }
                     <div class="pif-live-badge"><div class="pif-live-bicon">&#128274;</div><div><div class="pif-live-badge-title">Security</div><div class="pif-live-badge-text">Read-only core ensures identity integrity.</div></div></div>
                 </div>
             </div>
+            </div>
+            <script>
+            (function(){var DW=1520;function fit(){var s=document.querySelector('.pif-live-stage'),b=document.querySelector('.pif-live-board');if(!s||!b||s.offsetParent===null)return;var k=s.clientWidth/DW;b.style.setProperty('--pif-scale',k);s.style.height=(b.offsetHeight*k)+'px';}window.addEventListener('resize',fit);window.addEventListener('load',fit);document.addEventListener('DOMContentLoaded',fit);fit();})();
+            </script>
         </div>
         <img class="pif-image" src="images/llm-loading-injection-flow.png" alt="LLM Loading & Injection Flow — Identity-First, Memory-Aware, Tool-Enabled, Continuously Evolving. The full prompt-injection pipeline: incoming user prompt; system identity layer (system persona prompt, summary of identity, read-only Soul Script FAISS, permanent identity memory, always-upload notes); dynamic FAISS memory retrieval with long-term and short-term memory and the Memory Vault; tool registry (web search, code executor, memory manager, file reader, API connector, custom tools); LLM invoked with merged context; context fused; response generated; optional configurable loop; and the benefits — stable identity, rich context, smart autonomy, efficiency, and security.">
     </div>
