@@ -2068,15 +2068,15 @@ section { position: relative; z-index: 1; }
 .pif-live-path.green { stroke: rgba(124,255,161,0.9); }
 .pif-live-path.purple { stroke: rgba(219,143,255,0.92); }
 .pif-live-path.orange { stroke: rgba(255,199,92,0.95); }
-.pif-live-prompt { left: 34.6%; top: 7.8%; width: 30.8%; height: 8%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-.pif-live-identity { left: 2.8%; top: 16%; width: 22.2%; height: 66.5%; }
-.pif-live-memory { left: 29.3%; top: 18%; width: 38.5%; height: 31.5%; }
-.pif-live-tools { left: 71%; top: 16%; width: 22%; height: 42.5%; }
-.pif-live-step5 { left: 29.4%; top: 52.3%; width: 38.3%; height: 15%; }
-.pif-live-step6 { left: 29.4%; top: 68.7%; width: 38.3%; height: 13.8%; }
-.pif-live-step7 { left: 32%; top: 84%; width: 32.8%; height: 8%; }
-.pif-live-loop { left: 69%; top: 61%; width: 25.6%; height: 28.3%; }
-.pif-live-footer { position: absolute; left: 3%; right: 3%; bottom: 2.2%; height: 10.8%; display: grid; grid-template-columns: repeat(5, 1fr); gap: 11px; }
+.pif-live-prompt { left: 34.6%; top: 5.5%; width: 30.8%; height: 8%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.pif-live-identity { left: 2.8%; top: 16.5%; width: 22.2%; height: 69%; }
+.pif-live-memory { left: 29.3%; top: 16.5%; width: 38.5%; height: 30%; }
+.pif-live-tools { left: 71%; top: 16.5%; width: 22%; height: 33.5%; }
+.pif-live-step5 { left: 29.4%; top: 49.5%; width: 38.3%; height: 13.5%; }
+.pif-live-step6 { left: 29.4%; top: 65.5%; width: 38.3%; height: 11.5%; }
+.pif-live-step7 { left: 31%; top: 79%; width: 34%; height: 7%; }
+.pif-live-loop { left: 69%; top: 51%; width: 25.6%; height: 35%; display: flex; flex-direction: column; }
+.pif-live-footer { position: absolute; left: 3%; right: 3%; bottom: 2.5%; height: 9%; display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
 .pif-live-list { display: grid; grid-template-rows: repeat(6, 1fr); gap: 8px; height: calc(100% - 46px); }
 .pif-live-subcard {
     display: grid;
@@ -2123,17 +2123,17 @@ section { position: relative; z-index: 1; }
 .pif-live-check { display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; flex: 0 0 auto; border-radius: 50%; border: 2px solid rgba(216,145,255,0.75); box-shadow: 0 0 18px rgba(216,145,255,0.26), inset 0 0 18px rgba(216,145,255,0.12); color: #e2b4ff; font-size: 1.4rem; animation: pif-live-good 2.8s ease-in-out infinite; }
 .pif-live-response h3 { margin: 0; color: #e2b4ff; font-size: 1.15rem; }
 .pif-live-response p { margin: 4px 0 0; color: #dbe4ff; font-size: 0.9rem; }
-.pif-live-loop-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 10px; height: calc(100% - 52px); }
-.pif-live-loop-left { display: grid; grid-template-rows: repeat(4, 1fr); gap: 7px; }
-.pif-live-loop-item { display: grid; grid-template-columns: 26px 1fr; gap: 8px; align-items: center; padding: 8px 10px; border-radius: 10px; border: 1px solid rgba(255,191,67,0.32); background: rgba(255,255,255,0.03); font-size: 0.82rem; animation: pif-live-amber-pulse 3.6s ease-in-out infinite; }
-.pif-live-loop-label { color: #ffe0a1; font-weight: 800; }
-.pif-live-loop-sub { color: #ffeccd; }
+.pif-live-loop-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 10px; flex: 1 1 auto; min-height: 0; }
+.pif-live-loop-left { display: grid; grid-template-rows: repeat(4, 1fr); gap: 6px; }
+.pif-live-loop-item { display: grid; grid-template-columns: 24px 1fr; gap: 8px; align-items: center; padding: 5px 9px; border-radius: 10px; border: 1px solid rgba(255,191,67,0.32); background: rgba(255,255,255,0.03); font-size: 0.76rem; animation: pif-live-amber-pulse 3.6s ease-in-out infinite; }
+.pif-live-loop-label { color: #ffe0a1; font-weight: 800; font-size: 0.68rem; line-height: 1.12; }
+.pif-live-loop-sub { color: #ffeccd; font-size: 0.6rem; line-height: 1.1; }
 .pif-live-robot-wrap { position: relative; display: flex; align-items: center; justify-content: center; }
-.pif-live-hud { position: relative; width: 116px; height: 116px; border-radius: 50%; border: 2px solid rgba(255,191,67,0.72); box-shadow: 0 0 22px rgba(255,191,67,0.3), inset 0 0 18px rgba(255,191,67,0.08); animation: pif-live-hud-spin 10s linear infinite; }
+.pif-live-hud { position: relative; width: 96px; height: 96px; border-radius: 50%; border: 2px solid rgba(255,191,67,0.72); box-shadow: 0 0 22px rgba(255,191,67,0.3), inset 0 0 18px rgba(255,191,67,0.08); animation: pif-live-hud-spin 10s linear infinite; }
 .pif-live-hud::before, .pif-live-hud::after { content: ''; position: absolute; inset: 14px; border-radius: 50%; border: 1px dashed rgba(255,191,67,0.58); animation: pif-live-hud-spin 6s linear infinite reverse; }
 .pif-live-hud::after { inset: 28px; border-style: solid; opacity: 0.7; animation-duration: 4s; }
 .pif-live-robot { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #ffd780; font-size: 2.4rem; text-shadow: 0 0 18px rgba(255,191,67,0.45); animation: pif-live-robot-pulse 2.6s ease-in-out infinite; }
-.pif-live-loop-foot { position: absolute; left: 14px; right: 14px; bottom: 14px; padding: 8px 11px; border-radius: 10px; border: 1px solid rgba(255,191,67,0.4); background: rgba(255,191,67,0.06); color: #ffd984; font-size: 0.84rem; font-weight: 800; text-align: center; }
+.pif-live-loop-foot { margin-top: 8px; padding: 7px 11px; border-radius: 10px; border: 1px solid rgba(255,191,67,0.4); background: rgba(255,191,67,0.06); color: #ffd984; font-size: 0.82rem; font-weight: 800; text-align: center; }
 .pif-live-badge { display: grid; grid-template-columns: 38px 1fr; gap: 8px; align-items: center; min-width: 0; padding: 10px; overflow: hidden; border-radius: 12px; background: linear-gradient(180deg, rgba(8,18,40,0.88), rgba(7,13,28,0.92)); border: 1px solid rgba(255,255,255,0.08); }
 .pif-live-bicon { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); font-size: 1.2rem; }
 .pif-live-badge-title { font-size: 0.86rem; font-weight: 900; }
@@ -3398,15 +3398,15 @@ section { position: relative; z-index: 1; }
                         <marker id="pif-live-arrow-purple" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="rgba(219,143,255,0.95)"></path></marker>
                         <marker id="pif-live-arrow-orange" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="rgba(255,199,92,0.95)"></path></marker>
                     </defs>
-                    <path class="pif-live-path purple" marker-end="url(#pif-live-arrow-purple)" d="M800 116 L800 163" />
-                    <path class="pif-live-path blue" marker-end="url(#pif-live-arrow-blue)" d="M406 324 L468 324" />
-                    <path class="pif-live-path blue" marker-end="url(#pif-live-arrow-blue)" d="M1088 324 L1138 324" />
-                    <path class="pif-live-path green" marker-end="url(#pif-live-arrow-green)" d="M800 446 L800 476" />
-                    <path class="pif-live-path blue" marker-end="url(#pif-live-arrow-blue)" d="M1140 476 L1058 476" />
-                    <path class="pif-live-path blue" marker-end="url(#pif-live-arrow-blue)" d="M800 605 L800 622" />
-                    <path class="pif-live-path blue" marker-end="url(#pif-live-arrow-blue)" d="M800 742 L800 760" />
-                    <path class="pif-live-path orange" marker-end="url(#pif-live-arrow-orange)" d="M1130 684 L1044 684 L1044 792 L1008 792" />
-                    <path class="pif-live-path orange" marker-end="url(#pif-live-arrow-orange)" d="M1130 760 L1044 760 L1044 712 L1008 712" />
+                    <path class="pif-live-path purple" marker-end="url(#pif-live-arrow-purple)" d="M800 122 L800 147" />
+                    <path class="pif-live-path blue" marker-end="url(#pif-live-arrow-blue)" d="M404 284 L466 284" />
+                    <path class="pif-live-path blue" marker-end="url(#pif-live-arrow-blue)" d="M1086 284 L1134 284" />
+                    <path class="pif-live-path green" marker-end="url(#pif-live-arrow-green)" d="M800 419 L800 445" />
+                    <path class="pif-live-path blue" marker-end="url(#pif-live-arrow-blue)" d="M1136 486 L1062 486" />
+                    <path class="pif-live-path blue" marker-end="url(#pif-live-arrow-blue)" d="M800 568 L800 589" />
+                    <path class="pif-live-path blue" marker-end="url(#pif-live-arrow-blue)" d="M800 694 L800 710" />
+                    <path class="pif-live-path orange" marker-end="url(#pif-live-arrow-orange)" d="M1104 715 L1046 715" />
+                    <path class="pif-live-path orange" marker-end="url(#pif-live-arrow-orange)" d="M1104 748 L1046 748" />
                 </svg>
 
                 <div class="pif-live-card pif-live-purple pif-live-prompt">
@@ -3496,7 +3496,7 @@ section { position: relative; z-index: 1; }
                         <div class="pif-live-loop-left">
                             <div class="pif-live-loop-item"><div>&#128257;</div><div><div class="pif-live-loop-label">Number of Ticks / Loops</div><div class="pif-live-loop-sub">How many cycles to run</div></div></div>
                             <div class="pif-live-loop-item"><div>&#129692;</div><div><div class="pif-live-loop-label">Steps per Tick</div><div class="pif-live-loop-sub">Actions per cycle</div></div></div>
-                            <div class="pif-live-loop-item"><div>&#9201;</div><div><div class="pif-live-loop-label">Time Interval Between Loop Bursts</div><div class="pif-live-loop-sub">Pause between bursts</div></div></div>
+                            <div class="pif-live-loop-item"><div>&#9201;</div><div><div class="pif-live-loop-label">Interval Between Bursts</div><div class="pif-live-loop-sub">Pause between bursts</div></div></div>
                             <div class="pif-live-loop-item"><div>&#128721;</div><div><div class="pif-live-loop-label">Max Number of Loops</div><div class="pif-live-loop-sub">Safety cap for autonomy</div></div></div>
                         </div>
                         <div class="pif-live-robot-wrap"><div class="pif-live-hud"></div><div class="pif-live-robot">&#129302;</div></div>
