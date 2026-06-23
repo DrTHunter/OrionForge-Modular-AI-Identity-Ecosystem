@@ -1636,47 +1636,6 @@ section { position: relative; z-index: 1; }
    ------------------------------------------------------- */
 #pipeline { padding: 120px 0; }
 
-.pipeline-steps {
-    display: flex; flex-direction: column; gap: 0;
-    max-width: 720px; margin: 0 auto;
-    position: relative;
-}
-.pipeline-steps::before {
-    content: ''; position: absolute;
-    left: 28px; top: 0; bottom: 0; width: 2px;
-    background: linear-gradient(to bottom, var(--primary), var(--secondary), var(--cyan));
-    opacity: 0.3;
-}
-.pipeline-step {
-    display: flex; gap: 24px;
-    padding: 24px 0;
-    position: relative;
-}
-.pipeline-num {
-    width: 56px; height: 56px; flex-shrink: 0;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.1rem; font-weight: 800;
-    background: var(--bg-secondary);
-    border: 2px solid var(--primary);
-    color: var(--primary-light);
-    z-index: 2;
-}
-.pipeline-step-content h4 {
-    font-size: 1.1rem; font-weight: 700;
-    margin-bottom: 6px; padding-top: 4px;
-}
-.pipeline-step-content p {
-    font-size: 0.9rem; color: var(--text-secondary);
-    line-height: 1.7;
-}
-.pipeline-step-content code {
-    font-family: var(--font-mono);
-    font-size: 0.8rem; padding: 2px 8px;
-    background: rgba(99,102,241,0.1);
-    border-radius: 4px; color: var(--primary-light);
-}
-
 /* -------------------------------------------------------
    SOUL SCRIPT SECTION
    ------------------------------------------------------- */
@@ -1968,18 +1927,6 @@ section { position: relative; z-index: 1; }
 .mem-col.dynamic .mem-cyl i { animation: of-spin 9s linear infinite; }
 .mem-engine-core { animation: of-float 4s ease-in-out infinite, of-pulse-cyan 3.2s ease-in-out infinite; }
 
-/* Injection pipeline: flowing connector line + travelling pulse on the step numbers */
-.pipeline-steps::before { background-size: 100% 220%; animation: of-flow 3.2s linear infinite; }
-@keyframes of-flow { 0% { background-position: 0 100%; } 100% { background-position: 0 -120%; } }
-@keyframes of-num { 0%,100% { box-shadow: 0 0 0 rgba(99,102,241,0); border-color: var(--primary); } 50% { box-shadow: 0 0 20px rgba(99,102,241,0.55); border-color: var(--primary-light); } }
-.pipeline-step .pipeline-num { animation: of-num 2.6s ease-in-out infinite; }
-.pipeline-step:nth-child(1) .pipeline-num { animation-delay: 0s; }
-.pipeline-step:nth-child(2) .pipeline-num { animation-delay: 0.35s; }
-.pipeline-step:nth-child(3) .pipeline-num { animation-delay: 0.70s; }
-.pipeline-step:nth-child(4) .pipeline-num { animation-delay: 1.05s; }
-.pipeline-step:nth-child(5) .pipeline-num { animation-delay: 1.40s; }
-.pipeline-step:nth-child(6) .pipeline-num { animation-delay: 1.75s; }
-
 /* Soul Script assembly flow: arrows drift, engine chips light up in sequence */
 @keyframes of-arrow { 0%,100% { transform: translateX(0); opacity: 0.5; } 50% { transform: translateX(3px); opacity: 1; } }
 .ss-flow-arrow i { animation: of-arrow 1.8s ease-in-out infinite; }
@@ -2003,7 +1950,7 @@ section { position: relative; z-index: 1; }
 
 @media (prefers-reduced-motion: reduce) {
     .ss-crystal, .mem-cyl, .mem-col.dynamic .mem-cyl i, .mem-engine-core,
-    .pipeline-steps::before, .pipeline-num, .ss-flow-arrow i, .mem-pipe span,
+    .ss-flow-arrow i, .mem-pipe span,
     .ss-banner, .mem-banner { animation: none !important; }
 }
 
@@ -2837,13 +2784,6 @@ section { position: relative; z-index: 1; }
     .connect-cta { flex-direction: column; }
     .connect-btn { width: 100%; justify-content: center; }
 
-    /* --- PIPELINE --- */
-    .pipeline-steps::before { left: 19px; }
-    .pipeline-num { width: 40px; height: 40px; font-size: 0.9rem; }
-    .pipeline-step { gap: 16px; padding: 18px 0; }
-    .pipeline-step-content h4 { font-size: 1rem; }
-    .pipeline-step-content p { font-size: 0.85rem; }
-
     /* --- SOUL SCRIPT BANDS --- */
     .soulscript-bands::before { left: 14px; }
     .soulscript-band-marker { width: 30px; height: 30px; font-size: 0.7rem; }
@@ -2909,10 +2849,6 @@ section { position: relative; z-index: 1; }
     .modal-header { padding: 20px 16px 0; }
     .modal-body { padding: 16px; }
     .modal-header h2 { font-size: 1.25rem; }
-
-    /* --- PIPELINE COMPACT --- */
-    .pipeline-num { width: 36px; height: 36px; font-size: 0.8rem; }
-    .pipeline-steps::before { left: 17px; }
 
     /* --- AGENT CARD --- */
     .agent-card-desc { -webkit-line-clamp: 2; }
@@ -3501,7 +3437,7 @@ section { position: relative; z-index: 1; }
                         <div class="pif-loop-items">
                             <div class="pif-loop-item"><i class="fas fa-gauge-high"></i><div><h5>Number of Ticks / Loops</h5><p>How many cycles to run.</p></div></div>
                             <div class="pif-loop-item"><i class="fas fa-shoe-prints"></i><div><h5>Steps per Tick</h5><p>Actions per cycle.</p></div></div>
-                            <div class="pif-loop-item"><i class="fas fa-clock"></i><div><h5>Time Interval Between Bursts</h5><p>Pause between bursts.</p></div></div>
+                            <div class="pif-loop-item"><i class="fas fa-clock"></i><div><h5>Time Interval Between Loop Bursts</h5><p>Pause between bursts.</p></div></div>
                             <div class="pif-loop-item"><i class="fas fa-circle-notch"></i><div><h5>Max Number of Loops</h5><p>Safety cap for autonomy.</p></div></div>
                         </div>
                         <div class="pif-loop-robot"><i class="fas fa-robot"></i></div>
