@@ -3059,7 +3059,7 @@ section { position: relative; z-index: 1; }
         </p>
 
         <div class="hero-actions">
-            <button class="btn-hero primary" onclick="openAuth()">
+            <button class="btn-hero primary" onclick="trackConversion('hero_get_started'); openAuth()">
                 <i class="fas fa-bolt"></i> Get Started Free
             </button>
             <a href="#agents" class="btn-hero outline">
@@ -3155,7 +3155,7 @@ section { position: relative; z-index: 1; }
                     <i class="fas fa-rocket" style="font-size:2.5rem; color:var(--primary-light); margin-bottom:20px; animation: float 3s ease-in-out infinite;"></i>
                     <h3>Launch the Dashboard</h3>
                     <p>Open the full workspace — chat, profiles, memory vault, knowledge, tools, and settings, all in one place.</p>
-                    <a href="https://orionforge-engine.fly.dev" target="_blank" class="ui-launch-btn">
+                    <a href="https://orionforge-engine.fly.dev" target="_blank" class="ui-launch-btn" onclick="trackConversion('open_dashboard')">
                         <i class="fas fa-external-link-alt"></i> Open Dashboard
                     </a>
                 </div>
@@ -3868,7 +3868,7 @@ section { position: relative; z-index: 1; }
         <h2>Ready to Forge Your First Agent?</h2>
         <p>Sign up, choose your agents, and start building persistent AI identity in minutes.</p>
         <div style="display:flex; gap:16px; justify-content:center; flex-wrap:wrap;">
-            <button class="btn-hero primary" onclick="openAuth()">
+            <button class="btn-hero primary" onclick="trackConversion('cta_get_started'); openAuth()">
                 <i class="fas fa-bolt"></i> Get Started
             </button>
         </div>
@@ -4373,7 +4373,7 @@ const tools = [
 function renderAgents() {
     const grid = document.getElementById('agents-grid');
     const createSlot = `
-        <div class="agent-card create-your-own reveal" onclick="openAuth()" style="transition-delay: 0s">
+        <div class="agent-card create-your-own reveal" onclick="trackConversion('agent_create_your_own'); openAuth()" style="transition-delay: 0s">
             <div class="agent-card-header create-slot">
                 <img class="agent-avatar" src="images/create-your-own.svg" alt="Create your own agent">
                 <div class="agent-status create"><i class="fas fa-plus"></i> New Slot</div>
@@ -4858,6 +4858,15 @@ function toggleMobileNav() {
     const toggle = document.querySelector('.mobile-toggle i');
     navLinks.classList.toggle('active');
     toggle.className = navLinks.classList.contains('active') ? 'fas fa-times' : 'fas fa-bars';
+}
+
+// -------------------------------------------------------
+// ANALYTICS
+// -------------------------------------------------------
+function trackConversion(location) {
+    if (typeof gtag === 'function') {
+        gtag('event', 'UIConversion', { cta_location: location });
+    }
 }
 
 // -------------------------------------------------------
