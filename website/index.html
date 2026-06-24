@@ -86,7 +86,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
 /* -------------------------------------------------------
    CSS CUSTOM PROPERTIES
@@ -2759,21 +2758,8 @@ section { position: relative; z-index: 1; }
         </ul>
 
         <div class="nav-auth" id="nav-auth">
-            <!-- Logged out state -->
-            <div id="auth-logged-out">
-                <button class="btn-ghost" onclick="openAuth()">Log In</button>
-                <button class="btn-primary" onclick="openAuth()">Get Started</button>
-            </div>
-            <!-- Logged in state (hidden by default) -->
-            <div id="auth-logged-in" style="display:none; position:relative;">
-                <img class="user-avatar" id="user-avatar-img" src="" alt="avatar" onclick="toggleUserMenu()">
-                <div class="user-menu" id="user-menu">
-                    <div class="user-menu-item" id="user-display-name" style="font-weight:600; color:var(--text-primary);"></div>
-                    <div class="user-menu-divider"></div>
-                    <button class="user-menu-item" onclick="window.open('https://soulscript.orionforge.chat','_blank')"><i class="fas fa-rocket" style="margin-right:8px;"></i>Launch UI</button>
-                    <button class="user-menu-item" onclick="handleLogout()"><i class="fas fa-sign-out-alt" style="margin-right:8px;color:var(--rose);"></i>Sign Out</button>
-                </div>
-            </div>
+            <button class="btn-ghost" onclick="openAuth()">Log In</button>
+            <button class="btn-primary" onclick="openAuth()">Get Started</button>
         </div>
 
         <button class="mobile-toggle" onclick="toggleMobileNav()">
@@ -2781,41 +2767,6 @@ section { position: relative; z-index: 1; }
         </button>
     </div>
 </nav>
-
-<!-- -------------------------------------------------------
-     AUTH MODAL
-     ------------------------------------------------------- -->
-<div id="auth-modal">
-    <div class="auth-card">
-        <button class="auth-close" onclick="closeAuth()">&times;</button>
-        <h2>Welcome to the Forge</h2>
-        <p class="auth-subtitle">Sign in to access your agents and workspace</p>
-
-        <div id="auth-message"></div>
-
-        <button class="auth-btn google" onclick="signInWith('google')">
-            <i class="fab fa-google"></i> Continue with Google
-        </button>
-        <button class="auth-btn github" onclick="signInWith('github')">
-            <i class="fab fa-github"></i> Continue with GitHub
-        </button>
-        <button class="auth-btn discord" onclick="signInWith('discord')">
-            <i class="fab fa-discord"></i> Continue with Discord
-        </button>
-
-        <div class="auth-divider">or sign in with email</div>
-
-        <form class="auth-email-form" onsubmit="signInWithEmail(event)">
-            <input class="auth-input" type="email" id="auth-email" placeholder="you@example.com" required>
-            <input class="auth-input" type="password" id="auth-password" placeholder="Password (min 6 characters)" minlength="6" required>
-            <button class="auth-submit" type="submit">Sign In</button>
-        </form>
-
-        <p class="auth-footer">
-            Don't have an account? <a href="#" onclick="handleSignUp(event)">Create one</a>
-        </p>
-    </div>
-</div>
 
 <!-- -------------------------------------------------------
      AGENT DETAIL MODAL
@@ -3600,19 +3551,6 @@ section { position: relative; z-index: 1; }
      JAVASCRIPT
      ------------------------------------------------------- -->
 <script>
-// -------------------------------------------------------
-// SUPABASE CONFIG — Replace with your project credentials
-// -------------------------------------------------------
-const SUPABASE_URL = 'https://giiyrgzouqyyekleiaqb.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdpaXlyZ3pvdXF5eWVrbGVpYXFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5OTk2ODQsImV4cCI6MjA4ODU3NTY4NH0.AySS4Ix3SCwMZPtWTPm2zHNrRUncJjnl75avCaJKRv0';
-
-let supabaseClient = null;
-try {
-    if (SUPABASE_URL && SUPABASE_URL.includes('supabase.co')) {
-        supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    }
-} catch(e) { console.warn('Supabase not configured:', e); }
-
 // -------------------------------------------------------
 // AGENT DATA
 // -------------------------------------------------------
@@ -4551,122 +4489,6 @@ const APP_LOGIN_URL = 'https://soulscript.orionforge.chat/login';
 function openAuth() {
     window.location.href = APP_LOGIN_URL;
 }
-function closeAuth() {
-    document.getElementById('auth-modal').classList.remove('active');
-    document.body.style.overflow = '';
-}
-document.getElementById('auth-modal').addEventListener('click', function(e) {
-    if (e.target === this) closeAuth();
-});
-
-function showAuthMessage(msg, type) {
-    const el = document.getElementById('auth-message');
-    el.textContent = msg;
-    el.className = 'auth-message ' + type;
-}
-
-async function signInWith(provider) {
-    if (!supabaseClient) {
-        showAuthMessage('Supabase not configured. Add your project URL and anon key to the config.', 'error');
-        return;
-    }
-    try {
-        const { data, error } = await supabaseClient.auth.signInWithOAuth({
-            provider: provider,
-            options: { redirectTo: window.location.origin + window.location.pathname }
-        });
-        if (error) throw error;
-    } catch (err) {
-        showAuthMessage(err.message || 'OAuth sign-in failed', 'error');
-    }
-}
-
-async function signInWithEmail(e) {
-    e.preventDefault();
-    if (!supabaseClient) {
-        showAuthMessage('Supabase not configured. Add your project URL and anon key to the config.', 'error');
-        return;
-    }
-    const email = document.getElementById('auth-email').value;
-    const password = document.getElementById('auth-password').value;
-    try {
-        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        closeAuth();
-        updateAuthUI(data.user);
-    } catch (err) {
-        showAuthMessage(err.message || 'Sign-in failed', 'error');
-    }
-}
-
-async function handleSignUp(e) {
-    e.preventDefault();
-    if (!supabaseClient) {
-        showAuthMessage('Supabase not configured. Add your project URL and anon key to the config.', 'error');
-        return;
-    }
-    const email = document.getElementById('auth-email').value;
-    const password = document.getElementById('auth-password').value;
-    if (!email || password.length < 6) {
-        showAuthMessage('Enter an email and password (min 6 chars)', 'error');
-        return;
-    }
-    try {
-        const { data, error } = await supabaseClient.auth.signUp({ email, password });
-        if (error) throw error;
-        showAuthMessage('Check your email to confirm your account.', 'success');
-    } catch (err) {
-        showAuthMessage(err.message || 'Sign-up failed', 'error');
-    }
-}
-
-async function handleLogout() {
-    if (supabaseClient) {
-        await supabaseClient.auth.signOut();
-    }
-    updateAuthUI(null);
-}
-
-function updateAuthUI(user) {
-    const loggedOut = document.getElementById('auth-logged-out');
-    const loggedIn = document.getElementById('auth-logged-in');
-    const avatar = document.getElementById('user-avatar-img');
-    const displayName = document.getElementById('user-display-name');
-
-    if (user) {
-        loggedOut.style.display = 'none';
-        loggedIn.style.display = 'block';
-        const meta = user.user_metadata || {};
-        avatar.src = meta.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.email)}&backgroundColor=6366f1`;
-        displayName.textContent = meta.full_name || meta.name || user.email;
-    } else {
-        loggedOut.style.display = 'flex';
-        loggedIn.style.display = 'none';
-    }
-}
-
-function toggleUserMenu() {
-    document.getElementById('user-menu').classList.toggle('active');
-}
-document.addEventListener('click', function(e) {
-    if (!e.target.closest('#auth-logged-in')) {
-        document.getElementById('user-menu').classList.remove('active');
-    }
-});
-
-// Check session on load
-async function checkSession() {
-    if (!supabaseClient) return;
-    try {
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        if (session?.user) updateAuthUI(session.user);
-
-        supabaseClient.auth.onAuthStateChange((_event, session) => {
-            updateAuthUI(session?.user || null);
-            if (session?.user) closeAuth();
-        });
-    } catch (e) { console.warn('Session check failed:', e); }
-}
 
 // -------------------------------------------------------
 // INIT
@@ -4679,7 +4501,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initScrollAnimations();
     initCounters();
     initNavScroll();
-    checkSession();
 
     // Hide loader
     setTimeout(() => {
