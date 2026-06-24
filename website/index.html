@@ -2751,7 +2751,7 @@ section { position: relative; z-index: 1; }
             <li><a href="#agents">Agents</a></li>
             <li><a href="#tools">Tools</a></li>
             <li><a href="#marketplace">Workshop</a></li>
-            <li><a href="https://orionforge-engine.fly.dev/store" target="_blank">Store</a></li>
+            <li><a href="https://soulscript.orionforge.chat/store" target="_blank">Store</a></li>
             <li><a href="#pricing">Pricing</a></li>
             <li><a href="#pipeline">Injection Flow</a></li>
             <li><a href="#soulscript">Soul Script</a></li>
@@ -2770,7 +2770,7 @@ section { position: relative; z-index: 1; }
                 <div class="user-menu" id="user-menu">
                     <div class="user-menu-item" id="user-display-name" style="font-weight:600; color:var(--text-primary);"></div>
                     <div class="user-menu-divider"></div>
-                    <button class="user-menu-item" onclick="window.open('https://orionforge-engine.fly.dev','_blank')"><i class="fas fa-rocket" style="margin-right:8px;"></i>Launch UI</button>
+                    <button class="user-menu-item" onclick="window.open('https://soulscript.orionforge.chat','_blank')"><i class="fas fa-rocket" style="margin-right:8px;"></i>Launch UI</button>
                     <button class="user-menu-item" onclick="handleLogout()"><i class="fas fa-sign-out-alt" style="margin-right:8px;color:var(--rose);"></i>Sign Out</button>
                 </div>
             </div>
@@ -2945,7 +2945,7 @@ section { position: relative; z-index: 1; }
                     <i class="fas fa-rocket" style="font-size:2.5rem; color:var(--primary-light); margin-bottom:20px; animation: float 3s ease-in-out infinite;"></i>
                     <h3>Launch the Dashboard</h3>
                     <p>Open the full workspace — chat, profiles, memory vault, knowledge, tools, and settings, all in one place.</p>
-                    <a href="https://orionforge-engine.fly.dev" target="_blank" class="ui-launch-btn" onclick="trackConversion('open_dashboard')">
+                    <a href="https://soulscript.orionforge.chat" target="_blank" class="ui-launch-btn" onclick="trackConversion('open_dashboard')">
                         <i class="fas fa-external-link-alt"></i> Open Dashboard
                     </a>
                 </div>
@@ -4547,7 +4547,7 @@ function trackConversion(location) {
 // "Get Started" entry point hands off to the app login so users sign in ONCE
 // (the app sets a persistent session cookie) instead of doing a separate OAuth
 // here and then being challenged again on the app.
-const APP_LOGIN_URL = 'https://orionforge-engine.fly.dev/login';
+const APP_LOGIN_URL = 'https://soulscript.orionforge.chat/login';
 function openAuth() {
     window.location.href = APP_LOGIN_URL;
 }

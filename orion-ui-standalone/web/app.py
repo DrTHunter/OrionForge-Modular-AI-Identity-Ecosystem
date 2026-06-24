@@ -47,7 +47,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from web.image_gen import _generate_image
 from web.video_gen import _generate_video
-from web.auth import get_auth_config, verify_supabase_token, extract_user_from_token, is_public_path, is_email_allowed, verify_bridge_key
+from web.auth import get_auth_config, verify_supabase_token, extract_user_from_token, is_public_path, is_email_allowed, verify_bridge_key, refresh_supabase_session
 from web.stripe_billing import (
     get_user_tier, get_user_subscription, user_has_feature,
     create_checkout_session, create_billing_portal_session,
@@ -205,6 +205,51 @@ def _is_subscription_exempt(path: str) -> bool:
             return True
     return False
 
+
+def _session_cookie_domain(request: Request) -> str | None:
+    """Return ".orionforge.chat" for branded hosts so one login covers the
+    apex and every subdomain; None (host-only) for fly.dev / localhost."""
+    host = (request.headers.get("host") or "").split(":")[0].lower()
+    if host == "orionforge.chat" or host.endswith(".orionforge.chat"):
+        return ".orionforge.chat"
+    return None
+
+
+def _write_session_cookies(request: Request, response, access_token: str, refresh_token: str = "") -> None:
+    """Set the auth cookies with a domain that spans the orionforge.chat site."""
+    domain = _session_cookie_domain(request)
+    response.set_cookie(
+        key="sb_access_token",
+        value=access_token,
+        httponly=True,
+        samesite="lax",
+        secure=False,
+        max_age=3600,
+        path="/",
+        domain=domain,
+    )
+    if refresh_token:
+        response.set_cookie(
+            key="sb_refresh_token",
+            value=refresh_token,
+            httponly=True,
+            samesite="lax",
+            secure=False,
+            max_age=60 * 60 * 24 * 30,
+            path="/",
+            domain=domain,
+        )
+
+
+def _clear_session_cookies(request: Request, response) -> None:
+    """Delete auth cookies for both the domain-scoped and legacy host-only forms."""
+    domain = _session_cookie_domain(request)
+    response.delete_cookie("sb_access_token", path="/", domain=domain)
+    response.delete_cookie("sb_refresh_token", path="/", domain=domain)
+    response.delete_cookie("sb_access_token", path="/")
+    response.delete_cookie("sb_refresh_token", path="/")
+
+
 class AuthMiddleware(BaseHTTPMiddleware):
     """Redirect unauthenticated users to /login, unsubscribed to /plans."""
 
@@ -245,18 +290,26 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 request.state.is_subscribed = True
                 return await call_next(request)
 
-        # Check for auth cookie
+        # Check for auth cookie. If the access token is missing or expired,
+        # fall back to the refresh token so the session survives past the
+        # 1-hour access-token TTL instead of bouncing the user to /login.
         token = request.cookies.get("sb_access_token")
-        if not token:
-            if path.startswith("/api/"):
-                return JSONResponse({"error": "Not authenticated"}, status_code=401)
-            from urllib.parse import quote
-            return RedirectResponse(url=f"/login?next={quote(path, safe='/')}", status_code=302)
+        payload = verify_supabase_token(token) if token else None
 
-        payload = verify_supabase_token(token)
+        refreshed_session = None
+        if not payload:
+            refresh_token = request.cookies.get("sb_refresh_token")
+            if refresh_token:
+                new_sess = await refresh_supabase_session(refresh_token)
+                if new_sess and new_sess.get("access_token"):
+                    new_payload = verify_supabase_token(new_sess["access_token"])
+                    if new_payload:
+                        payload = new_payload
+                        refreshed_session = new_sess
+
         if not payload:
             if path.startswith("/api/"):
-                return JSONResponse({"error": "Invalid or expired token"}, status_code=401)
+                return JSONResponse({"error": "Not authenticated"}, status_code=401)
             from urllib.parse import quote
             return RedirectResponse(url=f"/login?next={quote(path, safe='/')}", status_code=302)
 
@@ -275,8 +328,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 resp = JSONResponse({"error": "Access denied for this account"}, status_code=403)
             else:
                 resp = RedirectResponse(url="/login?denied=1", status_code=302)
-            resp.delete_cookie("sb_access_token", path="/")
-            resp.delete_cookie("sb_refresh_token", path="/")
+            _clear_session_cookies(request, resp)
             return resp
 
         # Record user activity for inactive-account cleanup
@@ -310,6 +362,15 @@ class AuthMiddleware(BaseHTTPMiddleware):
         # credits at 2× the API cost per request — no monthly ($9.99/mo) plan.
 
         response = await call_next(request)
+        # If we minted a fresh access token via the refresh flow, persist it so
+        # the browser carries the renewed session on subsequent requests.
+        if refreshed_session is not None:
+            _write_session_cookies(
+                request,
+                response,
+                refreshed_session.get("access_token", ""),
+                refreshed_session.get("refresh_token", ""),
+            )
         return response
 
 
@@ -1739,26 +1800,9 @@ async def api_auth_set_session(request: Request):
 
         response = JSONResponse({"ok": True, "user": user})
 
-        # Set httpOnly cookies (secure in production, lax for local dev)
-        response.set_cookie(
-            key="sb_access_token",
-            value=access_token,
-            httponly=True,
-            samesite="lax",
-            secure=False,  # Set True in production with HTTPS
-            max_age=3600,  # 1 hour — matches Supabase default
-            path="/",
-        )
-        if refresh_token:
-            response.set_cookie(
-                key="sb_refresh_token",
-                value=refresh_token,
-                httponly=True,
-                samesite="lax",
-                secure=False,
-                max_age=60 * 60 * 24 * 30,  # 30 days
-                path="/",
-            )
+        # Set httpOnly cookies scoped to the whole orionforge.chat site so a
+        # single login covers soulscript.orionforge.chat and any subdomain.
+        _write_session_cookies(request, response, access_token, refresh_token)
 
         return response
     except Exception as exc:
@@ -1782,11 +1826,10 @@ async def api_auth_session(request: Request):
 
 
 @app.post("/api/auth/logout")
-async def api_auth_logout():
+async def api_auth_logout(request: Request):
     """Clear auth cookies to log out."""
     response = JSONResponse({"ok": True})
-    response.delete_cookie("sb_access_token", path="/")
-    response.delete_cookie("sb_refresh_token", path="/")
+    _clear_session_cookies(request, response)
     return response
 
 

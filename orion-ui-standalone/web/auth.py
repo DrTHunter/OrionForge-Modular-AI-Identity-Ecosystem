@@ -127,6 +127,39 @@ def extract_user_from_token(payload: dict) -> dict:
     }
 
 
+async def refresh_supabase_session(refresh_token: str) -> Optional[dict]:
+    """Exchange a Supabase refresh token for a fresh session.
+
+    Returns the Supabase token response (access_token, refresh_token,
+    expires_in, …) on success, or None when refresh is unavailable or
+    fails. Keeps a login alive past the 1-hour access-token TTL.
+    """
+    if not refresh_token:
+        return None
+    cfg = _load_auth_config()
+    supabase_url = (cfg.get("supabase_url", "") or "").rstrip("/")
+    anon_key = cfg.get("supabase_anon_key", "")
+    if not supabase_url or not anon_key:
+        return None
+    url = f"{supabase_url}/auth/v1/token?grant_type=refresh_token"
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(
+                url,
+                headers={"apikey": anon_key, "Content-Type": "application/json"},
+                json={"refresh_token": refresh_token},
+                timeout=10,
+            )
+        if resp.status_code != 200:
+            log.debug("[auth] refresh failed: HTTP %s", resp.status_code)
+            return None
+        data = resp.json()
+        return data if data.get("access_token") else None
+    except Exception as exc:
+        log.warning("[auth] token refresh error: %s", exc)
+        return None
+
+
 # ── Single-user allowlist ───────────────────────────────────────
 # Only emails in this list (case-insensitive) may log in.
 # Sources, in priority order:
