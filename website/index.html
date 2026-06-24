@@ -4543,9 +4543,13 @@ function trackConversion(location) {
 // -------------------------------------------------------
 // AUTH FUNCTIONS
 // -------------------------------------------------------
+// Single sign-on: authentication lives on the app itself. Every "Log In" /
+// "Get Started" entry point hands off to the app login so users sign in ONCE
+// (the app sets a persistent session cookie) instead of doing a separate OAuth
+// here and then being challenged again on the app.
+const APP_LOGIN_URL = 'https://orionforge-engine.fly.dev/login';
 function openAuth() {
-    document.getElementById('auth-modal').classList.add('active');
-    document.body.style.overflow = 'hidden';
+    window.location.href = APP_LOGIN_URL;
 }
 function closeAuth() {
     document.getElementById('auth-modal').classList.remove('active');
