@@ -286,10 +286,13 @@
   <!-- Tabs -->
   <div class="store-tabs">
     <button class="store-tab active" onclick="switchStoreTab('credits')">💳 Credit Packs</button>
-    <button class="store-tab" onclick="switchStoreTab('packs')">📦 Packs</button>
+    <!-- HIDDEN 2026-06-24: Packs / Agents / Skins are all provided free, so their tabs are hidden
+         for everyone. To re-enable, remove the style="display:none;" from the buttons below.
+         See planning/store-hidden-sections.txt. -->
+    <button class="store-tab" onclick="switchStoreTab('packs')" style="display:none;">📦 Packs</button>
     <button class="store-tab" onclick="switchStoreTab('tools')">⚒ Tools</button>
-    <button class="store-tab" onclick="switchStoreTab('agents')">🤖 Agents</button>
-    <button class="store-tab" onclick="switchStoreTab('skins')">🎨 Skins</button>
+    <button class="store-tab" onclick="switchStoreTab('agents')" style="display:none;">🤖 Agents</button>
+    <button class="store-tab" onclick="switchStoreTab('skins')" style="display:none;">🎨 Skins</button>
     <button class="store-tab" onclick="switchStoreTab('llm')">🧠 LLM Usage</button>
     <button class="store-tab" onclick="switchStoreTab('history')">📜 History</button>
   </div>

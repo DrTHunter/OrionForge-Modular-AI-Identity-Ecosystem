@@ -1795,7 +1795,13 @@ async def api_auth_user(request: Request):
     """Get current user info (used by base template)."""
     user = getattr(request.state, "user", None)
     if user:
-        return JSONResponse({"authenticated": True, "user": user})
+        # is_admin lets the nav reveal the Admin tab based on the authoritative
+        # backend check (ADMIN_USER_IDS / ADMIN_EMAILS) rather than hardcoding.
+        return JSONResponse({
+            "authenticated": True,
+            "user": user,
+            "is_admin": _check_admin(request),
+        })
     return JSONResponse({"authenticated": False})
 
 

@@ -1,0 +1,30 @@
+STORE — HIDDEN SECTIONS (Packs / Agents / Skins)
+=================================================
+Date: 2026-06-24
+
+WHAT WAS DONE
+- The Store's three tabs "Packs", "Agents", and "Skins" are now HIDDEN for everyone.
+- They were hidden because all of those are currently provided FREE, so there is
+  nothing to purchase in those sections.
+- Only these tabs remain visible: Credit Packs, Tools, LLM Usage, History.
+
+THIS IS AN OPTION (REVERSIBLE)
+- Hiding is intentional and fully reversible. The sections/markup were NOT deleted —
+  only the tab buttons are hidden, so the sections simply can't be navigated to.
+- To bring any of them back, remove the inline   style="display:none;"   from the
+  corresponding <button class="store-tab" ...> in the files below.
+
+WHERE
+- Live (deployed) app:  orion-ui-standalone/web/templates/store.html
+- Mirror (not deployed): ui/web/templates/store.html
+- Look for the tab block near the top: <div class="store-tabs"> ... </div>
+  Buttons affected:
+    switchStoreTab('packs')   -> 📦 Packs
+    switchStoreTab('agents')  -> 🤖 Agents
+    switchStoreTab('skins')   -> 🎨 Skins
+
+NOTES
+- The underlying sections (#section-packs, #section-agents, #section-skins) and their
+  data (STORE_PACKS, store agents, SKIN_PRICES) are untouched and still in the code.
+- If pricing for any of these returns later, just un-hide its tab.
+- Deploy required for the change to show live: fly deploy -a orionforge-engine.

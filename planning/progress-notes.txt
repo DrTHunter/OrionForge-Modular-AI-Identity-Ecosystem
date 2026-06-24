@@ -1,0 +1,33 @@
+ORION FORGE — PROGRESS NOTES
+============================
+A running log of changes. Newest entries on top.
+
+--------------------------------------------------
+2026-06-24
+--------------------------------------------------
+ADMIN ACCESS: Made the Admin nav tab reveal off the authoritative backend check.
+  - /api/auth/user now returns "is_admin" (from _check_admin); base.html reveals the
+    Admin tab when is_admin is true (kept owner email/UID as fallback).
+  - Backend already grants admin to UID a2cddfbd-dabb-4d50-b515-b600a08ce8e8 via the
+    ADMIN_USER_IDS default; Fly has ADMIN_EMAILS set but NO ADMIN_USER_IDS secret.
+  - NOT yet deployed — needs: fly deploy -a orionforge-engine.
+  - If still no access after deploy, confirm the account's real Supabase user id
+    (it may differ from a2cddfbd) and add it to ADMIN_USER_IDS.
+
+STORE: Hid the Packs / Agents / Skins tabs for everyone (they are all provided free).
+  - Edited orion-ui-standalone/web/templates/store.html and ui/web/templates/store.html.
+  - Tab buttons get inline style="display:none;" (reversible; sections kept in code).
+  - Full details + how to re-enable: planning/store-hidden-sections.txt
+  - NOT yet deployed — needs: fly deploy -a orionforge-engine
+
+BILLING / PAYMENTS (shipped earlier today, commit b82702d):
+  - Stripe credit checkout fixed for test mode (live product id only under sk_live_).
+  - Verified Stripe webhook events normalized via Event.to_dict() so signed
+    credit-pack webhooks grant credits.
+  - AnthropicClient now honors a user's own profile api_key (bring-your-own key).
+  - Confirmed LIVE: Stripe publishable key is pk_live_ and configured=true.
+  - Confirmed LIVE: platform OpenRouter passthrough deducts credits at 2x token cost
+    (platform_hosted connection seeded from OPENROUTER_API_KEY; both chat paths deduct).
+
+TESTS:
+  - Full torture suite: 3389 passed, 0 failed.
