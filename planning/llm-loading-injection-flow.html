@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<!--
+    LLM LOADING & INJECTION FLOW — animated HTML infographic (ARCHIVED 2026-06-24)
+
+    This is the live, animated version that used to render in website/index.html (#pipeline),
+    directly above the static PNG (website/images/llm-loading-injection-flow.png).
+
+    It was pulled off the public page because, next to the polished PNG, it looked a bit
+    lackluster. It is parked here verbatim (HTML + all of its CSS) so a future, stronger model
+    can redesign it into something that can actually compete with — or replace — the image.
+
+    This file is fully self-contained: open it directly in a browser to preview/iterate.
+    To put it back on the site, move the <style> rules back into the main stylesheet and the
+    .pif-live block back into the #pipeline section.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LLM Loading &amp; Injection Flow — archived live infographic</title>
+<style>
+html, body { margin: 0; padding: 0; }
+body { background: #050914; color: #edf5ff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+.pif-shell { max-width: 1180px; margin: 0 auto; padding: 48px 20px; }
+
+.pif-live {
+    --pif-bg: #050914;
+    --pif-panel: rgba(10,20,48,0.88);
+    --pif-blue: #49a6ff;
+    --pif-cyan: #48d8ff;
+    --pif-green: #63ff8e;
+    --pif-purple: #c46bff;
+    --pif-orange: #ffbf43;
+    --pif-text: #edf5ff;
+    --pif-muted: #97b4d9;
+    position: relative;
+    margin: 0 auto 72px;
+    color: var(--pif-text);
+}
+.pif-live::before {
+    content: '';
+    display: none;
+}
+.pif-live-head { position: relative; text-align: center; margin-bottom: 16px; }
+.pif-live-head h2 {
+    margin: 0 0 4px;
+    color: #f3f8ff;
+    font-size: clamp(1.85rem, 3.3vw, 3.5rem);
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-shadow: 0 0 12px rgba(180,210,255,0.7), 0 0 28px rgba(73,166,255,0.35);
+}
+.pif-live-head p { margin: 0; color: #d3def1; font-size: clamp(0.95rem, 1.35vw, 1.45rem); }
+.pif-live-stage { position: relative; width: 100%; overflow: hidden; aspect-ratio: 1520 / 1140; }
+.pif-live-board {
+    position: relative;
+    width: 1520px;
+    height: 1140px;
+    transform-origin: top left;
+    transform: scale(var(--pif-scale, 1));
+    overflow: hidden;
+}
+.pif-live-card {
+    position: absolute;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    padding: 9px 13px;
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgba(10,20,48,0.9), rgba(8,14,32,0.94));
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.04) inset, 0 0 24px rgba(0,0,0,0.35), 0 0 22px rgba(73,166,255,0.06);
+    animation: pif-live-float 4.8s ease-in-out infinite;
+}
+.pif-live-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -42%;
+    width: 32%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+    transform: skewX(-18deg);
+    animation: pif-live-scan 5.8s ease-in-out infinite;
+}
+.pif-live-blue { border: 1px solid rgba(73,166,255,0.62); box-shadow: 0 0 0 1px rgba(73,166,255,0.18) inset, 0 0 22px rgba(73,166,255,0.14); }
+.pif-live-green { border: 1px solid rgba(99,255,142,0.55); box-shadow: 0 0 0 1px rgba(99,255,142,0.14) inset, 0 0 22px rgba(99,255,142,0.13); }
+.pif-live-purple { border: 1px solid rgba(196,107,255,0.55); box-shadow: 0 0 0 1px rgba(196,107,255,0.12) inset, 0 0 22px rgba(196,107,255,0.13); }
+.pif-live-orange { border: 1px solid rgba(255,191,67,0.55); box-shadow: 0 0 0 1px rgba(255,191,67,0.12) inset, 0 0 22px rgba(255,191,67,0.13); }
+.pif-live-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 2px;
+    font-size: 1.12rem;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    text-align: center;
+    text-transform: uppercase;
+}
+.pif-live-sub { margin-bottom: 6px; color: var(--pif-muted); font-size: 0.92rem; text-align: center; }
+.pif-live-blue .pif-live-title { color: #63b6ff; }
+.pif-live-green .pif-live-title { color: #7dff9e; }
+.pif-live-purple .pif-live-title { color: #d999ff; }
+.pif-live-orange .pif-live-title { color: #ffcc65; }
+.pif-live-iconbox {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    font-size: 1.35rem;
+    filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5)) drop-shadow(0 0 10px rgba(255,255,255,0.35));
+}
+.pif-live-flow { position: absolute; inset: 0; z-index: 3; width: 100%; height: 100%; pointer-events: none; }
+.pif-live-path { fill: none; stroke-width: 2.7; stroke-linecap: round; stroke-dasharray: 11 14; animation: pif-live-dash 1.2s linear infinite; filter: drop-shadow(0 0 8px rgba(255,255,255,0.25)); }
+.pif-live-path.blue { stroke: rgba(108,177,255,0.92); }
+.pif-live-path.green { stroke: rgba(124,255,161,0.9); }
+.pif-live-path.purple { stroke: rgba(219,143,255,0.92); }
+.pif-live-path.orange { stroke: rgba(255,199,92,0.95); }
+.pif-live-prompt { left: 34.6%; top: 5.5%; width: 30.8%; height: 8%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.pif-live-identity { left: 2.8%; top: 16.5%; width: 22.2%; height: 69%; }
+.pif-live-memory { left: 29.3%; top: 16.5%; width: 38.5%; height: 30%; }
+.pif-live-tools { left: 71%; top: 16.5%; width: 22%; height: 33.5%; }
+.pif-live-step5 { left: 29.4%; top: 49.5%; width: 38.3%; height: 13.5%; }
+.pif-live-step6 { left: 29.4%; top: 65.5%; width: 38.3%; height: 11.5%; }
+.pif-live-step7 { left: 31%; top: 79%; width: 34%; height: 7%; }
+.pif-live-loop { left: 69%; top: 51%; width: 25.6%; height: 35%; display: flex; flex-direction: column; }
+.pif-live-footer { position: absolute; left: 3%; right: 3%; bottom: 2.5%; height: 9%; display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+.pif-live-list { display: grid; grid-template-rows: repeat(6, 1fr); gap: 8px; flex: 1; min-height: 0; }
+.pif-live-subcard {
+    display: grid;
+    grid-template-columns: 32px 1fr;
+    gap: 9px;
+    align-items: center;
+    min-height: 0;
+    padding: 5px 9px;
+    border-radius: 10px;
+    border: 1px solid rgba(98,170,255,0.45);
+    background: linear-gradient(180deg, rgba(15,28,58,0.72), rgba(8,15,36,0.72));
+    animation: pif-live-soft-pulse 3.4s ease-in-out infinite;
+}
+.pif-live-subicon { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; font-size: 1.45rem; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5)) drop-shadow(0 0 9px rgba(255,255,255,0.32)); }
+.pif-live-subhead { color: #69b9ff; font-size: 0.82rem; font-weight: 800; line-height: 1.12; text-transform: uppercase; }
+.pif-live-subtext, .pif-live-mini { color: #d4e5ff; font-size: 0.74rem; line-height: 1.2; }
+.pif-live-mini { color: var(--pif-muted); }
+.pif-live-memory-grid { display: grid; grid-template-columns: 1.05fr 1fr 1.2fr; gap: 11px; flex: 1; min-height: 0; }
+.pif-live-memory-left { display: grid; grid-template-rows: 1fr 1fr; gap: 11px; }
+.pif-live-mini-green { padding: 8px 9px; border-radius: 12px; border: 1px solid rgba(99,255,142,0.45); background: linear-gradient(180deg, rgba(13,42,26,0.56), rgba(8,18,20,0.62)); }
+.pif-live-mini-green h4 { margin: 0 0 4px; color: #8aff9f; font-size: 0.84rem; }
+.pif-live-mini-green p, .pif-live-mini-green li { margin: 0; color: #ddffe4; font-size: 0.72rem; line-height: 1.22; }
+.pif-live-mini-green ul { margin: 2px 0 0 14px; padding: 0; }
+.pif-live-cylinder-wrap { display: flex; align-items: center; justify-content: center; min-height: 100%; }
+.pif-live-cylinder { position: relative; width: 84px; height: 118px; filter: drop-shadow(0 0 18px rgba(99,255,142,0.3)); animation: pif-live-spin-glow 5s ease-in-out infinite; }
+.pif-live-cylinder .top, .pif-live-cylinder .bottom { position: absolute; left: 0; right: 0; height: 24px; border-radius: 50%; border: 2px solid rgba(132,255,159,0.88); background: radial-gradient(circle at 50% 50%, rgba(132,255,159,0.22), rgba(35,145,71,0.1)); }
+.pif-live-cylinder .top { top: 0; }
+.pif-live-cylinder .bottom { bottom: 0; }
+.pif-live-cylinder .body { position: absolute; left: 0; right: 0; top: 12px; bottom: 12px; border-left: 2px solid rgba(132,255,159,0.88); border-right: 2px solid rgba(132,255,159,0.88); background: repeating-linear-gradient(180deg, rgba(132,255,159,0.08) 0 18px, rgba(255,255,255,0.03) 18px 20px), linear-gradient(180deg, rgba(80,255,138,0.12), rgba(40,100,50,0.07)); }
+.pif-live-refresh { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #caffd4; font-size: 1.8rem; text-shadow: 0 0 18px rgba(132,255,159,0.55); animation: pif-live-rotate 3.3s linear infinite; }
+.pif-live-tools-list { display: grid; grid-template-rows: auto repeat(6, 1fr) auto; gap: 4px; flex: 1; min-height: 0; }
+.pif-live-tool-head { display: grid; grid-template-columns: 36px 1fr; gap: 9px; align-items: center; padding: 7px 9px; border-radius: 12px; border: 1px solid rgba(196,107,255,0.45); background: linear-gradient(180deg, rgba(41,20,58,0.55), rgba(17,12,35,0.55)); }
+.pif-live-tool-head > .pif-live-subicon { width: 36px; height: 36px; }
+.pif-live-tool-row { display: flex; align-items: center; gap: 9px; padding: 5px 10px; border-radius: 9px; border: 1px solid rgba(196,107,255,0.32); background: rgba(255,255,255,0.03); color: #f1deff; font-size: 0.82rem; animation: pif-live-tool-pulse 3.2s ease-in-out infinite; }
+.pif-live-tool-foot { color: #dfb6ff; font-size: 0.78rem; text-align: center; }
+.pif-live-flow5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; align-items: center; flex: 1; min-height: 0; }
+.pif-live-flow-item { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; color: #dbe9ff; text-align: center; font-size: 0.74rem; }
+.pif-live-glyph { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; font-size: 1.5rem; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5)) drop-shadow(0 0 9px rgba(255,255,255,0.32)); animation: pif-live-pop 2.8s ease-in-out infinite; }
+.pif-live-network { position: relative; flex: 1; min-height: 0; overflow: hidden; border-radius: 12px; background: radial-gradient(circle at 50% 50%, rgba(73,166,255,0.24), transparent 34%), linear-gradient(180deg, rgba(4,20,57,0.3), rgba(7,12,28,0.15)); }
+.pif-live-network svg { width: 100%; height: 100%; }
+.pif-live-pulse { position: absolute; width: 10px; height: 10px; border-radius: 50%; background: #70bdff; box-shadow: 0 0 14px #70bdff, 0 0 28px rgba(112,189,255,0.45); animation: pif-live-network-travel 7s linear infinite; }
+.pif-live-pulse.p2 { animation-delay: 2s; }
+.pif-live-pulse.p3 { animation-delay: 4s; }
+.pif-live-response { display: flex; align-items: center; gap: 12px; height: 100%; padding: 0 12px; }
+.pif-live-check { display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; flex: 0 0 auto; border-radius: 50%; border: 2px solid rgba(216,145,255,0.75); box-shadow: 0 0 18px rgba(216,145,255,0.26), inset 0 0 18px rgba(216,145,255,0.12); color: #e2b4ff; font-size: 1.4rem; animation: pif-live-good 2.8s ease-in-out infinite; }
+.pif-live-response h3 { margin: 0; color: #e2b4ff; font-size: 1.15rem; }
+.pif-live-response p { margin: 4px 0 0; color: #dbe4ff; font-size: 0.9rem; }
+.pif-live-loop-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 10px; flex: 1 1 auto; min-height: 0; }
+.pif-live-loop-left { display: grid; grid-template-rows: repeat(4, 1fr); gap: 6px; }
+.pif-live-loop-item { display: grid; grid-template-columns: 24px 1fr; gap: 8px; align-items: center; padding: 5px 9px; border-radius: 10px; border: 1px solid rgba(255,191,67,0.32); background: rgba(255,255,255,0.03); font-size: 0.76rem; animation: pif-live-amber-pulse 3.6s ease-in-out infinite; }
+.pif-live-loop-label { color: #ffe0a1; font-weight: 800; font-size: 0.68rem; line-height: 1.12; }
+.pif-live-loop-sub { color: #ffeccd; font-size: 0.6rem; line-height: 1.1; }
+.pif-live-robot-wrap { position: relative; display: flex; align-items: center; justify-content: center; }
+.pif-live-hud { position: relative; width: 86px; height: 86px; border-radius: 50%; border: 2px solid rgba(255,191,67,0.72); box-shadow: 0 0 22px rgba(255,191,67,0.3), inset 0 0 18px rgba(255,191,67,0.08); animation: pif-live-hud-spin 10s linear infinite; }
+.pif-live-hud::before, .pif-live-hud::after { content: ''; position: absolute; inset: 14px; border-radius: 50%; border: 1px dashed rgba(255,191,67,0.58); animation: pif-live-hud-spin 6s linear infinite reverse; }
+.pif-live-hud::after { inset: 28px; border-style: solid; opacity: 0.7; animation-duration: 4s; }
+.pif-live-robot { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #ffd780; font-size: 2.4rem; text-shadow: 0 0 18px rgba(255,191,67,0.45); animation: pif-live-robot-pulse 2.6s ease-in-out infinite; }
+.pif-live-loop-foot { margin-top: 8px; padding: 7px 11px; border-radius: 10px; border: 1px solid rgba(255,191,67,0.4); background: rgba(255,191,67,0.06); color: #ffd984; font-size: 0.82rem; font-weight: 800; text-align: center; }
+.pif-live-badge { display: grid; grid-template-columns: 38px 1fr; gap: 8px; align-items: center; min-width: 0; padding: 10px; overflow: hidden; border-radius: 12px; background: linear-gradient(180deg, rgba(8,18,40,0.88), rgba(7,13,28,0.92)); border: 1px solid rgba(255,255,255,0.08); }
+.pif-live-bicon { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; font-size: 1.65rem; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5)) drop-shadow(0 0 9px rgba(255,255,255,0.32)); }
+.pif-live-badge-title { font-size: 0.86rem; font-weight: 900; }
+.pif-live-badge-text { margin-top: 4px; color: #dce8ff; font-size: 0.76rem; line-height: 1.25; }
+/* Flow line-art icons */
+.pif-ic { width: 1.15em; height: 1.15em; display: block; fill: none; stroke: currentColor; stroke-width: 1.85; stroke-linecap: round; stroke-linejoin: round; }
+.pif-live-purple .pif-live-iconbox { color: #e2a8ff; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.55)) drop-shadow(0 0 9px rgba(196,107,255,0.6)); }
+.pif-live-blue .pif-live-subicon { color: #79bfff; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.55)) drop-shadow(0 0 8px rgba(73,166,255,0.55)); }
+.pif-live-purple .pif-live-subicon { color: #e2a8ff; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.55)) drop-shadow(0 0 8px rgba(196,107,255,0.55)); }
+.pif-live-step5 .pif-live-glyph { color: #79bfff; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.55)) drop-shadow(0 0 8px rgba(73,166,255,0.55)); }
+.pif-live-tool-row .pif-ic { width: 17px; height: 17px; color: #82c6ff; filter: drop-shadow(0 0 5px rgba(73,166,255,0.5)); }
+.pif-live-mini-green h4 { display: flex; align-items: center; gap: 6px; }
+.pif-live-mini-green h4 .pif-ic { width: 18px; height: 18px; flex: 0 0 auto; color: #8dffa1; filter: drop-shadow(0 0 6px rgba(99,255,142,0.55)); }
+.pif-live-loop-item > div:first-child { display: flex; align-items: center; justify-content: center; }
+.pif-live-loop-item .pif-ic { width: 20px; height: 20px; color: #ffce6b; filter: drop-shadow(0 0 5px rgba(255,191,67,0.5)); }
+.pif-live-robot .pif-ic { width: 1.1em; height: 1.1em; color: #ffd780; filter: drop-shadow(0 0 10px rgba(255,191,67,0.55)); }
+.pif-live-check .pif-ic { width: 1.5em; height: 1.5em; color: #e7bcff; filter: drop-shadow(0 0 8px rgba(216,145,255,0.5)); }
+@keyframes pif-live-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+@keyframes pif-live-scan { 0%,70%,100% { left: -42%; } 82% { left: 115%; } }
+@keyframes pif-live-dash { to { stroke-dashoffset: -50; } }
+@keyframes pif-live-soft-pulse { 0%,100% { box-shadow: inset 0 0 18px rgba(73,166,255,0.05), 0 0 0 rgba(73,166,255,0); } 50% { box-shadow: inset 0 0 18px rgba(73,166,255,0.08), 0 0 16px rgba(73,166,255,0.08); } }
+@keyframes pif-live-spin-glow { 0%,100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-4px) scale(1.02); } }
+@keyframes pif-live-rotate { to { transform: rotate(360deg); } }
+@keyframes pif-live-tool-pulse { 0%,100% { box-shadow: inset 0 0 0 rgba(196,107,255,0); } 50% { box-shadow: inset 0 0 18px rgba(196,107,255,0.08); } }
+@keyframes pif-live-pop { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+@keyframes pif-live-network-travel { 0% { left: 4%; top: 60%; opacity: 0.3; } 20% { left: 26%; top: 35%; opacity: 1; } 45% { left: 48%; top: 68%; opacity: 0.9; } 68% { left: 73%; top: 30%; opacity: 1; } 100% { left: 92%; top: 58%; opacity: 0.3; } }
+@keyframes pif-live-good { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+@keyframes pif-live-amber-pulse { 0%,100% { box-shadow: inset 0 0 0 rgba(255,191,67,0); } 50% { box-shadow: inset 0 0 18px rgba(255,191,67,0.08); } }
+@keyframes pif-live-hud-spin { to { transform: rotate(360deg); } }
+@keyframes pif-live-robot-pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+@media (prefers-reduced-motion: reduce) {
+    .pif-live-card, .pif-live-card::after, .pif-live-path, .pif-live-subcard, .pif-live-cylinder,
+    .pif-live-refresh, .pif-live-tool-row, .pif-live-glyph, .pif-live-pulse, .pif-live-check,
+    .pif-live-loop-item, .pif-live-hud, .pif-live-hud::before, .pif-live-hud::after, .pif-live-robot { animation: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="pif-shell">
+        <div class="pif-live" aria-label="Animated LLM Loading and Injection Flow comparison">
+            <div class="pif-live-head">
+                <h2>LLM Loading &amp; Injection Flow</h2>
+                <p>Identity-First. Memory-Aware. Tool-Enabled. Continuously Evolving.</p>
+            </div>
+            <div class="pif-live-stage">
+            <div class="pif-live-board">
+                <svg class="pif-live-flow" viewBox="0 0 1600 900" preserveAspectRatio="none" aria-hidden="true">
+                    <defs>
+                        <marker id="pif-live-arrow-blue" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="rgba(108,177,255,0.92)"></path></marker>
+                        <marker id="pif-live-arrow-green" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="rgba(124,255,161,0.95)"></path></marker>
+                        <marker id="pif-live-arrow-purple" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="rgba(219,143,255,0.95)"></path></marker>
+                        <marker id="pif-live-arrow-orange" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="rgba(255,199,92,0.95)"></path></marker>
+                    </defs>
+                    <path class="pif-live-path purple" marker-end="url(#pif-live-arrow-purple)" d="M800 122 L800 147" />
+                    <path class="pif-live-path blue" marker-end="url(#pif-live-arrow-blue)" d="M404 284 L466 284" />
+                    <path class="pif-live-path blue" marker-end="url(#pif-live-arrow-blue)" d="M1086 284 L1134 284" />
+                    <path class="pif-live-path green" marker-end="url(#pif-live-arrow-green)" d="M800 419 L800 445" />
+                    <path class="pif-live-path blue" marker-end="url(#pif-live-arrow-blue)" d="M1136 486 L1062 486" />
+                    <path class="pif-live-path blue" marker-end="url(#pif-live-arrow-blue)" d="M800 568 L800 589" />
+                    <path class="pif-live-path blue" marker-end="url(#pif-live-arrow-blue)" d="M800 694 L800 710" />
+                    <path class="pif-live-path orange" marker-end="url(#pif-live-arrow-orange)" d="M1104 715 L1046 715" />
+                    <path class="pif-live-path orange" marker-end="url(#pif-live-arrow-orange)" d="M1104 748 L1046 748" />
+                </svg>
+
+                <div class="pif-live-card pif-live-purple pif-live-prompt">
+                    <div class="pif-live-title"><span class="pif-live-iconbox"><svg class="pif-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-11.9 7.6L3 21l1.9-6.1A8.4 8.4 0 1 1 21 11.5z"/></svg></span> 1. Incoming User Prompt</div>
+                    <div class="pif-live-sub">User prompt is received</div>
+                </div>
+
+                <div class="pif-live-card pif-live-blue pif-live-identity">
+                    <div class="pif-live-title">2. System Identity Layer Loads</div>
+                    <div class="pif-live-sub">The stable core that never changes</div>
+                    <div class="pif-live-list">
+                        <div class="pif-live-subcard"><div class="pif-live-subicon"><svg class="pif-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><div><div class="pif-live-subhead">System Persona Prompt</div><div class="pif-live-subtext">Always uploaded</div><div class="pif-live-mini">e.g., Orion, Elysia</div></div></div>
+                        <div class="pif-live-subcard"><div class="pif-live-subicon"><svg class="pif-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h8"/></svg></div><div><div class="pif-live-subhead">Summary of Identity</div><div class="pif-live-subtext">High-level snapshot</div><div class="pif-live-mini">of core identity</div></div></div>
+                        <div class="pif-live-subcard"><div class="pif-live-subicon"><svg class="pif-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12l3 6-9 12L3 9z"/><path d="M3 9h18"/><path d="M9 3l3 18M15 3l-3 18"/></svg></div><div><div class="pif-live-subhead">Soul Script<br>Canonical Identity<br>Read-Only FAISS</div><div class="pif-live-mini">The unchanging DNA of the identity</div></div></div>
+                        <div class="pif-live-subcard"><div class="pif-live-subicon"><svg class="pif-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></div><div><div class="pif-live-subhead">Permanent Identity Memory<br>Read-Only FAISS</div><div class="pif-live-mini">Long-term immutable identity knowledge</div></div></div>
+                        <div class="pif-live-subcard"><div class="pif-live-subicon"><svg class="pif-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L2 12V2h10l8.6 8.6a2 2 0 0 1 0 2.8z"/><circle cx="7" cy="7" r="1.2"/></svg></div><div><div class="pif-live-subhead">Always-Upload Notes</div><div class="pif-live-mini">Essential toggle for situational identity focus</div></div></div>
+                        <div class="pif-live-subcard"><div class="pif-live-subicon"><svg class="pif-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="3"/><path d="M12 22V8"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/></svg></div><div><div class="pif-live-subhead" style="text-transform:none;">Identity is the anchor.</div><div class="pif-live-mini">It is always loaded first.</div></div></div>
+                    </div>
+                </div>
+
+                <div class="pif-live-card pif-live-green pif-live-memory">
+                    <div class="pif-live-title">3. Dynamic FAISS Retrieves Memory</div>
+                    <div class="pif-live-sub">Evolving context from lived experience</div>
+                    <div class="pif-live-memory-grid">
+                        <div class="pif-live-memory-left">
+                            <div class="pif-live-mini-green"><h4><svg class="pif-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2z"/></svg> Long-Term Memory</h4><p>Deep, evolving knowledge</p></div>
+                            <div class="pif-live-mini-green"><h4><svg class="pif-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg> Short-Term Memory</h4><p>Recent context and interactions</p></div>
+                        </div>
+                        <div class="pif-live-cylinder-wrap">
+                            <div class="pif-live-cylinder"><div class="top"></div><div class="body"></div><div class="bottom"></div><div class="pif-live-refresh">&#8635;</div></div>
+                        </div>
+                        <div class="pif-live-mini-green">
+                            <h4><svg class="pif-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> Memory Vault</h4>
+                            <ul><li>Storage and management of day-to-day memory</li><li>Task Notes</li><li>Agent Journals</li><li>Episodic Memories</li><li>Chat Histories</li></ul>
+                            <ul><li>Automatically appended</li><li>Periodically trimmed / compressed</li></ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pif-live-card pif-live-purple pif-live-tools">
+                    <div class="pif-live-title">4. Tool Registry Loads</div>
+                    <div class="pif-live-sub">Modular tools for expanded capability</div>
+                    <div class="pif-live-tools-list">
+                        <div class="pif-live-tool-head"><div class="pif-live-subicon"><svg class="pif-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div><div><div class="pif-live-subhead" style="color:#e3afff">Tool Registry</div><div class="pif-live-mini" style="color:#efd6ff">Descriptions and commands for the LLM</div></div></div>
+                        <div class="pif-live-tool-row"><span><svg class="pif-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span> Web Search</div>
+                        <div class="pif-live-tool-row"><span><svg class="pif-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 18l6-6-6-6"/><path d="M8 6l-6 6 6 6"/></svg></span> Code Executor</div>
+                        <div class="pif-live-tool-row"><span><svg class="pif-ic" viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg></span> Memory Manager</div>
+                        <div class="pif-live-tool-row"><span><svg class="pif-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h8"/></svg></span> File Reader</div>
+                        <div class="pif-live-tool-row"><span><svg class="pif-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.1 10.9l7.8-3.8"/><path d="M8.1 13.1l7.8 3.8"/></svg></span> API Connector</div>
+                        <div class="pif-live-tool-row"><span><svg class="pif-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M19.4 7.9c-.05.32.06.65.29.88l1.57 1.57c.47.47.7 1.09.7 1.7s-.23 1.24-.7 1.71l-1.61 1.61a1 1 0 0 1-.84.28c-.47-.07-.8-.48-.97-.93a2.5 2.5 0 1 0-3.21 3.22c.45.16.85.5.92.97a1 1 0 0 1-.28.84l-1.61 1.6a2.4 2.4 0 0 1-1.7.71 2.4 2.4 0 0 1-1.71-.7l-1.57-1.57a1 1 0 0 0-.88-.29c-.49.07-.84.5-1.02.97a2.5 2.5 0 1 1-3.23-3.24c.46-.18.89-.53.96-1.02a1 1 0 0 0-.29-.88l-1.57-1.57A2.4 2.4 0 0 1 2 12c0-.62.24-1.23.7-1.7l1.53-1.53c.24-.24.58-.35.92-.3.51.08.87.53 1.07 1.01a2.5 2.5 0 1 0 3.26-3.26c-.48-.2-.93-.56-1.01-1.07-.05-.34.06-.68.3-.92l1.53-1.52A2.4 2.4 0 0 1 12 2c.62 0 1.23.24 1.7.7l1.57 1.57c.23.23.56.34.88.29.49-.07.84-.5 1.02-.97a2.5 2.5 0 1 1 3.24 3.24c-.47.18-.9.53-.97 1.02z"/></svg></span> Custom Tools</div>
+                        <div class="pif-live-tool-foot">Extensible &amp; Modular</div>
+                    </div>
+                </div>
+
+                <div class="pif-live-card pif-live-blue pif-live-step5">
+                    <div class="pif-live-title">5. LLM Invoked with Merged Context</div>
+                    <div class="pif-live-sub">All layers unified into a single prompt</div>
+                    <div class="pif-live-flow5">
+                        <div class="pif-live-flow-item"><div class="pif-live-glyph"><svg class="pif-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-11.9 7.6L3 21l1.9-6.1A8.4 8.4 0 1 1 21 11.5z"/></svg></div><div>User<br>Prompt</div></div>
+                        <div class="pif-live-flow-item"><div class="pif-live-glyph"><svg class="pif-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><div>Identity<br>Layer</div></div>
+                        <div class="pif-live-flow-item"><div class="pif-live-glyph"><svg class="pif-ic" viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg></div><div>Memory<br>(Dynamic)</div></div>
+                        <div class="pif-live-flow-item"><div class="pif-live-glyph"><svg class="pif-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div><div>Tools</div></div>
+                        <div class="pif-live-flow-item"><div class="pif-live-glyph"><svg class="pif-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h8"/></svg></div><div>Merged<br>Context</div></div>
+                    </div>
+                </div>
+
+                <div class="pif-live-card pif-live-blue pif-live-step6">
+                    <div class="pif-live-title">6. Context Is Fused</div>
+                    <div class="pif-live-sub">Prompt + Identity + Memory + Tools</div>
+                    <div class="pif-live-network">
+                        <svg viewBox="0 0 600 180" preserveAspectRatio="none" aria-hidden="true">
+                            <g fill="none" stroke="rgba(100,180,255,0.7)" stroke-width="1.6"><path d="M30 130 L90 100 L150 120 L220 80 L280 110 L355 70 L430 105 L520 60"/><path d="M40 60 L110 95 L185 68 L250 100 L310 55 L380 95 L470 70 L560 100"/><path d="M65 145 L130 95 L200 140 L270 76 L335 126 L420 84 L500 138"/><path d="M80 42 L142 82 L220 52 L300 96 L372 62 L455 98 L535 52"/></g>
+                            <g fill="rgba(122,198,255,0.98)"><circle cx="30" cy="130" r="3"/><circle cx="90" cy="100" r="3"/><circle cx="150" cy="120" r="3"/><circle cx="220" cy="80" r="3"/><circle cx="280" cy="110" r="3"/><circle cx="355" cy="70" r="3"/><circle cx="430" cy="105" r="3"/><circle cx="520" cy="60" r="3"/><circle cx="40" cy="60" r="3"/><circle cx="110" cy="95" r="3"/><circle cx="185" cy="68" r="3"/><circle cx="250" cy="100" r="3"/><circle cx="310" cy="55" r="3"/><circle cx="380" cy="95" r="3"/><circle cx="470" cy="70" r="3"/><circle cx="560" cy="100" r="3"/></g>
+                        </svg>
+                        <div class="pif-live-pulse"></div><div class="pif-live-pulse p2"></div><div class="pif-live-pulse p3"></div>
+                    </div>
+                </div>
+
+                <div class="pif-live-card pif-live-purple pif-live-step7">
+                    <div class="pif-live-response"><div class="pif-live-check"><svg class="pif-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg></div><div><h3>7. Response Generated</h3><p>Anchored to stable identity</p></div></div>
+                </div>
+
+                <div class="pif-live-card pif-live-orange pif-live-loop">
+                    <div class="pif-live-title">8. Optional Configurable Loop</div>
+                    <div class="pif-live-sub">Send the agent hunting and gathering on its own</div>
+                    <div class="pif-live-loop-grid">
+                        <div class="pif-live-loop-left">
+                            <div class="pif-live-loop-item"><div><svg class="pif-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 0 1-9 9 9 9 0 0 1-7.5-4"/><path d="M3 12a9 9 0 0 1 9-9 9 9 0 0 1 7.5 4"/><path d="M21 3v5h-5"/><path d="M3 21v-5h5"/></svg></div><div><div class="pif-live-loop-label">Number of Ticks / Loops</div><div class="pif-live-loop-sub">How many cycles to run</div></div></div>
+                            <div class="pif-live-loop-item"><div><svg class="pif-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16v-2.4C4 11.5 3 10.5 3 8c0-2.7 1.5-6 4.5-6C9.4 2 10 3.8 10 5.5c0 3.1-2 5.7-2 8.7V16a2 2 0 1 1-4 0z"/><path d="M20 20v-2.4c0-2.1 1-3.1 1-5.6 0-2.7-1.5-6-4.5-6C14.6 6 14 7.8 14 9.5c0 3.1 2 5.7 2 8.7V20a2 2 0 1 0 4 0z"/></svg></div><div><div class="pif-live-loop-label">Steps per Tick</div><div class="pif-live-loop-sub">Actions per cycle</div></div></div>
+                            <div class="pif-live-loop-item"><div><svg class="pif-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2"/><path d="M9 2h6"/><path d="M19 6l1.4-1.4"/></svg></div><div><div class="pif-live-loop-label">Interval Between Bursts</div><div class="pif-live-loop-sub">Pause between bursts</div></div></div>
+                            <div class="pif-live-loop-item"><div><svg class="pif-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.9 2h8.2L22 7.9v8.2L16.1 22H7.9L2 16.1V7.9z"/><path d="M9 9l6 6M15 9l-6 6"/></svg></div><div><div class="pif-live-loop-label">Max Number of Loops</div><div class="pif-live-loop-sub">Safety cap for autonomy</div></div></div>
+                        </div>
+                        <div class="pif-live-robot-wrap"><div class="pif-live-hud"></div><div class="pif-live-robot"><svg class="pif-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="4.5" y="8" width="15" height="11" rx="2.5"/><path d="M12 8V4.5"/><circle cx="12" cy="3.2" r="1.3"/><path d="M2.5 12.5v3M21.5 12.5v3"/><circle cx="9" cy="13.5" r="1.2"/><circle cx="15" cy="13.5" r="1.2"/><path d="M9.5 16.5h5"/></svg></div></div>
+                    </div>
+                    <div class="pif-live-loop-foot">Autonomous exploration &amp; memory gathering</div>
+                </div>
+
+                <div class="pif-live-footer">
+                    <div class="pif-live-badge"><div class="pif-live-bicon" style="color:#79bfff"><svg class="pif-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></div><div><div class="pif-live-badge-title">Stable Identity</div><div class="pif-live-badge-text">Always anchored to core identity.</div></div></div>
+                    <div class="pif-live-badge"><div class="pif-live-bicon" style="color:#e2a8ff"><svg class="pif-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2z"/></svg></div><div><div class="pif-live-badge-title">Rich Context</div><div class="pif-live-badge-text">Fuses identity, memory, and tools.</div></div></div>
+                    <div class="pif-live-badge"><div class="pif-live-bicon" style="color:#83ffa0"><svg class="pif-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/></svg></div><div><div class="pif-live-badge-title">Smart Autonomy</div><div class="pif-live-badge-text">Optional loop enables proactive growth.</div></div></div>
+                    <div class="pif-live-badge"><div class="pif-live-bicon" style="color:#7fdcff"><svg class="pif-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z"/></svg></div><div><div class="pif-live-badge-title">Efficiency</div><div class="pif-live-badge-text">Automatic trimming keeps memory lean.</div></div></div>
+                    <div class="pif-live-badge"><div class="pif-live-bicon" style="color:#79bfff"><svg class="pif-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div><div><div class="pif-live-badge-title">Security</div><div class="pif-live-badge-text">Read-only core ensures identity integrity.</div></div></div>
+                </div>
+            </div>
+            </div>
+            <script>
+            (function(){var DW=1520;function fit(){var s=document.querySelector('.pif-live-stage'),b=document.querySelector('.pif-live-board');if(!s||!b||s.offsetParent===null)return;var k=s.clientWidth/DW;b.style.setProperty('--pif-scale',k);s.style.height=(b.offsetHeight*k)+'px';}window.addEventListener('resize',fit);window.addEventListener('load',fit);document.addEventListener('DOMContentLoaded',fit);fit();})();
+            </script>
+        </div>
+</div>
+</body>
+</html>
