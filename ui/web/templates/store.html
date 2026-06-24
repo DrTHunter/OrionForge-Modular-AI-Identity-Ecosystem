@@ -30,31 +30,72 @@
   .store-section.active { display: block; }
   @keyframes storeFade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
-  /* Credit Packs */
-  .packs-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; margin-bottom: 2rem; }
-  @media (max-width: 768px) { .packs-grid { grid-template-columns: 1fr; } }
+  /* ── Credit Packs (Forge style) ── */
+  .credits-hero { text-align: center; margin: 0.25rem 0 1.75rem; }
+  .credits-hero-title {
+    font-size: 2.4rem; font-weight: 900; letter-spacing: 0.12em; margin: 0;
+    background: linear-gradient(90deg,#818cf8,#c084fc,#818cf8);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .credits-hero-sub {
+    margin-top: 0.4rem; font-size: 0.82rem; font-weight: 700; letter-spacing: 0.32em;
+    text-transform: uppercase; color: #a78bfa;
+  }
+  .credits-hero-sub::before, .credits-hero-sub::after { content: '\25C6'; margin: 0 0.6rem; color: #7c3aed; }
+
+  /* Feature tiles */
+  .credit-features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 2.25rem; }
+  @media (max-width: 860px) { .credit-features { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 520px) { .credit-features { grid-template-columns: 1fr; } }
+  .cfeature {
+    display: flex; align-items: flex-start; gap: 0.85rem;
+    background: rgba(26,26,36,0.6); border: 1px solid rgba(124,58,237,0.18);
+    border-radius: 0.75rem; padding: 1rem 1.1rem;
+  }
+  .cfeature-ico {
+    flex-shrink: 0; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+    border-radius: 0.6rem; background: rgba(124,58,237,0.14); color: #c084fc; border: 1px solid rgba(124,58,237,0.3);
+  }
+  .cfeature-ico svg { width: 20px; height: 20px; }
+  .cfeature h4 { margin: 0 0 0.15rem; font-size: 0.85rem; font-weight: 700; color: #ede9fe; letter-spacing: 0.02em; }
+  .cfeature p { margin: 0; font-size: 0.78rem; color: #a1a1aa; line-height: 1.4; }
+
+  /* Packs grid */
+  .packs-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.1rem; margin-bottom: 1.5rem; }
+  @media (max-width: 1024px) { .packs-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 520px) { .packs-grid { grid-template-columns: 1fr; } }
   .pack-card {
-    background: rgba(26,26,36,0.8); border: 1px solid rgba(42,42,58,0.6);
-    border-radius: 1rem; padding: 2rem 1.5rem; text-align: center;
-    transition: all 0.2s; cursor: pointer; position: relative;
+    background: linear-gradient(180deg, rgba(30,27,55,0.85), rgba(20,18,33,0.9));
+    border: 1px solid rgba(124,58,237,0.25);
+    border-radius: 1rem; padding: 1.75rem 1.25rem 1.5rem; text-align: center;
+    transition: all 0.2s; cursor: default; position: relative;
   }
-  .pack-card:hover { border-color: #6366f1; box-shadow: 0 0 30px rgba(99,102,241,0.12); transform: translateY(-2px); }
-  .pack-card.popular { border-color: #6366f1; }
+  .pack-card:hover { border-color: #a855f7; box-shadow: 0 0 34px rgba(168,85,247,0.22); transform: translateY(-3px); }
+  .pack-card.popular { border-color: #a855f7; box-shadow: 0 0 30px rgba(168,85,247,0.18); }
   .pack-card.popular::before {
-    content: 'BEST VALUE'; position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
-    background: #6366f1; color: #fff; font-size: 0.65rem; font-weight: 700; padding: 3px 12px;
-    border-radius: 20px; letter-spacing: 0.05em;
+    content: 'BEST VALUE'; position: absolute; top: -11px; left: 50%; transform: translateX(-50%);
+    background: linear-gradient(90deg,#7c3aed,#a855f7); color: #fff; font-size: 0.6rem; font-weight: 800;
+    padding: 4px 14px; border-radius: 20px; letter-spacing: 0.08em; white-space: nowrap;
+    box-shadow: 0 4px 14px rgba(124,58,237,0.45);
   }
-  .pack-price { font-size: 2.25rem; font-weight: 800; color: #fff; margin: 0.75rem 0 0.25rem; }
-  .pack-credits { font-size: 1.1rem; color: #a5b4fc; font-weight: 600; }
-  .pack-bonus { font-size: 0.8rem; color: #10b981; margin-top: 0.25rem; }
+  .pack-credits-big {
+    font-size: 2.1rem; font-weight: 900; color: #fff; line-height: 1; margin-top: 0.25rem;
+    text-shadow: 0 0 22px rgba(168,85,247,0.35);
+  }
+  .pack-credits-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.22em; color: #a78bfa; margin-top: 0.3rem; }
+  .pack-coin { width: 64px; height: 48px; margin: 0.9rem auto 0.4rem; display: block; }
+  .pack-bonus-badge {
+    display: inline-block; margin-top: 0.4rem; font-size: 0.66rem; font-weight: 800; letter-spacing: 0.04em;
+    color: #34d399; background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3);
+    border-radius: 0.5rem; padding: 2px 9px;
+  }
   .pack-btn {
-    margin-top: 1.25rem; width: 100%; padding: 0.65rem; border: none; border-radius: 0.5rem;
-    font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
-    background: #6366f1; color: #fff;
+    margin-top: 1.1rem; width: 100%; padding: 0.7rem; border: none; border-radius: 0.6rem;
+    font-size: 1rem; font-weight: 800; cursor: pointer; transition: all 0.2s; letter-spacing: 0.02em;
+    background: linear-gradient(90deg,#6366f1,#a855f7); color: #fff; box-shadow: 0 6px 18px rgba(124,58,237,0.3);
   }
-  .pack-btn:hover { background: #818cf8; }
-  .pack-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .pack-btn:hover { filter: brightness(1.12); transform: translateY(-1px); }
+  .pack-btn:disabled { opacity: 0.55; cursor: not-allowed; filter: none; transform: none; }
 
   /* Tool / Item Cards */
   .catalog-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
@@ -255,26 +296,63 @@
 
   <!-- ═══ CREDIT PACKS ═══ -->
   <div id="section-credits" class="store-section active">
-    <p style="color:#a1a1aa; margin-bottom:1.5rem; font-size:0.9rem;">
-      Purchase credit packs to unlock premium tools, skins, and platform-hosted LLMs. Credits never expire.
-    </p>
+
+    <!-- Feature highlights -->
+    <div class="credit-features">
+      <div class="cfeature">
+        <span class="cfeature-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg></span>
+        <div><h4>Premium Tools</h4><p>Unlock advanced development tools.</p></div>
+      </div>
+      <div class="cfeature">
+        <span class="cfeature-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg></span>
+        <div><h4>Instant Access</h4><p>Credits are added instantly.</p></div>
+      </div>
+      <div class="cfeature">
+        <span class="cfeature-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8z"/><path d="M19 14l.6 1.5L21 16l-1.4.5L19 18l-.6-1.5L17 16l1.4-.5z"/></svg></span>
+        <div><h4>Exclusive Skins</h4><p>Customize your experience.</p></div>
+      </div>
+      <div class="cfeature">
+        <span class="cfeature-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>
+        <div><h4>Secure &amp; Reliable</h4><p>Powered by Stripe. Always secure.</p></div>
+      </div>
+      <div class="cfeature">
+        <span class="cfeature-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="11" rx="2"/><path d="M12 8V4M9 4h6"/><circle cx="9" cy="13" r="1"/><circle cx="15" cy="13" r="1"/></svg></span>
+        <div><h4>Platform LLMs</h4><p>Access powerful AI models.</p></div>
+      </div>
+      <div class="cfeature">
+        <span class="cfeature-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.17 9.17a4 4 0 1 0 0 5.66L12 12l2.83 2.83a4 4 0 1 0 0-5.66L12 12 9.17 9.17z"/></svg></span>
+        <div><h4>No Expiry</h4><p>Use your credits whenever you need.</p></div>
+      </div>
+    </div>
+
+    <!-- Heading -->
+    <div class="credits-hero">
+      <h2 class="credits-hero-title">CREDIT PACKS</h2>
+      <div class="credits-hero-sub">Fuel Your Creations</div>
+    </div>
+
     <div class="packs-grid">
       {% for pack in credit_packs %}
       <div class="pack-card {% if pack.bonus and loop.last %}popular{% endif %}">
-        <div style="font-size:0.85rem; color:#71717a; font-weight:600;">{{ pack.label }}</div>
-        <div class="pack-price">${{ "%.2f"|format(pack.price) }}</div>
-        <div class="pack-credits">{{ "{:,}".format(pack.credits) }} credits</div>
+        <div class="pack-credits-big">{{ "{:,}".format(pack.credits) }}</div>
+        <div class="pack-credits-label">CREDITS</div>
+        <svg class="pack-coin" viewBox="0 0 64 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <ellipse cx="32" cy="36" rx="19" ry="7" fill="#4c1d95" stroke="#7c3aed" stroke-width="1.5"/>
+          <ellipse cx="32" cy="29" rx="19" ry="7" fill="#5b21b6" stroke="#8b5cf6" stroke-width="1.5"/>
+          <ellipse cx="32" cy="22" rx="19" ry="7" fill="#6d28d9" stroke="#a855f7" stroke-width="1.5"/>
+          <path d="M32 16l3.2 4-3.2 4-3.2-4z" fill="#e9d5ff"/>
+        </svg>
         {% if pack.bonus %}
-        <div class="pack-bonus">{{ pack.bonus }}</div>
+        <div class="pack-bonus-badge">{{ pack.bonus|upper }}</div>
         {% endif %}
         <button class="pack-btn" onclick="buyPack('{{ pack.id }}')" id="pack-btn-{{ pack.id }}">
-          Buy Now
+          ${{ "%.2f"|format(pack.price) }}
         </button>
       </div>
       {% endfor %}
     </div>
     <div style="text-align:center; color:#71717a; font-size:0.8rem;">
-      1 credit ≈ $0.01 · Payments processed securely via <strong style="color:#635bff;">Stripe</strong>
+      1 credit ≈ $0.01 · Credits never expire · Payments processed securely via <strong style="color:#a855f7;">Stripe</strong>
     </div>
   </div>
 
@@ -792,6 +870,7 @@
   // ── Buy credit pack ──
   function buyPack(packId) {
     var btn = document.getElementById('pack-btn-' + packId);
+    var originalLabel = btn ? btn.textContent.trim() : '';
     if (btn) { btn.disabled = true; btn.textContent = 'Redirecting…'; }
     fetch('/api/credits/buy', {
       method: 'POST',
@@ -804,12 +883,12 @@
         window.location.href = data.url;
       } else if (data.error) {
         alert('Error: ' + data.error);
-        if (btn) { btn.disabled = false; btn.textContent = 'Buy Now'; }
+        if (btn) { btn.disabled = false; btn.textContent = originalLabel; }
       }
     })
     .catch(function(err) {
       alert('Failed to start checkout. Please try again.');
-      if (btn) { btn.disabled = false; btn.textContent = 'Buy Now'; }
+      if (btn) { btn.disabled = false; btn.textContent = originalLabel; }
     });
   }
 

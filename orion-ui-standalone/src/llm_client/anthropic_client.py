@@ -34,7 +34,9 @@ class AnthropicClient(LLMClient):
         self.base_url: str = profile.get(
             "base_url", "https://api.anthropic.com"
         ).rstrip("/")
-        self.api_key: str = os.environ.get("ANTHROPIC_API_KEY", "")
+        # Prefer an explicit profile/connection key (bring-your-own), then fall
+        # back to the platform-hosted ANTHROPIC_API_KEY environment variable.
+        self.api_key: str = profile.get("api_key", "") or os.environ.get("ANTHROPIC_API_KEY", "")
         self.temperature: float = profile.get("temperature", 0.7)
         self.max_tokens: int = profile.get("max_tokens", 4096)
 

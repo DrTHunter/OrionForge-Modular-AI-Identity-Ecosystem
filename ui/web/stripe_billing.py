@@ -41,6 +41,30 @@ STRIPE_PUBLISHABLE_KEY = os.environ.get("STRIPE_PUBLISHABLE_KEY", "")
 STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
 STRIPE_PRO_PRICE_ID = os.environ.get("STRIPE_PRO_PRICE_ID", "")
 
+# Stripe product that all dynamically-priced credit-pack checkouts roll up under.
+# Live mode defaults to the Orion Forge "Credits" product. Test mode falls back
+# to ad-hoc product_data so local Stripe test keys do not require a mirrored
+# product to exist in the test account.
+DEFAULT_LIVE_CREDITS_PRODUCT_ID = "prod_UktYCqIzyVKRzb"
+
+
+def _default_credits_product_id(stripe_secret_key: str) -> str:
+    """Return the default Stripe product to use for credit packs.
+
+    Test keys should not inherit the live product id because Stripe products are
+    account-scoped and a live product id is invalid in test mode.
+    """
+    key = (stripe_secret_key or "").strip()
+    if key.startswith("sk_live_"):
+        return DEFAULT_LIVE_CREDITS_PRODUCT_ID
+    return ""
+
+
+STRIPE_CREDITS_PRODUCT_ID = os.environ.get(
+    "STRIPE_CREDITS_PRODUCT_ID",
+    _default_credits_product_id(STRIPE_SECRET_KEY),
+)
+
 # ── Tier definitions ─────────────────────────────────────────────
 FREE_TIER_FEATURES = {
     "chat", "profiles", "knowledge", "vault", "tools",
@@ -277,6 +301,8 @@ def handle_webhook_event(payload: bytes, sig_header: str) -> dict:
     try:
         if STRIPE_WEBHOOK_SECRET:
             event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
+            if hasattr(event, "to_dict"):
+                event = event.to_dict()
         else:
             event = json.loads(payload)
             log.warning("[stripe] Webhook signature verification skipped (no secret)")
@@ -1202,19 +1228,27 @@ def create_credits_checkout_session(
     if not pack:
         return {"error": f"Unknown credit pack: {pack_id}"}
 
+    # Build a dynamic price. When a credits product is configured, every pack rolls
+    # up under that one Stripe product (clean reporting) while the amount stays
+    # driven by CREDIT_PACKS; otherwise fall back to an ad-hoc product per checkout.
+    price_data = {
+        "currency": "usd",
+        "unit_amount": int(pack["price"] * 100),  # cents
+    }
+    if STRIPE_CREDITS_PRODUCT_ID:
+        price_data["product"] = STRIPE_CREDITS_PRODUCT_ID
+    else:
+        price_data["product_data"] = {
+            "name": f"SoulScript Credits — {pack['label']}",
+            "description": f"{pack['credits']} credits for premium tool usage",
+        }
+
     try:
         session = stripe.checkout.Session.create(
             mode="payment",
             payment_method_types=["card"],
             line_items=[{
-                "price_data": {
-                    "currency": "usd",
-                    "product_data": {
-                        "name": f"SoulScript Credits — {pack['label']}",
-                        "description": f"{pack['credits']} credits for premium tool usage",
-                    },
-                    "unit_amount": int(pack["price"] * 100),  # cents
-                },
+                "price_data": price_data,
                 "quantity": 1,
             }],
             success_url=success_url,

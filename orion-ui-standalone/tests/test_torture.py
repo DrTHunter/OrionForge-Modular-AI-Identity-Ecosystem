@@ -103,6 +103,9 @@ Covers:
     check_tier_limit, get_user_subscription, set/cancel subscription, empty user_id)
   - Credit system (add_user_credits, deduct_user_credits, get_user_credits,
     get_credit_history, history cap at 200, insufficient funds, limit param)
+  - Credit checkout & webhook (create_credits_checkout_session test-mode ad-hoc
+    product_data vs live fixed product, checkout metadata, handle_webhook_event
+    credits fulfillment via unsigned JSON and signed Stripe Event.to_dict() path)
   - Credit cost estimators (estimate_llm_credit_cost 2× markup, estimate_tts_credit_cost
     per-provider, estimate_stt_credit_cost, zero/negative/minimum edge cases)
   - Purchase flows (purchase_tool, purchase_skin, purchase_agent: happy path,
@@ -145,10 +148,12 @@ Covers:
     NotesFAISS.load() dimension mismatch detection, FAISSMemory._load_or_build
     model mismatch rebuild, app _bg_faiss startup coordination with
     LOCK_EX|LOCK_NB, asyncio.to_thread wrapping of _build_chat_messages
-    at 3 call sites, boot.sh --workers 3
+    at 3 call sites, boot.sh --workers 1
 """
 
 import json
+import hashlib
+import hmac
 import os
 import sys
 import time
@@ -4575,6 +4580,7 @@ def test_vault_template_elements():
     class _MockRequest:
         state = _MockState()
         url = type("URL", (), {"path": "/vault"})()
+        headers = {}  # base.html reads request.headers.get('host', '')
 
     # Build a minimal context with memories
     test_memories = [
@@ -8812,6 +8818,137 @@ def test_credit_system():
         shutil.rmtree(tmp, ignore_errors=True)
 
 
+def test_credit_checkout_and_webhook():
+    """Test Stripe credit checkout session building and webhook fulfillment."""
+    print("\n=== TORTURE: Credit Checkout & Webhook ===")
+    import web.stripe_billing as billing
+    from pathlib import Path
+
+    class _FakeSessionObj:
+        def __init__(self, url, session_id):
+            self.url = url
+            self.id = session_id
+
+    class _FakeCheckoutSession:
+        last_kwargs = None
+
+        @classmethod
+        def create(cls, **kwargs):
+            cls.last_kwargs = kwargs
+            return _FakeSessionObj("https://example.test/checkout/sess_123", "sess_123")
+
+    class _FakeCheckout:
+        Session = _FakeCheckoutSession
+
+    class _FakeStripe:
+        checkout = _FakeCheckout()
+
+    tmp = tempfile.mkdtemp()
+    try:
+        orig_get_stripe = billing._get_stripe
+        orig_state_file = billing._STRIPE_STATE_FILE
+        orig_secret = billing.STRIPE_SECRET_KEY
+        orig_webhook_secret = billing.STRIPE_WEBHOOK_SECRET
+        orig_product_id = billing.STRIPE_CREDITS_PRODUCT_ID
+
+        billing._get_stripe = lambda: _FakeStripe
+        billing._STRIPE_STATE_FILE = Path(tmp) / "stripe_state.json"
+        billing.STRIPE_SECRET_KEY = "sk_test_dummy"
+        billing.STRIPE_WEBHOOK_SECRET = ""
+        billing.STRIPE_CREDITS_PRODUCT_ID = billing._default_credits_product_id(billing.STRIPE_SECRET_KEY)
+
+        result = billing.create_credits_checkout_session(
+            user_id="test_checkout_user",
+            user_email="checkout@example.com",
+            pack_id="pack_20",
+            success_url="https://example.test/store?ok=1",
+            cancel_url="https://example.test/store?cancel=1",
+        )
+        check("credit checkout session created", "url" in result and "session_id" in result)
+        price_data = _FakeCheckoutSession.last_kwargs["line_items"][0]["price_data"]
+        check("test mode uses ad-hoc product_data", "product_data" in price_data and "product" not in price_data)
+        check("checkout metadata marks credits purchase", _FakeCheckoutSession.last_kwargs["metadata"].get("type") == "credits")
+        check("checkout metadata carries pack id", _FakeCheckoutSession.last_kwargs["metadata"].get("pack_id") == "pack_20")
+
+        billing.STRIPE_CREDITS_PRODUCT_ID = billing._default_credits_product_id("sk_live_dummy")
+        result2 = billing.create_credits_checkout_session(
+            user_id="test_checkout_user_live",
+            user_email="checkout@example.com",
+            pack_id="pack_5",
+            success_url="https://example.test/store?ok=1",
+            cancel_url="https://example.test/store?cancel=1",
+        )
+        check("live-mode checkout session created", "url" in result2 and "session_id" in result2)
+        price_data2 = _FakeCheckoutSession.last_kwargs["line_items"][0]["price_data"]
+        check("live mode defaults to fixed product", price_data2.get("product") == billing.DEFAULT_LIVE_CREDITS_PRODUCT_ID)
+
+        webhook_payload = json.dumps({
+            "type": "checkout.session.completed",
+            "data": {
+                "object": {
+                    "client_reference_id": "test_checkout_user",
+                    "metadata": {
+                        "type": "credits",
+                        "pack_id": "pack_20",
+                        "credits": "2100",
+                    },
+                }
+            },
+        }).encode("utf-8")
+        webhook_result = billing.handle_webhook_event(webhook_payload, "")
+        check("credits webhook action", webhook_result.get("action") == "credits_purchased")
+        check("credits webhook grants balance", billing.get_user_credits("test_checkout_user") == 2100)
+
+        try:
+            import stripe  # noqa: F401
+        except ImportError:
+            check("signed webhook path skipped without stripe", True)
+        else:
+            billing._get_stripe = orig_get_stripe
+            billing.STRIPE_WEBHOOK_SECRET = "whsec_test_secret"
+            signed_payload_obj = {
+                "id": "evt_test_webhook",
+                "object": "event",
+                "api_version": "2025-05-28.basil",
+                "created": int(time.time()),
+                "data": {
+                    "object": {
+                        "id": "cs_test_webhook",
+                        "object": "checkout.session",
+                        "client_reference_id": "signed_checkout_user",
+                        "metadata": {
+                            "type": "credits",
+                            "pack_id": "pack_10",
+                            "credits": "1000",
+                        },
+                    }
+                },
+                "livemode": False,
+                "pending_webhooks": 1,
+                "request": {"id": None, "idempotency_key": None},
+                "type": "checkout.session.completed",
+            }
+            signed_payload = json.dumps(signed_payload_obj, separators=(",", ":")).encode("utf-8")
+            timestamp = int(time.time())
+            signature = hmac.new(
+                billing.STRIPE_WEBHOOK_SECRET.encode("utf-8"),
+                f"{timestamp}.".encode("utf-8") + signed_payload,
+                hashlib.sha256,
+            ).hexdigest()
+            signed_header = f"t={timestamp},v1={signature}"
+            signed_result = billing.handle_webhook_event(signed_payload, signed_header)
+            check("signed webhook action", signed_result.get("action") == "credits_purchased")
+            check("signed webhook grants balance", billing.get_user_credits("signed_checkout_user") == 1000)
+
+    finally:
+        billing._get_stripe = orig_get_stripe
+        billing._STRIPE_STATE_FILE = orig_state_file
+        billing.STRIPE_SECRET_KEY = orig_secret
+        billing.STRIPE_WEBHOOK_SECRET = orig_webhook_secret
+        billing.STRIPE_CREDITS_PRODUCT_ID = orig_product_id
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
 # ═════════════════════════════════════════════
 # CREDIT COST ESTIMATORS — LLM, TTS, STT
 # ═════════════════════════════════════════════
@@ -10232,13 +10369,13 @@ def test_faiss_scaling():
           or "asyncio.to_thread(_build_chat_messages" in app_source
           or ("asyncio.to_thread" in app_source and "_build_chat_messages" in app_source))
 
-    # ── 12. boot.sh has --workers 3 ──
+    # ── 12. boot.sh starts uvicorn with a single worker (Fly stability) ──
     boot_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
                              "boot.sh")
     if os.path.exists(boot_path):
         with open(boot_path, "r", encoding="utf-8") as f:
             boot_content = f.read()
-        check("boot.sh has --workers 3", "--workers 3" in boot_content)
+        check("boot.sh has --workers 1", "--workers 1" in boot_content)
         check("boot.sh runs uvicorn", "uvicorn" in boot_content)
     else:
         check("boot.sh exists", False, f"not found at {boot_path}")
@@ -11036,6 +11173,7 @@ if __name__ == "__main__":
     test_store_catalog_structure()
     test_tier_and_trial_system()
     test_credit_system()
+    test_credit_checkout_and_webhook()
     test_credit_cost_estimators()
     test_purchase_flows()
     test_agent_ownership()

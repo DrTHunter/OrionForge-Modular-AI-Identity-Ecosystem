@@ -1989,7 +1989,10 @@ async def api_credits_buy(request: Request):
         user_id=user["id"],
         user_email=user.get("email", ""),
         pack_id=pack_id,
-        success_url=f"{base_url}/store?credits_success=1",
+        # pack + Stripe session id ride back so the success page can fire
+        # Google Analytics purchase events ({CHECKOUT_SESSION_ID} is replaced
+        # by Stripe with the real session id on redirect).
+        success_url=f"{base_url}/store?credits_success=1&pack={pack_id}&sid={{CHECKOUT_SESSION_ID}}",
         cancel_url=f"{base_url}/store?credits_canceled=1",
     )
     if "error" in result:
