@@ -52,6 +52,11 @@ fly_deploy.log
 _patch_*.py
 _validate_*.py
 
+# Personal notes that may contain secrets. This file normally lives OUTSIDE the
+# repo; this is a defensive net so a copy can never be committed if moved inside.
+OF Notes.txt
+**/OF Notes.txt
+
 # Runtime config with personal data / billing state — use *.example.json as templates
 **/config/auth.json
 **/config/stripe_state.json
