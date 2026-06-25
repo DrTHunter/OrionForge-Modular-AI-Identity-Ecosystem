@@ -32,14 +32,25 @@ ui/data/shared/*.jsonl
 ui/data/uploads/*
 ui/data/user_notes/*.json
 ui/data/users/
-orion-ui-standalone/data/users/
 !ui/data/**/.gitkeep
+
+# Runtime data for orion-ui-standalone (same intent as the ui/data rules above)
+orion-ui-standalone/data/chats/
+orion-ui-standalone/data/memory/
+orion-ui-standalone/data/shared/
+orion-ui-standalone/data/trash/
+orion-ui-standalone/data/uploads/
+orion-ui-standalone/data/user_notes/
+orion-ui-standalone/data/users/
+orion-ui-standalone/data/orion/*.jsonl
+orion-ui-standalone/data/orion/*.json
 
 # Secrets & credentials
 *.env
 .webui_secret_key
 fly_deploy.log
 _patch_*.py
+_validate_*.py
 
 # Runtime config with personal data / billing state — use *.example.json as templates
 **/config/auth.json
