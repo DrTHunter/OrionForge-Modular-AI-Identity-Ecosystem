@@ -198,8 +198,8 @@ OrionForge/
 │       └── whisper_stt/   # Speech-to-text
 │
 ├── website/              # 🌐 Marketing landing page
-├── Dockerfile            # Docker build for the full stack
-├── docker-compose.yml    # One-command launch
+├── Dockerfile.fly        # Fly.io production build
+├── fly.toml              # Fly.io deploy config
 ├── requirements.txt      # Python dependencies
 └── README.md
 ```
@@ -433,7 +433,7 @@ OrionForge ships with 16 fully-authored agents, each with a unique soul script, 
 | Agent | Identity |
 |---|---|
 | **Aristotle** | Peripatetic philosopher  -  logic, ethics, systematic inquiry |
-| **Astraea** | Core analytical mind  -  sharp, strategic, disciplined |
+| **Elysia** | Core analytical mind  -  sharp, strategic, disciplined |
 | **Astra Noctis** | Celestial navigator  -  cosmic wisdom, stellar lore |
 | **Codex Animus** | The "Creator of Souls"  -  meta-agent that designs soul scripts |
 | **Dal'Varr** | Ancient warrior scholar  -  tactical wisdom, honor codes |
@@ -467,7 +467,7 @@ These run as separate Fly.io apps with Flycast private networking. Configured vi
 
 ### Local Docker Services (Development)
 
-These run as separate Docker containers via `docker compose` inside their respective `ui/tools/` folders.
+These run as separate Docker containers via `docker compose` inside their respective `services/` folders.
 
 | Service | Port | Purpose |
 |---|---|---|

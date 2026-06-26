@@ -54,6 +54,7 @@ from web.stripe_billing import (
     handle_webhook_event, TIER_INFO, STRIPE_PUBLISHABLE_KEY,
     get_user_credits, add_user_credits, deduct_user_credits,
     CREDIT_PACKS, TOOL_CREDIT_COSTS, create_credits_checkout_session,
+    fulfill_credits_for_session,
     STORE_CATALOG, LLM_MARKUP_MULTIPLIER, estimate_llm_credit_cost,
     estimate_llm_credit_cost_safe, estimate_image_credit_cost, estimate_video_credit_cost,
     estimate_tts_credit_cost, estimate_stt_credit_cost,
@@ -985,8 +986,8 @@ def _list_unlocked_agents(request: Request) -> list[str]:
     - User-created agents (not in the store catalog)
 
     Restricted agents (RESTRICTED_AGENTS) are filtered out for everyone except
-    their allowed UIDs, regardless of admin status. codex_animus is always
-    placed first so it's the default selection.
+    their allowed UIDs, regardless of admin status. The list is then ordered by
+    _prioritize_default_agent so the pinned agents (K-OS first) lead.
     """
     all_agents = _list_agents()
     user = getattr(request.state, "user", None)
@@ -1011,11 +1012,22 @@ def _list_unlocked_agents(request: Request) -> list[str]:
     return _finalize(agents)
 
 
+# Agents pinned to the top of the chat dropdown, in this exact order. Any pinned
+# agent the current user can't access is simply skipped; every other agent keeps
+# its existing (alphabetical) order after the pinned block.
+PINNED_AGENT_ORDER = ["k_os", "elysia", "janus", "dalvarr", "lux_umbra"]
+
+
 def _prioritize_default_agent(agents: list[str]) -> list[str]:
-    """Move codex_animus to the front of the list so it's the default selection."""
-    if "codex_animus" in agents:
-        return ["codex_animus"] + [a for a in agents if a != "codex_animus"]
-    return agents
+    """Order agents for the dropdown.
+
+    Pinned agents (PINNED_AGENT_ORDER) are placed first, in that exact order, so
+    K-OS is the default selection. Remaining agents keep their existing order.
+    """
+    present = set(agents)
+    pinned = [a for a in PINNED_AGENT_ORDER if a in present]
+    rest = [a for a in agents if a not in pinned]
+    return pinned + rest
 
 def _load_profile(name: str, user_id: str | None = None) -> dict:
     uid = user_id or _current_user_id.get("__local__")
@@ -2047,6 +2059,25 @@ async def api_credits_buy(request: Request):
     if "error" in result:
         return JSONResponse(result, status_code=400)
     return JSONResponse(result)
+
+
+@app.post("/api/credits/confirm")
+async def api_credits_confirm(request: Request):
+    """Fallback credit fulfillment after the Stripe checkout success redirect.
+
+    The webhook is the primary fulfillment path; this lets the success page
+    deliver credits immediately and resiliently by verifying the Checkout
+    Session server-side. Idempotent with the webhook, so it never double-credits.
+    """
+    user = getattr(request.state, "user", None)
+    if not user:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    body = await request.json()
+    session_id = body.get("session_id", "")
+    if not session_id:
+        return JSONResponse({"error": "Missing session_id"}, status_code=400)
+    result = fulfill_credits_for_session(session_id, expected_user_id=user["id"])
+    return JSONResponse({"ok": bool(result.get("ok")), "result": result, "credits": get_user_credits(user["id"])})
 
 
 @app.get("/api/store/catalog")
@@ -3626,7 +3657,7 @@ async def _agi_loop_runner():
     state = get_loop_state()
     config = _load_agi_loop_config()
 
-    agent = config.get("profile", "astraea")
+    agent = config.get("profile", "elysia")
     stimulus_template = config.get("stimulus", "")
     ticks_per_loop = config.get("ticks_per_loop", 15)
     max_loops = config.get("max_loops", 0)  # 0 = infinite

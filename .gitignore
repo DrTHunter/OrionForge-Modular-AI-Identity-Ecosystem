@@ -23,18 +23,6 @@ Thumbs.db
 desktop.ini
 
 # Runtime data (keep structure via .gitkeep but not actual data)
-ui/data/chats/*.json
-ui/data/memory/vault.jsonl
-ui/data/memory/faiss/*.bin
-ui/data/memory/faiss/*.npy
-ui/data/memory/faiss/*.json
-ui/data/shared/*.jsonl
-ui/data/uploads/*
-ui/data/user_notes/*.json
-ui/data/users/
-!ui/data/**/.gitkeep
-
-# Runtime data for orion-ui-standalone (same intent as the ui/data rules above)
 orion-ui-standalone/data/chats/
 orion-ui-standalone/data/memory/
 orion-ui-standalone/data/shared/
@@ -83,6 +71,7 @@ website/images/render-og.js
 **/torture_result.txt
 **/test_torture_output.txt
 **/test_torture_out.txt
+**/torture_run*.txt
 **/verify.txt
 **/fails_only.txt
 test_output.txt

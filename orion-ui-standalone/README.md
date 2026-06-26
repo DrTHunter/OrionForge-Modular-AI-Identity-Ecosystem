@@ -4,7 +4,7 @@
 
 > Active development workspace for the OrionForge Modular AI Identity Ecosystem.
 
-This is where **all new features are built and tested** before being promoted to `engine/` (stable core) or `ui/` (production deployment).
+This is where **all new features are built and tested**, and it's the app that deploys to Fly.io. Stable code is mirrored into `engine/` (the frozen core).
 
 ---
 
@@ -321,9 +321,8 @@ python -m tests.test_multi_tenant
 
 | Directory | Role | Updated When |
 |-----------|------|--------------|
-| **`orion-ui-standalone/`** | Active development | Every feature change |
+| **`orion-ui-standalone/`** | Active development + Fly deployment | Every feature change |
 | `engine/` | Stable frozen core | Features promoted after testing |
-| `ui/` | Production deployment | Includes external Docker tool services |
 | `services/` | Fly.io sidecar services | SearXNG, TTS, Whisper STT |
 
 ---

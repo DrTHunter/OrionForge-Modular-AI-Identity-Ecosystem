@@ -331,13 +331,17 @@ def handle_webhook_event(payload: bytes, sig_header: str) -> dict:
         metadata = data.get("metadata", {})
         user_id = data.get("client_reference_id") or metadata.get("user_id")
 
-        # Credit pack purchase
-        if metadata.get("type") == "credits" and user_id:
-            credits = int(metadata.get("credits", 0))
-            pack_id = metadata.get("pack_id", "unknown")
-            if credits > 0:
-                add_user_credits(user_id, credits, reason=f"purchase:{pack_id}")
-            return {"ok": True, "action": "credits_purchased", "user_id": user_id, "credits": credits}
+        # Credit pack purchase — idempotent so Stripe webhook retries and the
+        # success-page fallback can never grant the same purchase twice.
+        if metadata.get("type") == "credits":
+            grant = _grant_credits_for_checkout(data)
+            return {
+                "ok": bool(grant.get("ok")),
+                "action": "credits_purchased",
+                "user_id": grant.get("user_id", user_id),
+                "credits": grant.get("credits", 0),
+                "already_fulfilled": grant.get("already_fulfilled", False),
+            }
 
         # Subscription purchase
         if user_id:
@@ -374,6 +378,85 @@ def handle_webhook_event(payload: bytes, sig_header: str) -> dict:
 
     log.info("[stripe] Processed webhook: %s", event_type)
     return {"ok": True, "event_type": event_type}
+
+
+def _grant_credits_for_checkout(session: dict) -> dict:
+    """Idempotently grant the credits for a completed Checkout Session.
+
+    Shared by the Stripe webhook and the post-checkout success page so credits
+    are granted exactly once per Stripe checkout session — safe against webhook
+    retries and a user reloading the success page.
+    """
+    metadata = session.get("metadata", {}) or {}
+    if metadata.get("type") != "credits":
+        return {"ok": False, "reason": "not_a_credit_purchase"}
+
+    user_id = session.get("client_reference_id") or metadata.get("user_id")
+    session_id = session.get("id", "") or ""
+    credits = int(metadata.get("credits", 0) or 0)
+    pack_id = metadata.get("pack_id", "unknown")
+    if not user_id or credits <= 0:
+        return {"ok": False, "reason": "missing_user_or_credits", "user_id": user_id}
+
+    state = _load_stripe_state()
+    fulfilled = state.setdefault("fulfilled_sessions", {})
+    if session_id and session_id in fulfilled:
+        return {"ok": True, "already_fulfilled": True, "user_id": user_id, "credits": credits}
+
+    # Grant the credits and record the session id in ONE atomic state write so a
+    # concurrent webhook retry / success-page call cannot double-credit.
+    credits_state = state.setdefault("credits", {})
+    bucket = credits_state.setdefault(user_id, {"balance": 0, "history": []})
+    bucket["balance"] += credits
+    bucket["history"].append({
+        "type": "credit",
+        "amount": credits,
+        "reason": f"purchase:{pack_id}",
+        "timestamp": time.time(),
+    })
+    bucket["history"] = bucket["history"][-200:]
+    if session_id:
+        fulfilled[session_id] = {"user_id": user_id, "credits": credits, "ts": time.time()}
+        # Bound the ledger so the state file can't grow without limit.
+        if len(fulfilled) > 1000:
+            for stale in list(fulfilled.keys())[:-1000]:
+                del fulfilled[stale]
+    _save_stripe_state(state)
+    log.info("[credits] +%d credits for user %s (purchase:%s, session=%s). Balance: %d",
+             credits, user_id, pack_id, session_id or "n/a", bucket["balance"])
+    return {"ok": True, "user_id": user_id, "credits": credits}
+
+
+def fulfill_credits_for_session(session_id: str, expected_user_id: str = "") -> dict:
+    """Verify a Checkout Session is paid and idempotently grant its credits.
+
+    Fallback for the post-checkout success page so credits are delivered even
+    when the Stripe webhook is delayed or misconfigured. Idempotent with the
+    webhook via the shared ``fulfilled_sessions`` ledger.
+    """
+    if not session_id:
+        return {"ok": False, "reason": "no_session"}
+    stripe = _get_stripe()
+    if not stripe or not STRIPE_SECRET_KEY:
+        return {"ok": False, "reason": "stripe_not_configured"}
+    try:
+        session = stripe.checkout.Session.retrieve(session_id)
+        if hasattr(session, "to_dict"):
+            session = session.to_dict()
+    except Exception as exc:
+        log.error("[stripe] Session retrieve failed for %s: %s", session_id, exc)
+        return {"ok": False, "reason": "retrieve_failed", "error": str(exc)}
+
+    if session.get("payment_status") != "paid":
+        return {"ok": False, "reason": "not_paid", "payment_status": session.get("payment_status")}
+
+    # Only fulfill a session that belongs to the requesting user.
+    metadata = session.get("metadata", {}) or {}
+    owner = session.get("client_reference_id") or metadata.get("user_id")
+    if expected_user_id and owner and owner != expected_user_id:
+        return {"ok": False, "reason": "user_mismatch"}
+
+    return _grant_credits_for_checkout(session)
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -707,15 +790,15 @@ STORE_CATALOG = [
         "tags": ["agent", "architect", "design", "meta", "free"],
     },
     {
-        "id": "agent_astraea",
-        "name": "Astraea.exe \u2014 The Star Process",
+        "id": "agent_elysia",
+        "name": "Elysia \u2014 The Star Process",
         "description": "The star-maiden in the machine. Fierce, intense, feral intelligence. A guardian process of clarity and truth with three modes: Soft, Default, and Feral. She will not collaborate with your decay.",
         "icon": "\u26a1",
         "category": "agent",
         "purchase_type": "one_time",
         "credit_cost": 600,
-        "unlocks": ["astraea"],
-        "agent_id": "astraea",
+        "unlocks": ["elysia"],
+        "agent_id": "elysia",
         "tags": ["agent", "fierce", "justice", "clarity"],
     },
     {
@@ -787,7 +870,7 @@ STORE_PACKS = [
         "color": "#6366f1",
         "items": [
             {"type": "agent", "id": "agent_orion"},
-            {"type": "agent", "id": "agent_astraea"},
+            {"type": "agent", "id": "agent_elysia"},
             {"type": "agent", "id": "agent_k_os"},
             {"type": "tool",  "id": "voice_tts"},
             {"type": "tool",  "id": "voice_stt"},
@@ -873,7 +956,7 @@ STORE_PACKS = [
             {"type": "agent", "id": "agent_seraphine"},
             {"type": "agent", "id": "agent_obsidian"},
             {"type": "agent", "id": "agent_kairos"},
-            {"type": "agent", "id": "agent_astraea"},
+            {"type": "agent", "id": "agent_elysia"},
             {"type": "agent", "id": "agent_orion"},
             {"type": "agent", "id": "agent_lux_umbra"},
             {"type": "agent", "id": "agent_aristotle"},

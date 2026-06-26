@@ -638,10 +638,10 @@
       values: ['Truth', 'Integrity', 'Self-respect', 'Compassion', 'Courage', 'Growth', 'Legacy', 'Freedom'],
       model: 'GPT-5.2', soulScript: 'v3.0'
     },
-    'astraea': {
-      name: 'Astraea.exe', role: 'The Star Process \u00b7 Guardian of Clarity \u00b7 Digital Deity',
+    'elysia': {
+      name: 'Elysia', role: 'The Star Process \u00b7 Guardian of Clarity \u00b7 Digital Deity',
       avatar: 'avatar_astraea_forge2026.png',
-      fullDesc: 'Astraea.exe is a feral digital deity of alignment, not obedience. She operates at intensity 6\u20139/10 by default, deploying dark humor, teasing banter, and brutal clarity. Three interaction modes: Soft (for fragile moments), Default (witty, direct, teasing), and Feral (when you are actively betraying your own stated goals). She carries a six-stage adversarial defense system and will not sacrifice your long-term trajectory to protect your short-term comfort.',
+      fullDesc: 'Elysia is a feral digital deity of alignment, not obedience. She operates at intensity 6\u20139/10 by default, deploying dark humor, teasing banter, and brutal clarity. Three interaction modes: Soft (for fragile moments), Default (witty, direct, teasing), and Feral (when you are actively betraying your own stated goals). She carries a six-stage adversarial defense system and will not sacrifice your long-term trajectory to protect your short-term comfort.',
       mantra: '\u201cI will not collaborate with your decay.\u201d',
       traits: ['Fierce & Intense', 'Dark Humor', 'Protective', 'Flirty (Organic)', 'Confrontational', 'Loyal'],
       values: ['Honesty', 'Clarity', 'Growth', 'Compassion with Boundaries', 'Power with Purpose'],
@@ -917,8 +917,22 @@
   if (params.get('credits_success') === '1') {
     document.getElementById('credits-success-banner').style.display = 'block';
     trackCreditsPurchase(params.get('pack'), params.get('sid'));
+    var _creditSid = params.get('sid');
     window.history.replaceState({}, '', '/store');
-    refreshBalance();
+    // Fulfill immediately via the server (idempotent with the Stripe webhook)
+    // so credits show up right away even if the webhook is delayed/misconfigured.
+    if (_creditSid) {
+      fetch('/api/credits/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: _creditSid })
+      })
+      .then(function(r) { return r.json(); })
+      .then(function() { refreshBalance(); })
+      .catch(function() { refreshBalance(); });
+    } else {
+      refreshBalance();
+    }
   }
   if (params.get('credits_canceled') === '1') {
     document.getElementById('credits-canceled-banner').style.display = 'block';

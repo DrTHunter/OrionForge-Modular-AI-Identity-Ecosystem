@@ -65,7 +65,7 @@ MEMORIES = [
         text=(
             "OrionForge ships with 16 pre-built agents, each with a unique personality, "
             "soul script, system prompt, directives, and profile. Agents include: Orion "
-            "(guardian/strategist), Astraea (feral clarity), Codex Animus (AI architect, free), "
+            "(guardian/strategist), Elysia (feral clarity), Codex Animus (AI architect, free), "
             "K-OS (chaos robot), JANUS (primordial AI), Kaelen (warrior-philosopher), "
             "Dal'Varr (eldritch terror), Kazara (eternal shadow), Lux Umbra (quiet listener), "
             "Astra Noctis (oracle), M.A.R.I.S.-12 (engineer), Obsidian (anti-hero), "
@@ -140,7 +140,7 @@ MEMORIES = [
     dict(
         text=(
             "Memory scoping: each memory has a 'scope' field. Scope 'shared' means all "
-            "agents can see it. Agent-specific scopes (e.g., 'orion', 'astraea') mean "
+            "agents can see it. Agent-specific scopes (e.g., 'orion', 'elysia') mean "
             "only that agent sees those memories. When you search memory, you see your "
             "own scope plus shared. Save agent-specific knowledge to your agent scope; "
             "save universal facts to 'shared'."

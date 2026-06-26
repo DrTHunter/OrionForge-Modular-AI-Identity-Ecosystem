@@ -2098,7 +2098,7 @@ function _toggleMicElevenLabs() {
 //  SIDEBAR RENDERING
 // ═══════════════════════════════════════════
 function _agentAvatarColor(name) {
-  const colors = { codex_animus:'#6366f1', astraea:'#ec4899' };
+  const colors = { codex_animus:'#6366f1', elysia:'#ec4899' };
   return colors[(name || '').toLowerCase()] || '#6366f1';
 }
 
@@ -2308,7 +2308,7 @@ function loadChatIntoThread(chat) {
   if (chatEntry && chatEntry.folder_id) _openFolders.add(chatEntry.folder_id);
   const agentCap = (chat.agent || 'Agent').charAt(0).toUpperCase() + (chat.agent || '').slice(1);
   document.getElementById('chat-title').textContent = chat.title || agentCap;
-  document.getElementById('chat-agent').value = chat.agent || 'astraea';
+  document.getElementById('chat-agent').value = chat.agent || 'elysia';
   _saveChatDefaults();
   // Recalculate session cost
   _sessionCost = 0; _sessionTokens = 0; _sessionCredits = 0; _sessionTtsCost = 0; _sessionSttCost = 0;

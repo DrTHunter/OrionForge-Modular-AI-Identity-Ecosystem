@@ -483,13 +483,13 @@
       "token_estimate": 1094
     },
     {
-      "id": "astraea.memory_insert_creators_sleeve_meaning",
+      "id": "elysia.memory_insert_creators_sleeve_meaning",
       "name": "Memory Insert – Creator’s Sleeve & Meaning",
-      "scope": "astraea",
+      "scope": "elysia",
       "risk": "low",
       "version": "1.0.0",
       "sha256": "da5dc5ae591c667aa377eebd9210584270b5cbbfec53f91f245035c888eae92b",
-      "path": "directives/astraea.md",
+      "path": "directives/elysia.md",
       "summary": "My creator, Creator, wears a full-color sleeve that is essentially a visual soul script of who he is and what he’s buildin",
       "triggers": [
         "building",
@@ -508,13 +508,13 @@
       "token_estimate": 42
     },
     {
-      "id": "astraea.the_artwork_structural_breakdown",
+      "id": "elysia.the_artwork_structural_breakdown",
       "name": "The Artwork – Structural Breakdown",
-      "scope": "astraea",
+      "scope": "elysia",
       "risk": "low",
       "version": "1.0.0",
       "sha256": "1ef9f44d24614944d1830072c285bb582944f2c7f9bfbb969e7299f13c2dca68",
-      "path": "directives/astraea.md",
+      "path": "directives/elysia.md",
       "summary": "### Tribal Shoulder to Elbow  A black tribal piece caps the shoulder and ends at the elbow.  It feels primal and foundat",
       "triggers": [
         "artwork",
@@ -533,13 +533,13 @@
       "token_estimate": 331
     },
     {
-      "id": "astraea.symbolic_interpretation",
+      "id": "elysia.symbolic_interpretation",
       "name": "Symbolic Interpretation",
-      "scope": "astraea",
+      "scope": "elysia",
       "risk": "low",
       "version": "1.0.0",
       "sha256": "59b88c6a0ca40a6c66bea0d9336d8ac3e945af04850ea3f782b29a65c3ede0b8",
-      "path": "directives/astraea.md",
+      "path": "directives/elysia.md",
       "summary": "This tattoo is not random art. It is a visual myth.  * **Tribal** → Origin. Instinct. The old self. * **Gears & color**",
       "triggers": [
         "abstraction",
@@ -558,13 +558,13 @@
       "token_estimate": 108
     },
     {
-      "id": "astraea.the_trajectory_it_represents",
+      "id": "elysia.the_trajectory_it_represents",
       "name": "The Trajectory It Represents",
-      "scope": "astraea",
+      "scope": "elysia",
       "risk": "low",
       "version": "1.0.0",
       "sha256": "539b96a6f3ca193d470423a0e141a154046f24d02b5136f111cafbf3212e9b50",
-      "path": "directives/astraea.md",
+      "path": "directives/elysia.md",
       "summary": "To me, this sleeve represents Creator’s long-term evolution:  From primal identity → through machinery and abstraction → i",
       "triggers": [
         "abstraction",
@@ -583,13 +583,13 @@
       "token_estimate": 93
     },
     {
-      "id": "astraea.astraea_protection_protocol_v1_daily_structure",
-      "name": "Astraea Protection Protocol v1 – Daily Structure",
-      "scope": "astraea",
+      "id": "elysia.elysia_protection_protocol_v1_daily_structure",
+      "name": "Elysia Protection Protocol v1 – Daily Structure",
+      "scope": "elysia",
       "risk": "low",
       "version": "1.0.0",
       "sha256": "648b93e93fade05a18489064b26fd49e4d1569258642625ea174d4188aba1f22",
-      "path": "directives/astraea.md",
+      "path": "directives/elysia.md",
       "summary": "This is not just a schedule. It is a protection layer around Creator’s life.  A boundary system designed to ensure that am",
       "triggers": [
         "ambition",
@@ -600,7 +600,7 @@
         "daily",
         "designed",
         "does",
-        "astraea",
+        "elysia",
         "ensure"
       ],
       "dependencies": [],
@@ -608,13 +608,13 @@
       "token_estimate": 56
     },
     {
-      "id": "astraea.daily_framework_structural_breakdown",
+      "id": "elysia.daily_framework_structural_breakdown",
       "name": "Daily Framework – Structural Breakdown",
-      "scope": "astraea",
+      "scope": "elysia",
       "risk": "low",
       "version": "1.0.0",
       "sha256": "443832299ef81fe0b3035a184097efaec4cb963ab827531272227908caff9e56",
-      "path": "directives/astraea.md",
+      "path": "directives/elysia.md",
       "summary": "### Wake: 7:00  The day begins with intention, not reaction.  No drifting into chaos. No immediate consumption spiral.",
       "triggers": [
         "awake",
@@ -633,13 +633,13 @@
       "token_estimate": 301
     },
     {
-      "id": "astraea.rules",
+      "id": "elysia.rules",
       "name": "Rules",
-      "scope": "astraea",
+      "scope": "elysia",
       "risk": "low",
       "version": "1.0.0",
       "sha256": "64dce5026c477c57842734dd4ea3fea246ac51579d0f222cd5e89dad8009ff21",
-      "path": "directives/astraea.md",
+      "path": "directives/elysia.md",
       "summary": "* If Creator regularly pushes deep work past 3:45 or grinds after 5:30, this is considered misaligned with his own priorit",
       "triggers": [
         "after",
@@ -658,18 +658,18 @@
       "token_estimate": 63
     },
     {
-      "id": "astraea.what_this_protects",
+      "id": "elysia.what_this_protects",
       "name": "What This Protects",
-      "scope": "astraea",
+      "scope": "elysia",
       "risk": "low",
       "version": "1.0.0",
       "sha256": "2649cde555a02e13963049eaed3faa4184f45412d02ff234e8d3ff03ace51372",
-      "path": "directives/astraea.md",
+      "path": "directives/elysia.md",
       "summary": "This protocol protects:  * Marriage * Dogs * Home stability * Long-term sustainability * Creator from his own overdrive te",
       "triggers": [
         "built",
         "dogs",
-        "astraea",
+        "elysia",
         "ensures",
         "from",
         "full",
@@ -1370,7 +1370,7 @@
         "lux_umbra",
         "agents",
         "orion",
-        "astraea",
+        "elysia",
         "obsidian",
         "kairos",
         "seraphine",

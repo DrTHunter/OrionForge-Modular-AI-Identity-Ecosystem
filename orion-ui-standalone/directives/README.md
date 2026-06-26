@@ -19,7 +19,7 @@ Agents can also search directives mid-conversation using the `directives` tool (
 | `shared.md` | All agents |
 | `aristotle.md` | Only Aristotle |
 | `astra.md` | Only Astra Noctis |
-| `astraea.md` | Only Astraea |
+| `elysia.md` | Only Elysia |
 | `codex_animus.md` | Only Codex Animus |
 | `dalvarr.md` | Only Dal'Varr |
 | `janus.md` | Only JANUS |

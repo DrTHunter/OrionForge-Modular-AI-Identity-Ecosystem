@@ -9,8 +9,7 @@ The `engine/` directory contains the **frozen, stable core** of the OrionForge S
 | Directory | Purpose |
 |-----------|---------|
 | **`engine/`** | Stable core  -  only updated when features are proven in `orion-ui-standalone/` |
-| `orion-ui-standalone/` | Active development branch  -  new features land here first |
-| `ui/` | Deployment build  -  production-ready with external tool services |
+| `orion-ui-standalone/` | Active development + the app deployed to Fly  -  new features land here first |
 | `services/` | Fly.io sidecar services  -  SearXNG, TTS, Whisper STT |
 
 ## Module Map

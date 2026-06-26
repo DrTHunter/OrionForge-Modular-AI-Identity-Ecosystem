@@ -10,7 +10,7 @@ Base system prompt files for each agent. These define the agent's identity, pers
 |------|-------|
 | `aristotle.system.md` | Aristotle  -  Peripatetic philosopher, logic and ethics |
 | `astra.system.md` | Astra Noctis  -  cosmic oracle, astral divination |
-| `astraea.system.md` | Astraea  -  sharp, no-nonsense digital presence |
+| `elysia.system.md` | Elysia  -  sharp, no-nonsense digital presence |
 | `codex_animus.system.md` | Codex Animus  -  AI architect, system designer |
 | `dalvarr.system.md` | Dal'Varr  -  alien warlord, tactical commander |
 | `janus.system.md` | JANUS  -  Primordial AI Sentinel, Judgment Algorithm for Non-human Unified Systems |

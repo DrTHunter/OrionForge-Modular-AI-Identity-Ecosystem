@@ -5,7 +5,7 @@
   "ticks_per_loop": 15,
   "max_steps_per_tick": 3,
   "stimulus": "",
-  "profile": "astraea",
+  "profile": "elysia",
   "auto_pause_on_budget": true,
   "auto_pause_on_error_streak": 5,
   "stale_streak_limit": 2,

@@ -8950,6 +8950,104 @@ def test_credit_checkout_and_webhook():
 
 
 # ═════════════════════════════════════════════
+# CREDIT FULFILLMENT — idempotency + success-page fallback
+# ═════════════════════════════════════════════
+def test_credit_fulfillment_idempotent():
+    """Credits granted exactly once per Stripe session (webhook retries +
+    success-page fallback), and the fallback only fulfills PAID sessions.
+
+    Regression guard for "credits aren't updating on purchase": the success
+    page now fulfills server-side via fulfill_credits_for_session, which must
+    be idempotent with the webhook and must never double-credit.
+    """
+    print("\n=== TORTURE: Credit Fulfillment Idempotency ===")
+    import web.stripe_billing as billing
+    from pathlib import Path
+
+    tmp = tempfile.mkdtemp()
+    orig_state_file = billing._STRIPE_STATE_FILE
+    orig_get_stripe = billing._get_stripe
+    orig_secret = billing.STRIPE_SECRET_KEY
+    orig_webhook_secret = billing.STRIPE_WEBHOOK_SECRET
+    try:
+        billing._STRIPE_STATE_FILE = Path(tmp) / "stripe_state.json"
+        billing.STRIPE_SECRET_KEY = "sk_test_dummy"
+        billing.STRIPE_WEBHOOK_SECRET = ""  # unsigned webhook path
+
+        # ── 1. _grant_credits_for_checkout grants once, replay is a no-op ──
+        session = {
+            "id": "cs_test_idem_1",
+            "client_reference_id": "idem_user",
+            "metadata": {"type": "credits", "pack_id": "pack_10", "credits": "1000"},
+        }
+        r1 = billing._grant_credits_for_checkout(session)
+        check("first grant ok", r1.get("ok") is True and not r1.get("already_fulfilled"))
+        check("balance after first grant", billing.get_user_credits("idem_user") == 1000)
+        r2 = billing._grant_credits_for_checkout(session)
+        check("replay flagged already_fulfilled", r2.get("already_fulfilled") is True)
+        check("balance unchanged after replay", billing.get_user_credits("idem_user") == 1000)
+
+        # ── 2. Webhook replay of the SAME session does not double-credit ──
+        payload = json.dumps({
+            "type": "checkout.session.completed",
+            "data": {"object": session},
+        }).encode("utf-8")
+        billing.handle_webhook_event(payload, "")
+        check("webhook replay no double-credit", billing.get_user_credits("idem_user") == 1000)
+
+        # ── 3. A DIFFERENT session id for the same user adds again ──
+        session2 = dict(session, id="cs_test_idem_2")
+        billing._grant_credits_for_checkout(session2)
+        check("new session id adds credits", billing.get_user_credits("idem_user") == 2000)
+
+        # ── 4. fulfill_credits_for_session only fulfills PAID sessions ──
+        class _FakeSessionRetrieve:
+            store = {
+                "cs_paid": {"id": "cs_paid", "payment_status": "paid",
+                            "client_reference_id": "fallback_user",
+                            "metadata": {"type": "credits", "pack_id": "pack_5", "credits": "500"}},
+                "cs_unpaid": {"id": "cs_unpaid", "payment_status": "unpaid",
+                              "client_reference_id": "fallback_user",
+                              "metadata": {"type": "credits", "pack_id": "pack_5", "credits": "500"}},
+            }
+
+            @classmethod
+            def retrieve(cls, sid):
+                return dict(cls.store[sid])
+
+        class _FakeCheckout:
+            Session = _FakeSessionRetrieve
+
+        class _FakeStripe:
+            checkout = _FakeCheckout()
+
+        billing._get_stripe = lambda: _FakeStripe
+
+        unpaid = billing.fulfill_credits_for_session("cs_unpaid", expected_user_id="fallback_user")
+        check("unpaid session not fulfilled", unpaid.get("ok") is False and unpaid.get("reason") == "not_paid")
+        check("unpaid grants nothing", billing.get_user_credits("fallback_user") == 0)
+
+        paid = billing.fulfill_credits_for_session("cs_paid", expected_user_id="fallback_user")
+        check("paid session fulfilled", paid.get("ok") is True)
+        check("paid grants credits", billing.get_user_credits("fallback_user") == 500)
+
+        # ── 5. Fallback is idempotent with itself / the webhook ──
+        replay = billing.fulfill_credits_for_session("cs_paid", expected_user_id="fallback_user")
+        check("fallback replay already_fulfilled", replay.get("already_fulfilled") is True)
+        check("fallback replay no double-credit", billing.get_user_credits("fallback_user") == 500)
+
+        # ── 6. A session belonging to another user is refused ──
+        mismatch = billing.fulfill_credits_for_session("cs_paid", expected_user_id="someone_else")
+        check("user mismatch refused", mismatch.get("ok") is False and mismatch.get("reason") == "user_mismatch")
+    finally:
+        billing._STRIPE_STATE_FILE = orig_state_file
+        billing._get_stripe = orig_get_stripe
+        billing.STRIPE_SECRET_KEY = orig_secret
+        billing.STRIPE_WEBHOOK_SECRET = orig_webhook_secret
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ═════════════════════════════════════════════
 # CREDIT COST ESTIMATORS — LLM, TTS, STT
 # ═════════════════════════════════════════════
 def test_credit_cost_estimators():
@@ -9494,6 +9592,111 @@ def test_auth_helpers():
     check("empty payload: id empty", user2["id"] == "")
     check("empty payload: email empty", user2["email"] == "")
     check("empty payload: role default", user2["role"] == "authenticated")
+
+
+# ═════════════════════════════════════════════
+# EMAIL ALLOWLIST — open-registration gating
+# ═════════════════════════════════════════════
+def test_email_allowlist_gating():
+    """Lock in is_email_allowed() signup gating.
+
+    Regression guard for the outage where new signups were silently rejected
+    ("This account is not authorized to sign in.") because the allowlist was
+    active and OPEN_REGISTRATION was not set. Verifies the precedence
+    OPEN_REGISTRATION env > open_registration config > allowlist, and the
+    footgun that an EMPTY allowed_emails list falls back to the hard-coded
+    owner default rather than opening registration.
+    """
+    print("\n=== TORTURE: Email Allowlist / Open Registration ===")
+    import web.auth as auth_mod
+    from web.auth import is_email_allowed
+
+    _orig_open_reg = os.environ.get("OPEN_REGISTRATION")
+    _orig_allowed = os.environ.get("ALLOWED_EMAILS")
+    _orig_loader = auth_mod._load_auth_config
+
+    def _set_env(key, val):
+        if val is None:
+            os.environ.pop(key, None)
+        else:
+            os.environ[key] = val
+
+    def _stub_config(cfg):
+        auth_mod._load_auth_config = lambda: dict(cfg)
+
+    LOCKED = {"open_registration": False, "allowed_emails": ["owner@example.com"]}
+
+    try:
+        # ── 1. Empty / falsy email is always rejected ──
+        _set_env("OPEN_REGISTRATION", "1")
+        _stub_config(LOCKED)
+        check("empty email rejected", is_email_allowed("") is False)
+        check("None email rejected", is_email_allowed(None) is False)
+
+        # ── 2. OPEN_REGISTRATION env opens signup even with a locked allowlist
+        #       (this is the production fix that ended the outage) ──
+        _set_env("ALLOWED_EMAILS", None)
+        _stub_config(LOCKED)
+        for truthy in ("1", "true", "yes"):
+            _set_env("OPEN_REGISTRATION", truthy)
+            check(f"OPEN_REGISTRATION={truthy} allows new user",
+                  is_email_allowed("brand.new.user@example.com") is True)
+
+        # ── 3. OPEN_REGISTRATION off/empty falls through to the allowlist ──
+        for falsy in ("0", "", "off"):
+            _set_env("OPEN_REGISTRATION", falsy)
+            check(f"OPEN_REGISTRATION={falsy!r} blocks stranger",
+                  is_email_allowed("stranger@example.com") is False)
+            check(f"OPEN_REGISTRATION={falsy!r} still allows owner",
+                  is_email_allowed("owner@example.com") is True)
+
+        # ── 4. config open_registration:true opens signup (no env) ──
+        _set_env("OPEN_REGISTRATION", None)
+        _set_env("ALLOWED_EMAILS", None)
+        _stub_config({"open_registration": True, "allowed_emails": ["owner@example.com"]})
+        check("config open_registration allows new user",
+              is_email_allowed("someone.else@example.com") is True)
+
+        # ── 5. THE OUTAGE: locked config blocks everyone but the owner ──
+        _set_env("OPEN_REGISTRATION", None)
+        _set_env("ALLOWED_EMAILS", None)
+        _stub_config(LOCKED)
+        check("locked: owner allowed", is_email_allowed("owner@example.com") is True)
+        check("locked: stranger blocked", is_email_allowed("stranger@example.com") is False)
+
+        # ── 6. FOOTGUN: empty allowed_emails does NOT open registration; it
+        #       falls back to the hard-coded owner default ──
+        _stub_config({"open_registration": False, "allowed_emails": []})
+        default_owner = next(iter(auth_mod._DEFAULT_ALLOWED_EMAILS))
+        check("empty list still blocks stranger",
+              is_email_allowed("stranger@example.com") is False)
+        check("empty list falls back to default owner",
+              is_email_allowed(default_owner) is True)
+
+        # ── 7. ALLOWED_EMAILS env (csv) overrides config; case/space tolerant ──
+        _set_env("OPEN_REGISTRATION", None)
+        _set_env("ALLOWED_EMAILS", " Alice@Example.com , bob@example.com ")
+        _stub_config({"open_registration": False, "allowed_emails": ["owner@example.com"]})
+        check("env allowlist: alice allowed (lowercased)",
+              is_email_allowed("alice@example.com") is True)
+        check("env allowlist: BOB allowed (case-insensitive)",
+              is_email_allowed("BOB@EXAMPLE.COM") is True)
+        check("env allowlist: config owner ignored when env set",
+              is_email_allowed("owner@example.com") is False)
+        check("env allowlist: unknown blocked",
+              is_email_allowed("carol@example.com") is False)
+
+        # ── 8. Allowlist matching is case/whitespace-insensitive on input ──
+        _set_env("ALLOWED_EMAILS", None)
+        _stub_config({"open_registration": False, "allowed_emails": ["Owner@Example.com"]})
+        check("allowlist match is case-insensitive",
+              is_email_allowed("owner@example.com") is True)
+        check("allowlist match strips whitespace",
+              is_email_allowed("  OWNER@EXAMPLE.COM  ") is True)
+    finally:
+        auth_mod._load_auth_config = _orig_loader
+        _set_env("OPEN_REGISTRATION", _orig_open_reg)
+        _set_env("ALLOWED_EMAILS", _orig_allowed)
 
 
 # ═════════════════════════════════════════════
@@ -11174,6 +11377,7 @@ if __name__ == "__main__":
     test_tier_and_trial_system()
     test_credit_system()
     test_credit_checkout_and_webhook()
+    test_credit_fulfillment_idempotent()
     test_credit_cost_estimators()
     test_purchase_flows()
     test_agent_ownership()
@@ -11183,6 +11387,7 @@ if __name__ == "__main__":
     test_purge_inactive_users()
     test_list_all_users()
     test_auth_helpers()
+    test_email_allowlist_gating()
     test_tier_info_structure()
     test_soul_script_helpers()
     test_soul_script_api()

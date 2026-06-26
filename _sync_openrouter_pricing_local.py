@@ -1,5 +1,5 @@
 """One-off: refresh the `openrouter:` pricing block in pricing.yaml from the LIVE
-OpenRouter models API, then mirror to both UI copies.
+OpenRouter models API, then write it back to the app config.
 
 Replicates the exact conversion used by web/app.py::_sync_openrouter_pricing:
   input_per_1m        = pricing.prompt      * 1_000_000
@@ -26,7 +26,6 @@ import yaml
 URL = "https://openrouter.ai/api/v1/models"
 FILES = [
     Path("orion-ui-standalone/config/pricing.yaml"),
-    Path("ui/config/pricing.yaml"),
 ]
 
 
