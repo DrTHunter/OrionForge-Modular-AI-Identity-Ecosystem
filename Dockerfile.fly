@@ -26,10 +26,13 @@ RUN ln -sf /app/engine/src /app/app/src
 
 # Stage bundled uploads so boot.sh can sync new avatars on every deploy
 # (the live uploads dir gets symlinked to persistent storage)
-RUN cp -a /app/app/data/uploads /app/_bundled_uploads
+# `data/uploads` is gitignored runtime data, so it may be absent in CI —
+# create an empty source so the bundle stages instead of failing the build.
+RUN mkdir -p /app/app/data/uploads && cp -a /app/app/data/uploads /app/_bundled_uploads
 
 # Stage bundled memory vault so seeded memories survive across deploys
-RUN cp -a /app/app/data/memory /app/_bundled_memory
+# (gitignored runtime data — guard against it being absent in CI)
+RUN mkdir -p /app/app/data/memory && cp -a /app/app/data/memory /app/_bundled_memory
 
 # Stage bundled config so settings persist across deploys
 RUN cp -a /app/app/config /app/_bundled_config
@@ -38,10 +41,12 @@ RUN cp -a /app/app/config /app/_bundled_config
 RUN cp -a /app/app/profiles /app/_bundled_profiles
 
 # Stage bundled shared data (inbox, etc.) so it seeds on first deploy
-RUN cp -a /app/app/data/shared /app/_bundled_shared
+# (gitignored runtime data — guard against it being absent in CI)
+RUN mkdir -p /app/app/data/shared && cp -a /app/app/data/shared /app/_bundled_shared
 
 # Stage bundled seed chats so example conversations seed on every deploy
-RUN cp -a /app/app/data/chats/seed /app/_bundled_chats_seed
+# (gitignored runtime data — guard against it being absent in CI)
+RUN mkdir -p /app/app/data/chats/seed && cp -a /app/app/data/chats/seed /app/_bundled_chats_seed
 
 # Stage bundled orion data (journal, history, soul scripts) for first deploy
 RUN cp -a /app/app/data/orion /app/_bundled_orion
