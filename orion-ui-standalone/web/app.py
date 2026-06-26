@@ -1848,14 +1848,23 @@ async def api_auth_logout(request: Request):
 @app.get("/api/auth/user")
 async def api_auth_user(request: Request):
     """Get current user info (used by base template)."""
+    # /api/auth/user is a PUBLIC path, so AuthMiddleware short-circuits before
+    # it can populate request.state.user. Resolve the user straight from the
+    # session cookie (like /api/auth/session) so the nav can show the email and
+    # reveal the Admin tab; falling back to request.state.user when present.
     user = getattr(request.state, "user", None)
+    if not user:
+        token = request.cookies.get("sb_access_token")
+        payload = verify_supabase_token(token) if token else None
+        if payload:
+            user = extract_user_from_token(payload)
     if user:
         # is_admin lets the nav reveal the Admin tab based on the authoritative
         # backend check (ADMIN_USER_IDS / ADMIN_EMAILS) rather than hardcoding.
         return JSONResponse({
             "authenticated": True,
             "user": user,
-            "is_admin": _check_admin(request),
+            "is_admin": _user_is_admin(user),
         })
     return JSONResponse({"authenticated": False})
 
@@ -5908,14 +5917,18 @@ ADMIN_USER_IDS = set(
     if u.strip()
 )
 
-def _check_admin(request: Request) -> bool:
-    """Verify the logged-in user is an admin (by OAuth email or user id)."""
-    user = getattr(request.state, "user", None)
+def _user_is_admin(user: dict | None) -> bool:
+    """Return True if the given user dict belongs to an admin (email or id)."""
     if not user:
         return False
     if user.get("id") in ADMIN_USER_IDS:
         return True
     return user.get("email", "").lower() in ADMIN_EMAILS
+
+
+def _check_admin(request: Request) -> bool:
+    """Verify the logged-in user is an admin (by OAuth email or user id)."""
+    return _user_is_admin(getattr(request.state, "user", None))
 
 
 def _get_platform_connections() -> list[dict]:
