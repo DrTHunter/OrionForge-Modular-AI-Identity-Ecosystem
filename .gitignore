@@ -23,8 +23,12 @@ Thumbs.db
 desktop.ini
 
 # Runtime data (keep structure via .gitkeep but not actual data)
-orion-ui-standalone/data/chats/
-orion-ui-standalone/data/memory/
+# data/chats: ignore live runtime chats but KEEP the bundled seed conversations
+orion-ui-standalone/data/chats/*
+!orion-ui-standalone/data/chats/seed/
+# data/memory: ignore the live vault + generated faiss index but KEEP the seed vault
+orion-ui-standalone/data/memory/*
+!orion-ui-standalone/data/memory/seed_vault.jsonl
 orion-ui-standalone/data/shared/
 orion-ui-standalone/data/trash/
 orion-ui-standalone/data/uploads/
