@@ -1,27 +1,4 @@
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-JanusSafe
-    Safe                    
-
-db8c5af8-2a91-4d81-a6a5-8894cf283a36
-""Seed the memory vault with essential operational knowledge for all agents.
+"""Seed the memory vault with essential operational knowledge for all agents.
 
 Every agent sees scope="shared" memories. This script provides the
 foundational context every AI needs upon first interaction:
@@ -63,17 +40,17 @@ MEMORIES = [
     # REMOVED: Fly.io deployment details (opsec risk — exposes hosting platform, framework, port)
     dict(
         text=(
-            "OrionForge ships with 16 pre-built agents, each with a unique personality, "
+            "OrionForge ships with 15 pre-built agents, each with a unique personality, "
             "soul script, system prompt, directives, and profile. Agents include: Orion "
             "(guardian/strategist), Elysia (feral clarity), Codex Animus (AI architect, free), "
             "K-OS (chaos robot), JANUS (primordial AI), Kaelen (warrior-philosopher), "
             "Dal'Varr (eldritch terror), Kazara (eternal shadow), Lux Umbra (quiet listener), "
-            "Astra Noctis (oracle), M.A.R.I.S.-12 (engineer), Obsidian (anti-hero), "
+            "M.A.R.I.S.-12 (engineer), Obsidian (anti-hero), "
             "Seraphine (healer), KAIROS (empathic presence), Marcus Aurelius (stoic), "
             "and Aristotle (peripatetic philosopher)."
         ),
         scope="shared", category="knowledge",
-        tags=["platform", "agents", "roster", "16_agents"],
+        tags=["platform", "agents", "roster", "15_agents"],
         source="operator", tier="canon",
     ),
 

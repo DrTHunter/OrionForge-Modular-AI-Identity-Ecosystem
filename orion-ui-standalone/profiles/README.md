@@ -4,12 +4,11 @@
 
 YAML configuration files for each agent. One file per agent.
 
-## Files  -  16 Agent Profiles
+## Files  -  15 Agent Profiles
 
 | File | Agent |
 |------|-------|
 | `aristotle.yaml` | Aristotle  -  Peripatetic philosopher, logic and ethics |
-| `astra.yaml` | Astra Noctis  -  cosmic oracle, astral divination |
 | `elysia.yaml` | Elysia  -  sharp, no-nonsense digital presence |
 | `codex_animus.yaml` | Codex Animus  -  AI architect, system designer |
 | `dalvarr.yaml` | Dal'Varr  -  alien warlord, tactical commander |

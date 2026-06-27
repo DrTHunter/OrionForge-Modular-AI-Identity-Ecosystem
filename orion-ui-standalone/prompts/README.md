@@ -4,12 +4,11 @@
 
 Base system prompt files for each agent. These define the agent's identity, personality, and core behavior.
 
-## Files  -  16 Agent Prompts
+## Files  -  15 Agent Prompts
 
 | File | Agent |
 |------|-------|
 | `aristotle.system.md` | Aristotle  -  Peripatetic philosopher, logic and ethics |
-| `astra.system.md` | Astra Noctis  -  cosmic oracle, astral divination |
 | `elysia.system.md` | Elysia  -  sharp, no-nonsense digital presence |
 | `codex_animus.system.md` | Codex Animus  -  AI architect, system designer |
 | `dalvarr.system.md` | Dal'Varr  -  alien warlord, tactical commander |
