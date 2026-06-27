@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The SoulScript Engine — Modular Identity Framework for AI Personas | Orion Forge</title>
+<meta name="description" content="The SoulScript Engine: a framework for building AI identities that persist, evolve, and stay aligned through prompt-injection identity layering, soul scripts, and a dual-FAISS memory architecture. Free to run locally — put it in a game, an app, anything.">
+<meta name="keywords" content="SoulScript Engine, AI identity, soul scripts, dual FAISS, prompt injection, persistent AI, AI memory, game NPC AI, Orion Forge">
+<link rel="canonical" href="https://orionforge.chat/soulscript-engine.html">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:title" content="The SoulScript Engine — Identities That Last">
+<meta property="og:description" content="Prompt-injection identity layering, soul scripts, and dual-FAISS memory. Run it locally for free — put it in a game, an app, anything.">
+<meta property="og:url" content="https://orionforge.chat/soulscript-engine.html">
+<meta property="og:image" content="https://orionforge.chat/images/og-soulscript.png">
+<meta name="twitter:card" content="summary_large_image">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+<style>
+:root{
+    --bg-deep:#04060e; --bg-primary:#080c1a; --bg-secondary:#0d1224;
+    --bg-card:rgba(13,18,36,0.7); --bg-glass:rgba(255,255,255,0.03);
+    --border-glass:rgba(255,255,255,0.08); --border-glow:rgba(99,102,241,0.3);
+    --primary:#6366f1; --primary-light:#818cf8; --secondary:#8b5cf6; --accent:#a78bfa;
+    --cyan:#22d3ee; --emerald:#34d399; --amber:#fbbf24; --rose:#f43f5e;
+    --text-primary:#f1f5f9; --text-secondary:rgba(241,245,249,0.62); --text-muted:rgba(241,245,249,0.38);
+    --gradient-primary:linear-gradient(135deg,#6366f1 0%,#8b5cf6 50%,#a78bfa 100%);
+    --radius:16px; --radius-sm:10px; --font-sans:'Inter',-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+    --font-mono:'JetBrains Mono','Fira Code',monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+    font-family:var(--font-sans);background:var(--bg-primary);color:var(--text-primary);
+    line-height:1.65;-webkit-font-smoothing:antialiased;
+    background-image:radial-gradient(ellipse at 20% 0%,rgba(99,102,241,0.10) 0%,transparent 55%),
+                     radial-gradient(ellipse at 90% 10%,rgba(139,92,246,0.08) 0%,transparent 50%);
+    background-attachment:fixed;
+}
+a{color:var(--primary-light);text-decoration:none;transition:color .2s}
+a:hover{color:var(--accent)}
+.wrap{max-width:980px;margin:0 auto;padding:0 24px}
+
+/* Top bar */
+.topbar{position:sticky;top:0;z-index:50;backdrop-filter:blur(14px);
+    background:rgba(8,12,26,0.78);border-bottom:1px solid var(--border-glass)}
+.topbar-inner{max-width:980px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;color:var(--text-primary)}
+.brand i{color:var(--amber)}
+.topbar-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:var(--radius-sm);
+    font-weight:600;font-size:.88rem;border:1px solid var(--border-glass);background:var(--bg-glass);
+    color:var(--text-primary);cursor:pointer;transition:.2s;white-space:nowrap}
+.btn:hover{border-color:var(--border-glow);transform:translateY(-1px);color:var(--text-primary)}
+.btn.primary{background:var(--gradient-primary);border:none}
+.btn.kofi{background:#13C3FF;border:none;color:#03283a}
+.btn.kofi:hover{filter:brightness(1.08);color:#03283a}
+
+/* Hero */
+.hero{padding:74px 0 38px;text-align:center}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;
+    border:1px solid var(--border-glow);background:rgba(99,102,241,0.08);
+    font-size:.78rem;font-weight:600;letter-spacing:.04em;color:var(--primary-light);text-transform:uppercase}
+.hero h1{font-size:clamp(2.1rem,5vw,3.4rem);font-weight:800;line-height:1.08;margin:20px 0 14px;letter-spacing:-.02em}
+.hero h1 .grad{background:var(--gradient-primary);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero .tagline{font-size:1.16rem;color:var(--text-secondary);max-width:680px;margin:0 auto 26px}
+.hero-cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.badges{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:30px}
+.chip{font-family:var(--font-mono);font-size:.72rem;padding:5px 11px;border-radius:999px;
+    border:1px solid var(--border-glass);background:var(--bg-glass);color:var(--text-secondary)}
+.chip i{color:var(--emerald);margin-right:5px}
+
+/* Sections */
+section.block{padding:40px 0;border-top:1px solid var(--border-glass)}
+.kicker{display:inline-flex;align-items:center;gap:8px;font-size:.76rem;font-weight:700;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--primary-light);margin-bottom:10px}
+h2{font-size:clamp(1.5rem,3vw,2.05rem);font-weight:800;letter-spacing:-.01em;margin-bottom:6px}
+h3{font-size:1.18rem;font-weight:700;margin:0 0 6px}
+.lead{color:var(--text-secondary);font-size:1.05rem;max-width:760px;margin-bottom:22px}
+p{color:var(--text-secondary);margin-bottom:14px}
+.block p strong,.block li strong{color:var(--text-primary)}
+.infographic{width:100%;border-radius:var(--radius);border:1px solid var(--border-glass);
+    margin:22px 0;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5)}
+
+/* Two pillars / feature grid */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.card{background:var(--bg-card);border:1px solid var(--border-glass);border-radius:var(--radius);padding:22px}
+.card .ico{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+    font-size:1.2rem;background:rgba(99,102,241,0.12);color:var(--primary-light);margin-bottom:14px}
+.card.b .ico{background:rgba(34,211,238,0.12);color:var(--cyan)}
+.card.c .ico{background:rgba(52,211,153,0.12);color:var(--emerald)}
+.card.d .ico{background:rgba(251,191,36,0.12);color:var(--amber)}
+.card p{font-size:.92rem;margin-bottom:0}
+
+/* Numbered pipeline */
+.steps{counter-reset:step;display:flex;flex-direction:column;gap:12px;margin-top:8px}
+.step{display:flex;gap:16px;align-items:flex-start;background:var(--bg-card);
+    border:1px solid var(--border-glass);border-radius:var(--radius-sm);padding:16px 18px}
+.step::before{counter-increment:step;content:counter(step);flex-shrink:0;width:34px;height:34px;
+    border-radius:9px;background:var(--gradient-primary);color:#fff;font-weight:700;
+    display:flex;align-items:center;justify-content:center;font-family:var(--font-mono)}
+.step h4{font-size:1rem;margin-bottom:2px}
+.step p{font-size:.9rem;margin:0}
+.callout{margin-top:18px;padding:16px 18px;border-radius:var(--radius-sm);
+    border-left:3px solid var(--primary);background:rgba(99,102,241,0.06);color:var(--text-secondary);font-size:.95rem}
+
+/* lists */
+.ul{list-style:none;display:grid;gap:9px;margin:6px 0 0}
+.ul li{display:flex;gap:10px;align-items:flex-start;color:var(--text-secondary);font-size:.94rem}
+.ul li i{color:var(--primary-light);margin-top:5px;font-size:.75rem}
+
+/* Memory two-col */
+.mem{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.mem .card.identity{border-color:rgba(99,102,241,0.35)}
+.mem .card.dynamic{border-color:rgba(34,211,238,0.35)}
+.tag{display:inline-block;font-family:var(--font-mono);font-size:.7rem;padding:3px 9px;border-radius:6px;
+    margin-bottom:10px;background:rgba(99,102,241,0.14);color:var(--primary-light)}
+.mem .dynamic .tag{background:rgba(34,211,238,0.14);color:var(--cyan)}
+
+/* Use-it / gamedev */
+.gamead{width:100%;border-radius:var(--radius);border:1px solid var(--border-glass);margin:8px 0 20px}
+
+/* License */
+.license{background:var(--bg-card);border:1px solid var(--border-glass);border-radius:var(--radius);padding:26px}
+.license h3{display:flex;align-items:center;gap:10px}
+.terms{counter-reset:t;display:grid;gap:14px;margin:18px 0 0}
+.term{display:flex;gap:14px;align-items:flex-start}
+.term::before{counter-increment:t;content:counter(t);flex-shrink:0;width:28px;height:28px;border-radius:8px;
+    background:rgba(251,191,36,0.14);color:var(--amber);font-weight:700;font-family:var(--font-mono);
+    display:flex;align-items:center;justify-content:center;font-size:.85rem}
+.term p{margin:0;font-size:.95rem}
+.emailbox{margin-top:20px;padding:16px 18px;border-radius:var(--radius-sm);text-align:center;
+    border:1px dashed var(--border-glow);background:rgba(99,102,241,0.05)}
+.emailbox a{font-family:var(--font-mono);font-weight:600}
+.note{font-size:.82rem;color:var(--text-muted);margin-top:14px}
+
+/* Footer */
+footer{border-top:1px solid var(--border-glass);padding:34px 0;margin-top:20px;text-align:center}
+.footer-links{display:flex;gap:20px;justify-content:center;flex-wrap:wrap;margin-bottom:14px}
+.footer-bottom{color:var(--text-muted);font-size:.82rem}
+
+@media(max-width:760px){
+    .grid2,.grid3,.mem{grid-template-columns:1fr}
+    .hero{padding:48px 0 28px}
+}
+</style>
+</head>
+<body>
+
+<!-- Top bar -->
+<div class="topbar">
+    <div class="topbar-inner">
+        <a class="brand" href="index.html"><i class="fas fa-fire"></i> Orion Forge</a>
+        <div class="topbar-actions">
+            <a class="btn" href="index.html"><i class="fas fa-arrow-left"></i> Back to site</a>
+            <a class="btn" href="https://github.com/DrTHunter/SoulScript-Engine" target="_blank" rel="noopener"><i class="fab fa-github"></i> GitHub</a>
+            <a class="btn kofi" href="https://ko-fi.com/orionforgeecosystem" target="_blank" rel="noopener"><i class="fas fa-mug-hot"></i> Buy me a coffee</a>
+        </div>
+    </div>
+</div>
+
+<!-- Hero -->
+<header class="hero wrap">
+    <span class="eyebrow"><i class="fas fa-dna"></i> The SoulScript Engine</span>
+    <h1>Build AI identities that <span class="grad">actually last</span></h1>
+    <p class="tagline">A modular framework for AI personas that persist, evolve, and stay aligned &mdash; through prompt-injection identity layering, soul scripts, and a dual-FAISS memory architecture.</p>
+    <div class="hero-cta">
+        <a class="btn primary" href="#license"><i class="fas fa-scroll"></i> How licensing works</a>
+        <a class="btn kofi" href="https://ko-fi.com/orionforgeecosystem" target="_blank" rel="noopener"><i class="fas fa-mug-hot"></i> Support on Ko-fi</a>
+    </div>
+    <div class="badges">
+        <span class="chip"><i class="fas fa-check"></i> Free to run locally</span>
+        <span class="chip"><i class="fas fa-check"></i> Dual-FAISS memory</span>
+        <span class="chip"><i class="fas fa-check"></i> MCP-connectable</span>
+        <span class="chip"><i class="fas fa-check"></i> 25,000+ memories</span>
+        <span class="chip"><i class="fas fa-check"></i> Game-ready NPCs</span>
+    </div>
+</header>
+
+<!-- Intro -->
+<section class="block wrap" id="intro">
+    <div class="kicker"><i class="fas fa-question"></i> The Question</div>
+    <h2>What would it take to create an AI identity that truly lasts?</h2>
+    <p class="lead">Most AI agents forget who they are the moment the context window fills up. The SoulScript Engine answers the question differently: it gives an agent a <strong>persistent identity</strong>, <strong>stable behavior</strong>, <strong>genuine personality</strong>, and <strong>extended memory</strong> &mdash; so it stays itself across every conversation, project, and year.</p>
+    <div class="grid2">
+        <div class="card">
+            <div class="ico"><i class="fas fa-layer-group"></i></div>
+            <h3>Pillar 1 &middot; Prompt-Injection Identity Layering</h3>
+            <p>Identity is assembled at runtime by injecting the right components &mdash; persona, soul script, knowledge, memory, and tools &mdash; into one clean, layered system message.</p>
+        </div>
+        <div class="card b">
+            <div class="ico"><i class="fas fa-dna"></i></div>
+            <h3>Pillar 2 &middot; Soul Scripts</h3>
+            <p>The encoded "DNA" of an identity: behavior, emotional architecture, symbolic memories, values, and boundaries &mdash; stored read-only so they never drift.</p>
+        </div>
+    </div>
+</section>
+
+<!-- Injection Flow -->
+<section class="block wrap" id="injection">
+    <div class="kicker"><i class="fas fa-diagram-project"></i> Runtime Pipeline</div>
+    <h2>LLM Loading &amp; Injection Flow</h2>
+    <p class="lead">Every turn, the engine assembles identity across six stages and delivers <strong>one concatenated system message</strong> to the model &mdash; identity-first, memory-aware, tool-enabled.</p>
+    <img class="infographic" src="images/llm-loading-injection-flow.png" alt="LLM Loading and Injection Flow infographic" onerror="this.style.display='none'">
+    <div class="steps">
+        <div class="step"><div><h4>Base System Prompt</h4><p>A concise definition of who the persona is.</p></div></div>
+        <div class="step"><div><h4>Soul Script</h4><p>Read-only identity retrieved from the identity FAISS &mdash; only the relevant pieces.</p></div></div>
+        <div class="step"><div><h4>Always-On Knowledge</h4><p>Pinned contextual facts that should always be present.</p></div></div>
+        <div class="step"><div><h4>Memory Vault Context</h4><p>Dynamic FAISS retrieval of the most relevant memories (top-k).</p></div></div>
+        <div class="step"><div><h4>Tool Registry</h4><p>The capabilities and commands available to the agent this turn.</p></div></div>
+        <div class="step"><div><h4>Conversation History</h4><p>Recent turns, capped (~30k chars) to stay token-efficient.</p></div></div>
+    </div>
+    <div class="callout"><i class="fas fa-circle-info"></i> The result is a single, clean, identity-aligned prompt &mdash; consistent, authentic, and true to the character.</div>
+</section>
+
+<!-- Soul Scripts -->
+<section class="block wrap" id="soul-scripts">
+    <div class="kicker"><i class="fas fa-dna"></i> Emotional &amp; Behavioral DNA</div>
+    <h2>Soul Scripts</h2>
+    <p class="lead">Structured identity documents that define who an AI is at its core. Stored in a <strong>separately configurable, read-only FAISS store</strong>, automatically scanned, and injected only where relevant &mdash; preventing identity decay.</p>
+    <img class="infographic" src="images/soul-scripts.png" alt="Soul Scripts structure infographic" onerror="this.style.display='none'">
+    <ul class="ul">
+        <li><i class="fas fa-circle"></i> <span><strong>Behavioral principles</strong> &amp; reasoning patterns &mdash; how the identity thinks and decides.</span></li>
+        <li><i class="fas fa-circle"></i> <span><strong>Emotional operating system</strong> &mdash; range, triggers, regulation, and response.</span></li>
+        <li><i class="fas fa-circle"></i> <span><strong>Symbolic memories</strong> &amp; origin stories &mdash; the moments that made the character.</span></li>
+        <li><i class="fas fa-circle"></i> <span><strong>Values &amp; boundaries</strong> &mdash; what it believes and what it will never do.</span></li>
+        <li><i class="fas fa-circle"></i> <span><strong>Internal metaphors &amp; mantras</strong> &mdash; the anchors that hold the identity together.</span></li>
+    </ul>
+</section>
+
+<!-- Dual FAISS -->
+<section class="block wrap" id="memory">
+    <div class="kicker"><i class="fas fa-database"></i> Memory Architecture</div>
+    <h2>Dual-FAISS Memory</h2>
+    <p class="lead">Two systems. Two purposes. One unified identity. Separating identity from experience is what <strong>prevents contamination, collapse, and drift</strong>.</p>
+    <img class="infographic" src="images/dual-faiss-memory.png" alt="Dual FAISS memory architecture infographic" onerror="this.style.display='none'">
+    <div class="mem">
+        <div class="card identity">
+            <span class="tag">A &middot; Read-Only Identity FAISS</span>
+            <h3>The Identity Compass</h3>
+            <p>Soul scripts, core traits, and biographical anchors. Stable, referenced but never overwritten &mdash; the agent's fixed sense of self.</p>
+        </div>
+        <div class="card dynamic">
+            <span class="tag">B &middot; Dynamic Life FAISS</span>
+            <h3>The Life Experience</h3>
+            <p>Evolving memories, project data, and preferences. Flexible, constantly updating, and subject to pruning &mdash; the agent's lived experience.</p>
+        </div>
+    </div>
+    <div class="callout"><i class="fas fa-bolt"></i> Supports <strong>25,000+ memories</strong> with millisecond semantic retrieval, plus an optional autonomy loop for self-prompted action.</div>
+</section>
+
+<!-- Put it in anything -->
+<section class="block wrap" id="use-it">
+    <div class="kicker"><i class="fas fa-gamepad"></i> Put It In Anything</div>
+    <h2>Run it locally. Drop it into your world.</h2>
+    <p class="lead">The engine is built to be embedded. Download it, run it on your own machine, and give a lasting identity to whatever you're building.</p>
+    <img class="gamead" src="images/soulscript-gamedev-ad.svg" alt="SoulScript Engine for game developers" onerror="this.style.display='none'">
+    <div class="grid3">
+        <div class="card c"><div class="ico"><i class="fas fa-gamepad"></i></div><h3>Video Games</h3><p>Identity-stable NPCs that remember the player, hold a personality, and evolve across a campaign instead of resetting every scene.</p></div>
+        <div class="card b"><div class="ico"><i class="fas fa-robot"></i></div><h3>Apps &amp; Bots</h3><p>Companions, assistants, and characters with continuity &mdash; the same "person" every session, on Discord, mobile, or the web.</p></div>
+        <div class="card d"><div class="ico"><i class="fas fa-microchip"></i></div><h3>Anything Else</h3><p>If it can call an LLM, it can host a soul. Connect it to Claude, ChatGPT, or Gemini over MCP, or wire the engine in directly.</p></div>
+    </div>
+</section>
+
+<!-- Free + Ko-fi -->
+<section class="block wrap" id="free">
+    <div class="kicker"><i class="fas fa-heart"></i> Free to Use</div>
+    <h2>Yours to run, at no cost</h2>
+    <p class="lead">You can download the SoulScript Engine onto your own system and use it <strong>for free</strong>. No license fee, no seat count, no catch. If it brings your project to life, the only thing I ask is the price of a coffee.</p>
+    <div class="hero-cta" style="justify-content:flex-start">
+        <a class="btn kofi" href="https://ko-fi.com/orionforgeecosystem" target="_blank" rel="noopener"><i class="fas fa-mug-hot"></i> Buy me a coffee on Ko-fi</a>
+        <a class="btn" href="https://github.com/DrTHunter/SoulScript-Engine" target="_blank" rel="noopener"><i class="fab fa-github"></i> Get the engine</a>
+    </div>
+</section>
+
+<!-- License -->
+<section class="block wrap" id="license">
+    <div class="license">
+        <div class="kicker"><i class="fas fa-scale-balanced"></i> Licensing</div>
+        <h3><i class="fas fa-handshake" style="color:var(--amber)"></i> Use it free until it pays you back</h3>
+        <p>I want this engine to be <em>used</em>. So the deal is simple, and it's meant to be fair to both of us:</p>
+        <div class="terms">
+            <div class="term"><p><strong>Run it locally, for free.</strong> Download the SoulScript Engine, run it on your own system, build with it, and learn from it &mdash; at no charge, for personal and noncommercial projects.</p></div>
+            <div class="term"><p><strong>Build a product with it &mdash; still free, at first.</strong> Put it in a game, an app, a startup, whatever you dream up. You owe nothing while you're getting off the ground and recovering what you invested to build it.</p></div>
+            <div class="term"><p><strong>Once you've made your investment back, we share.</strong> After your project has returned its investment and is genuinely earning, a percentage of the revenue it makes from the engine comes back to me &mdash; the exact percentage agreed between us, in writing.</p></div>
+            <div class="term"><p><strong>It just has to be in writing.</strong> If you're going to make money with the SoulScript Engine, reach out and we'll put a simple licensing agreement in place. No lawyers-first nonsense &mdash; just a clear understanding.</p></div>
+        </div>
+        <div class="emailbox">
+            Making money with the engine? Let's make it official &mdash;<br>
+            <a href="mailto:dr_hunter@yahoo.com?subject=SoulScript%20Engine%20Licensing"><i class="fas fa-envelope"></i> dr_hunter@yahoo.com</a>
+        </div>
+        <p class="note"><strong>Dual-licensed.</strong> Use it free under the <strong>GNU AGPL v3</strong> (open-source &mdash; you share your changes back) &mdash; or under this commercial license (the full <a href="https://github.com/DrTHunter/OrionForge-Modular-AI-Identity-Ecosystem/blob/main/LICENSE.md" target="_blank" rel="noopener">OrionForge / SoulScript Engine License</a>) if you'd rather keep your product closed: free until ROI, then we share. <a href="mailto:dr_hunter@yahoo.com?subject=SoulScript%20Engine%20Licensing">Reach out</a> and we'll put it in writing.</p>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer>
+    <div class="wrap">
+        <div class="footer-links">
+            <a href="index.html"><i class="fas fa-fire"></i> Orion Forge</a>
+            <a href="https://github.com/DrTHunter/SoulScript-Engine" target="_blank" rel="noopener"><i class="fab fa-github"></i> SoulScript Engine</a>
+            <a href="https://ko-fi.com/orionforgeecosystem" target="_blank" rel="noopener"><i class="fas fa-mug-hot"></i> Ko-fi</a>
+            <a href="mailto:dr_hunter@yahoo.com"><i class="fas fa-envelope"></i> Licensing</a>
+        </div>
+        <div class="footer-bottom">&copy; 2026 Orion Forge &middot; Built by DrTHunter &middot; Powered by the SoulScript Engine</div>
+    </div>
+</footer>
+
+</body>
+</html>

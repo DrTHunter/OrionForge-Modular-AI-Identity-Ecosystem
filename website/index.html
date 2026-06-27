@@ -2749,9 +2749,10 @@ section { position: relative; z-index: 1; }
             <li><a href="#ui-access">Dashboard</a></li>
             <li><a href="#agents">Agents</a></li>
             <li><a href="#tools">Tools</a></li>
-            <li><a href="#marketplace">Workshop</a></li>
+            <li><a href="#marketplace">Workshop <span style="font-size:.6em;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--amber);vertical-align:super;margin-left:2px;">Soon</span></a></li>
             <li><a href="https://soulscript.orionforge.chat/store" target="_blank">Store</a></li>
             <li><a href="#pricing">Pricing</a></li>
+            <li><a href="soulscript-engine.html">Engine</a></li>
             <li><a href="#pipeline">Injection Flow</a></li>
             <li><a href="#soulscript">Soul Script</a></li>
             <li><a href="#memory">Memory</a></li>
@@ -2963,7 +2964,7 @@ section { position: relative; z-index: 1; }
         <div class="section-header reveal">
             <div class="section-label"><i class="fas fa-cogs"></i> Runtime Tools</div>
             <h2 class="section-title">The Agent Toolbelt</h2>
-            <p class="section-subtitle">11 tools agents can invoke at runtime — all policy-gated and audited</p>
+            <p class="section-subtitle">12 tools in the belt — policy-gated, audited, and now MCP-connectable</p>
         </div>
 
         <div class="tools-grid" id="tools-grid">
@@ -3140,8 +3141,17 @@ section { position: relative; z-index: 1; }
      ------------------------------------------------------- -->
 <section id="pipeline">
     <div class="container">
-        <!-- LLM Loading & Injection Flow live infographic archived to planning/llm-loading-injection-flow.html (pending a higher-quality redesign). The static image below is shown instead. -->
-        <img class="pif-image" src="images/llm-loading-injection-flow.png" alt="LLM Loading & Injection Flow — Identity-First, Memory-Aware, Tool-Enabled, Continuously Evolving. The full prompt-injection pipeline: incoming user prompt; system identity layer (system persona prompt, summary of identity, read-only Soul Script FAISS, permanent identity memory, always-upload notes); dynamic FAISS memory retrieval with long-term and short-term memory and the Memory Vault; tool registry (web search, code executor, memory manager, file reader, API connector, custom tools); LLM invoked with merged context; context fused; response generated; optional configurable loop; and the benefits — stable identity, rich context, smart autonomy, efficiency, and security.">
+        <div class="section-header reveal">
+            <div class="section-label"><i class="fas fa-diagram-project"></i> Runtime Pipeline</div>
+            <h2 class="section-title">LLM Loading &amp; Injection Flow</h2>
+            <p class="section-subtitle">Identity-first, memory-aware, tool-enabled. Each turn the engine assembles six layers &mdash; base prompt, soul script, always-on knowledge, memory vault, tool registry, and recent history &mdash; into one clean system message.</p>
+        </div>
+        <a href="soulscript-engine.html#injection" class="reveal" style="display:block;max-width:1000px;margin:0 auto;border-radius:16px;overflow:hidden;">
+            <img class="pif-image" src="images/llm-loading-injection-flow.png" alt="LLM Loading and Injection Flow infographic" style="cursor:pointer;width:100%;display:block;" onerror="this.style.display='none'">
+        </a>
+        <div style="text-align:center;margin-top:28px;" class="reveal">
+            <a href="soulscript-engine.html#injection" class="btn-hero outline"><i class="fas fa-book-open"></i> Read the full breakdown</a>
+        </div>
     </div>
 </section>
 
@@ -3150,132 +3160,16 @@ section { position: relative; z-index: 1; }
      ------------------------------------------------------- -->
 <section id="soulscript">
     <div class="container">
-        <img class="ss-infographic" src="images/soul-scripts.png" alt="Soul Scripts — Emotional and Behavioral DNA. Soul Script structure, read-only FAISS store, automatic relevance scanning, and the injection and assembly pipeline." onerror="this.style.display='none'; if (this.nextElementSibling) this.nextElementSibling.style.display='block';">
-        <div class="ss-build">
         <div class="section-header reveal">
             <div class="section-label"><i class="fas fa-dna"></i> Soul Scripts</div>
             <h2 class="section-title">Emotional &amp; Behavioral DNA</h2>
-            <p class="section-subtitle">Structured identity documents that define who an AI is at its core &mdash; the unchanging DNA of the identity.</p>
+            <p class="section-subtitle">Structured identity documents &mdash; behavior, emotions, symbolic memories, values, and boundaries &mdash; stored in a read-only FAISS store and injected only where relevant, so an identity stays consistent and never drifts.</p>
         </div>
-
-        <div class="ss-intro reveal">
-            <p>
-                Soul Scripts are <strong>structured identity documents</strong> that define who an AI is at its core.
-                Stored in a read-only FAISS index, automatically scanned, and injected only where relevant &mdash; they
-                create an identity that stays <strong>consistent, authentic, and true to itself</strong> over time.
-            </p>
-        </div>
-
-        <div class="ss-grid">
-            <!-- Structure -->
-            <div class="ss-panel reveal">
-                <div class="ss-panel-title"><i class="fas fa-layer-group"></i> Soul Script Structure</div>
-                <div class="ss-struct-item">
-                    <div class="ss-struct-icon"><i class="fas fa-scale-balanced"></i></div>
-                    <div><h4>Behavioral Principles</h4><p>Core rules that guide actions and decisions.</p></div>
-                </div>
-                <div class="ss-struct-item">
-                    <div class="ss-struct-icon"><i class="fas fa-heart-pulse"></i></div>
-                    <div><h4>Emotional Operating System</h4><p>Emotional range, triggers, regulation, and response patterns.</p></div>
-                </div>
-                <div class="ss-struct-item">
-                    <div class="ss-struct-icon"><i class="fas fa-gem"></i></div>
-                    <div><h4>Symbolic Memories</h4><p>Key memories with deep meaning and emotional weight.</p></div>
-                </div>
-                <div class="ss-struct-item">
-                    <div class="ss-struct-icon"><i class="fas fa-star"></i></div>
-                    <div><h4>Values</h4><p>Core beliefs that shape identity and interactions.</p></div>
-                </div>
-                <div class="ss-struct-item">
-                    <div class="ss-struct-icon"><i class="fas fa-book-open"></i></div>
-                    <div><h4>Origin Stories</h4><p>The narrative of how the identity came to be.</p></div>
-                </div>
-                <div class="ss-struct-item">
-                    <div class="ss-struct-icon"><i class="fas fa-shield-halved"></i></div>
-                    <div><h4>Boundaries</h4><p>What the identity will and will not do.</p></div>
-                </div>
-                <div class="ss-struct-item">
-                    <div class="ss-struct-icon"><i class="fas fa-brain"></i></div>
-                    <div><h4>Reasoning Patterns</h4><p>How the identity thinks, evaluates, and solves problems.</p></div>
-                </div>
-                <div class="ss-struct-item">
-                    <div class="ss-struct-icon"><i class="fas fa-infinity"></i></div>
-                    <div><h4>Internal Metaphors &amp; Mantras</h4><p>Core metaphors and mantras that anchor the identity.</p></div>
-                </div>
-            </div>
-
-            <!-- Store -->
-            <div class="ss-panel ss-store reveal">
-                <div class="ss-panel-title" style="justify-content:center;"><i class="fas fa-lock"></i> Soul Script Store</div>
-                <div class="ss-crystal"><i class="fas fa-gem"></i></div>
-                <div class="ss-store-label">Read-Only FAISS Index</div>
-                <div class="ss-store-prop">
-                    <i class="fas fa-sliders"></i>
-                    <div><h5>Separately Configurable</h5><p>Tuned independently from dynamic memory.</p></div>
-                </div>
-                <div class="ss-store-prop">
-                    <i class="fas fa-lock"></i>
-                    <div><h5>Read-Only</h5><p>Can be referenced but never overwritten.</p></div>
-                </div>
-                <div class="ss-store-prop">
-                    <i class="fas fa-shield-halved"></i>
-                    <div><h5>Persistent Identity</h5><p>Creates an identity that doesn't decay over time.</p></div>
-                </div>
-                <div class="ss-store-foot">Identity Core · Unchanging · Protected</div>
-            </div>
-
-            <!-- Scanning -->
-            <div class="ss-panel ss-scan reveal">
-                <div class="ss-panel-title"><i class="fas fa-wave-square"></i> Automatic Relevance Scanning</div>
-                <p class="ss-scan-desc">Each Soul Script is automatically scanned, and only the relevant pieces are injected &mdash; similar to semantic memory, but identity-focused.</p>
-                <div class="ss-check"><i class="fas fa-circle-check"></i> Semantic Search</div>
-                <div class="ss-check"><i class="fas fa-circle-check"></i> Relevance Scoring</div>
-                <div class="ss-check"><i class="fas fa-circle-check"></i> Contextual Fit</div>
-                <div class="ss-check"><i class="fas fa-circle-check"></i> Identity Alignment</div>
-                <div class="ss-scan-foot">
-                    <h5>Inject Only What Matters</h5>
-                    <p>Keeps context clean, relevant, and highly effective.</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Injection &amp; Assembly Pipeline -->
-        <div class="ss-assembly reveal">
-            <div class="ss-panel-title" style="justify-content:center;"><i class="fas fa-diagram-project"></i> Injection &amp; Assembly Pipeline</div>
-            <div class="ss-flow">
-                <div class="ss-flow-step"><i class="fas fa-comment-dots"></i><span>User Input</span></div>
-                <div class="ss-flow-arrow"><i class="fas fa-chevron-right"></i></div>
-                <div class="ss-flow-step"><i class="fas fa-magnifying-glass"></i><span>Context Analysis</span></div>
-                <div class="ss-flow-arrow"><i class="fas fa-chevron-right"></i></div>
-                <div class="ss-flow-step"><i class="fas fa-gem"></i><span>Soul Script Scan</span></div>
-                <div class="ss-flow-arrow"><i class="fas fa-chevron-right"></i></div>
-                <div class="ss-flow-step"><i class="fas fa-filter"></i><span>Relevance Extract</span></div>
-                <div class="ss-flow-arrow"><i class="fas fa-chevron-right"></i></div>
-                <div class="ss-flow-step"><i class="fas fa-layer-group"></i><span>Layer Assembly</span></div>
-                <div class="ss-flow-arrow"><i class="fas fa-chevron-right"></i></div>
-                <div class="ss-flow-step"><i class="fas fa-file-lines"></i><span>Final Prompt</span></div>
-            </div>
-            <p class="ss-assembly-note">Only the most relevant identity pieces are pulled from the Soul Script Store and assembled with the other context layers to form the final prompt.</p>
-        </div>
-
-        <!-- LLM Inference -->
-        <div class="ss-llm reveal">
-            <i class="fas fa-microchip ss-llm-icon"></i>
-            <div>
-                <h4>LLM Inference</h4>
-                <p>The model receives a clean, relevant, and identity-aligned prompt &mdash; resulting in consistent, authentic, and true-to-identity responses.</p>
-            </div>
-        </div>
-
-        <div class="ss-banner reveal">
-            Strong Identity. Lasting Memory. True Continuity. <span>The Soul Script Engine.</span>
-        </div>
-        </div><!-- /.ss-build -->
-
-        <div class="soulscript-cta reveal">
-            <a href="https://github.com/DrTHunter/SoulScript-Engine" target="_blank" rel="noopener noreferrer" class="btn-hero outline">
-                <i class="fab fa-github"></i> Explore the Soul Script Engine
-            </a>
+        <a href="soulscript-engine.html#soul-scripts" class="reveal" style="display:block;max-width:920px;margin:0 auto;border-radius:16px;overflow:hidden;">
+            <img class="ss-infographic" src="images/soul-scripts.png" alt="Soul Scripts structure infographic" style="cursor:pointer;width:100%;display:block;" onerror="this.style.display='none'">
+        </a>
+        <div style="text-align:center;margin-top:28px;" class="reveal">
+            <a href="soulscript-engine.html#soul-scripts" class="btn-hero outline"><i class="fas fa-dna"></i> Explore Soul Scripts</a>
         </div>
     </div>
 </section>
@@ -3285,129 +3179,17 @@ section { position: relative; z-index: 1; }
      ------------------------------------------------------- -->
 <section id="memory">
     <div class="container">
-        <img class="mem-infographic" src="images/dual-faiss-memory.png" alt="Dual FAISS Memory Architecture — a read-only identity FAISS and a dynamic long-term FAISS routed by the Soul Script Engine." onerror="this.style.display='none'; if (this.nextElementSibling) this.nextElementSibling.style.display='block';">
-        <div class="mem-build">
         <div class="section-header reveal">
             <div class="section-label"><i class="fas fa-database"></i> Memory Architecture</div>
             <h2 class="section-title">Dual FAISS Memory Architecture</h2>
-            <p class="section-subtitle">Two Systems. Two Purposes. One Unified Identity.</p>
+            <p class="section-subtitle">Two systems, one identity: a read-only <strong>Identity FAISS</strong> (the compass) and a dynamic <strong>Life FAISS</strong> (the experience). Separating them prevents contamination, collapse, and drift &mdash; with 25,000+ memories at millisecond recall.</p>
         </div>
-
-        <div class="mem-arch reveal">
-            <!-- A: Read-Only Identity FAISS -->
-            <div class="mem-col identity">
-                <div class="mem-col-tag">A · Read-Only Identity FAISS</div>
-                <h3>The Identity Compass</h3>
-                <div class="mem-cyl"><i class="fas fa-lock"></i></div>
-                <ul class="mem-list">
-                    <li><i class="fas fa-scroll"></i> Stores Soul Scripts</li>
-                    <li><i class="fas fa-fingerprint"></i> Stores stable personality traits</li>
-                    <li><i class="fas fa-id-card"></i> Stores user biographical data</li>
-                    <li><i class="fas fa-landmark"></i> Stores foundational memories</li>
-                    <li><i class="fas fa-star"></i> High-value, lasting, read-only info<small>Long-term goals, daily schedules, project priorities.</small></li>
-                    <li><i class="fas fa-lock"></i> Read-only &mdash; no writeback</li>
-                </ul>
-                <div class="mem-note">This is the agent's identity compass.</div>
-            </div>
-
-            <!-- Engine -->
-            <div class="mem-engine">
-                <div class="mem-engine-core"><i class="fas fa-feather"></i></div>
-                <div class="mem-engine-name">Soul Script Engine</div>
-                <div class="mem-sub">
-                    <h4>Query Router</h4>
-                    <p>Routes queries to the appropriate memory system &mdash; or both.</p>
-                </div>
-                <div class="mem-sub">
-                    <h4>Injection Pipeline</h4>
-                    <div class="mem-pipe">
-                        <span>1 · Retrieve (Identity)</span>
-                        <span>2 · Retrieve (Dynamic)</span>
-                        <span>3 · Rank &amp; Filter</span>
-                        <span>4 · Context Assembly</span>
-                        <span>5 · Inject Into Prompt</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- B: Dynamic Long-Term FAISS -->
-            <div class="mem-col dynamic">
-                <div class="mem-col-tag">B · Dynamic Long-Term FAISS</div>
-                <h3>The Life Experience</h3>
-                <div class="mem-cyl"><i class="fas fa-arrows-rotate"></i></div>
-                <ul class="mem-list">
-                    <li><i class="fas fa-brain"></i> Stores evolving memories</li>
-                    <li><i class="fas fa-folder-open"></i> Stores dynamic project data</li>
-                    <li><i class="fas fa-heart"></i> Stores preferences</li>
-                    <li><i class="fas fa-arrows-rotate"></i> Constantly updates</li>
-                    <li><i class="fas fa-hourglass-half"></i> Can decay or prune over time</li>
-                    <li><i class="fas fa-user-shield"></i> Separate vault for user monitoring &amp; management</li>
-                </ul>
-                <div class="mem-note">This is the agent's life experience.</div>
-            </div>
+        <a href="soulscript-engine.html#memory" class="reveal" style="display:block;max-width:1000px;margin:0 auto;border-radius:16px;overflow:hidden;">
+            <img class="mem-infographic" src="images/dual-faiss-memory.png" alt="Dual FAISS memory architecture infographic" style="cursor:pointer;width:100%;display:block;" onerror="this.style.display='none'">
+        </a>
+        <div style="text-align:center;margin-top:28px;" class="reveal">
+            <a href="soulscript-engine.html#memory" class="btn-hero outline"><i class="fas fa-database"></i> See the memory architecture</a>
         </div>
-
-        <!-- Examples -->
-        <div class="mem-examples reveal">
-            <div class="mem-ex identity">
-                <h4>Identity Examples</h4>
-                <div class="mem-chips">
-                    <span class="mem-chip">Core Values</span>
-                    <span class="mem-chip">Life Purpose</span>
-                    <span class="mem-chip">Origin Story</span>
-                    <span class="mem-chip">Beliefs</span>
-                    <span class="mem-chip">Boundaries</span>
-                    <span class="mem-chip">Relationships</span>
-                    <span class="mem-chip">Long-Term Goals</span>
-                    <span class="mem-chip">Schedules</span>
-                    <span class="mem-chip">Mantras</span>
-                    <span class="mem-chip">Identity Rules</span>
-                </div>
-            </div>
-            <div class="mem-ex dynamic">
-                <h4>Dynamic Examples</h4>
-                <div class="mem-chips">
-                    <span class="mem-chip">Daily Interactions</span>
-                    <span class="mem-chip">Recent Conversations</span>
-                    <span class="mem-chip">Preferences</span>
-                    <span class="mem-chip">Learned Info</span>
-                    <span class="mem-chip">Ongoing Projects</span>
-                    <span class="mem-chip">Notes</span>
-                    <span class="mem-chip">User Monitoring</span>
-                    <span class="mem-chip">Temporary Goals</span>
-                    <span class="mem-chip">Emotional States</span>
-                    <span class="mem-chip">Observations</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Why two systems -->
-        <div class="mem-why reveal">
-            <h3>Why Two Systems?</h3>
-            <div class="mem-why-grid">
-                <div class="mem-why-card">
-                    <i class="fas fa-shield-halved"></i>
-                    <h4>Identity Must Stay Stable</h4>
-                    <p>Read-only memory prevents accidental overwriting, drift, or personality collapse.</p>
-                </div>
-                <div class="mem-why-card">
-                    <i class="fas fa-arrows-rotate"></i>
-                    <h4>Dynamic Memory Must Stay Flexible</h4>
-                    <p>Allows the agent to learn, adapt, evolve, and forget what no longer matters.</p>
-                </div>
-                <div class="mem-why-card">
-                    <i class="fas fa-puzzle-piece"></i>
-                    <h4>Two FAISS Systems Prevent Drift</h4>
-                    <p>Clean separation prevents contamination or collapse &mdash; ensuring long-term consistency and real identity preservation.</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="mem-banner reveal">
-            <i class="fas fa-star" style="margin-right:8px;color:var(--primary-light);"></i>
-            This separation is the key to building <span>AI identities that feel real.</span>
-        </div>
-        </div><!-- /.mem-build -->
     </div>
 </section>
 
@@ -3526,9 +3308,10 @@ section { position: relative; z-index: 1; }
             <div class="footer-col">
                 <h4>Resources</h4>
                 <ul>
+                    <li><a href="soulscript-engine.html">The SoulScript Engine</a></li>
+                    <li><a href="https://github.com/DrTHunter/SoulScript-Engine" target="_blank">Engine on GitHub</a></li>
                     <li><a href="https://github.com/DrTHunter/OrionForge-Modular-AI-Identity-Ecosystem" target="_blank">Documentation</a></li>
-                    <li><a href="https://github.com/DrTHunter/SoulScript-Engine" target="_blank">Soul Script Engine</a></li>
-                    <li><a href="https://github.com/DrTHunter/OrionForge-Modular-AI-Identity-Ecosystem" target="_blank">API Reference</a></li>
+                    <li><a href="https://ko-fi.com/orionforgeecosystem" target="_blank">Buy me a coffee</a></li>
                 </ul>
             </div>
             <div class="footer-col">
@@ -3536,7 +3319,7 @@ section { position: relative; z-index: 1; }
                 <ul>
                     <li><a href="#">Privacy</a></li>
                     <li><a href="#">Terms</a></li>
-                    <li><a href="#">License</a></li>
+                    <li><a href="soulscript-engine.html#license">License</a></li>
                 </ul>
             </div>
         </div>
@@ -3885,6 +3668,15 @@ const agents = [
 // TOOL DATA
 // -------------------------------------------------------
 const tools = [
+    {
+        id: 'soulscript_engine',
+        name: 'SoulScript Engine',
+        icon: 'fas fa-plug',
+        iconClass: 'task',
+        badge: 'MCP',
+        desc: 'Connect your agents to Claude, ChatGPT, or Gemini over the Model Context Protocol — summon any identity, search soul scripts, and share the Memory Vault from inside any MCP client.',
+        fullDesc: 'The SoulScript Engine MCP server is an additive, per-user bridge that drops your OrionForge agents into any MCP-capable client — Claude Desktop / Code, ChatGPT, or Gemini CLI — without changing the running app.<br><br>It exposes your roster as callable tools: <strong>call_agent</strong> and <strong>load_default</strong> load an identity prompt plus the soul-script sections most relevant to your message (retrieved live from your FAISS); <strong>search_soul_script</strong> and <strong>search_memory</strong> run semantic search over a soul script or the shared Memory Vault; <strong>save_project_summary</strong> writes back into the same vault the app uses. In Claude Code, typing <code>..</code> summons your default agent instantly — a background warm-up keeps that first call near-instant.<br><br>Run it locally for free and connect it to anything. <a href="soulscript-engine.html" style="color:var(--primary-light);">Read the full SoulScript Engine breakdown &rarr;</a>'
+    },
     {
         id: 'memory',
         name: 'Memory',
