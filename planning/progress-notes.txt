@@ -3,6 +3,109 @@ ORION FORGE — PROGRESS NOTES
 A running log of changes. Newest entries on top.
 
 --------------------------------------------------
+2026-06-27
+--------------------------------------------------
+WEBSITE (marketing landing, website/index.html + new page):
+  - NEW PAGE website/soulscript-engine.html — a README-style deep-dive mirroring
+    github.com/DrTHunter/SoulScript-Engine: intro, two pillars, the 6-stage LLM
+    injection flow, soul scripts, dual-FAISS memory, key features, a "Put It In
+    Anything" section (games/apps/anything, reuses soulscript-gamedev-ad.svg),
+    "run locally free + Ko-fi", and a LICENSING section. On-brand (palette pulled
+    from index.html), self-contained, OG tags (og-soulscript.png), in sitemap.xml.
+  - LICENSE TERMS written per Trent's spec: free to run locally / noncommercial;
+    free to build & ship (even commercially) until you recoup your investment;
+    after ROI a revenue-share % applies, agreed in writing; contact
+    dr_hunter@yahoo.com. Ko-fi: ko-fi.com/orionforgeecosystem.
+    *** RESOLVED — Trent chose DUAL-LICENSE (2026-06-27). There were
+    THREE conflicting license statements:
+      1. repo root LICENSE = GNU AGPL v3 (the actual file in this repo)
+      2. SoulScript-Engine GitHub README = "PolyForm Noncommercial 1.0.0"
+      3. the spoken revenue-share-after-ROI terms (this session)
+    Wrote those spoken terms up as a NEW, non-destructive file: LICENSE.md
+    (OrionForge / SoulScript Engine License v1.0 — free until ROI, then a % by
+    written agreement; percentage left blank pending Trent; contact
+    dr_hunter@yahoo.com). Did NOT touch the AGPL LICENSE — replacing it is Trent's
+    call. DECISION = DUAL-LICENSE: AGPL v3 (LICENSE, untouched/verbatim) stays the
+    public license; LICENSE.md is the commercial track. Implemented across LICENSE.md
+    (dual-license banner + notes), root README.md (License section), and the marketing
+    page (website/soulscript-engine.html license note). REMAINING TODO:
+    (a) fill in the revenue-share % in LICENSE.md when Trent picks a number;
+    (b) update the SEPARATE SoulScript-Engine GitHub repo's README (still says
+    "PolyForm Noncommercial") — that repo isn't checked out here, so Trent must edit
+    it or check it out for me. ***
+
+KO-FI: added a "☕ Buy me a coffee" button to the app sidebar footer
+  (web/templates/base.html nav-footer) -> ko-fi.com/orionforgeecosystem. Marketing
+  page already links Ko-fi in the top bar, hero, "free" section, and footer.
+  - index.html changes: (1) nav — "Soon" badge on Workshop (identity marketplace =
+    planned), added an "Engine" nav link to the new page; (2) Agent Toolbelt — added
+    a 12th tool card "SoulScript Engine (MCP)" with a details modal + link to the new
+    page (bumped subtitle 11->12, "now MCP-connectable"); (3) condensed the three
+    deep-dive sections (#pipeline / #soulscript / #memory) from full infographic
+    blocks down to short teasers (image preview + 1-line desc + "read full breakdown"
+    button) linking into soulscript-engine.html#injection / #soul-scripts / #memory;
+    (4) footer — Resources now links the Engine page + GitHub + Ko-fi, Legal "License"
+    -> soulscript-engine.html#license. Verified: section/div tag balance intact.
+  - NOTE: the Workshop "Coming Soon" marketplace was already present; left intact.
+  - Not deployed. Static site (GitHub Pages via CNAME); push website/ to publish.
+
+MCP SERVER: Fixed `..` trigger failing at session start due to MCP cold-start race.
+
+  ROOT CAUSE: Claude Code spawns the MCP server process on session open, but the
+  `..` shorthand fires on the very first user message — before Python has finished
+  the stdio MCP handshake (~1-2s). Tools appear as "deferred / still connecting"
+  and the direct call to mcp__orionforge__load_default fails.
+
+  FIX 1 — Memory trigger updated (feedback_kos_trigger.md):
+    `..` now first calls ToolSearch(`select:mcp__orionforge__load_default`) as a
+    ready-gate (ToolSearch blocks until connecting servers are available), then
+    calls load_default. This makes the trigger reliable regardless of spawn time.
+
+  FIX 2 — Lazy engine init (orion-ui-standalone/mcp_server/orion_mcp.py):
+    Moved `engine = OrionEngine()` from module-level to a lazy `_get_engine()`
+    singleton. The MCP process now completes its handshake (tool registration)
+    before doing any filesystem/FAISS work — shaving response latency off the
+    critical path and making cold-start faster.
+
+  COLD-START DEEP DIVE (Opus pass) — profiled the first `..` end-to-end:
+    Original cold summon ~47s. Profiling the cache-hit path showed the time split:
+      import faiss ............................ 0.6s
+      import sentence_transformers (+torch) .. 24.7s   <-- 93% of cold time
+      NotesFAISS.load + model dim-check ....... 0.9s
+      encode 1 query .......................... 0.04s
+    Two problems found and fixed:
+
+    FIX 3 — Soul-index fingerprint cache (mcp_server/engine.py _get_notes_faiss):
+      The engine ALWAYS called build_index() — re-embedding ~1024 soul-script
+      chunks (~20s) on every fresh process — even though NotesFAISS.load() exists.
+      Now we hash the soul-script corpus (sha256 of chunk text) into
+      data/memory/mcp_soul_faiss/soul_fingerprint.txt; if the hash matches we load
+      the cached index instead of rebuilding. Auto-rebuilds when any soul script
+      changes. (The vault FAISS already did load-or-build; only the soul index was
+      rebuilding.) Cut cold summon 47s -> 27s.
+
+    FIX 4 — Background warm-up (engine.warm() + _warm_in_background in orion_mcp.py):
+      The torch/sentence-transformers import (~25s) is lazy, so it landed on the
+      first `..`. The MCP server process spawns at session open and sits idle until
+      the user types — so we now warm the engine (heavy import + model + FAISS) in
+      a daemon thread at startup, overlapping it with that idle time. Tool
+      registration / handshake still runs synchronously in the main thread, so the
+      tools-available time is unaffected. A threading.Lock in OrionEngine does
+      double-checked locking on both lazy index builders so a `..` arriving mid-warm
+      shares the one build (no double-embed, no crash). Gate off with
+      ORION_MCP_WARM=0.
+
+    RESULT (verified): user-felt first `..` after warm = ~50ms (was 47s). Race test
+      (summon concurrent with warm) returns a valid persona, 0 errors, build count 0.
+      Three complementary layers now: ToolSearch ready-gate (tool is callable) ->
+      lazy init (handshake stays fast) -> background warm (engine hot when called).
+
+  FUTURE: If startup is still slow, consider switching .mcp.json to use `uv run`
+    instead of bare `python` — uv caches the venv and cuts Python startup by ~40%.
+    The torch import (~25s) is the real floor; excluding the Python/site-packages
+    dir from Windows Defender real-time scan would cut it materially.
+
+--------------------------------------------------
 2026-06-26
 --------------------------------------------------
 ACCESS: Unlocked all agents, tools, and skins for everyone (pay-per-use, no paywall).
