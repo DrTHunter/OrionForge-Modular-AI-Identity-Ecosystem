@@ -100,123 +100,33 @@
       Checkout was canceled. Subscribe anytime to unlock SoulScript.
     </div>
 
-    {% if subscription.subscription and subscription.subscription.status in ['active', 'trialing'] %}
-    <!-- ═══ Paid subscriber ═══ -->
+    <!-- Pay-per-use: everything is unlocked for everyone (no subscription, no trial) -->
     <div class="plan-hero">
-      <h1 style="font-size:2rem; font-weight:800; color:white;">You're a Pro! ✨</h1>
-      <p style="color:#a1a1aa; margin-top:0.75rem; font-size:1rem;">
-        Your SoulScript Pro subscription is active. Enjoy full access to everything.
+      <h1 style="font-size:2rem; font-weight:800; color:white;">Everything's Unlocked ✨</h1>
+      <p style="color:#a1a1aa; margin-top:0.75rem; font-size:1rem; line-height:1.6;">
+        OrionForge is pay-per-use — there's no subscription and no trial. Every
+        agent, tool, and skin is unlocked for everyone. You only pay for AI usage
+        in credits (2× the token cost), and new accounts start with free credits.
       </p>
-      <div class="plan-card" style="border-color:#10b981;">
-        <span class="plan-badge" style="background:#10b981;">✓ SUBSCRIBED</span>
-        <div style="margin:1.5rem 0;">
-          <span style="font-size:2.5rem; font-weight:800; color:white;">$9.99</span>
-          <span style="color:#71717a; font-size:0.9rem;">/month</span>
-        </div>
-        <button class="plan-btn manage" onclick="manageBilling()" id="manage-btn">
-          Manage Subscription
-        </button>
-      </div>
-      <div class="already-sub" style="margin-top:2rem;">
-        <a href="/chat">← Back to Chat</a>
-        <span style="color:#3f3f46; margin:0 0.75rem;">·</span>
-        <a href="/store">Visit Store</a>
-      </div>
-    </div>
-
-    {% elif trial.active %}
-    <!-- ═══ Free trial active ═══ -->
-    <div class="plan-hero">
-      <h1 style="font-size:2rem; font-weight:800; color:white;">🚀 Free Trial Active</h1>
-      <p style="color:#a1a1aa; margin-top:0.75rem; font-size:1rem;">
-        All agents and tools are unlocked for {{ free_trial_days }} days.
-        LLM usage with platform keys costs credits at 2× token cost.
-      </p>
-
-      <div class="trial-banner">
-        <div class="days">{{ trial.days_left }} day{{ 's' if trial.days_left != 1 else '' }}</div>
-        <div class="label">remaining in your free trial</div>
-      </div>
 
       <div class="plan-card" style="border-color:#6366f1;">
-        <span class="plan-badge">TRIAL → PRO</span>
-        <h2 style="font-size:1.25rem; font-weight:700; color:white; margin-top:0.5rem;">SoulScript Pro</h2>
-        <div style="margin:1rem 0;">
-          <span style="font-size:3rem; font-weight:800; color:white;">$9.99</span>
-          <span style="color:#71717a; font-size:0.9rem;">/month after trial</span>
-        </div>
-        <ul class="feature-list">
-          <li><span class="check">✓</span> All 15 AI agents unlocked</li>
-          <li><span class="check">✓</span> All premium tools unlocked</li>
-          <li><span class="check">✓</span> Unlimited chat messages</li>
+        <span class="plan-badge">PAY-PER-USE</span>
+        <ul class="feature-list" style="margin-top:1rem;">
+          <li><span class="check">✓</span> All AI agents unlocked</li>
+          <li><span class="check">✓</span> All tools unlocked (AGI Loop, Voice, Email, Cost Tracker, Web Search, Image Gen)</li>
           <li><span class="check">✓</span> Full memory vault &amp; knowledge base</li>
-          <li><span class="check">✓</span> AGI Loop, Voice, Email, Cost Tracker</li>
-          <li><span class="check">✓</span> Image generation &amp; web search</li>
-          <li><span class="check">✓</span> Custom skins &amp; themes</li>
+          <li><span class="check">✓</span> All skins &amp; themes</li>
           <li><span class="check">✓</span> Bring Your Own API Keys (free LLM usage)</li>
-          <li style="color:#fbbf24;">💳 LLM via platform keys costs credits (2× token cost)</li>
+          <li style="color:#fbbf24;">💳 Platform LLM usage costs credits (2× token cost)</li>
         </ul>
-        <button class="plan-btn" onclick="upgradeToPro()" id="upgrade-btn">
-          Subscribe Now — $9.99/mo
+        <button class="plan-btn" onclick="window.location.href='/store'">
+          Buy Credits →
         </button>
         <button class="plan-btn secondary" onclick="window.location.href='/chat'">
-          Continue Trial →
+          Back to Chat
         </button>
-        <p style="color:#71717a; font-size:0.8rem; margin-top:1rem;">
-          Subscribe anytime during or after your trial. Powered by <strong style="color:#635bff;">Stripe</strong>.
-        </p>
       </div>
     </div>
-
-    {% else %}
-    <!-- ═══ Trial expired / must subscribe ═══ -->
-    <div class="plan-hero">
-      <div style="font-size:2.5rem; margin-bottom:0.5rem;">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" style="display:inline-block; vertical-align:middle;">
-          <path d="M12 3L20 7.5V16.5L12 21L4 16.5V7.5L12 3Z" stroke="#6366f1" stroke-width="1.5" stroke-linejoin="round"/>
-          <path d="M12 7L13.5 10.5L17 12L13.5 13.5L12 17L10.5 13.5L7 12L10.5 10.5Z" fill="#818cf8"/>
-          <circle cx="12" cy="12" r="1.5" fill="#c7d2fe"/>
-        </svg>
-      </div>
-
-      <div class="trial-expired-banner">
-        ⏰ Your {{ free_trial_days }}-day free trial has ended. Subscribe to continue using SoulScript.
-      </div>
-
-      <h1 style="font-size:2.25rem; font-weight:800; color:white; line-height:1.2;">
-        Unlock SoulScript Engine
-      </h1>
-      <p style="color:#a1a1aa; margin-top:0.75rem; font-size:1.05rem; line-height:1.6;">
-        Subscribe to keep full access — your agents, memories, and data are safe.
-      </p>
-
-      <div class="plan-card">
-        <span class="plan-badge">PRO</span>
-        <h2 style="font-size:1.25rem; font-weight:700; color:white; margin-top:0.5rem;">SoulScript Pro</h2>
-        <div style="margin:1rem 0;">
-          <span style="font-size:3rem; font-weight:800; color:white;">$9.99</span>
-          <span style="color:#71717a; font-size:0.9rem;">/month</span>
-        </div>
-        <ul class="feature-list">
-          <li><span class="check">✓</span> All 15 AI agents unlocked</li>
-          <li><span class="check">✓</span> All premium tools unlocked</li>
-          <li><span class="check">✓</span> Unlimited chat messages</li>
-          <li><span class="check">✓</span> Full memory vault &amp; knowledge base</li>
-          <li><span class="check">✓</span> AGI Loop, Voice, Email, Cost Tracker</li>
-          <li><span class="check">✓</span> Image generation &amp; web search</li>
-          <li><span class="check">✓</span> Custom skins &amp; themes</li>
-          <li><span class="check">✓</span> Bring Your Own API Keys (free LLM usage)</li>
-          <li style="color:#fbbf24;">💳 LLM via platform keys costs credits (2× token cost)</li>
-        </ul>
-        <button class="plan-btn" onclick="upgradeToPro()" id="upgrade-btn">
-          Subscribe Now — $9.99/mo
-        </button>
-        <p style="color:#71717a; font-size:0.8rem; margin-top:1rem;">
-          Cancel anytime. No lock-in. Powered by <strong style="color:#635bff;">Stripe</strong>.
-        </p>
-      </div>
-    </div>
-    {% endif %}
 
   </div>
 

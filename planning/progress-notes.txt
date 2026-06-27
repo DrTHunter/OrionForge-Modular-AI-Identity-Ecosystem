@@ -3,6 +3,29 @@ ORION FORGE — PROGRESS NOTES
 A running log of changes. Newest entries on top.
 
 --------------------------------------------------
+2026-06-26
+--------------------------------------------------
+ACCESS: Unlocked all agents, tools, and skins for everyone (pay-per-use, no paywall).
+  - stripe_billing.py: get_user_unlocked_agents / user_has_tool_access /
+    user_owns_item / get_user_purchases now grant the full catalog.
+  - Reversible — full re-gating instructions in planning/access-gating.txt.
+
+UI: Removed free-trial messaging (web/templates/plans.html) — access no longer
+  depends on the trial. Hid the Store "Tools" tab (now free); see
+  planning/store-hidden-sections.txt.
+
+AGENTS: Deleted the Astra Noctis and Madara agents entirely (profiles, prompts,
+  directives, settings, avatars, store entries, manifest). Reordered the agent
+  list (profiles + chat) via PINNED_AGENT_ORDER: codex_animus, k_os, elysia,
+  orion, marcus, aristotle, janus, dalvarr, lux_umbra, then the rest. Added a
+  "New Agent" card to the profiles grid (right after Codex Animus); the chat
+  model select keeps "LLM Only" at the top and has no New Agent card.
+
+ELYSIA: New personality prompt, soul script (re-headed into ## sections so it's
+  indexed), and a new avatar. Default agent avatars are now tracked in git so
+  fresh deploys ship with them.
+
+--------------------------------------------------
 2026-06-24
 --------------------------------------------------
 ADMIN ACCESS: Made the Admin nav tab reveal off the authoritative backend check.

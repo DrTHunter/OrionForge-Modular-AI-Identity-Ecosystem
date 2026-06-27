@@ -1015,7 +1015,10 @@ def _list_unlocked_agents(request: Request) -> list[str]:
 # Agents pinned to the top of the chat dropdown, in this exact order. Any pinned
 # agent the current user can't access is simply skipped; every other agent keeps
 # its existing (alphabetical) order after the pinned block.
-PINNED_AGENT_ORDER = ["k_os", "elysia", "janus", "dalvarr", "lux_umbra"]
+PINNED_AGENT_ORDER = [
+    "codex_animus", "k_os", "elysia", "orion", "marcus",
+    "aristotle", "janus", "dalvarr", "lux_umbra",
+]
 
 
 def _prioritize_default_agent(agents: list[str]) -> list[str]:

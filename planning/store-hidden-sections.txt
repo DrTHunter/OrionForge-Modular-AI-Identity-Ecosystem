@@ -3,10 +3,13 @@ STORE — HIDDEN SECTIONS (Packs / Agents / Skins)
 Date: 2026-06-24
 
 WHAT WAS DONE
-- The Store's three tabs "Packs", "Agents", and "Skins" are now HIDDEN for everyone.
+- The Store's tabs "Packs", "Tools", "Agents", and "Skins" are now HIDDEN for everyone.
+  (2026-06-26: "Tools" was added to the hidden set — tools are free for everyone now.)
 - They were hidden because all of those are currently provided FREE, so there is
   nothing to purchase in those sections.
-- Only these tabs remain visible: Credit Packs, Tools, LLM Usage, History.
+- Only these tabs remain visible: Credit Packs, LLM Usage, History.
+- See planning/access-gating.txt for the related "everything unlocked" change and
+  how to re-gate access after launch.
 
 THIS IS AN OPTION (REVERSIBLE)
 - Hiding is intentional and fully reversible. The sections/markup were NOT deleted —
@@ -20,6 +23,7 @@ WHERE
 - Look for the tab block near the top: <div class="store-tabs"> ... </div>
   Buttons affected:
     switchStoreTab('packs')   -> 📦 Packs
+    switchStoreTab('tools')   -> ⚒ Tools
     switchStoreTab('agents')  -> 🤖 Agents
     switchStoreTab('skins')   -> 🎨 Skins
 

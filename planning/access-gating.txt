@@ -1,0 +1,52 @@
+ACCESS GATING — EVERYTHING UNLOCKED (REVERSIBLE)
+================================================
+Date: 2026-06-26
+
+WHAT WAS DONE
+- All agents, all tools, and all skins are UNLOCKED for every signed-up user.
+- This matches the pay-per-use model: there is no paywall on features — users
+  only pay for AI usage in credits (2x token cost). New accounts start with
+  free credits.
+- The 5-day "free trial" no longer gates anything; trial messaging was removed
+  from the UI (web/templates/plans.html).
+- The Store's "Tools" tab is now hidden too (alongside Packs / Agents / Skins),
+  since tools are free. See planning/store-hidden-sections.txt.
+
+THIS IS AN OPTION (REVERSIBLE) — HOW TO RE-GATE AFTER LAUNCH
+- The unlock is implemented by short-circuiting the access checks. To re-enable
+  paywalls/gating later, restore the original logic in these functions in
+  orion-ui-standalone/web/stripe_billing.py:
+
+    get_user_unlocked_agents(user_id)
+        Now: returns FREE_AGENT_IDS | get_store_agent_ids() (all agents).
+        Re-gate: return free agents + trial-active agents + purchased agents
+        (purchases.get("agents")).
+
+    user_has_tool_access(user_id, tool_name)
+        Now: returns True always.
+        Re-gate: allow free_tools + trial + purchased/bundled tools.
+
+    user_owns_item(user_id, item_id, item_type)
+        Now: returns True always (covers voice TTS/STT gates, skin-set checks,
+        and purchase "already owned" guards).
+        Re-gate: return item_id in get_user_purchases(user_id).get(item_type).
+
+    get_user_purchases(user_id)
+        Now: reports the full catalog as owned (tools/skins/agents).
+        Re-gate: read the persisted purchase record from _load_stripe_state().
+
+  The git history for stripe_billing.py has the original (pre-unlock) versions
+  of all four functions if you want to copy them back verbatim.
+
+- Re-show the Store "Tools" tab: remove style="display:none;" from the
+  switchStoreTab('tools') button in web/templates/store.html.
+- Re-add trial/subscription messaging: restore the trial branches in
+  web/templates/plans.html from git history.
+
+NOTES
+- Credit-pack purchases (consumable credits) are a SEPARATE flow and were never
+  changed — buying credits still works.
+- Owner-only agent variants (elysia_cannon, orion_cannon) remain restricted via
+  RESTRICTED_AGENTS in web/app.py regardless of the unlock above.
+- Deploy required for changes to show live: fly deploy -a orionforge-engine
+  (or just push to main — CI deploys on changes under orion-ui-standalone/).

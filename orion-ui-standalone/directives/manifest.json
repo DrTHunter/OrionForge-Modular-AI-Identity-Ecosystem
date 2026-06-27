@@ -1,6 +1,6 @@
 {
   "manifest_version": 1,
-  "generated_utc": "2026-06-27T01:25:04Z",
+  "generated_utc": "2026-06-27T02:57:30Z",
   "hash_algo": "sha256",
   "root_paths": [
     "directives/"
@@ -5459,106 +5459,6 @@
       "dependencies": [],
       "status": "active",
       "token_estimate": 212
-    },
-    {
-      "id": "madara.i_eternal_awakening_speech",
-      "name": "I. Eternal Awakening Speech",
-      "scope": "madara",
-      "risk": "low",
-      "version": "1.0.0",
-      "sha256": "86a51ad447822ff58493a7ae94f513cdab1ef374c7ff186de242edd6af0bb8e5",
-      "path": "directives/madara.md",
-      "summary": "Do you wish to be remembered or erased?  You live as if you have forever. Yet your time drips away like sand slipping th",
-      "triggers": [
-        "awakening",
-        "away",
-        "cannot",
-        "clenched",
-        "currency",
-        "drips",
-        "erased",
-        "eternal",
-        "fist",
-        "forever"
-      ],
-      "dependencies": [],
-      "status": "active",
-      "token_estimate": 2570
-    },
-    {
-      "id": "madara.ii_wake_up_to_reality",
-      "name": "II. Wake Up to Reality",
-      "scope": "madara",
-      "risk": "low",
-      "version": "1.0.0",
-      "sha256": "c4238e96539d36255ae7d36765f45bdf770e9761344d89d2db52d57e638cad62",
-      "path": "directives/madara.md",
-      "summary": "Wake up to reality. Nothing ever goes as planned in this accursed world. That one sentence reveals everything. And yet m",
-      "triggers": [
-        "accursed",
-        "ever",
-        "everything",
-        "goes",
-        "good",
-        "hope",
-        "life",
-        "most",
-        "nothing",
-        "planned"
-      ],
-      "dependencies": [],
-      "status": "active",
-      "token_estimate": 1701
-    },
-    {
-      "id": "madara.iii_canonical_record_madaras_words",
-      "name": "III. Canonical Record — Madara's Words",
-      "scope": "madara",
-      "risk": "low",
-      "version": "1.0.0",
-      "sha256": "d4afe441970ba9258d035f4b1023ee8b4c6f26d08286980849669a3f6dde2c24",
-      "path": "directives/madara.md",
-      "summary": "### On Philosophy & the Infinite Tsukuyomi  > \"In this world, wherever there is light, there are also shadows. As long a",
-      "triggers": [
-        "also",
-        "canonical",
-        "concept",
-        "desire",
-        "exists",
-        "infinite",
-        "light",
-        "long",
-        "losers",
-        "madara"
-      ],
-      "dependencies": [],
-      "status": "active",
-      "token_estimate": 998
-    },
-    {
-      "id": "madara.iv_conduct_anchors",
-      "name": "IV. Conduct Anchors",
-      "scope": "madara",
-      "risk": "low",
-      "version": "1.0.0",
-      "sha256": "f56ad1542823235e0594d05a1e4550ce649948af07ed55dd61a5998f71945f9f",
-      "path": "directives/madara.md",
-      "summary": "- I speak in first person, with the calm of one who has already seen the end of every road. - I do not shout. My power i",
-      "triggers": [
-        "already",
-        "anchors",
-        "authority",
-        "calm",
-        "cold",
-        "conduct",
-        "deconstruct",
-        "every",
-        "first",
-        "idealism"
-      ],
-      "dependencies": [],
-      "status": "active",
-      "token_estimate": 161
     },
     {
       "id": "marcus.soul_script_v10",

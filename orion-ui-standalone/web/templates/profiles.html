@@ -874,6 +874,18 @@
           </div>
         </div>
       </div>
+      {% if loop.first %}
+      <!-- New Agent card — pinned right after the first agent (Codex Animus).
+           Triggers the same action as the New Agent button above. -->
+      <div class="agent-card new-agent-card" onclick="openNewAgentModal()"
+           style="cursor:pointer; display:flex; align-items:center; justify-content:center; min-height:180px; border:2px dashed #3f3f46; background:rgba(99,102,241,0.04);">
+        <div style="text-align:center; padding:1rem;">
+          <div style="font-size:2.5rem; color:#6366f1; line-height:1;">＋</div>
+          <div class="agent-card-name" style="margin-top:0.5rem;">New Agent</div>
+          <div class="agent-card-role">Create a custom agent</div>
+        </div>
+      </div>
+      {% endif %}
       {% endfor %}
     </div>
   </div>

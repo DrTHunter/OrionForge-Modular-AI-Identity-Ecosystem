@@ -39,12 +39,6 @@
       "photo_x": 50,
       "photo_y": 15
     },
-    "madara": {
-      "image": "/uploads/avatar_madara.jpg",
-      "photo_zoom": 1,
-      "photo_x": 50,
-      "photo_y": 25
-    },
     "kaelen": {
       "image": "/uploads/avatar_kaelen_forge2026.png",
       "photo_zoom": 1,
@@ -216,11 +210,6 @@
         "01ff0005": "directive",
         "01ff0006": "directive"
       }
-    },
-    "madara": {
-      "display_name": "Madara Uchiha",
-      "attached_notes": ["5ccf5b26"],
-      "note_modes": {"5ccf5b26": "directive"}
     },
     "k_os": {
       "display_name": "K-OS",
