@@ -34,6 +34,17 @@ WEBSITE (marketing landing, website/index.html + new page):
     "PolyForm Noncommercial") — that repo isn't checked out here, so Trent must edit
     it or check it out for me. ***
 
+  LICENSE TERMS FINALIZED (2026-06-27): 5% revenue share after a US $100,000 lifetime
+  gross-revenue threshold. Switched the trigger from "after ROI / investment recovery"
+  to a flat gross threshold for clean, audit-free enforcement (5% benchmarks to
+  Unreal/CryEngine; $100k floor chosen over Unreal's $1M so a solo dev actually gets
+  paid). Self-serve: standard terms are public and apply automatically with NO
+  pre-approval; only enterprise/white-label/custom/flat-fee deals get negotiated, via
+  dr_hunter@yahoo.com. LICENSE.md bumped to v1.1. Applied in OrionForge (LICENSE.md,
+  README.md, website/soulscript-engine.html) and folded into SoulScript-Engine PR #2
+  (LICENSE.md + README.md). Both earlier license TODOs (blank % + PolyForm README) are
+  now closed. ONLY OPEN ITEM: Trent merges SoulScript-Engine PR #2.
+
 KO-FI: added a "☕ Buy me a coffee" button to the app sidebar footer
   (web/templates/base.html nav-footer) -> ko-fi.com/orionforgeecosystem. Marketing
   page already links Ko-fi in the top bar, hero, "free" section, and footer.
