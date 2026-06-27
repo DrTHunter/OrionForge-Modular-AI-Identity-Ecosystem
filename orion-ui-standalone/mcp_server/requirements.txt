@@ -1,0 +1,4 @@
+# OrionForge MCP server — extra dependency on top of the main app requirements.
+# The engine reuses the app's modules (faiss-cpu, sentence-transformers, pyyaml),
+# so install this alongside the main requirements.
+mcp>=1.2.0

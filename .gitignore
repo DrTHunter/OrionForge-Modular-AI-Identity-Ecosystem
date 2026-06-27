@@ -40,6 +40,8 @@ orion-ui-standalone/data/user_notes/
 orion-ui-standalone/data/users/
 orion-ui-standalone/data/orion/*.jsonl
 orion-ui-standalone/data/orion/*.json
+# MCP server runtime state (per-user default agent, soul-script index)
+orion-ui-standalone/data/mcp_*
 
 # Secrets & credentials
 *.env
