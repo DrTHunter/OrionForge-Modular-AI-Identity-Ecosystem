@@ -1628,6 +1628,73 @@
     </div>
     {% endif %}
 
+    <!-- ── MCP Server Setup Panel ── -->
+    {% if tool.name == 'mcp_server' %}
+    <div class="section-card">
+      <div class="section-title"><span class="sec-icon">&#9881;</span> Install</div>
+      <div class="about-text" style="margin-bottom:0.75rem;">Run from <code>orion-ui-standalone/</code>:</div>
+      <pre style="background:rgba(15,15,20,0.9);border:1px solid rgba(42,42,58,0.5);border-radius:0.5rem;padding:1rem;font-size:0.8rem;color:#d4d4d8;overflow-x:auto;"><code>pip install -r mcp_server/requirements.txt</code></pre>
+    </div>
+
+    <div class="section-card">
+      <div class="section-title"><span class="sec-icon">&#128279;</span> Connect — Claude Code</div>
+      <div class="about-text" style="margin-bottom:0.75rem;">From <code>orion-ui-standalone/</code>:</div>
+      <pre style="background:rgba(15,15,20,0.9);border:1px solid rgba(42,42,58,0.5);border-radius:0.5rem;padding:1rem;font-size:0.8rem;color:#d4d4d8;overflow-x:auto;"><code>claude mcp add orionforge -- python -m mcp_server.orion_mcp</code></pre>
+    </div>
+
+    <div class="section-card">
+      <div class="section-title"><span class="sec-icon">&#128279;</span> Connect — Claude Desktop</div>
+      <div class="about-text" style="margin-bottom:0.75rem;">Add to <code>claude_desktop_config.json</code>:</div>
+      <pre style="background:rgba(15,15,20,0.9);border:1px solid rgba(42,42,58,0.5);border-radius:0.5rem;padding:1rem;font-size:0.8rem;color:#d4d4d8;overflow-x:auto;"><code>{
+  "mcpServers": {
+    "orionforge": {
+      "command": "python",
+      "args": ["-m", "mcp_server.orion_mcp"],
+      "cwd": "/abs/path/to/orion-ui-standalone",
+      "env": { "ORION_USER": "your-name" }
+    }
+  }
+}</code></pre>
+    </div>
+
+    <div class="section-card">
+      <div class="section-title"><span class="sec-icon">&#127758;</span> Connect — Gemini CLI</div>
+      <div class="about-text" style="margin-bottom:0.75rem;">Add the same block under <code>mcpServers</code> in Gemini CLI's <code>settings.json</code>.</div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-title"><span class="sec-icon">&#128295;</span> Environment Variables</div>
+      <table class="param-table">
+        <thead><tr><th>Variable</th><th>Purpose</th><th>Default</th></tr></thead>
+        <tbody>
+          <tr><td><span class="param-name">ORION_REPO</span></td><td>Path to <code>orion-ui-standalone/</code></td><td>parent of <code>mcp_server/</code></td></tr>
+          <tr><td><span class="param-name">ORION_DATA_DIR</span></td><td>Per-user data dir (memory vault + FAISS)</td><td><code>{ORION_REPO}/data</code></td></tr>
+          <tr><td><span class="param-name">ORION_USER</span></td><td>Label for the connected user</td><td><code>local</code></td></tr>
+          <tr><td><span class="param-name">ORION_MCP_WARM</span></td><td>Pre-load model + FAISS in the background at startup (set <code>0</code> to disable)</td><td><code>1</code></td></tr>
+        </tbody>
+      </table>
+      <div class="about-text" style="margin-top:0.75rem;">For multi-tenant use, point <code>ORION_DATA_DIR</code> at the user's data directory (e.g. <code>.../data/users/&lt;uid&gt;</code>).</div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-title"><span class="sec-icon">&#9889;</span> Claude Code — Quick Summon</div>
+      <div class="about-text" style="margin-bottom:0.75rem;">
+        Start any message with <code>..</code> to instantly load your default agent. Because the MCP server needs ~1–2 s to complete its stdio handshake on session open, Claude Code uses <strong>ToolSearch as a ready-gate</strong> before calling <code>load_default</code> — this ensures the server is fully connected before the call fires.
+      </div>
+      <table class="param-table">
+        <thead><tr><th>Shorthand</th><th>What happens</th></tr></thead>
+        <tbody>
+          <tr><td><code>..</code></td><td>ToolSearch ready-gate → <code>load_default()</code> — summons your default agent</td></tr>
+          <tr><td><code>.e</code></td><td>Sets Elysia as default → <code>load_default()</code></td></tr>
+          <tr><td><code>.m</code></td><td>Saves a project summary into the Memory Vault via <code>save_project_summary</code></td></tr>
+        </tbody>
+      </table>
+      <div class="about-text" style="margin-top:0.75rem; color:#71717a; font-size:0.75rem;">
+        The server engine is lazy-initialized: <code>OrionEngine()</code> is only created on the first tool call, so the MCP handshake (tool registration) completes before any filesystem or FAISS work — keeping cold-start as fast as possible.
+      </div>
+    </div>
+    {% endif %}
+
     <!-- Action Bar -->
     <div class="action-bar">
       <button class="btn btn-secondary" onclick="showToolsList()">&larr; Back to Tools</button>

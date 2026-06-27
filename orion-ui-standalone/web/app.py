@@ -2811,6 +2811,25 @@ _TOOL_CATALOGUE = [
             {"name": "text", "type": "string", "required": False, "description": "Stimulus text to classify (for resolve/classify)", "enum": []},
         ],
     },
+    {
+        "name": "mcp_server",
+        "display_name": "MCP Server",
+        "icon": "🔌",
+        "icon_bg": "rgba(99,102,241,0.12)",
+        "icon_color": "#818cf8",
+        "description": "Connect OrionForge agents to Claude, ChatGPT, and Gemini via the Model Context Protocol. Use your agents, soul scripts, and Memory Vault directly inside any MCP-capable LLM client.",
+        "status": "ready",
+        "parameters": [
+            {"name": "call_agent", "type": "tool", "required": False, "description": "Summon any agent by name — loads identity prompt + soul-script FAISS retrieval", "enum": []},
+            {"name": "load_default", "type": "tool", "required": False, "description": "Summon the default agent (set via set_default_agent)", "enum": []},
+            {"name": "set_default_agent", "type": "tool", "required": False, "description": "Set which agent loads on load_default", "enum": []},
+            {"name": "get_default_agent", "type": "tool", "required": False, "description": "Get the current default agent name", "enum": []},
+            {"name": "list_agents", "type": "tool", "required": False, "description": "List all available agents", "enum": []},
+            {"name": "search_soul_script", "type": "tool", "required": False, "description": "FAISS semantic search over one agent's soul script", "enum": []},
+            {"name": "search_memory", "type": "tool", "required": False, "description": "Semantic search over the shared Memory Vault", "enum": []},
+            {"name": "save_project_summary", "type": "tool", "required": False, "description": "Write a summary into the shared Memory Vault", "enum": []},
+        ],
+    },
 ]
 
 @app.get("/tools", response_class=HTMLResponse)
@@ -4123,6 +4142,7 @@ def _save_about(data: dict):
 
 # README key → absolute path for each wiki article
 _WIKI_README_MAP = {
+    "mcp-server":         Path(__file__).resolve().parent.parent / "mcp_server" / "README.md",
     "root":               Path(__file__).resolve().parent.parent.parent / "README.md",
     "orion-ui-standalone": Path(__file__).resolve().parent.parent / "README.md",
     "engine":             Path(__file__).resolve().parent.parent.parent / "engine" / "README.md",

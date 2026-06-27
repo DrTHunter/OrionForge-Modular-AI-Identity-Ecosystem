@@ -17,6 +17,9 @@ env/
 *.swp
 *.swo
 
+# Local Claude Code MCP config (machine-specific absolute paths)
+.mcp.json
+
 # OS
 .DS_Store
 Thumbs.db
