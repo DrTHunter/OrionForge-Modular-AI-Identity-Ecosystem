@@ -19,6 +19,9 @@ Per-user config is via environment (see mcp_server/README.md):
 
 from __future__ import annotations
 
+import os
+import sys
+import threading
 from typing import List, Optional
 
 from mcp.server.fastmcp import FastMCP
@@ -26,7 +29,18 @@ from mcp.server.fastmcp import FastMCP
 from mcp_server.engine import OrionEngine
 
 mcp = FastMCP("orionforge")
-engine = OrionEngine()
+_engine: "OrionEngine | None" = None
+_engine_lock = threading.Lock()
+
+
+def _get_engine() -> "OrionEngine":
+    global _engine
+    if _engine is not None:
+        return _engine
+    with _engine_lock:
+        if _engine is None:
+            _engine = OrionEngine()
+        return _engine
 
 
 def _format_persona(result: dict) -> str:
@@ -53,7 +67,7 @@ def _format_persona(result: dict) -> str:
 @mcp.tool()
 def list_agents() -> List[str]:
     """List every OrionForge agent you can summon."""
-    return engine.list_agents()
+    return _get_engine().list_agents()
 
 
 @mcp.tool()
@@ -61,24 +75,25 @@ def call_agent(name: str, message: str = "") -> str:
     """Summon any agent by name. Returns its identity prompt plus the soul-script
     sections most relevant to `message` (retrieved from your FAISS). Adopt the
     returned persona for your reply."""
-    return _format_persona(engine.call_agent(name, message))
+    return _format_persona(_get_engine().call_agent(name, message))
 
 
 @mcp.tool()
 def get_default_agent() -> str:
     """Return the current default personality (agent name), or 'none'."""
-    return engine.get_default_agent() or "none"
+    return _get_engine().get_default_agent() or "none"
 
 
 @mcp.tool()
 def set_default_agent(name: str) -> dict:
     """Set the default personality used when you summon without naming an agent."""
-    return engine.set_default_agent(name)
+    return _get_engine().set_default_agent(name)
 
 
 @mcp.tool()
 def load_default(message: str = "") -> str:
     """Summon the default personality (set via set_default_agent)."""
+    engine = _get_engine()
     agent = engine.get_default_agent()
     if not agent:
         return "No default agent set. Use set_default_agent(name) or call_agent(name)."
@@ -90,38 +105,61 @@ def search_soul_script(agent: str, query: str, k: int = 5) -> list:
     """Semantic search over a single agent's soul script (your FAISS)."""
     return [
         {"section": sp, "text": t, "score": round(s, 3)}
-        for sp, t, s in engine.soul_search(agent, query, k=k)
+        for sp, t, s in _get_engine().soul_search(agent, query, k=k)
     ]
 
 
 @mcp.tool()
 def search_memory(query: str, k: int = 8) -> list:
     """Semantic search over the OrionForge unified Memory Vault."""
-    return engine.search_memory(query, k=k)
+    return _get_engine().search_memory(query, k=k)
 
 
 @mcp.tool()
 def save_project_summary(summary: str, title: str = "", tags: Optional[List[str]] = None) -> dict:
     """Save a short project summary into the OrionForge unified Memory Vault so it
     persists and is searchable across agents and the app."""
-    return engine.save_project_summary(summary, title=title, tags=tags)
+    return _get_engine().save_project_summary(summary, title=title, tags=tags)
 
 
 # ── Prompts (surface as slash commands in MCP clients) ─────────────
 @mcp.prompt()
 def summon(agent: str, message: str = "") -> str:
     """Summon an OrionForge agent by name (identity + soul script)."""
-    return _format_persona(engine.call_agent(agent, message))
+    return _format_persona(_get_engine().call_agent(agent, message))
 
 
 @mcp.prompt()
 def default_personality(message: str = "") -> str:
     """Summon your default OrionForge personality."""
+    engine = _get_engine()
     agent = engine.get_default_agent()
     if not agent:
         return "No default agent set yet. Call set_default_agent(name) first."
     return _format_persona(engine.call_agent(agent, message))
 
 
+def _warm_in_background() -> None:
+    """Warm the engine (torch import + embedding model + FAISS) off the critical
+    path so the first `..` summon is fast.
+
+    Tool registration / the MCP handshake runs synchronously in the main thread
+    and is unaffected — this just overlaps the ~25s heavy import with the idle
+    time between session start and the user's first message. Disable with
+    ORION_MCP_WARM=0.
+    """
+    if os.environ.get("ORION_MCP_WARM", "1") == "0":
+        return
+
+    def _run() -> None:
+        try:
+            _get_engine().warm()
+        except Exception as exc:  # never let warming crash the server
+            print(f"[orionforge] warm-up skipped: {exc}", file=sys.stderr)
+
+    threading.Thread(target=_run, name="orion-warm", daemon=True).start()
+
+
 if __name__ == "__main__":
+    _warm_in_background()
     mcp.run()

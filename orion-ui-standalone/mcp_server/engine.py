@@ -25,6 +25,7 @@ from __future__ import annotations
 import os
 import re
 import sys
+import threading
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -63,6 +64,7 @@ class OrionEngine:
 
         self._notes_faiss = None        # lazy NotesFAISS over soul scripts
         self._faiss_mem = None          # lazy FaissMemory over the vault
+        self._lock = threading.Lock()   # guards lazy index builds (warm vs. on-demand)
 
     # ── Agents / identity / soul script ────────────────────────────
     def list_agents(self) -> List[str]:
@@ -127,22 +129,57 @@ class OrionEngine:
         flush()
         return chunks
 
+    @staticmethod
+    def _soul_fingerprint(chunks: List[Dict[str, Any]]) -> str:
+        """Content hash of the current soul-script corpus.
+
+        Lets us skip the (expensive) re-embed when nothing changed since the
+        cached index was built. Reading + hashing the scripts is ~1000x cheaper
+        than embedding them, so this stays on the fast path.
+        """
+        import hashlib
+        h = hashlib.sha256()
+        for c in chunks:
+            h.update(c["text"].encode("utf-8"))
+            h.update(b"\0")
+        return h.hexdigest()
+
     def _get_notes_faiss(self):
         if self._notes_faiss is not None:
             return self._notes_faiss
-        from src.memory.notes_faiss import NotesFAISS
-        chunks: List[Dict[str, Any]] = []
-        for agent in self.list_agents():
-            ss = self.soul_script_full(agent).strip()
-            if ss:
-                chunks.extend(
-                    self._chunk_soul(ss, f"__soul_script__{agent}", f"Soul Script — {agent}")
-                )
-        nf = NotesFAISS(str(self.soul_faiss_dir))
-        if chunks:
-            nf.build_index(chunks)
-        self._notes_faiss = nf
-        return nf
+        with self._lock:
+            if self._notes_faiss is not None:  # built while we waited for the lock
+                return self._notes_faiss
+            from src.memory.notes_faiss import NotesFAISS
+
+            chunks: List[Dict[str, Any]] = []
+            for agent in self.list_agents():
+                ss = self.soul_script_full(agent).strip()
+                if ss:
+                    chunks.extend(
+                        self._chunk_soul(ss, f"__soul_script__{agent}", f"Soul Script — {agent}")
+                    )
+
+            fingerprint = self._soul_fingerprint(chunks)
+            fp_file = self.soul_faiss_dir / "soul_fingerprint.txt"
+
+            # Fast path: reuse the cached index when the soul scripts are unchanged.
+            # Avoids re-embedding ~1000 chunks (~20s on a cold process) — the cost
+            # every fresh `..` summon would otherwise pay on session start.
+            if fp_file.exists() and fp_file.read_text(encoding="utf-8").strip() == fingerprint:
+                nf = NotesFAISS.load(str(self.soul_faiss_dir))
+                if nf is not None:
+                    self._notes_faiss = nf
+                    return nf
+
+            # Slow path: (re)build, persist, and record the fingerprint so the next
+            # process can take the fast path above.
+            nf = NotesFAISS(str(self.soul_faiss_dir))
+            if chunks:
+                nf.build_index(chunks)
+            fp_file.write_text(fingerprint, encoding="utf-8")
+            self._notes_faiss = nf
+            return nf
 
     def soul_search(self, agent: str, query: str, k: int = 5) -> List[Tuple[str, str, float]]:
         """Return [(section_path, text, score)] from the agent's soul script."""
@@ -196,9 +233,31 @@ class OrionEngine:
     def _get_faiss_mem(self):
         if self._faiss_mem is not None:
             return self._faiss_mem
-        from src.memory.faiss_memory import FAISSMemory
-        self._faiss_mem = FAISSMemory(str(self.vault_path), str(self.mem_faiss_dir))
-        return self._faiss_mem
+        with self._lock:
+            if self._faiss_mem is not None:  # built while we waited for the lock
+                return self._faiss_mem
+            from src.memory.faiss_memory import FAISSMemory
+            self._faiss_mem = FAISSMemory(str(self.vault_path), str(self.mem_faiss_dir))
+            return self._faiss_mem
+
+    def warm(self) -> None:
+        """Eagerly load the heavy dependencies (torch import, embedding model,
+        FAISS indices) so the first real tool call is fast.
+
+        The dominant cold-start cost is importing torch/sentence-transformers
+        (~25s), which is lazy and would otherwise land on the first `..` summon.
+        Calling this from a background thread at server startup overlaps that
+        import with post-connect idle time. Failures are swallowed so warming
+        never breaks serving.
+        """
+        try:
+            self._get_notes_faiss()
+        except Exception:
+            pass
+        try:
+            self._get_faiss_mem()
+        except Exception:
+            pass
 
     def search_memory(self, query: str, k: int = 8) -> List[Dict[str, Any]]:
         try:
