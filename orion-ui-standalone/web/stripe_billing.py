@@ -963,21 +963,29 @@ STORE_PACKS = [
 # ══════════════════════════════════════════════════════════════════
 
 def get_user_purchases(user_id: str) -> dict:
-    """Return {tools: [...], skins: [...], agents: [...]} of item IDs the user has unlocked."""
-    state = _load_stripe_state()
-    purchases = state.get("purchases", {}).get(user_id, {})
+    """Return {tools: [...], skins: [...], agents: [...]} of item IDs the user has unlocked.
+
+    Pay-per-use model: every agent, tool, and skin is unlocked for everyone (no
+    paywall — you only pay for AI usage in credits). So this reports the full
+    catalog as "owned" for all users, which also keeps the Store UI consistent
+    (everything shows as owned; nothing is purchasable).
+    """
     return {
-        "tools": purchases.get("tools", []),
-        "skins": purchases.get("skins", ["default"]),  # everyone owns default
-        "agents": purchases.get("agents", []),
+        "tools": [e["id"] for e in STORE_CATALOG
+                  if e.get("category") != "agent" and e.get("purchase_type") == "one_time"],
+        "skins": sorted(set(SKIN_PRICES) | {"default"}),
+        "agents": [e["id"] for e in STORE_CATALOG if e.get("category") == "agent"],
     }
 
 
 def user_owns_item(user_id: str, item_id: str, item_type: str = "tools") -> bool:
-    """Check if a user has purchased a specific tool or skin."""
-    purchases = get_user_purchases(user_id)
-    items = purchases.get(item_type, [])
-    return item_id in items
+    """Pay-per-use model: every tool, skin, and agent is unlocked for everyone.
+
+    Always returns True so feature gates (e.g. voice TTS/STT) and purchase
+    guards treat every item as already owned. (Credit-pack purchases are a
+    separate consumable-credits flow and are unaffected.)
+    """
+    return True
 
 
 def purchase_tool(user_id: str, tool_id: str) -> dict:
@@ -1173,58 +1181,23 @@ FREE_AGENT_IDS = {"codex_animus"}
 
 
 def get_user_unlocked_agents(user_id: str) -> set:
-    """Return the set of agent_ids a user has access to.
+    """Every agent is unlocked for every user.
 
-    Includes:
-    - FREE_AGENT_IDS (codex_animus — always free)
-    - ALL agents during active trial (5-day full access)
-    - Purchased agents from the store
+    OrionForge runs a pay-per-use model (you pay only for AI usage in credits),
+    so there is no per-agent paywall — all store agents plus the always-free
+    agents are available to everyone. (Owner-only variants are still gated
+    separately via RESTRICTED_AGENTS in app.py.)
     """
-    unlocked = set(FREE_AGENT_IDS)
-    # Trial users get access to all agents
-    trial = get_trial_status(user_id)
-    if trial["active"]:
-        return unlocked | get_store_agent_ids()
-    purchases = get_user_purchases(user_id)
-    owned_catalog_ids = set(purchases.get("agents", []))
-    for entry in STORE_CATALOG:
-        if (entry.get("category") == "agent"
-                and entry.get("agent_id")
-                and entry["id"] in owned_catalog_ids):
-            unlocked.add(entry["agent_id"])
-    return unlocked
+    return set(FREE_AGENT_IDS) | get_store_agent_ids()
 
 
 def user_has_tool_access(user_id: str, tool_name: str) -> bool:
-    """Check if a user has access to a given tool (purchased or free).
+    """Every tool is unlocked for every user.
 
-    During trial: all tools are unlocked.
-    For AGI bundle tools, checks if the user purchased 'agi_bundle'.
-    For free tools (web_search, image_generation), always returns True.
+    OrionForge runs a pay-per-use model (you pay only for AI usage in credits),
+    so there is no per-tool paywall — all tools are available to everyone.
     """
-    # Free tools — always available
-    free_tools = {"web_search", "image_generation", "echo", "memory", "directives"}
-    if tool_name in free_tools:
-        return True
-
-    # Trial users get access to all tools
-    trial = get_trial_status(user_id)
-    if trial["active"]:
-        return True
-
-    purchases = get_user_purchases(user_id)
-    owned_tools = purchases.get("tools", [])
-
-    # Direct ownership check
-    if tool_name in owned_tools:
-        return True
-
-    # Check if any owned bundle unlocks this tool
-    for entry in STORE_CATALOG:
-        if entry["id"] in owned_tools and tool_name in entry.get("unlocks", []):
-            return True
-
-    return False
+    return True
 
 
 
