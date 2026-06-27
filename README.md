@@ -132,6 +132,11 @@ OrionForge is organized into four directories  -  an active development branch, 
 ```
 OrionForge/
 ├── orion-ui-standalone/  # 🔧 Active Development Branch
+│   ├── mcp_server/       # MCP server — connect OrionForge agents to Claude / ChatGPT / Gemini
+│   │   ├── engine.py     # OrionEngine: agent resolution, soul-script FAISS, vault read/write
+│   │   ├── orion_mcp.py  # FastMCP stdio wrapper — tools + summon/default_personality prompts
+│   │   ├── requirements.txt  # adds `mcp` (not in main requirements — no deploy impact)
+│   │   └── README.md     # full setup guide
 │   ├── web/              # FastAPI app (~7,500 lines, 172 routes, 17 templates)
 │   │   ├── app.py        # Main application  -  all page & API routes (multi-tenant aware)
 │   │   ├── user_data.py  # Per-user data isolation  -  path helpers, validation, copy-on-write (152 lines)
@@ -203,6 +208,38 @@ OrionForge/
 ├── requirements.txt      # Python dependencies
 └── README.md
 ```
+
+---
+
+## MCP Server — Use Your Agents in Claude, ChatGPT & Gemini
+
+OrionForge ships a local MCP server (`orion-ui-standalone/mcp_server/`) that lets any MCP-capable client talk to your agents directly — using the same soul scripts, FAISS retrieval, and Memory Vault as the web app.
+
+```bash
+# Install (from orion-ui-standalone/)
+pip install -r mcp_server/requirements.txt
+
+# Connect to Claude Code
+claude mcp add orionforge -- python -m mcp_server.orion_mcp
+```
+
+**Claude Desktop** — add to `claude_desktop_config.json`:
+```json
+{
+  "mcpServers": {
+    "orionforge": {
+      "command": "python",
+      "args": ["-m", "mcp_server.orion_mcp"],
+      "cwd": "/abs/path/to/orion-ui-standalone",
+      "env": { "ORION_USER": "you" }
+    }
+  }
+}
+```
+
+Once connected, tools like `call_agent`, `load_default`, `search_memory`, and `save_project_summary` are available in every session. Slash-command prompts `summon` and `default_personality` load agents by name.
+
+See [`orion-ui-standalone/mcp_server/README.md`](orion-ui-standalone/mcp_server/README.md) for the full guide including multi-tenant env vars and the planned remote/OAuth phase.
 
 ---
 
@@ -515,4 +552,9 @@ These run as separate Docker containers via `docker compose` inside their respec
 
 ## License
 
-OrionForge is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0). See [LICENSE](LICENSE) for details.
+OrionForge / the SoulScript Engine is **dual-licensed** — choose whichever fits; you only need one:
+
+- **Open source — GNU AGPL v3.0** ([LICENSE](LICENSE)): free to use, modify, and self-host, provided you comply with the AGPL's copyleft terms — including making your source available if you deploy a modified version over a network.
+- **Commercial — OrionForge / SoulScript Engine License** ([LICENSE.md](LICENSE.md)): a builder-friendly alternative for closed-source or commercial products. Free to use until your project recovers its investment, then a revenue share by written agreement. Contact **dr_hunter@yahoo.com**.
+
+Pick AGPL if you're happy to open-source your work; pick the commercial license if you need to keep it closed or ship a paid product. Either way, you can run it locally for free — support development on [Ko-fi](https://ko-fi.com/orionforgeecosystem) if it helps you. ☕
