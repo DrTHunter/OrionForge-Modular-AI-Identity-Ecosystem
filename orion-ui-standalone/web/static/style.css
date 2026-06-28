@@ -88,6 +88,8 @@
 .nav-toggle-btn:hover { color: #a1a1aa; }
 
 .collapsed .nav-logo-full > div { display: none; }
+.collapsed .nav-logo-full-img { display: none !important; }
+.collapsed .nav-logo-icon-img { display: block !important; }
 .collapsed .nav-label { display: none; }
 .collapsed .nav-divider { display: none; }
 .collapsed .nav-footer { display: none; }
