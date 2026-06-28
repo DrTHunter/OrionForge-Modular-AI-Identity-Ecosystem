@@ -231,19 +231,13 @@ img { max-width: 100%; display: block; }
     max-width: 1280px; margin: 0 auto; padding: 0 24px;
 }
 .nav-logo {
-    display: flex; align-items: center; gap: 10px;
-    font-size: 1.25rem; font-weight: 700;
+    display: flex; align-items: center;
+    text-decoration: none;
 }
-.nav-logo i {
-    font-size: 1.4rem;
-    background: var(--gradient-primary);
-    -webkit-background-clip: text; background-clip: text;
-    color: transparent;
-}
-.nav-logo span {
-    background: var(--gradient-primary);
-    -webkit-background-clip: text; background-clip: text;
-    color: transparent;
+.nav-logo img {
+    height: 38px;
+    width: auto;
+    display: block;
 }
 .nav-links {
     display: flex; align-items: center; gap: 32px;
@@ -2747,8 +2741,7 @@ section { position: relative; z-index: 1; }
 <nav class="nav" id="nav" aria-label="Main navigation">
     <div class="nav-inner">
         <a href="#" class="nav-logo">
-            <i class="fas fa-fire"></i>
-            <span>Orion Forge</span>
+            <img src="/images/logo-text-right-sm.png" alt="Orion Forge" height="38">
         </a>
 
         <ul class="nav-links" id="nav-links">
@@ -3284,7 +3277,7 @@ section { position: relative; z-index: 1; }
     <div class="container">
         <div class="footer-grid">
             <div class="footer-brand">
-                <h3><i class="fas fa-fire"></i> Orion Forge</h3>
+                <img src="/images/logo-text-bottom.png" alt="Orion Forge" style="height:90px;width:auto;margin-bottom:12px;display:block;">
                 <p>Strategy for sustaining individual AI identity over time. Modular tools and legacy-grade agents for creators, engineers, and dreamers.</p>
                 <div class="footer-social">
                     <a href="https://github.com/DrTHunter" target="_blank"><i class="fab fa-github"></i></a>
