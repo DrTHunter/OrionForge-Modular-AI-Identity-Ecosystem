@@ -2830,6 +2830,22 @@ _TOOL_CATALOGUE = [
             {"name": "save_project_summary", "type": "tool", "required": False, "description": "Write a summary into the shared Memory Vault", "enum": []},
         ],
     },
+    {
+        "name": "vscode_bridge",
+        "display_name": "VS Code Bridge",
+        "icon": "🧩",
+        "icon_bg": "rgba(34,211,238,0.12)",
+        "icon_color": "#22d3ee",
+        "description": "Use your Orion Forge agents inside VS Code. A stdio MCP bridge (orion_chat) that forwards Copilot agent-mode prompts to your Orion instance — full 6-layer identity injection, Memory Vault, model routing, and per-user credit billing.",
+        "status": "ready",
+        "parameters": [
+            {"name": "prompt", "type": "string", "required": True, "description": "Task or question to send to Orion Forge", "enum": []},
+            {"name": "agent", "type": "string", "required": False, "description": "Persona to use", "enum": ["orion_cannon", "elysia_cannon", "k_os"]},
+            {"name": "context", "type": "string", "required": False, "description": "Optional code/chat summary prepended before the prompt", "enum": []},
+            {"name": "model_override", "type": "string", "required": False, "description": "Force a model (aliases: deepseek-reasoner, gpt-5.2, claude-sonnet-latest, claude-opus-latest)", "enum": []},
+            {"name": "mode", "type": "string", "required": False, "description": "chat or burst (autonomous multi-step)", "enum": ["chat", "burst"]},
+        ],
+    },
 ]
 
 @app.get("/tools", response_class=HTMLResponse)
@@ -4143,6 +4159,7 @@ def _save_about(data: dict):
 # README key → absolute path for each wiki article
 _WIKI_README_MAP = {
     "mcp-server":         Path(__file__).resolve().parent.parent / "mcp_server" / "README.md",
+    "vscode-bridge":      Path(__file__).resolve().parent.parent / "scripts" / "VSCODE_BRIDGE.md",
     "root":               Path(__file__).resolve().parent.parent.parent / "README.md",
     "orion-ui-standalone": Path(__file__).resolve().parent.parent / "README.md",
     "engine":             Path(__file__).resolve().parent.parent.parent / "engine" / "README.md",

@@ -1695,6 +1695,64 @@
     </div>
     {% endif %}
 
+    <!-- ── VS Code Bridge Setup Panel ── -->
+    {% if tool.name == 'vscode_bridge' %}
+    <div class="section-card">
+      <div class="section-title"><span class="sec-icon">&#129513;</span> What it is</div>
+      <div class="about-text">A small stdio MCP server (<code>scripts/orion_vscode_bridge.py</code>) exposing one tool, <code>orion_chat</code>, to VS Code's Copilot <strong>agent mode</strong>. It forwards your prompt to a running Orion instance's <code>/api/chat/send</code> — running the full pipeline (6-layer identity injection, Memory Vault, model routing, per-user billing). Standalone and isolated from the core app; enable or remove it freely.</div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-title"><span class="sec-icon">&#9881;</span> Install</div>
+      <div class="about-text" style="margin-bottom:0.75rem;">The bridge script already ships in <code>orion-ui-standalone/scripts/</code>. It only needs:</div>
+      <pre style="background:rgba(15,15,20,0.9);border:1px solid rgba(42,42,58,0.5);border-radius:0.5rem;padding:1rem;font-size:0.8rem;color:#d4d4d8;overflow-x:auto;"><code>pip install requests</code></pre>
+    </div>
+
+    <div class="section-card">
+      <div class="section-title"><span class="sec-icon">&#128279;</span> Register in VS Code</div>
+      <div class="about-text" style="margin-bottom:0.75rem;">Create <code>.vscode/mcp.json</code> (or run <em>MCP: Add Server</em> from the Command Palette):</div>
+      <pre style="background:rgba(15,15,20,0.9);border:1px solid rgba(42,42,58,0.5);border-radius:0.5rem;padding:1rem;font-size:0.8rem;color:#d4d4d8;overflow-x:auto;"><code>{
+  "servers": {
+    "orion-forge": {
+      "type": "stdio",
+      "command": "C:/path/to/python.exe",
+      "args": ["C:/path/to/scripts/orion_vscode_bridge.py"],
+      "env": {
+        "ORION_VSCODE_BRIDGE_BASE_URL": "https://orionforge-engine.fly.dev",
+        "ORION_VSCODE_BRIDGE_AUTH_MODE": "bearer",
+        "ORION_VSCODE_BRIDGE_BEARER_TOKEN": "${input:orion_token}",
+        "ORION_VSCODE_BRIDGE_DEFAULT_AGENT": "orion_cannon"
+      }
+    }
+  },
+  "inputs": [
+    { "id": "orion_token", "type": "promptString", "description": "Your Orion access token", "password": true }
+  ]
+}</code></pre>
+      <div class="about-text" style="margin-top:0.75rem;">Then open <strong>Copilot Chat → Agent mode</strong>, enable the <code>orion-forge</code> tools, and chat.</div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-title"><span class="sec-icon">&#128100;</span> Per-user auth</div>
+      <div class="about-text" style="margin-bottom:0.75rem;">The bridge acts <strong>as the identity it authenticates with</strong>, and Orion is multi-tenant — so each user authenticates as themselves and gets their own Memory Vault, agents, and credits.</div>
+      <table class="param-table">
+        <thead><tr><th>Mode</th><th>For</th><th>What you set</th></tr></thead>
+        <tbody>
+          <tr><td><span class="param-name">bearer</span></td><td>Each user, hosted — recommended</td><td>their <code>sb_access_token</code> in <code>..._BEARER_TOKEN</code> (refresh on expiry)</td></tr>
+          <tr><td><span class="param-name">cookie</span></td><td>Each user, alternative</td><td>session cookie in <code>..._COOKIE_VALUE</code></td></tr>
+          <tr><td><span class="param-name">disabled</span></td><td>Local dev</td><td>nothing (local app with auth off)</td></tr>
+          <tr><td><span class="param-name">bridge_key</span></td><td>Self-host / owner</td><td>static key matching server <code>ORION_BRIDGE_API_KEY</code></td></tr>
+        </tbody>
+      </table>
+      <div class="about-text" style="margin-top:0.75rem; color:#71717a; font-size:0.75rem;">Per-user long-lived keys (one key per user) are a planned enhancement; today per-user = each user's own bearer/cookie token.</div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-title"><span class="sec-icon">&#128214;</span> Full guide</div>
+      <div class="about-text">Model selection, the complete config reference, troubleshooting, and the per-user-keys roadmap live in the wiki: <strong>Wiki → Setup → VS Code Bridge — Setup Guide</strong> (source: <code>scripts/VSCODE_BRIDGE.md</code>).</div>
+    </div>
+    {% endif %}
+
     <!-- Action Bar -->
     <div class="action-bar">
       <button class="btn btn-secondary" onclick="showToolsList()">&larr; Back to Tools</button>
