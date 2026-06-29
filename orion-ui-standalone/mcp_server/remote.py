@@ -148,7 +148,21 @@ def build_mcp_app() -> Tuple[object, object]:
     some MCP HTTP clients won't follow.
     """
     from mcp.server.fastmcp import FastMCP
+    from mcp.server.transport_security import TransportSecuritySettings
     from mcp_server.orion_mcp import register_tools
+
+    # DNS-rebinding protection: the SDK validates the Host/Origin headers against
+    # an allowlist and returns 421 "Invalid Host header" for anything else. The
+    # default allowlist is empty, so a real domain (soulscript.orionforge.chat)
+    # is rejected. Provide the deployment's hosts via ORION_MCP_ALLOWED_HOSTS
+    # (comma-separated). When unset (local/dev), disable the check so it just
+    # works — the endpoint is bearer-authenticated and not browser-origin based.
+    _allowed = [h.strip() for h in os.environ.get("ORION_MCP_ALLOWED_HOSTS", "").split(",") if h.strip()]
+    security = TransportSecuritySettings(
+        enable_dns_rebinding_protection=bool(_allowed),
+        allowed_hosts=_allowed + [f"{h}:443" for h in _allowed],
+        allowed_origins=[f"https://{h}" for h in _allowed],
+    )
 
     mcp = FastMCP(
         "orionforge",
@@ -157,6 +171,7 @@ def build_mcp_app() -> Tuple[object, object]:
         # BaseHTTPMiddleware (auth/CSRF), which buffers and would break an SSE
         # stream. Tool calls are request/response, so plain JSON is the right fit.
         json_response=True,
+        transport_security=security,
     )
     register_tools(mcp, _engine_for_current_user)
     # Create the session manager (lazily built by streamable_http_app()).

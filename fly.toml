@@ -18,6 +18,9 @@ primary_region = 'iad'
   # phone the HF Hub at runtime (avoids multi-minute stalls when rate-limited).
   HF_HUB_OFFLINE = '1'
   TRANSFORMERS_OFFLINE = '1'
+  # Hosts allowed to reach /mcp (MCP SDK DNS-rebinding protection). Without this
+  # a real domain gets 421 "Invalid Host header".
+  ORION_MCP_ALLOWED_HOSTS = 'soulscript.orionforge.chat,orionforge-engine.fly.dev'
 
 [http_service]
   internal_port = 8989
