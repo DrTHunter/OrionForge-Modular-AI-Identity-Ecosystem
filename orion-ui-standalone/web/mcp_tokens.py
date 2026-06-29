@@ -31,7 +31,12 @@ from typing import Optional
 log = logging.getLogger("soulscript.mcp_tokens")
 
 _DATA_DIR = Path(__file__).resolve().parent.parent / "data"
-_TOKENS_FILE = _DATA_DIR / "mcp_tokens.json"
+# Registry location. In production set ORION_MCP_TOKENS_FILE to a path on the
+# persistent volume (e.g. /persist/mcp_tokens.json) so tokens survive deploys —
+# data/mcp_tokens.json itself is NOT on the Fly volume (only certain subdirs are).
+_TOKENS_FILE = Path(
+    os.environ.get("ORION_MCP_TOKENS_FILE") or (_DATA_DIR / "mcp_tokens.json")
+)
 
 _TOKEN_PREFIX = "oforge_"
 _lock = threading.Lock()

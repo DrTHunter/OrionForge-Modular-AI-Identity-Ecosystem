@@ -12,6 +12,8 @@ primary_region = 'iad'
 [env]
   PORT = '8989'
   PYTHONUNBUFFERED = '1'
+  # Persist MCP personal tokens on the volume so they survive deploys.
+  ORION_MCP_TOKENS_FILE = '/persist/mcp_tokens.json'
 
 [http_service]
   internal_port = 8989
