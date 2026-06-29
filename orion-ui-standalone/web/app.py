@@ -34,6 +34,13 @@ _env_path = Path(__file__).resolve().parent.parent / ".env"
 if _env_path.exists():
     load_dotenv(_env_path)
 
+# Load the embedding model from local cache only — never phone the HF Hub on
+# startup (the model is pre-cached / baked into the image, and an unauthenticated
+# Hub check can stall for minutes when rate-limited). Override with
+# HF_HUB_OFFLINE=0 to allow a first-time download on a fresh machine.
+os.environ.setdefault("HF_HUB_OFFLINE", "1")
+os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
+
 import httpx
 import yaml
 from fastapi import FastAPI, File, Query, Request, UploadFile

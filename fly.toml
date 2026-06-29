@@ -14,6 +14,10 @@ primary_region = 'iad'
   PYTHONUNBUFFERED = '1'
   # Persist MCP personal tokens on the volume so they survive deploys.
   ORION_MCP_TOKENS_FILE = '/persist/mcp_tokens.json'
+  # The embedding model is baked into the image — load it from cache only, never
+  # phone the HF Hub at runtime (avoids multi-minute stalls when rate-limited).
+  HF_HUB_OFFLINE = '1'
+  TRANSFORMERS_OFFLINE = '1'
 
 [http_service]
   internal_port = 8989

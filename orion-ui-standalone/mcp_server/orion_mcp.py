@@ -100,9 +100,9 @@ def register_tools(server: "FastMCP", get_engine: "Callable[[], OrionEngine]") -
     def load_default(message: str = "") -> str:
         """Summon the default personality (set via set_default_agent)."""
         engine = get_engine()
-        agent = engine.get_default_agent()
+        agent = engine.resolve_default_agent()
         if not agent:
-            return "No default agent set. Use set_default_agent(name) or call_agent(name)."
+            return "No agents are available to summon."
         return _format_persona(engine.call_agent(agent, message))
 
     @server.tool()
@@ -134,9 +134,9 @@ def register_tools(server: "FastMCP", get_engine: "Callable[[], OrionEngine]") -
     def default_personality(message: str = "") -> str:
         """Summon your default OrionForge personality."""
         engine = get_engine()
-        agent = engine.get_default_agent()
+        agent = engine.resolve_default_agent()
         if not agent:
-            return "No default agent set yet. Call set_default_agent(name) first."
+            return "No agents are available to summon."
         return _format_persona(engine.call_agent(agent, message))
 
 

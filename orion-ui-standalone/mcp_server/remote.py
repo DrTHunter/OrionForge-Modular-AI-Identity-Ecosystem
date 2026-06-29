@@ -24,6 +24,7 @@ applied as an ASGI wrapper around the app returned by :func:`build_mcp_app`.
 from __future__ import annotations
 
 import os
+import sys
 import threading
 from collections import OrderedDict
 from contextvars import ContextVar
@@ -46,6 +47,46 @@ _engines_lock = threading.Lock()
 def _data_users_root() -> Path:
     repo = Path(os.environ.get("ORION_REPO") or Path(__file__).resolve().parent.parent)
     return (repo / "data" / "users").resolve()
+
+
+# ── Shared, global soul-script index ────────────────────────────────
+# Soul scripts (directives/) are read-only and identical for every user, so
+# there's no reason for each tenant to rebuild and store their own copy. Build
+# the soul-script FAISS once (from a base engine) and inject it into every
+# per-user engine, so only the small per-user memory-vault index is built per
+# tenant. Combined with startup warm-up, a new user's first summon is fast.
+_base_engine: "OrionEngine | None" = None
+_shared_notes = None
+_shared_lock = threading.Lock()
+
+
+def _get_shared_notes():
+    """Build (once) and return the global soul-script FAISS index."""
+    global _base_engine, _shared_notes
+    if _shared_notes is not None:
+        return _shared_notes
+    with _shared_lock:
+        if _shared_notes is not None:
+            return _shared_notes
+        be = OrionEngine()  # default/global data dir → global directives/
+        _shared_notes = be._get_notes_faiss()
+        _base_engine = be
+        return _shared_notes
+
+
+def _warm_shared() -> None:
+    """Pre-build the shared soul index (model import + FAISS) at startup so the
+    first user doesn't pay the ~47s cold-start. Gated by ORION_MCP_WARM."""
+    if os.environ.get("ORION_MCP_WARM", "1") == "0":
+        return
+
+    def _run():
+        try:
+            _get_shared_notes()
+        except Exception as exc:  # never let warming break serving
+            print(f"[orionforge.remote] warm-up skipped: {exc}", file=sys.stderr)
+
+    threading.Thread(target=_run, name="orion-remote-warm", daemon=True).start()
 
 
 def set_current_user(user_id: str) -> None:
@@ -74,6 +115,11 @@ def engine_for_user(user_id: str) -> OrionEngine:
         if len(_engines) >= _MAX_ENGINES:
             _engines.popitem(last=False)  # evict least-recently-used
         eng = OrionEngine(data_dir=str(_data_users_root() / uid), user=uid)
+        # Reuse the global soul-script index instead of rebuilding it per user.
+        try:
+            eng._notes_faiss = _get_shared_notes()
+        except Exception as exc:
+            print(f"[orionforge.remote] shared soul index unavailable: {exc}", file=sys.stderr)
         _engines[uid] = eng
         return eng
 
@@ -119,5 +165,9 @@ def build_mcp_app() -> Tuple[object, object]:
 
     async def asgi_app(scope, receive, send):
         await session_manager.handle_request(scope, receive, send)
+
+    # Pre-build the shared soul index off the request path so the first user's
+    # summon doesn't pay the ~47s cold-start.
+    _warm_shared()
 
     return asgi_app, mcp

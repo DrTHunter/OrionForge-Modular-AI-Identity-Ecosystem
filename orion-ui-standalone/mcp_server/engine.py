@@ -29,6 +29,17 @@ import threading
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+# ── Offline embedding model ─────────────────────────────────────────
+# all-MiniLM-L6-v2 is always pre-cached (locally in ~/.cache, and baked into
+# the Fly image at build time). Yet SentenceTransformer phones the HF Hub on
+# every cold start to check for updates — and when the Hub is slow or rate-
+# limiting an unauthenticated client, that network call stalls for *minutes*
+# (and blocks the warm-up lock behind it). Force offline so the cached model
+# loads with zero network round-trips. Override with HF_HUB_OFFLINE=0 only if
+# you need to download the model on a fresh machine.
+os.environ.setdefault("HF_HUB_OFFLINE", "1")
+os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
+
 
 def _default_repo() -> str:
     return str(Path(__file__).resolve().parent.parent)
@@ -220,6 +231,27 @@ class OrionEngine:
             v = self.default_file.read_text(encoding="utf-8").strip()
             return self.resolve_agent(v)
         return None
+
+    def resolve_default_agent(self) -> Optional[str]:
+        """The explicitly-set default agent, or a sensible fallback.
+
+        A brand-new user (fresh data dir, no default set) would otherwise make
+        ``load_default`` return an error string and the client emits an empty
+        reply. Fall back to ORION_DEFAULT_AGENT, then 'elysia'/'k_os', then the
+        first available agent, so a first ``..`` summon always loads someone.
+        """
+        explicit = self.get_default_agent()
+        if explicit:
+            return explicit
+        agents = self.list_agents()
+        if not agents:
+            return None
+        for cand in (os.environ.get("ORION_DEFAULT_AGENT", "").strip(), "elysia", "k_os"):
+            if cand:
+                r = self.resolve_agent(cand)
+                if r:
+                    return r
+        return agents[0]
 
     def set_default_agent(self, name: str) -> Dict[str, Any]:
         agent = self.resolve_agent(name)
