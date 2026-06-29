@@ -9,6 +9,7 @@ on:
       - 'Dockerfile.fly'
       - 'fly.toml'
       - 'requirements.txt'
+      - 'requirements.fly.txt'
   workflow_dispatch:
 
 jobs:
