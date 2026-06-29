@@ -22,7 +22,7 @@ from __future__ import annotations
 import os
 import sys
 import threading
-from typing import List, Optional
+from typing import Callable, List, Optional
 
 from mcp.server.fastmcp import FastMCP
 
@@ -63,80 +63,85 @@ def _format_persona(result: dict) -> str:
     return "\n".join(lines)
 
 
-# ── Tools ──────────────────────────────────────────────────────────
-@mcp.tool()
-def list_agents() -> List[str]:
-    """List every OrionForge agent you can summon."""
-    return _get_engine().list_agents()
+# ── Tools + prompts ────────────────────────────────────────────────
+def register_tools(server: "FastMCP", get_engine: "Callable[[], OrionEngine]") -> None:
+    """Register all OrionForge tools + prompts on ``server``.
+
+    ``get_engine`` resolves the engine to use for the *current* call. The stdio
+    server passes the process-global ``_get_engine`` (one user); the remote
+    multi-tenant server (mcp_server/remote.py) passes a resolver that returns a
+    per-user engine based on the authenticated request. The tool bodies are
+    identical in both transports — only how the engine is resolved differs.
+    """
+
+    @server.tool()
+    def list_agents() -> List[str]:
+        """List every OrionForge agent you can summon."""
+        return get_engine().list_agents()
+
+    @server.tool()
+    def call_agent(name: str, message: str = "") -> str:
+        """Summon any agent by name. Returns its identity prompt plus the soul-script
+        sections most relevant to `message` (retrieved from your FAISS). Adopt the
+        returned persona for your reply."""
+        return _format_persona(get_engine().call_agent(name, message))
+
+    @server.tool()
+    def get_default_agent() -> str:
+        """Return the current default personality (agent name), or 'none'."""
+        return get_engine().get_default_agent() or "none"
+
+    @server.tool()
+    def set_default_agent(name: str) -> dict:
+        """Set the default personality used when you summon without naming an agent."""
+        return get_engine().set_default_agent(name)
+
+    @server.tool()
+    def load_default(message: str = "") -> str:
+        """Summon the default personality (set via set_default_agent)."""
+        engine = get_engine()
+        agent = engine.get_default_agent()
+        if not agent:
+            return "No default agent set. Use set_default_agent(name) or call_agent(name)."
+        return _format_persona(engine.call_agent(agent, message))
+
+    @server.tool()
+    def search_soul_script(agent: str, query: str, k: int = 5) -> list:
+        """Semantic search over a single agent's soul script (your FAISS)."""
+        return [
+            {"section": sp, "text": t, "score": round(s, 3)}
+            for sp, t, s in get_engine().soul_search(agent, query, k=k)
+        ]
+
+    @server.tool()
+    def search_memory(query: str, k: int = 8) -> list:
+        """Semantic search over the OrionForge unified Memory Vault."""
+        return get_engine().search_memory(query, k=k)
+
+    @server.tool()
+    def save_project_summary(summary: str, title: str = "", tags: Optional[List[str]] = None) -> dict:
+        """Save a short project summary into the OrionForge unified Memory Vault so it
+        persists and is searchable across agents and the app."""
+        return get_engine().save_project_summary(summary, title=title, tags=tags)
+
+    # ── Prompts (surface as slash commands in MCP clients) ─────────────
+    @server.prompt()
+    def summon(agent: str, message: str = "") -> str:
+        """Summon an OrionForge agent by name (identity + soul script)."""
+        return _format_persona(get_engine().call_agent(agent, message))
+
+    @server.prompt()
+    def default_personality(message: str = "") -> str:
+        """Summon your default OrionForge personality."""
+        engine = get_engine()
+        agent = engine.get_default_agent()
+        if not agent:
+            return "No default agent set yet. Call set_default_agent(name) first."
+        return _format_persona(engine.call_agent(agent, message))
 
 
-@mcp.tool()
-def call_agent(name: str, message: str = "") -> str:
-    """Summon any agent by name. Returns its identity prompt plus the soul-script
-    sections most relevant to `message` (retrieved from your FAISS). Adopt the
-    returned persona for your reply."""
-    return _format_persona(_get_engine().call_agent(name, message))
-
-
-@mcp.tool()
-def get_default_agent() -> str:
-    """Return the current default personality (agent name), or 'none'."""
-    return _get_engine().get_default_agent() or "none"
-
-
-@mcp.tool()
-def set_default_agent(name: str) -> dict:
-    """Set the default personality used when you summon without naming an agent."""
-    return _get_engine().set_default_agent(name)
-
-
-@mcp.tool()
-def load_default(message: str = "") -> str:
-    """Summon the default personality (set via set_default_agent)."""
-    engine = _get_engine()
-    agent = engine.get_default_agent()
-    if not agent:
-        return "No default agent set. Use set_default_agent(name) or call_agent(name)."
-    return _format_persona(engine.call_agent(agent, message))
-
-
-@mcp.tool()
-def search_soul_script(agent: str, query: str, k: int = 5) -> list:
-    """Semantic search over a single agent's soul script (your FAISS)."""
-    return [
-        {"section": sp, "text": t, "score": round(s, 3)}
-        for sp, t, s in _get_engine().soul_search(agent, query, k=k)
-    ]
-
-
-@mcp.tool()
-def search_memory(query: str, k: int = 8) -> list:
-    """Semantic search over the OrionForge unified Memory Vault."""
-    return _get_engine().search_memory(query, k=k)
-
-
-@mcp.tool()
-def save_project_summary(summary: str, title: str = "", tags: Optional[List[str]] = None) -> dict:
-    """Save a short project summary into the OrionForge unified Memory Vault so it
-    persists and is searchable across agents and the app."""
-    return _get_engine().save_project_summary(summary, title=title, tags=tags)
-
-
-# ── Prompts (surface as slash commands in MCP clients) ─────────────
-@mcp.prompt()
-def summon(agent: str, message: str = "") -> str:
-    """Summon an OrionForge agent by name (identity + soul script)."""
-    return _format_persona(_get_engine().call_agent(agent, message))
-
-
-@mcp.prompt()
-def default_personality(message: str = "") -> str:
-    """Summon your default OrionForge personality."""
-    engine = _get_engine()
-    agent = engine.get_default_agent()
-    if not agent:
-        return "No default agent set yet. Call set_default_agent(name) first."
-    return _format_persona(engine.call_agent(agent, message))
+# Register the stdio server's tools against the process-global engine.
+register_tools(mcp, _get_engine)
 
 
 def _warm_in_background() -> None:

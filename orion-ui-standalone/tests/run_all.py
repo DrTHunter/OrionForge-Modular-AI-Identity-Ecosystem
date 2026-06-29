@@ -25,6 +25,7 @@ TEST_MODULES = [
     "tests.test_stress",
     "tests.test_torture",
     "tests.test_multi_tenant",
+    "tests.test_mcp_remote",
 ]
 
 
