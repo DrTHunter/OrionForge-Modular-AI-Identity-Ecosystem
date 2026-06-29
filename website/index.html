@@ -2964,7 +2964,7 @@ section { position: relative; z-index: 1; }
         <div class="section-header reveal">
             <div class="section-label"><i class="fas fa-cogs"></i> Runtime Tools</div>
             <h2 class="section-title">The Agent Toolbelt</h2>
-            <p class="section-subtitle">12 tools in the belt — policy-gated, audited, and now MCP-connectable</p>
+            <p class="section-subtitle">12 tools in the belt — policy-gated, audited, and one-click connectable to Claude Code</p>
         </div>
 
         <div class="tools-grid" id="tools-grid">
@@ -3665,7 +3665,7 @@ const tools = [
         icon: 'fas fa-plug',
         iconClass: 'task',
         badge: 'MCP',
-        desc: 'Connect your agents to Claude, ChatGPT, or Gemini over the Model Context Protocol — summon any identity, search soul scripts, and share the Memory Vault from inside any MCP client.',
+        desc: 'Connect your agents to Claude Code, Claude Desktop, or Gemini. Generate a token on the hosted Connect page and paste one line — no install — or run it locally. Summon any identity, search soul scripts, and share the Memory Vault from inside any MCP client.',
         fullDesc: 'The SoulScript Engine MCP server is an additive, per-user bridge that drops your OrionForge agents into any MCP-capable client — Claude Desktop / Code, ChatGPT, or Gemini CLI — without changing the running app.<br><br>It exposes your roster as callable tools: <strong>call_agent</strong> and <strong>load_default</strong> load an identity prompt plus the soul-script sections most relevant to your message (retrieved live from your FAISS); <strong>search_soul_script</strong> and <strong>search_memory</strong> run semantic search over a soul script or the shared Memory Vault; <strong>save_project_summary</strong> writes back into the same vault the app uses. In Claude Code, typing <code>..</code> summons your default agent instantly — a background warm-up keeps that first call near-instant.<br><br><strong>Two ways to connect:</strong> the fastest is the <strong>hosted connector</strong> — log in, open <a href="https://soulscript.orionforge.chat/connect" target="_blank" style="color:var(--primary-light);">Connect to Claude</a>, generate a personal token, and paste the one-line snippet into Claude Code. No install. Or run the stdio server <strong>locally for free</strong> and connect it to anything. <a href="soulscript-engine.html" style="color:var(--primary-light);">Read the full SoulScript Engine breakdown &rarr;</a>'
     },
     {

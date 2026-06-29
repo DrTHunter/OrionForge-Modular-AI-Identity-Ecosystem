@@ -1630,6 +1630,26 @@
 
     <!-- ── MCP Server Setup Panel ── -->
     {% if tool.name == 'mcp_server' %}
+    <div class="section-card" style="border-color:rgba(99,102,241,0.45);background:rgba(99,102,241,0.06);">
+      <div class="section-title"><span class="sec-icon">&#128268;</span> Hosted — Connect to Claude (no install)</div>
+      <div class="about-text" style="margin-bottom:0.75rem;">
+        The fastest way to connect. Open the <a href="/connect" style="color:#818cf8;font-weight:600;">Connect to Claude</a> page,
+        generate a personal token, and paste the one-line snippet into Claude Code — nothing to clone or run locally.
+        Your agents, soul scripts, and Memory Vault appear right inside the chat.
+      </div>
+      <pre style="background:rgba(15,15,20,0.9);border:1px solid rgba(42,42,58,0.5);border-radius:0.5rem;padding:1rem;font-size:0.8rem;color:#d4d4d8;overflow-x:auto;"><code>claude mcp add --transport http orionforge \
+  https://soulscript.orionforge.chat/mcp \
+  --header "Authorization: Bearer &lt;YOUR_TOKEN&gt;"</code></pre>
+      <div class="about-text" style="margin-top:0.75rem;">
+        <a href="/connect" class="btn btn-secondary" style="text-decoration:none;">Open Connect page &rarr;</a>
+      </div>
+    </div>
+
+    <div class="section-card" style="margin-top:1rem;">
+      <div class="section-title" style="color:#a1a1aa;"><span class="sec-icon">&#128187;</span> Or run it locally (self-host)</div>
+      <div class="about-text" style="color:#71717a;font-size:0.8rem;">Prefer to run the stdio server on your own machine? Follow the steps below.</div>
+    </div>
+
     <div class="section-card">
       <div class="section-title"><span class="sec-icon">&#9881;</span> Install</div>
       <div class="about-text" style="margin-bottom:0.75rem;">Run from <code>orion-ui-standalone/</code>:</div>
@@ -1637,13 +1657,13 @@
     </div>
 
     <div class="section-card">
-      <div class="section-title"><span class="sec-icon">&#128279;</span> Connect — Claude Code</div>
+      <div class="section-title"><span class="sec-icon">&#128279;</span> Connect — Claude Code (local)</div>
       <div class="about-text" style="margin-bottom:0.75rem;">From <code>orion-ui-standalone/</code>:</div>
       <pre style="background:rgba(15,15,20,0.9);border:1px solid rgba(42,42,58,0.5);border-radius:0.5rem;padding:1rem;font-size:0.8rem;color:#d4d4d8;overflow-x:auto;"><code>claude mcp add orionforge -- python -m mcp_server.orion_mcp</code></pre>
     </div>
 
     <div class="section-card">
-      <div class="section-title"><span class="sec-icon">&#128279;</span> Connect — Claude Desktop</div>
+      <div class="section-title"><span class="sec-icon">&#128279;</span> Connect — Claude Desktop (local)</div>
       <div class="about-text" style="margin-bottom:0.75rem;">Add to <code>claude_desktop_config.json</code>:</div>
       <pre style="background:rgba(15,15,20,0.9);border:1px solid rgba(42,42,58,0.5);border-radius:0.5rem;padding:1rem;font-size:0.8rem;color:#d4d4d8;overflow-x:auto;"><code>{
   "mcpServers": {
