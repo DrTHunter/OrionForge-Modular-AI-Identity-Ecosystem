@@ -10,6 +10,7 @@ on:
       - 'fly.toml'
       - 'requirements.txt'
       - 'requirements.fly.txt'
+      - 'boot.sh'
   workflow_dispatch:
 
 jobs:

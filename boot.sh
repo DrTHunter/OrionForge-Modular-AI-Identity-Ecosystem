@@ -279,5 +279,10 @@ ln -sfn "$PERSIST_ORION" "$APP_ORION"
 
 echo "[boot] Orion data (journal, history) linked to persistent volume."
 
-# 13. Start the app with a single worker for Fly stability
-exec python -m uvicorn web.app:app --host 0.0.0.0 --port 8989 --workers 1
+# 13. Start the app with a single worker for Fly stability.
+#     --proxy-headers + --forwarded-allow-ips="*" make uvicorn honor Fly's
+#     X-Forwarded-Proto, so request.url.scheme is https behind the TLS proxy.
+#     Without this the /mcp mount's trailing-slash redirect downgrades to http
+#     (and _mcp_public_url / secure cookies would mis-detect the scheme).
+exec python -m uvicorn web.app:app --host 0.0.0.0 --port 8989 --workers 1 \
+    --proxy-headers --forwarded-allow-ips="*"
