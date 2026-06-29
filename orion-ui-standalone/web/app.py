@@ -111,12 +111,94 @@ log = logging.getLogger("soulscript")
 for _d in [_CHATS_DIR, _NOTES_DIR, _VAULT_PATH.parent, _FAISS_DIR, _TRASH_DIR]:
     _d.mkdir(parents=True, exist_ok=True)
 
+# ── Hosted MCP endpoint (Phase 2) ────────────────────────────────
+# Build the remote, multi-tenant MCP app once. Import-guarded so a missing
+# `mcp` dependency degrades gracefully (the rest of the app still boots).
+from web import mcp_tokens
+try:
+    from mcp_server.remote import build_mcp_app, set_current_user
+    _mcp_inner_app, _mcp_server = build_mcp_app()
+except Exception as _mcp_exc:  # pragma: no cover - only when `mcp` isn't installed
+    _mcp_inner_app, _mcp_server, set_current_user = None, None, None
+    logging.getLogger("soulscript").warning("[mcp] remote MCP disabled: %s", _mcp_exc)
+
+
+def _mcp_access_allowed(user_id: str) -> bool:
+    """Credit gate: a user may use the MCP endpoint if they hold credits or have
+    ever purchased a pack (i.e. they're a paying/funded user)."""
+    if not user_id:
+        return False
+    try:
+        return get_user_credits(user_id) > 0 or user_has_purchased_credits(user_id)
+    except Exception:
+        return False
+
+
+class _MCPAuthASGI:
+    """Bearer-token auth + credit gate wrapped around the MCP ASGI app.
+
+    Maps ``Authorization: Bearer <token>`` → user_id → per-user engine context,
+    mirroring the bridge-key flow in AuthMiddleware. Runs as a raw ASGI app so it
+    sits *inside* the /mcp mount (the cookie AuthMiddleware skips /mcp).
+    """
+
+    def __init__(self, app):
+        self.app = app
+
+    async def _deny(self, send, status: int, error: str, www_auth: bool = False):
+        headers = [(b"content-type", b"application/json")]
+        if www_auth:
+            headers.append((b"www-authenticate", b'Bearer realm="orionforge-mcp"'))
+        body = json.dumps({"error": error}).encode()
+        await send({"type": "http.response.start", "status": status, "headers": headers})
+        await send({"type": "http.response.body", "body": body})
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            return await self.app(scope, receive, send)
+        headers = {k.decode().lower(): v.decode() for k, v in scope.get("headers", [])}
+        auth = headers.get("authorization", "")
+        token = auth[7:].strip() if auth[:7].lower() == "bearer " else ""
+        user_id = mcp_tokens.verify_token(token) if token else None
+        if not user_id:
+            return await self._deny(send, 401, "invalid_or_missing_token", www_auth=True)
+        if not _mcp_access_allowed(user_id):
+            return await self._deny(send, 402, "payment_required_add_credits")
+        try:
+            ensure_user_dirs(user_id)
+            seed_user_vault(user_id)
+            seed_user_chats(user_id)
+        except Exception as exc:
+            log.warning("[mcp] dir init failed for %s: %s", user_id[:8], exc)
+        set_current_user(user_id)
+        _current_user_id.set(user_id)
+        await self.app(scope, receive, send)
+
+
 # ── FastAPI app ──────────────────────────────────────────────────
 from contextlib import asynccontextmanager
 
 @asynccontextmanager
 async def _lifespan(application: FastAPI):
-    """Build NotesFAISS in background so Soul Script retrieval works soon after boot."""
+    # Start the MCP streamable-HTTP session manager for the app's lifetime.
+    async with _mcp_session_manager():
+        await _lifespan_body()
+        yield
+
+
+@asynccontextmanager
+async def _mcp_session_manager():
+    """Run the MCP session manager if the remote MCP app is available."""
+    if _mcp_server is not None:
+        async with _mcp_server.session_manager.run():
+            yield
+    else:
+        yield
+
+
+async def _lifespan_body():
+    """Original startup work: build NotesFAISS in background so Soul Script
+    retrieval works soon after boot, sync pricing, purge inactive accounts."""
     try:
         _seed_platform_keys_from_env()
     except Exception as exc:
@@ -173,11 +255,14 @@ async def _lifespan(application: FastAPI):
             log.info("[startup] Inactive account cleanup: purged %d user(s)", result["purged_count"])
     except Exception as exc:
         log.warning("[startup] Inactive account purge failed: %s", exc)
-    yield
 
 app = FastAPI(title="SoulScript Engine", version="0.2.0", lifespan=_lifespan)
 app.mount("/static", StaticFiles(directory=str(Path(__file__).parent / "static")), name="static")
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
+
+# Mount the hosted MCP endpoint at /mcp (bearer-auth + credit gate via wrapper).
+if _mcp_inner_app is not None:
+    app.mount("/mcp", _MCPAuthASGI(_mcp_inner_app))
 
 # ── Auth file path ───────────────────────────────────────────────
 _AUTH_FILE = _CONFIG_DIR / "auth.json"
@@ -2573,6 +2658,63 @@ async def page_settings(request: Request, tab: str = "api_keys"):
         "settings": safe_settings, "tab": tab,
         "agents": agents,
     })
+
+# ── Connect to Claude (hosted MCP) ────────────────────────────────
+
+def _mcp_public_url(request: Request) -> str:
+    """Public URL of the hosted MCP endpoint for the current host."""
+    host = request.headers.get("host", "") or request.url.netloc
+    proto = request.headers.get("x-forwarded-proto") or request.url.scheme or "https"
+    if host.endswith("orionforge.chat"):
+        proto = "https"  # public hosts are always TLS-terminated
+    return f"{proto}://{host}/mcp"
+
+
+@app.get("/connect", response_class=HTMLResponse)
+async def page_connect(request: Request):
+    user = getattr(request.state, "user", None)
+    uid = user["id"] if user else ""
+    return templates.TemplateResponse(request, "connect.html", {
+        "page": "connect",
+        "mcp_url": _mcp_public_url(request),
+        "token_status": mcp_tokens.get_token_status(uid) if uid else {"exists": False},
+        "credits": get_user_credits(uid) if uid else 0,
+        "access_allowed": _mcp_access_allowed(uid),
+        "mcp_enabled": _mcp_inner_app is not None,
+    })
+
+
+@app.get("/api/mcp/token")
+async def api_mcp_token_status(request: Request):
+    user = getattr(request.state, "user", None)
+    if not user:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    return JSONResponse(mcp_tokens.get_token_status(user["id"]))
+
+
+@app.post("/api/mcp/token")
+async def api_mcp_token_mint(request: Request):
+    user = getattr(request.state, "user", None)
+    if not user:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    uid = user["id"]
+    if not _mcp_access_allowed(uid):
+        return JSONResponse(
+            {"error": "payment_required",
+             "message": "Add credits to mint an MCP token."},
+            status_code=402,
+        )
+    raw = mcp_tokens.mint_token(uid)
+    return JSONResponse({"token": raw, "mcp_url": _mcp_public_url(request)})
+
+
+@app.delete("/api/mcp/token")
+async def api_mcp_token_revoke(request: Request):
+    user = getattr(request.state, "user", None)
+    if not user:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    return JSONResponse({"revoked": mcp_tokens.revoke_token(user["id"])})
+
 
 @app.get("/pricing", response_class=RedirectResponse)
 async def page_pricing_redirect():

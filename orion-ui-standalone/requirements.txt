@@ -23,3 +23,6 @@ stripe>=7.0.0
 # FAISS vector memory system
 faiss-cpu>=1.7.4
 sentence-transformers>=2.2.0
+
+# MCP — hosted per-user connector (remote streamable-HTTP transport mounted at /mcp)
+mcp>=1.12

@@ -40,10 +40,11 @@ Make sure you have the following before starting:
 From the `orion-ui-standalone/` directory:
 
 ```bash
-# Engine deps (FAISS, sentence-transformers, pyyaml — skip if already installed for the app)
-pip install -r requirements.fly.txt
+# Engine deps (FAISS, sentence-transformers, pyyaml) + the `mcp` package.
+# The main app requirements now include `mcp`, so this is usually all you need:
+pip install -r requirements.txt
 
-# MCP package (adds the `mcp` module)
+# (Standalone/local-only) the MCP package on its own:
 pip install -r mcp_server/requirements.txt
 ```
 
@@ -236,14 +237,38 @@ In clients that surface MCP prompts as slash commands:
 
 ---
 
-## Phase 2 — Remote server (coming soon)
+## Phase 2 — Hosted remote server (LIVE)
 
-This stdio server is the reusable engine. To offer it as a one-click per-user
-connector from the website:
-1. Run it as a **remote** MCP server (streamable-HTTP transport) alongside the app.
-2. Add OAuth/token auth that maps the bearer token → a Supabase user id, and set
-   `ORION_DATA_DIR` to that user's data dir per request/session.
-3. Give each user a "Connect" page with their personal MCP URL + token to paste
-   into Claude/ChatGPT/Gemini.
+The stdio server above is the reusable engine. It is also served **remotely** by
+the web app so any logged-in website user can connect without cloning the repo —
+same tools and prompts, only the transport + auth layer differs.
 
-The tools and prompts above stay identical — only the transport + auth layer is added.
+**How it works**
+- `mcp_server/remote.py` builds a **streamable-HTTP** FastMCP app (stateless,
+  JSON responses) that resolves a **per-user** engine from a contextvar. Each
+  user's `data_dir` is `data/users/<uid>` — the same per-user Memory Vault the
+  web app uses.
+- `web/app.py` mounts it at **`/mcp`** behind an ASGI wrapper that reads
+  `Authorization: Bearer <token>`, maps it to a user via `web/mcp_tokens.py`
+  (SHA-256 hashed at rest), enforces a **credit gate**, then binds that user into
+  the engine context. Bad/absent token → `401`; unfunded user → `402`.
+- `web/mcp_tokens.py` issues one long-lived **personal token** per user
+  (revocable, rotated on regenerate).
+
+**For users — the Connect page**
+
+Log in and open **`/connect`** ("Connect to Claude" in the nav). Generate a token
+and paste the auto-filled snippet into your client, e.g. Claude Code:
+
+```bash
+claude mcp add --transport http orionforge \
+  https://soulscript.orionforge.chat/mcp \
+  --header "Authorization: Bearer <YOUR_TOKEN>"
+```
+
+**Deploy notes**
+- `mcp` is in `requirements.txt`, so the Docker image ships the remote endpoint.
+  (The mount is import-guarded — if `mcp` is missing, the app still boots and
+  `/connect` shows a graceful "unavailable" banner.)
+- Public sign-up is gated by the credit system: minting a token and using `/mcp`
+  both require a positive balance or a past purchase (`OPEN_REGISTRATION=1`).

@@ -269,6 +269,9 @@ PUBLIC_PATHS = {
     "/static",
     "/uploads",
     "/favicon.ico",
+    # Hosted MCP endpoint — does its own bearer-token auth (web/app.py mount).
+    # Must bypass the cookie AuthMiddleware, which would 302-redirect to /login.
+    "/mcp",
 }
 
 
