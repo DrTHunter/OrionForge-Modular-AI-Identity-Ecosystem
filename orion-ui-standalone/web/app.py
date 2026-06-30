@@ -3058,6 +3058,8 @@ async def page_tools(request: Request):
         email_config = _email_cfg(user_id=_tools_uid)
     except Exception:
         email_config = {"api_base_url": "http://127.0.0.1:8000", "timeout": 30, "require_confirmation": True, "accounts": []}
+    user = getattr(request.state, "user", None)
+    uid = user["id"] if user else ""
     return templates.TemplateResponse(request, "tools.html", {
         "page": "tools",
         "tools": _TOOL_CATALOGUE,
@@ -3073,6 +3075,11 @@ async def page_tools(request: Request):
         "router_config": _load_model_router_config(),
         "email_config": email_config,
         "is_admin": _check_admin(request),
+        "mcp_url": _mcp_public_url(request),
+        "token_status": mcp_tokens.get_token_status(uid) if uid else {"exists": False},
+        "credits": get_user_credits(uid) if uid else 0,
+        "access_allowed": _mcp_access_allowed(uid),
+        "mcp_enabled": _mcp_inner_app is not None,
     })
 
 
