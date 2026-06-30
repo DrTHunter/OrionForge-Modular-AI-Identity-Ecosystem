@@ -1046,7 +1046,7 @@
 
     <!-- Tools Grid -->
     <div class="tools-grid" id="tools-grid">
-      {% for tool in tools %}
+      {% for tool in tools %}{% if 'agi_loop' not in tool.get('tags', []) %}
       <div class="tool-card"
            data-tool-name="{{ tool.name }}"
            data-tool-desc="{{ tool.description|lower }}"
@@ -1072,7 +1072,7 @@
           </div>
         </div>
       </div>
-      {% endfor %}
+      {% endif %}{% endfor %}
     </div>
 
     {% if not tools %}
@@ -1085,7 +1085,7 @@
 
   <!-- ═══ EDITOR / DETAIL VIEWS (one per tool) ═══ -->
   {% for tool in tools %}
-  {% if tool.name != 'cost_tracker' %}
+  {% if tool.name != 'cost_tracker' and 'agi_loop' not in tool.get('tags', []) %}
   <div class="editor-view" id="editor-{{ tool.name }}">
 
     <!-- Header -->
