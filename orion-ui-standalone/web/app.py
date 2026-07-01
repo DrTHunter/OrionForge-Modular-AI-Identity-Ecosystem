@@ -56,20 +56,16 @@ from web.image_gen import _generate_image
 from web.video_gen import _generate_video
 from web.auth import get_auth_config, verify_supabase_token, extract_user_from_token, is_public_path, is_email_allowed, verify_bridge_key, refresh_supabase_session
 from web.stripe_billing import (
-    get_user_tier, get_user_subscription, user_has_feature,
+    get_user_tier, get_user_subscription,
     create_checkout_session, create_billing_portal_session,
     handle_webhook_event, TIER_INFO, STRIPE_PUBLISHABLE_KEY,
     get_user_credits, add_user_credits, deduct_user_credits,
     CREDIT_PACKS, TOOL_CREDIT_COSTS, create_credits_checkout_session,
     fulfill_credits_for_session,
-    STORE_CATALOG, LLM_MARKUP_MULTIPLIER, estimate_llm_credit_cost,
+    LLM_MARKUP_MULTIPLIER, estimate_llm_credit_cost,
     estimate_llm_credit_cost_safe, estimate_image_credit_cost, estimate_video_credit_cost,
     estimate_tts_credit_cost, estimate_stt_credit_cost,
     get_credit_history, get_trial_status, FREE_TRIAL_DAYS, user_has_purchased_credits,
-    get_user_purchases, user_owns_item, purchase_tool, purchase_skin,
-    purchase_agent, purchase_pack, user_owns_agent, user_has_tool_access, SKIN_PRICES,
-    get_store_agent_ids, get_user_unlocked_agents, FREE_AGENT_IDS,
-    STORE_PACKS,
     touch_user_activity, wipe_user_data, wipe_user_by_email,
     purge_inactive_users, list_all_users, INACTIVE_ACCOUNT_DAYS,
 )
@@ -1113,14 +1109,11 @@ def _can_access_agent(agent: str, user_id: str | None) -> bool:
 def _list_unlocked_agents(request: Request) -> list[str]:
     """Return agents the current user can access.
 
-    Admins see everything. Regular users see:
-    - Free agents (codex_animus)
-    - Purchased store agents
-    - User-created agents (not in the store catalog)
-
-    Restricted agents (RESTRICTED_AGENTS) are filtered out for everyone except
-    their allowed UIDs, regardless of admin status. The list is then ordered by
-    _prioritize_default_agent so the pinned agents (K-OS first) lead.
+    Every agent is available to every user (pay-per-use model, no per-agent
+    paywall). Restricted agents (RESTRICTED_AGENTS) are filtered out for
+    everyone except their allowed UIDs, regardless of admin status. The list
+    is then ordered by _prioritize_default_agent so the pinned agents (K-OS
+    first) lead.
     """
     all_agents = _list_agents()
     user = getattr(request.state, "user", None)
@@ -1131,18 +1124,10 @@ def _list_unlocked_agents(request: Request) -> list[str]:
             [a for a in agents if _can_access_agent(a, user_id)]
         )
 
-    if _check_admin(request):
-        return _finalize(all_agents)
-    if not user:
-        return _finalize(all_agents)
-    store_ids = get_store_agent_ids()
-    unlocked = get_user_unlocked_agents(user_id)
-    agents = [
-        a for a in all_agents
-        if a not in store_ids  # user-created agents (not in store)
-        or a in unlocked       # free or purchased store agents
-    ]
-    return _finalize(agents)
+    # Every agent is available to every signed-up user (pay-per-use model,
+    # no per-agent paywall) — only RESTRICTED_AGENTS (handled inside
+    # _can_access_agent) still gates anything here.
+    return _finalize(all_agents)
 
 
 # Agents pinned to the top of the chat dropdown, in this exact order. Any pinned
@@ -2151,22 +2136,17 @@ async def api_stripe_webhook(request: Request):
 
 @app.get("/store", response_class=HTMLResponse)
 async def page_store(request: Request):
-    """Store page — browse tools, buy credit packs, purchase skins."""
+    """Store page — buy credit packs (the only thing still purchasable;
+    every agent, tool, and skin is included free for all users)."""
     user = getattr(request.state, "user", None)
     credits = get_user_credits(user["id"]) if user else 0
-    purchases = get_user_purchases(user["id"]) if user else {"tools": [], "skins": ["default"]}
     auth_cfg = get_auth_config()
     packs_list = [{"id": k, **v} for k, v in CREDIT_PACKS.items()]
     return templates.TemplateResponse(request, "store.html", {
         "page": "store",
         "user": user,
         "credits": credits,
-        "catalog": STORE_CATALOG,
         "credit_packs": packs_list,
-        "tool_costs": TOOL_CREDIT_COSTS,
-        "purchases": purchases,
-        "skin_prices": SKIN_PRICES,
-        "store_packs": STORE_PACKS,
         "stripe_publishable_key": STRIPE_PUBLISHABLE_KEY,
         "auth_config": auth_cfg,
     })
@@ -2225,18 +2205,6 @@ async def api_credits_confirm(request: Request):
     return JSONResponse({"ok": bool(result.get("ok")), "result": result, "credits": get_user_credits(user["id"])})
 
 
-@app.get("/api/store/catalog")
-async def api_store_catalog(request: Request):
-    """Return the full store catalog and credit packs."""
-    user = getattr(request.state, "user", None)
-    credits = get_user_credits(user["id"]) if user else 0
-    return JSONResponse({
-        "catalog": STORE_CATALOG,
-        "credit_packs": CREDIT_PACKS,
-        "credits": credits,
-    })
-
-
 @app.get("/api/credits/history")
 async def api_credits_history(request: Request):
     """Return the user's credit transaction history."""
@@ -2245,207 +2213,6 @@ async def api_credits_history(request: Request):
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
     history = get_credit_history(user["id"])
     return JSONResponse({"history": history})
-
-
-@app.post("/api/credits/deduct-tool")
-async def api_credits_deduct_tool(request: Request):
-    """One-time purchase of a tool from the store (deducts credits, unlocks forever)."""
-    user = getattr(request.state, "user", None)
-    if not user:
-        return JSONResponse({"error": "Not authenticated"}, status_code=401)
-    body = await request.json()
-    tool_id = body.get("tool_id", "")
-    result = purchase_tool(user["id"], tool_id)
-    if "error" in result:
-        status = 402 if "Insufficient" in result["error"] else 400
-        return JSONResponse(result, status_code=status)
-    return JSONResponse({"success": True, "tool_id": tool_id, "cost": result["cost"], "balance": result["balance"]})
-
-
-@app.post("/api/store/purchase-skin")
-async def api_purchase_skin(request: Request):
-    """One-time purchase of a skin (deducts credits, unlocks forever)."""
-    user = getattr(request.state, "user", None)
-    if not user:
-        return JSONResponse({"error": "Not authenticated"}, status_code=401)
-    body = await request.json()
-    skin_id = body.get("skin_id", "")
-    result = purchase_skin(user["id"], skin_id)
-    if "error" in result:
-        status = 402 if "Insufficient" in result.get("error", "") else 400
-        return JSONResponse(result, status_code=status)
-    return JSONResponse({"success": True, "skin_id": skin_id, "cost": result["cost"], "balance": result["balance"]})
-
-
-@app.post("/api/store/purchase-agent")
-async def api_purchase_agent(request: Request):
-    """One-time purchase of an AI agent (deducts credits, seeds profile + knowledge)."""
-    user = getattr(request.state, "user", None)
-    if not user:
-        return JSONResponse({"error": "Not authenticated"}, status_code=401)
-    body = await request.json()
-    agent_catalog_id = body.get("agent_id", "")
-
-    result = purchase_agent(user["id"], agent_catalog_id)
-    if "error" in result:
-        status = 402 if "Insufficient" in result.get("error", "") else 400
-        return JSONResponse(result, status_code=status)
-
-    agent_id = result["agent_id"]
-
-    # ── Seed soul script + prompt into Knowledge notes ──
-    try:
-        _seed_agent_knowledge(agent_id)
-    except Exception as exc:
-        log.warning("[store] Agent knowledge seeding failed for '%s': %s", agent_id, exc)
-
-    return JSONResponse({
-        "success": True,
-        "agent_id": agent_id,
-        "catalog_id": agent_catalog_id,
-        "cost": result["cost"],
-        "balance": result["balance"],
-    })
-
-
-@app.post("/api/store/purchase-pack")
-async def api_purchase_pack(request: Request):
-    """Purchase a bundle pack (agents + tools at discount)."""
-    user = getattr(request.state, "user", None)
-    if not user:
-        return JSONResponse({"error": "Not authenticated"}, status_code=401)
-    body = await request.json()
-    pack_id = body.get("pack_id", "")
-
-    result = purchase_pack(user["id"], pack_id)
-    if "error" in result:
-        status = 402 if "Insufficient" in result.get("error", "") else 400
-        return JSONResponse(result, status_code=status)
-
-    # Seed knowledge for each newly unlocked agent
-    for agent_id in result.get("agents_unlocked", []):
-        try:
-            _seed_agent_knowledge(agent_id)
-        except Exception as exc:
-            log.warning("[store] Pack agent seeding failed for '%s': %s", agent_id, exc)
-
-    return JSONResponse({
-        "success": True,
-        "pack_id": pack_id,
-        "cost": result["cost"],
-        "balance": result["balance"],
-        "agents_unlocked": result["agents_unlocked"],
-        "tools_unlocked": result["tools_unlocked"],
-    })
-
-
-def _seed_agent_knowledge(agent_id: str):
-    """Seed an agent's soul script and prompt into the Knowledge tab on purchase.
-
-    Creates notes in the 'Soul Scripts' and 'Prompts' folders, and attaches
-    them to the agent's config so they're injected during conversations.
-    """
-    import uuid
-    from datetime import datetime, timezone
-
-    notes_dir = _DATA_DIR / "user_notes"
-    notes_dir.mkdir(parents=True, exist_ok=True)
-
-    # ── Ensure folders exist ──
-    folders_file = notes_dir / "folders.json"
-    folders = _read_json(folders_file, [])
-    folder_ids = {f["id"] for f in folders}
-
-    if "soul_scripts" not in folder_ids:
-        folders.append({"id": "soul_scripts", "name": "Soul Scripts", "emoji": "🧬", "pinned": True, "color": "#818cf8"})
-    if "prompts" not in folder_ids:
-        folders.append({"id": "prompts", "name": "Prompts", "emoji": "📝", "pinned": True, "color": "#f472b6"})
-    _write_json(folders_file, folders)
-
-    # ── Read the soul script (directive) ──
-    directive_path = _DIRECTIVES_DIR / f"{agent_id}.md"
-    soul_script_text = directive_path.read_text(encoding="utf-8") if directive_path.exists() else ""
-
-    # ── Read the system prompt ──
-    prompt_path = _PROMPTS_DIR / f"{agent_id}.system.md"
-    prompt_text = prompt_path.read_text(encoding="utf-8") if prompt_path.exists() else ""
-
-    # ── Load existing note index ──
-    index_file = notes_dir / "index.json"
-    index = _read_json(index_file, [])
-    now_iso = datetime.now(timezone.utc).isoformat()
-
-    note_ids = []
-    ss_ids = set()
-
-    # ── Create soul script note ──
-    if soul_script_text:
-        ss_id = uuid.uuid4().hex[:8]
-        ss_title = f"{agent_id.capitalize()} — Soul Script"
-        index.append({
-            "id": ss_id, "title": ss_title, "emoji": "🧬",
-            "preview": "", "section": "soul_scripts",
-            "created": now_iso, "updated": now_iso,
-        })
-        # Convert markdown to simple HTML for the note
-        ss_html = soul_script_text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-        ss_html = f"<pre>{ss_html}</pre>"
-        _write_json(notes_dir / f"{ss_id}.json", {
-            "id": ss_id, "title": ss_title, "emoji": "🧬",
-            "content_html": ss_html, "preview": "",
-            "section": "soul_scripts",
-            "created": now_iso, "updated": now_iso,
-        })
-        note_ids.append(ss_id)
-        ss_ids.add(ss_id)
-
-    # ── Create prompt note ──
-    if prompt_text:
-        pr_id = uuid.uuid4().hex[:8]
-        pr_title = f"{agent_id.capitalize()} — System Prompt"
-        index.append({
-            "id": pr_id, "title": pr_title, "emoji": "📝",
-            "preview": "", "section": "prompts",
-            "created": now_iso, "updated": now_iso,
-        })
-        pr_html = prompt_text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-        pr_html = f"<pre>{pr_html}</pre>"
-        _write_json(notes_dir / f"{pr_id}.json", {
-            "id": pr_id, "title": pr_title, "emoji": "📝",
-            "content_html": pr_html, "preview": "",
-            "section": "prompts",
-            "created": now_iso, "updated": now_iso,
-        })
-        note_ids.append(pr_id)
-
-    _write_json(index_file, index)
-
-    # ── Attach notes to agent config ──
-    if note_ids:
-        cfg = _get_agent_config(agent_id)
-        existing = cfg.get("attached_notes", [])
-        cfg["attached_notes"] = list(set(existing + note_ids))
-        modes = cfg.get("note_modes", {})
-        essential = cfg.get("essential_notes", [])
-        for nid in note_ids:
-            # Soul script notes default to directive mode (semantic retrieval)
-            modes[nid] = "directive" if nid in ss_ids else "always"
-            essential.append(nid)
-        cfg["note_modes"] = modes
-        cfg["essential_notes"] = list(set(essential))
-        _save_agent_config(agent_id, cfg)
-
-    log.info("[store] Seeded knowledge for agent '%s': %d notes created", agent_id, len(note_ids))
-
-
-@app.get("/api/store/purchases")
-async def api_store_purchases(request: Request):
-    """Return all items the user has purchased."""
-    user = getattr(request.state, "user", None)
-    if not user:
-        return JSONResponse({"error": "Not authenticated"}, status_code=401)
-    purchases = get_user_purchases(user["id"])
-    return JSONResponse(purchases)
 
 
 @app.get("/plans")
@@ -2777,25 +2544,18 @@ async def page_skins(request: Request):
     settings = _load_settings()
     active_skin = settings.get("skin", "default")
     user = getattr(request.state, "user", None)
-    purchases = get_user_purchases(user["id"]) if user else {"tools": [], "skins": ["default"]}
     credits = get_user_credits(user["id"]) if user else 0
     return templates.TemplateResponse(request, "skins.html", {
         "page": "skins",
         "active_skin": active_skin,
-        "owned_skins": purchases.get("skins", ["default"]),
-        "skin_prices": SKIN_PRICES,
         "credits": credits,
     })
 
 @app.put("/api/skin")
 async def api_set_skin(request: Request):
-    """Save active UI skin to settings.json (only if owned)."""
+    """Save active UI skin to settings.json. Every skin is free for every user."""
     body = await request.json()
     skin_id = body.get("skin", "default")
-    user = getattr(request.state, "user", None)
-    if user:
-        if not user_owns_item(user["id"], skin_id, "skins") and skin_id != "default":
-            return JSONResponse({"error": "You don't own this skin. Purchase it in the Store."}, status_code=403)
     settings = _load_settings()
     settings["skin"] = skin_id
     _save_settings(settings)
@@ -6959,11 +6719,7 @@ async def api_tts_speak(request: Request):
     if not text:
         return JSONResponse({"error": "No text provided"}, 400)
 
-    # ── Ownership check: user must have purchased voice_tts ──
     user = getattr(request.state, "user", None)
-    if user and not user_owns_item(user["id"], "voice_tts"):
-        return JSONResponse({"error": "Voice TTS not unlocked. Purchase it in the Store first.",
-                             "redirect": "/store"}, 403)
 
     conn_data = _load_connections()
     el_conn = None
@@ -7086,11 +6842,7 @@ async def api_tts_inworld_speak(request: Request):
     if not text:
         return JSONResponse({"error": "No text provided"}, 400)
 
-    # ── Ownership check: user must have purchased voice_tts ──
     user = getattr(request.state, "user", None)
-    if user and not user_owns_item(user["id"], "voice_tts"):
-        return JSONResponse({"error": "Voice TTS not unlocked. Purchase it in the Store first.",
-                             "redirect": "/store"}, 403)
 
     api_key = _get_inworld_api_key()
     if not api_key:
@@ -7164,11 +6916,7 @@ def _get_elevenlabs_conn():
 @app.post("/api/stt/elevenlabs")
 async def api_stt_elevenlabs(request: Request):
     """Transcribe uploaded audio via ElevenLabs Speech-to-Text API."""
-    # ── Ownership check: user must have purchased voice_stt ──
     user = getattr(request.state, "user", None)
-    if user and not user_owns_item(user["id"], "voice_stt"):
-        return JSONResponse({"error": "Voice STT not unlocked. Purchase it in the Store first.",
-                             "redirect": "/store"}, 403)
 
     conn = _get_elevenlabs_conn()
     if not conn or not conn.get("api_key"):

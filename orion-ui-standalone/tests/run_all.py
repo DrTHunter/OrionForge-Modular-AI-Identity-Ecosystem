@@ -11,6 +11,12 @@ import sys
 import os
 import time
 
+if hasattr(sys.stdout, "reconfigure"):
+    # Windows consoles default to cp1252, which can't encode the box-drawing
+    # and checkmark characters used below (and by some child test modules).
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+
 # All test modules in dependency order
 TEST_MODULES = [
     "tests.test_data_paths",
@@ -45,10 +51,12 @@ def main():
         print(f"  Running: {module}")
         print(f"{'─' * 60}")
 
+        child_env = dict(os.environ, PYTHONIOENCODING="utf-8")
         result = subprocess.run(
             [sys.executable, "-m", module],
             capture_output=False,
             text=True,
+            env=child_env,
         )
 
         if result.returncode != 0:

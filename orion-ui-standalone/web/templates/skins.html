@@ -531,8 +531,6 @@ const SKINS = [
 let activeSkin = "{{ active_skin }}";
 let currentFilter = "all";
 let modalSkinId = null;
-const ownedSkins = new Set({{ owned_skins | tojson }});
-const skinPrices = {{ skin_prices | tojson }};
 
 /* ══════════════════════════════════════════════════════════════════
    RENDERING
@@ -542,34 +540,14 @@ function renderGrid() {
   const filt = currentFilter;
   const filtered = SKINS.filter(s => filt === "all" || s.tags.includes(filt));
   grid.innerHTML = filtered.map(s => {
-    const owned = ownedSkins.has(s.id);
-    const price = skinPrices[s.id] || 0;
     const isActive = s.id === activeSkin;
-    const isDefault = s.id === 'default';
-    let priceLabel, statusLabel, statusColor;
-    if (isDefault || price === 0) {
-      priceLabel = 'Free';
-    } else if (owned) {
-      priceLabel = '✓ Owned';
-    } else {
-      priceLabel = `🪙 ${price} credits`;
-    }
-    if (isActive) {
-      statusLabel = '✓ Active';
-      statusColor = '#10b981';
-    } else if (!owned && !isDefault && price > 0) {
-      statusLabel = '🔒 Locked';
-      statusColor = '#f59e0b';
-    } else {
-      statusLabel = 'Preview →';
-      statusColor = '#52525b';
-    }
+    const statusLabel = isActive ? '✓ Active' : 'Preview →';
+    const statusColor = isActive ? '#10b981' : '#52525b';
     return `
-    <div class="skin-card ${isActive ? 'active' : ''} ${!owned && !isDefault && price > 0 ? 'locked' : ''}"
+    <div class="skin-card ${isActive ? 'active' : ''}"
          data-id="${s.id}" onclick="openSkinModal('${s.id}')">
       <div class="skin-preview" style="background:${s.previewBg}">
         ${s.badge ? `<span class="skin-badge ${s.badge}">${s.badge}</span>` : ''}
-        ${!owned && !isDefault && price > 0 ? '<span class="skin-badge" style="background:rgba(245,158,11,0.9);color:#000;">🔒</span>' : ''}
         <div class="skin-icon" style="background:${s.iconBg}">${s.icon}</div>
       </div>
       <div class="skin-body">
@@ -578,7 +556,7 @@ function renderGrid() {
         <div class="skin-desc">${s.desc}</div>
       </div>
       <div class="skin-footer">
-        <span class="skin-price" style="color:${owned || isDefault ? '#10b981' : '#a5b4fc'}">${priceLabel}</span>
+        <span class="skin-price" style="color:#10b981">Free</span>
         <div style="display:flex;align-items:center;gap:0.75rem;">
           <span style="font-size:0.75rem;color:${statusColor}">
             ${statusLabel}
@@ -620,22 +598,15 @@ function openSkinModal(id) {
 
   // Apply button state
   const btn = document.getElementById('modal-apply-btn');
-  const owned = ownedSkins.has(s.id);
-  const price = skinPrices[s.id] || 0;
-  const isDefault = s.id === 'default';
   if (s.id === activeSkin) {
     btn.className = 'skin-apply-btn applied';
     btn.textContent = '✓ Active';
     btn.onclick = null;
-  } else if (owned || isDefault || price === 0) {
-    btn.className = 'skin-apply-btn';
-    btn.textContent = 'Apply Skin';
-    btn.onclick = applyFromModal;
   } else {
     btn.className = 'skin-apply-btn';
-    btn.style.background = '#f59e0b';
-    btn.textContent = `🔒 Buy for 🪙 ${price} credits`;
-    btn.onclick = function() { buySkinFromModal(s.id, price); };
+    btn.style.background = '';
+    btn.textContent = 'Apply Skin';
+    btn.onclick = applyFromModal;
   }
 
   document.getElementById('skin-modal').classList.add('open');
@@ -650,12 +621,6 @@ function closeSkinModal() {
 async function applySkin(id) {
   const s = SKINS.find(x => x.id === id);
   if (!s) return;
-
-  // Check ownership
-  if (!ownedSkins.has(id) && id !== 'default' && (skinPrices[id] || 0) > 0) {
-    showSkinToast('You need to purchase this skin first! Visit the Store.', true);
-    return;
-  }
 
   // Save to backend
   try {
@@ -735,41 +700,6 @@ function showSkinToast(msg, isError) {
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeSkinModal();
 });
-
-/* ── Buy skin from modal ─────────────────────────────────────── */
-async function buySkinFromModal(skinId, price) {
-  const skinName = SKINS.find(s => s.id === skinId)?.name || skinId;
-  if (!confirm('Unlock "' + skinName + '" for ' + price + ' credits?')) return;
-  const btn = document.getElementById('modal-apply-btn');
-  if (btn) { btn.disabled = true; btn.textContent = 'Processing…'; }
-  try {
-    const resp = await fetch('/api/store/purchase-skin', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ skin_id: skinId })
-    });
-    const data = await resp.json();
-    if (data.success) {
-      ownedSkins.add(skinId);
-      showSkinToast(skinName + ' unlocked! You can now apply it.');
-      renderGrid();
-      // Update button to apply
-      if (btn) {
-        btn.disabled = false;
-        btn.className = 'skin-apply-btn';
-        btn.style.background = '';
-        btn.textContent = 'Apply Skin';
-        btn.onclick = applyFromModal;
-      }
-    } else {
-      showSkinToast(data.error || 'Purchase failed', true);
-      if (btn) { btn.disabled = false; btn.textContent = '🔒 Buy for 🪙 ' + price + ' credits'; }
-    }
-  } catch (e) {
-    showSkinToast('Purchase failed. Try again.', true);
-    if (btn) { btn.disabled = false; btn.textContent = '🔒 Buy for 🪙 ' + price + ' credits'; }
-  }
-}
 
 /* ── Init ─────────────────────────────────────────────────────── */
 renderGrid();

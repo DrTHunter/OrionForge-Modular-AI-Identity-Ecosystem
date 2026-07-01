@@ -97,10 +97,10 @@ Covers:
     __soul_script__{agent_name} to directive_note_ids)
   - Profiles template collapsible sections (toggleCollapse JS, collapsible-header,
     collapsible-body, FAISS badge, soul-script textarea)
-  - Store catalog structure (STORE_CATALOG required keys, agent entries, SKIN_PRICES,
-    CREDIT_PACKS, constants: LLM_MARKUP_MULTIPLIER, FREE_TRIAL_DAYS, INACTIVE_ACCOUNT_DAYS)
-  - Tier & trial system (get_trial_status new/expired, get_user_tier, user_has_feature,
-    check_tier_limit, get_user_subscription, set/cancel subscription, empty user_id)
+  - Billing catalog structure (SKIN_PRICES, CREDIT_PACKS, constants:
+    LLM_MARKUP_MULTIPLIER, FREE_TRIAL_DAYS, INACTIVE_ACCOUNT_DAYS)
+  - Tier & trial system (get_trial_status new/expired, get_user_tier,
+    get_user_subscription, set/cancel subscription, empty user_id)
   - Credit system (add_user_credits, deduct_user_credits, get_user_credits,
     get_credit_history, history cap at 200, insufficient funds, limit param)
   - Credit checkout & webhook (create_credits_checkout_session test-mode ad-hoc
@@ -108,10 +108,6 @@ Covers:
     credits fulfillment via unsigned JSON and signed Stripe Event.to_dict() path)
   - Credit cost estimators (estimate_llm_credit_cost 2× markup, estimate_tts_credit_cost
     per-provider, estimate_stt_credit_cost, zero/negative/minimum edge cases)
-  - Purchase flows (purchase_tool, purchase_skin, purchase_agent: happy path,
-    already-owned, invalid ID, free items, insufficient credits)
-  - Agent ownership (user_owns_agent, get_store_agent_ids, get_user_unlocked_agents,
-    FREE_AGENT_IDS, user_has_tool_access: free tools, bundle unlock, non-purchased)
   - User activity tracking (touch_user_activity, get_user_last_active, throttle
     behavior, bypass throttle, empty user_id no-op)
   - Wipe user data (wipe_user_data: keep_purchases=True/False, section removal,
@@ -159,6 +155,12 @@ import sys
 import time
 import tempfile
 import shutil
+
+if hasattr(sys.stdout, "reconfigure"):
+    # Windows consoles default to cp1252, which can't encode the arrows (→)
+    # and box-drawing characters used in test labels below.
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -8612,45 +8614,10 @@ def test_connections_json_clean():
 # ═════════════════════════════════════════════
 # STORE CATALOG — structure validation
 # ═════════════════════════════════════════════
-def test_store_catalog_structure():
-    """Validate STORE_CATALOG entries have required keys and consistent types."""
-    print("\n=== TORTURE: Store Catalog — structure validation ===")
+def test_billing_catalog_structure():
+    """Validate SKIN_PRICES, CREDIT_PACKS, and billing constants."""
+    print("\n=== TORTURE: Billing Catalog — structure validation ===")
     import web.stripe_billing as billing
-
-    catalog = billing.STORE_CATALOG
-    check("STORE_CATALOG is a list", isinstance(catalog, list))
-    check("catalog has entries", len(catalog) > 0)
-
-    required_keys = {"id", "name", "description", "icon", "category", "purchase_type",
-                     "credit_cost", "unlocks", "tags"}
-    valid_purchase_types = {"one_time", "free", "info"}
-    seen_ids = set()
-
-    for entry in catalog:
-        eid = entry.get("id", "???")
-        check(f"{eid}: has required keys",
-              required_keys.issubset(entry.keys()),
-              f"missing: {required_keys - entry.keys()}")
-        check(f"{eid}: purchase_type valid",
-              entry.get("purchase_type") in valid_purchase_types,
-              f"got: {entry.get('purchase_type')}")
-        check(f"{eid}: credit_cost is int",
-              isinstance(entry.get("credit_cost"), int))
-        check(f"{eid}: unlocks is list",
-              isinstance(entry.get("unlocks"), list))
-        check(f"{eid}: tags is list",
-              isinstance(entry.get("tags"), list))
-        check(f"{eid}: no duplicate id",
-              eid not in seen_ids, f"duplicate: {eid}")
-        seen_ids.add(eid)
-
-    # Agent entries must have agent_id
-    agent_entries = [e for e in catalog if e.get("category") == "agent"]
-    check("at least 1 agent in catalog", len(agent_entries) >= 1)
-    for ae in agent_entries:
-        check(f"{ae['id']}: agent has agent_id",
-              bool(ae.get("agent_id")),
-              f"missing agent_id")
 
     # SKIN_PRICES structure
     check("SKIN_PRICES is dict", isinstance(billing.SKIN_PRICES, dict))
@@ -8684,6 +8651,7 @@ def test_tier_and_trial_system():
         orig = billing._STRIPE_STATE_FILE
         tmp_file = Path(tmp) / "stripe_state.json"
         billing._STRIPE_STATE_FILE = tmp_file
+        billing._stripe_state_cache = None  # clear cache so disk is re-read
 
         uid = "test_tier_user_001"
 
@@ -8699,16 +8667,7 @@ def test_tier_and_trial_system():
         tier = billing.get_user_tier(uid)
         check("tier is pro during trial", tier == "pro")
 
-        # ── 3. user_has_feature — pro features accessible ──
-        check("pro feature: agi_loop", billing.user_has_feature(uid, "agi_loop") is True)
-        check("pro feature: voice_tts", billing.user_has_feature(uid, "voice_tts") is True)
-        check("basic feature: chat", billing.user_has_feature(uid, "chat") is True)
-
-        # ── 4. check_tier_limit — pro is unlimited (-1) ──
-        check("pro: unlimited messages", billing.check_tier_limit(uid, "messages_per_day", 9999) is True)
-        check("pro: unlimited agents", billing.check_tier_limit(uid, "agents", 9999) is True)
-
-        # ── 5. get_user_subscription — full details ──
+        # ── 3. get_user_subscription — full details ──
         sub = billing.get_user_subscription(uid)
         check("subscription has tier", "tier" in sub)
         check("subscription has trial", "trial" in sub)
@@ -8721,16 +8680,6 @@ def test_tier_and_trial_system():
         billing._save_stripe_state(state)
         tier_after = billing.get_user_tier(uid)
         check("expired trial → still pro (pay-per-use)", tier_after == "pro")
-
-        # Full access regardless of trial — billed via credits
-        check("full access: agi_loop", billing.user_has_feature(uid, "agi_loop") is True)
-        check("full access: chat", billing.user_has_feature(uid, "chat") is True)
-
-        # No tier message limits under pay-per-use
-        check("no message limit (unlimited)",
-              billing.check_tier_limit(uid, "messages_per_day", 100) is True)
-        check("under limit ok",
-              billing.check_tier_limit(uid, "messages_per_day", 10) is True)
 
         # ── 7. Active subscription → pro regardless of trial ──
         billing.set_user_subscription(uid, {"status": "active", "plan": "pro", "customer_id": "cus_test"})
@@ -8751,6 +8700,7 @@ def test_tier_and_trial_system():
 
     finally:
         billing._STRIPE_STATE_FILE = orig
+        billing._stripe_state_cache = None  # reset cache
         shutil.rmtree(tmp, ignore_errors=True)
 
 
@@ -8768,6 +8718,7 @@ def test_credit_system():
         orig = billing._STRIPE_STATE_FILE
         tmp_file = Path(tmp) / "stripe_state.json"
         billing._STRIPE_STATE_FILE = tmp_file
+        billing._stripe_state_cache = None  # clear cache so disk is re-read
 
         uid = "test_credit_user_001"
 
@@ -8815,6 +8766,7 @@ def test_credit_system():
 
     finally:
         billing._STRIPE_STATE_FILE = orig
+        billing._stripe_state_cache = None  # reset cache
         shutil.rmtree(tmp, ignore_errors=True)
 
 
@@ -8853,6 +8805,7 @@ def test_credit_checkout_and_webhook():
 
         billing._get_stripe = lambda: _FakeStripe
         billing._STRIPE_STATE_FILE = Path(tmp) / "stripe_state.json"
+        billing._stripe_state_cache = None  # clear cache so disk is re-read
         billing.STRIPE_SECRET_KEY = "sk_test_dummy"
         billing.STRIPE_WEBHOOK_SECRET = ""
         billing.STRIPE_CREDITS_PRODUCT_ID = billing._default_credits_product_id(billing.STRIPE_SECRET_KEY)
@@ -8943,6 +8896,7 @@ def test_credit_checkout_and_webhook():
     finally:
         billing._get_stripe = orig_get_stripe
         billing._STRIPE_STATE_FILE = orig_state_file
+        billing._stripe_state_cache = None  # reset cache
         billing.STRIPE_SECRET_KEY = orig_secret
         billing.STRIPE_WEBHOOK_SECRET = orig_webhook_secret
         billing.STRIPE_CREDITS_PRODUCT_ID = orig_product_id
@@ -8971,6 +8925,7 @@ def test_credit_fulfillment_idempotent():
     orig_webhook_secret = billing.STRIPE_WEBHOOK_SECRET
     try:
         billing._STRIPE_STATE_FILE = Path(tmp) / "stripe_state.json"
+        billing._stripe_state_cache = None  # clear cache so disk is re-read
         billing.STRIPE_SECRET_KEY = "sk_test_dummy"
         billing.STRIPE_WEBHOOK_SECRET = ""  # unsigned webhook path
 
@@ -9041,6 +8996,7 @@ def test_credit_fulfillment_idempotent():
         check("user mismatch refused", mismatch.get("ok") is False and mismatch.get("reason") == "user_mismatch")
     finally:
         billing._STRIPE_STATE_FILE = orig_state_file
+        billing._stripe_state_cache = None  # reset cache
         billing._get_stripe = orig_get_stripe
         billing.STRIPE_SECRET_KEY = orig_secret
         billing.STRIPE_WEBHOOK_SECRET = orig_webhook_secret
@@ -9108,172 +9064,6 @@ def test_credit_cost_estimators():
 
 
 # ═════════════════════════════════════════════
-# PURCHASE FLOW — tools, skins, agents
-# ═════════════════════════════════════════════
-def test_purchase_flows():
-    """Test purchase_tool, purchase_skin, purchase_agent flows."""
-    print("\n=== TORTURE: Purchase Flows ===")
-    import web.stripe_billing as billing
-    from pathlib import Path
-
-    tmp = tempfile.mkdtemp()
-    try:
-        orig = billing._STRIPE_STATE_FILE
-        tmp_file = Path(tmp) / "stripe_state.json"
-        billing._STRIPE_STATE_FILE = tmp_file
-
-        uid = "test_purchase_user_001"
-
-        # Give user enough credits
-        billing.add_user_credits(uid, 10000, reason="test_seed")
-
-        # ── 1. Purchase tool — happy path ──
-        result = billing.purchase_tool(uid, "agi_bundle")
-        check("tool purchase ok", result.get("ok") is True)
-        check("tool purchase has cost", result.get("cost") == 300)
-        check("tool purchase balance reduced", result["balance"] == 9700)
-
-        # ── 2. Purchase tool — already owned ──
-        result2 = billing.purchase_tool(uid, "agi_bundle")
-        check("already owned → error", "error" in result2)
-
-        # ── 3. Purchase tool — invalid ID ──
-        result3 = billing.purchase_tool(uid, "nonexistent_tool_xyz")
-        check("invalid tool → error", "error" in result3)
-
-        # ── 4. Purchase tool — free item can't be purchased as one_time ──
-        result4 = billing.purchase_tool(uid, "web_search")
-        check("free tool → error (not one_time)", "error" in result4)
-
-        # ── 5. user_owns_item ──
-        check("owns agi_bundle", billing.user_owns_item(uid, "agi_bundle", "tools") is True)
-        check("doesn't own email", billing.user_owns_item(uid, "email", "tools") is False)
-
-        # ── 6. Purchase skin — happy path ──
-        result5 = billing.purchase_skin(uid, "cyberpunk_neon")
-        check("skin purchase ok", result5.get("ok") is True)
-        check("skin purchase cost 75", result5.get("cost") == 75)
-
-        # ── 7. Purchase skin — already owned ──
-        result6 = billing.purchase_skin(uid, "cyberpunk_neon")
-        check("skin already owned → error", "error" in result6)
-
-        # ── 8. Purchase skin — default is free ──
-        # Default is always owned
-        result7 = billing.purchase_skin(uid, "default")
-        check("default skin already owned", "error" in result7)
-
-        # ── 9. Purchase skin — unknown ──
-        result8 = billing.purchase_skin(uid, "nonexistent_skin_xyz")
-        check("unknown skin → error", "error" in result8)
-
-        # ── 10. Purchase agent — happy path ──
-        # Find the first agent in catalog
-        agent_entry = next((e for e in billing.STORE_CATALOG if e.get("category") == "agent"), None)
-        if agent_entry:
-            result9 = billing.purchase_agent(uid, agent_entry["id"])
-            check("agent purchase ok", result9.get("ok") is True)
-            check("agent purchase has agent_id", bool(result9.get("agent_id")))
-
-            # Already owned
-            result10 = billing.purchase_agent(uid, agent_entry["id"])
-            check("agent already owned → error", "error" in result10)
-
-        # ── 11. Purchase agent — invalid ──
-        result11 = billing.purchase_agent(uid, "nonexistent_agent_xyz")
-        check("invalid agent → error", "error" in result11)
-
-        # ── 12. Insufficient credits ──
-        billing2_uid = "test_purchase_user_002"
-        billing.add_user_credits(billing2_uid, 10, reason="tiny")
-        result12 = billing.purchase_tool(billing2_uid, "agi_bundle")
-        check("insufficient credits → error", "error" in result12)
-
-    finally:
-        billing._STRIPE_STATE_FILE = orig
-        shutil.rmtree(tmp, ignore_errors=True)
-
-
-# ═════════════════════════════════════════════
-# AGENT OWNERSHIP — access control helpers
-# ═════════════════════════════════════════════
-def test_agent_ownership():
-    """Test user_owns_agent, get_store_agent_ids, get_user_unlocked_agents, user_has_tool_access."""
-    print("\n=== TORTURE: Agent Ownership ===")
-    import web.stripe_billing as billing
-    from pathlib import Path
-
-    tmp = tempfile.mkdtemp()
-    try:
-        orig = billing._STRIPE_STATE_FILE
-        tmp_file = Path(tmp) / "stripe_state.json"
-        billing._STRIPE_STATE_FILE = tmp_file
-
-        uid = "test_owner_user_001"
-
-        # ── 1. FREE_AGENT_IDS ──
-        check("codex_animus is free", "codex_animus" in billing.FREE_AGENT_IDS)
-
-        # ── 2. get_store_agent_ids returns a set ──
-        store_ids = billing.get_store_agent_ids()
-        check("store_agent_ids is set", isinstance(store_ids, set))
-        check("store has agents", len(store_ids) >= 1)
-
-        # ── 3. Fresh user (expired trial) only has free agents ──
-        state = billing._load_stripe_state()
-        state.setdefault("trials", {})[uid] = {"started_at": time.time() - (20 * 86400)}
-        billing._save_stripe_state(state)
-        unlocked = billing.get_user_unlocked_agents(uid)
-        check("fresh user has codex_animus", "codex_animus" in unlocked)
-        check("fresh user count", len(unlocked) == len(billing.FREE_AGENT_IDS))
-
-        # ── 4. user_owns_agent for free agent ──
-        check("fresh user doesn't 'own' free agent via purchase",
-              billing.user_owns_agent(uid, "codex_animus") is False)
-
-        # ── 5. Purchase an agent and check ownership ──
-        billing.add_user_credits(uid, 5000, reason="test")
-        agent_entry = next((e for e in billing.STORE_CATALOG if e.get("category") == "agent"), None)
-        if agent_entry:
-            billing.purchase_agent(uid, agent_entry["id"])
-            agent_id = agent_entry["agent_id"]
-
-            check("owns purchased agent",
-                  billing.user_owns_agent(uid, agent_id) is True)
-            unlocked2 = billing.get_user_unlocked_agents(uid)
-            check("unlocked includes purchased", agent_id in unlocked2)
-            check("unlocked still includes free", "codex_animus" in unlocked2)
-
-        # ── 6. user_has_tool_access ──
-        check("free tool: web_search always accessible",
-              billing.user_has_tool_access(uid, "web_search") is True)
-        check("free tool: echo always accessible",
-              billing.user_has_tool_access(uid, "echo") is True)
-        check("free tool: memory always accessible",
-              billing.user_has_tool_access(uid, "memory") is True)
-
-        # Purchase agi_bundle → unlocks agi_loop
-        billing.add_user_credits(uid, 5000, reason="test2")
-        billing.purchase_tool(uid, "agi_bundle")
-        check("bundle unlocks agi_loop",
-              billing.user_has_tool_access(uid, "agi_loop") is True)
-        check("bundle unlocks continuation_update",
-              billing.user_has_tool_access(uid, "continuation_update") is True)
-
-        # Non-purchased tool (expired trial)
-        uid2 = "test_owner_user_002"
-        state = billing._load_stripe_state()
-        state.setdefault("trials", {})[uid2] = {"started_at": time.time() - (20 * 86400)}
-        billing._save_stripe_state(state)
-        check("non-purchased tool → no access",
-              billing.user_has_tool_access(uid2, "agi_loop") is False)
-
-    finally:
-        billing._STRIPE_STATE_FILE = orig
-        shutil.rmtree(tmp, ignore_errors=True)
-
-
-# ═════════════════════════════════════════════
 # USER ACTIVITY — tracking, wipe, purge, list
 # ═════════════════════════════════════════════
 def test_user_activity_tracking():
@@ -9288,6 +9078,7 @@ def test_user_activity_tracking():
         orig_interval = billing._ACTIVITY_WRITE_INTERVAL
         tmp_file = Path(tmp) / "stripe_state.json"
         billing._STRIPE_STATE_FILE = tmp_file
+        billing._stripe_state_cache = None  # clear cache so disk is re-read
 
         uid = "test_activity_user_001"
 
@@ -9319,6 +9110,7 @@ def test_user_activity_tracking():
 
     finally:
         billing._STRIPE_STATE_FILE = orig
+        billing._stripe_state_cache = None  # reset cache
         billing._ACTIVITY_WRITE_INTERVAL = orig_interval
         shutil.rmtree(tmp, ignore_errors=True)
 
@@ -9334,6 +9126,7 @@ def test_wipe_user_data():
         orig = billing._STRIPE_STATE_FILE
         tmp_file = Path(tmp) / "stripe_state.json"
         billing._STRIPE_STATE_FILE = tmp_file
+        billing._stripe_state_cache = None  # clear cache so disk is re-read
 
         uid = "test_wipe_user_001"
 
@@ -9375,6 +9168,7 @@ def test_wipe_user_data():
 
     finally:
         billing._STRIPE_STATE_FILE = orig
+        billing._stripe_state_cache = None  # reset cache
         shutil.rmtree(tmp, ignore_errors=True)
 
 
@@ -9389,6 +9183,7 @@ def test_wipe_user_by_email():
         orig = billing._STRIPE_STATE_FILE
         tmp_file = Path(tmp) / "stripe_state.json"
         billing._STRIPE_STATE_FILE = tmp_file
+        billing._stripe_state_cache = None  # clear cache so disk is re-read
 
         uid = "test_email_wipe_001"
         email = "Wipe.Me@Example.COM"
@@ -9413,6 +9208,7 @@ def test_wipe_user_by_email():
 
     finally:
         billing._STRIPE_STATE_FILE = orig
+        billing._stripe_state_cache = None  # reset cache
         shutil.rmtree(tmp, ignore_errors=True)
 
 
@@ -9427,6 +9223,7 @@ def test_purge_inactive_users():
         orig = billing._STRIPE_STATE_FILE
         tmp_file = Path(tmp) / "stripe_state.json"
         billing._STRIPE_STATE_FILE = tmp_file
+        billing._stripe_state_cache = None  # clear cache so disk is re-read
 
         # Seed state with various users
         state = {
@@ -9474,6 +9271,7 @@ def test_purge_inactive_users():
 
     finally:
         billing._STRIPE_STATE_FILE = orig
+        billing._stripe_state_cache = None  # reset cache
         shutil.rmtree(tmp, ignore_errors=True)
 
 
@@ -9488,6 +9286,7 @@ def test_list_all_users():
         orig = billing._STRIPE_STATE_FILE
         tmp_file = Path(tmp) / "stripe_state.json"
         billing._STRIPE_STATE_FILE = tmp_file
+        billing._stripe_state_cache = None  # clear cache so disk is re-read
 
         # Seed state
         state = {
@@ -9531,6 +9330,7 @@ def test_list_all_users():
 
     finally:
         billing._STRIPE_STATE_FILE = orig
+        billing._stripe_state_cache = None  # reset cache
         shutil.rmtree(tmp, ignore_errors=True)
 
 
@@ -10549,8 +10349,8 @@ def test_faiss_scaling():
 
     # ── 10. App _bg_faiss uses LOCK_EX | LOCK_NB for startup coordination ──
     import web.app as _app
-    src_bg = inspect.getsource(_app._lifespan)
-    check("_lifespan has _bg_faiss", "_bg_faiss" in src_bg)
+    src_bg = inspect.getsource(_app._lifespan_body)
+    check("_lifespan_body has _bg_faiss", "_bg_faiss" in src_bg)
     check("_bg_faiss uses LOCK_EX | LOCK_NB",
           "LOCK_EX" in src_bg and "LOCK_NB" in src_bg)
     check("_bg_faiss uses threading.Thread",
@@ -11373,14 +11173,12 @@ if __name__ == "__main__":
     test_api_user_models()
     test_stripe_state_persist_path()
     test_connections_json_clean()
-    test_store_catalog_structure()
+    test_billing_catalog_structure()
     test_tier_and_trial_system()
     test_credit_system()
     test_credit_checkout_and_webhook()
     test_credit_fulfillment_idempotent()
     test_credit_cost_estimators()
-    test_purchase_flows()
-    test_agent_ownership()
     test_user_activity_tracking()
     test_wipe_user_data()
     test_wipe_user_by_email()
