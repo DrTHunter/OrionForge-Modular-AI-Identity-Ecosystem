@@ -1705,6 +1705,8 @@ section { position: relative; z-index: 1; }
 .tool-card-icon.runtime { background: rgba(167,139,250,0.12); color: #a78bfa; }
 .tool-card-icon.echo { background: rgba(148,163,184,0.12); color: #94a3b8; }
 .tool-card-icon.coding { background: rgba(34,211,238,0.12); color: var(--cyan); }
+.tool-card-icon.vscode { background: rgba(14,165,233,0.12); color: #0ea5e9; }
+.tool-card-icon.claude { background: rgba(218,119,86,0.12); color: #da7756; }
 
 .tool-card h4 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
 .tool-card p {
@@ -3158,7 +3160,7 @@ section { position: relative; z-index: 1; }
         <div class="section-header reveal">
             <div class="section-label"><i class="fas fa-cogs"></i> Runtime Tools</div>
             <h2 class="section-title">The Agent Toolbelt</h2>
-            <p class="section-subtitle">12 tools in the belt — policy-gated, audited, and one-click connectable to Claude Code</p>
+            <p class="section-subtitle">14 tools in the belt — policy-gated, audited, and one-click connectable to Claude Code</p>
         </div>
 
         <div class="tools-grid" id="tools-grid">
@@ -3999,6 +4001,24 @@ const tools = [
         iconClass: 'coding',
         badge: 'AUTO',
         desc: 'Autonomous agent loop with configurable intervals, budget caps, and tiered routing. 5 actions: status, tick_history, request_pause, request_resume, request_stop.'
+    },
+    {
+        id: 'vscode',
+        name: 'VS Code',
+        icon: 'fas fa-laptop-code',
+        iconClass: 'vscode',
+        badge: 'CLIENT',
+        desc: 'Bring your OrionForge agents into VS Code through the MCP bridge — chat with them from Copilot agent mode, force a model, and hand it a code summary for context.',
+        url: 'https://code.visualstudio.com'
+    },
+    {
+        id: 'claude_code',
+        name: 'Claude Code',
+        icon: 'fas fa-terminal',
+        iconClass: 'claude',
+        badge: 'CLIENT',
+        desc: 'Connect the SoulScript Engine to Claude Code in one line — summon any agent, search soul scripts, and share the Memory Vault right from the CLI.',
+        url: 'https://claude.com/claude-code'
     }
 ];
 
@@ -4056,15 +4076,21 @@ function renderAgents() {
 // -------------------------------------------------------
 function renderTools() {
     const grid = document.getElementById('tools-grid');
-    grid.innerHTML = tools.map((t, i) => `
-        <div class="tool-card reveal${t.fullDesc ? ' has-detail' : ''}" style="transition-delay: ${i * 0.05}s"${t.fullDesc ? ` onclick="openToolModal('${t.id}')"` : ''}>
+    grid.innerHTML = tools.map((t, i) => {
+        const clickAttr = t.url ? ` onclick="window.open('${t.url}', '_blank', 'noopener')"` : (t.fullDesc ? ` onclick="openToolModal('${t.id}')"` : '');
+        const moreLabel = t.url
+            ? '<span class="tool-more"><i class="fas fa-arrow-up-right-from-square"></i> Visit site</span>'
+            : (t.fullDesc ? '<span class="tool-more"><i class="fas fa-circle-info"></i> Details</span>' : '');
+        return `
+        <div class="tool-card reveal${(t.fullDesc || t.url) ? ' has-detail' : ''}" style="transition-delay: ${i * 0.05}s"${clickAttr}>
             <div class="tool-card-icon ${t.iconClass}"><i class="${t.icon}"></i></div>
             <span class="tool-badge">${t.badge}</span>
             <h4>${t.name}</h4>
             <p>${t.desc}</p>
-            ${t.fullDesc ? '<span class="tool-more"><i class="fas fa-circle-info"></i> Details</span>' : ''}
+            ${moreLabel}
         </div>
-    `).join('');
+    `;
+    }).join('');
 }
 
 // -------------------------------------------------------
