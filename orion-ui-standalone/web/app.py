@@ -210,6 +210,15 @@ async def _lifespan_body():
         _seed_platform_keys_from_env()
     except Exception as exc:
         log.warning("[startup] Platform-key seeding failed: %s", exc)
+    # Refresh platform-hosted connections' model lists (e.g. OpenRouter's
+    # full catalog) so the chat model picker doesn't go stale between
+    # manual admin refreshes — this used to only happen on-demand, which is
+    # why the picker could lag OpenRouter's live 300+ model catalog.
+    try:
+        refreshed = await _refresh_all_connection_models()
+        log.info("[startup] Refreshed model lists for %d connection(s)", len(refreshed))
+    except Exception as exc:
+        log.warning("[startup] Connection model refresh failed: %s", exc)
     # Auto-sync OpenRouter pricing from their live API
     try:
         result = await _sync_openrouter_pricing(force=True)
@@ -695,6 +704,38 @@ PLATFORM_OLLAMA_URL = "http://orionforge-engine-ollama.flycast:11434"
 _ENV_KEY_MAP = {
     "openrouter":   ("OPENROUTER_API_KEY",   "https://openrouter.ai/api/v1"),
     "elevenlabs":   ("ELEVENLABS_API_KEY",   "https://api.elevenlabs.io"),
+}
+
+# ── Env-var → provider mapping for platform-hosted image/video keys ──
+# Image and video generation are always metered via credits (see
+# stripe_billing.IMAGE_COST_PER_IMAGE / VIDEO_COST_PER_SECOND), so when a
+# user enables "Platform Keys" for one of these providers (Settings →
+# Image/Video Generation) the operator's own key is used automatically.
+_MEDIA_PLATFORM_ENV_MAP = {
+    "openai":    "OPENAI_API_KEY",
+    "google":    "GOOGLE_GEMINI_API_KEY",
+    "stability": "STABILITY_API_KEY",
+}
+
+def _platform_media_key(provider: str) -> str:
+    """Return the operator's platform-hosted API key for an image/video provider."""
+    env_var = _MEDIA_PLATFORM_ENV_MAP.get(provider, "")
+    return os.environ.get(env_var, "").strip() if env_var else ""
+
+# Defaults for users who have never touched Settings → Image/Video Generation.
+# Highest-quality model preselected; platform keys on so generation works
+# out of the box (billed via credits — see stripe_billing.py markup).
+_DEFAULT_IMAGE_SETTINGS = {
+    "preferred": "openai_gpt_image",
+    "use_platform_openai": True,
+    "use_platform_google": True,
+    "use_platform_stability": True,
+}
+_DEFAULT_VIDEO_SETTINGS = {
+    "preferred": "google_veo31",
+    "use_platform_google": True,
+    "aspect_ratio": "16:9",
+    "duration_seconds": 8,
 }
 
 def _seed_platform_keys_from_env():
@@ -6712,10 +6753,13 @@ async def api_platform_models(request: Request):
     })
 
 
-@app.post("/api/connections/refresh-all-models")
-async def api_connections_refresh_all_models():
+async def _refresh_all_connection_models() -> dict:
     """Live-fetch models from every enabled connection and persist them.
-    Returns the updated connection_id → model-list map."""
+    Returns the updated connection_id → model-list map.
+
+    Shared by the admin refresh endpoint and the startup lifespan hook, so
+    the chat model picker (e.g. OpenRouter's full 300+ model catalog) never
+    drifts far from what OpenRouter's API actually offers."""
     store = _load_connections()
     result: dict[str, list[str]] = {}
     async with httpx.AsyncClient(timeout=15) as client:
@@ -6743,6 +6787,13 @@ async def api_connections_refresh_all_models():
             result[conn["id"]] = models
     _save_connections(store)
     return result
+
+
+@app.post("/api/connections/refresh-all-models")
+async def api_connections_refresh_all_models():
+    """Live-fetch models from every enabled connection and persist them.
+    Returns the updated connection_id → model-list map."""
+    return await _refresh_all_connection_models()
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -7748,7 +7799,7 @@ async def api_get_image_settings(request: Request):
     keys = load_user_keys(user_id, "image")
     if not keys:
         settings = _load_settings()
-        keys = settings.get("image", {"preferred": "none"})
+        keys = settings.get("image", _DEFAULT_IMAGE_SETTINGS)
     # Mask secret fields for the response
     from web.key_vault import _SECRET_FIELDS as _SF
     masked = dict(keys)
@@ -7768,11 +7819,19 @@ async def api_image_generate(request: Request):
         return JSONResponse({"error": "No prompt provided"}, 400)
 
     settings = _load_settings()
-    img_cfg = settings.get("image", {})
+    img_cfg = dict(settings.get("image", _DEFAULT_IMAGE_SETTINGS))
     provider = body.get("provider") or img_cfg.get("preferred", "none")
 
     if provider == "none":
         return JSONResponse({"error": "No image provider configured. Set one in Settings → Image Generation."}, 400)
+
+    # ── Platform-hosted key fallback (only when the user hasn't set their own) ──
+    if img_cfg.get("use_platform_openai") and not img_cfg.get("openai_api_key"):
+        img_cfg["openai_api_key"] = _platform_media_key("openai")
+    if img_cfg.get("use_platform_google") and not img_cfg.get("google_api_key"):
+        img_cfg["google_api_key"] = _platform_media_key("google")
+    if img_cfg.get("use_platform_stability") and not img_cfg.get("stability_api_key"):
+        img_cfg["stability_api_key"] = _platform_media_key("stability")
 
     # ── Credit pre-flight (image generation uses platform keys) ──
     credit_cost = estimate_image_credit_cost(provider) if user else 0
@@ -7812,6 +7871,7 @@ async def api_save_video_settings(request: Request):
     video_keys = {
         "preferred":         body.get("preferred", "none"),
         "google_api_key":    body.get("google_api_key", ""),
+        "use_platform_google": body.get("use_platform_google", False),
         "aspect_ratio":      body.get("aspect_ratio", "16:9"),
         "duration_seconds":  body.get("duration_seconds", 8),
     }
@@ -7837,7 +7897,7 @@ async def api_get_video_settings(request: Request):
     keys = load_user_keys(user_id, "video")
     if not keys:
         settings = _load_settings()
-        keys = settings.get("video", {"preferred": "none"})
+        keys = settings.get("video", _DEFAULT_VIDEO_SETTINGS)
     masked = dict(keys)
     for field in _SF.get("video", set()):
         raw = masked.get(field, "")
@@ -7855,7 +7915,7 @@ async def api_video_generate(request: Request):
         return JSONResponse({"error": "No prompt provided"}, 400)
 
     settings = _load_settings()
-    vid_cfg = settings.get("video", {})
+    vid_cfg = dict(settings.get("video", _DEFAULT_VIDEO_SETTINGS))
     provider = body.get("provider") or vid_cfg.get("preferred", "none")
 
     if provider == "none":
@@ -7863,6 +7923,10 @@ async def api_video_generate(request: Request):
             {"error": "No video provider configured. Set one in Settings → Video Generation."},
             400,
         )
+
+    # ── Platform-hosted key fallback (only when the user hasn't set their own) ──
+    if vid_cfg.get("use_platform_google") and not vid_cfg.get("google_api_key"):
+        vid_cfg["google_api_key"] = _platform_media_key("google")
 
     # ── Credit pre-flight (Veo video is billed per second — the priciest media op) ──
     _vid_secs = vid_cfg.get("duration_seconds", 8)

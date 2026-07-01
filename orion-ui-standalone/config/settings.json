@@ -277,6 +277,28 @@
     "elevenlabs_voice_id": "",
     "edge_tts_voice": "en-US-AriaNeural"
   },
+  "image": {
+    "preferred": "openai_gpt_image",
+    "openai_api_key": "",
+    "use_platform_openai": true,
+    "google_api_key": "",
+    "use_platform_google": true,
+    "stability_api_key": "",
+    "use_platform_stability": true,
+    "ideogram_api_key": "",
+    "replicate_api_key": "",
+    "fal_api_key": "",
+    "leonardo_api_key": "",
+    "midjourney_url": "",
+    "midjourney_api_key": ""
+  },
+  "video": {
+    "preferred": "google_veo31",
+    "google_api_key": "",
+    "use_platform_google": true,
+    "aspect_ratio": "16:9",
+    "duration_seconds": 8
+  },
   "skin": "cyberpunk_neon",
   "user_profile": {
     "name": "",
