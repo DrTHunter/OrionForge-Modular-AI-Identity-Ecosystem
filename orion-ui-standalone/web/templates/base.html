@@ -77,32 +77,33 @@
       backdrop-filter: blur(2px);
     }
     .nav-backdrop.open { display: block; }
-    /* Global floating menu button (mobile) — matches the chat screen's ⚙ button */
-    .global-menu-float {
+    /* Global mobile header — mirrors the chat screen's topbar (settings + chat + credits) */
+    .global-topbar {
       display: none;
-      position: fixed; top: 0.5rem; left: 0.5rem; z-index: 41;
-      align-items: center; justify-content: center;
-      width: 2.5rem; height: 2.5rem; padding: 0;
+      position: fixed; top: 0; left: 0; right: 0; z-index: 41;
+      align-items: center; gap: 0.5rem;
+      padding: 0.5rem 0.75rem;
+      background: rgba(19,19,26,0.95);
+      border-bottom: 1px solid rgba(99,102,241,0.15);
+      backdrop-filter: blur(6px);
+    }
+    .global-menu-float, .global-chat-float {
+      display: flex; align-items: center; justify-content: center;
+      width: 2.25rem; height: 2.25rem; padding: 0; flex-shrink: 0;
       border-radius: 999px;
       background: rgba(24,24,27,0.92); color: #e4e4e7;
       border: 1px solid rgba(99,102,241,0.25);
-      font-size: 1.1rem; cursor: pointer;
-      backdrop-filter: blur(4px);
+      font-size: 1.05rem; cursor: pointer; text-decoration: none;
     }
-    .global-menu-float:hover { background: rgba(26,26,36,0.95); }
-    /* Direct Chat shortcut (mobile) — sits next to the menu button */
-    .global-chat-float {
-      display: none;
-      position: fixed; top: 0.5rem; left: 3.25rem; z-index: 41;
-      align-items: center; justify-content: center;
-      width: 2.5rem; height: 2.5rem; padding: 0;
-      border-radius: 999px;
-      background: rgba(99,102,241,0.12); color: #c7d2fe;
-      border: 1px solid rgba(99,102,241,0.3);
-      font-size: 1.1rem; cursor: pointer; text-decoration: none;
-      backdrop-filter: blur(4px);
+    .global-menu-float:hover, .global-chat-float:hover { background: rgba(99,102,241,0.2); }
+    .global-topbar-credit {
+      display: none; align-items: center;
+      margin-left: auto; font-size: 0.75rem; color: #a78bfa;
+      font-family: ui-monospace, SFMono-Regular, monospace;
+      padding: 0.25rem 0.75rem; background: rgba(99,102,241,0.08);
+      border: 1px solid rgba(99,102,241,0.2); border-radius: 0.375rem;
+      cursor: pointer; white-space: nowrap;
     }
-    .global-chat-float:hover { background: rgba(99,102,241,0.2); }
     @media (max-width: 768px) {
       .main-nav {
         transform: translateX(-100%);
@@ -116,10 +117,9 @@
       .main-content.nav-collapsed {
         margin-left: 0 !important;
         width: 100% !important;
-        padding: 1rem 1.5rem;
+        padding: 3.75rem 1.5rem 1rem;
       }
-      .global-menu-float { display: flex; }
-      .global-chat-float { display: flex; }
+      .global-topbar { display: flex; }
     }
   </style>
   <!-- Markdown + Syntax highlighting -->
@@ -201,8 +201,13 @@
   </div>
   <div class="nav-backdrop" id="nav-backdrop" onclick="closeMobileNav()"></div>
   {% if page != 'chat' %}
-  <button class="global-menu-float" onclick="toggleMainNav()" title="Open menu">⚙</button>
-  <a href="/chat" class="global-chat-float" title="Go to chat">◎</a>
+  <div class="global-topbar" id="global-topbar">
+    <button class="global-menu-float" onclick="toggleMainNav()" title="Open menu">⚙</button>
+    <a href="/chat" class="global-chat-float" title="Go to chat">◎</a>
+    <div id="global-credit-balance" class="global-topbar-credit" onclick="window.location='/store'" title="Click to buy more credits">
+      <span id="global-credit-bal-text">0 credits</span>
+    </div>
+  </div>
   {% endif %}
 
   <script>
@@ -666,6 +671,29 @@ select optgroup{color:${tm}!important}
         window.location.href = '/login';
       }
     }
+
+    /* ── Mobile global header: credit balance (mirrors chat.html) ─── */
+    (async function loadGlobalCreditBalance() {
+      const el = document.getElementById('global-credit-balance');
+      const txt = document.getElementById('global-credit-bal-text');
+      if (!el || !txt) return;
+      try {
+        const resp = await fetch('/api/credits/balance');
+        if (!resp.ok) return;
+        const data = await resp.json();
+        const balance = data.credits;
+        if (balance === undefined || balance === null || balance < 0) return;
+        txt.textContent = balance.toLocaleString() + ' credits';
+        el.style.display = 'flex';
+        if (balance <= 0) {
+          el.style.borderColor = 'rgba(239,68,68,0.4)'; el.style.color = '#ef4444'; el.style.background = 'rgba(239,68,68,0.08)';
+        } else if (balance < 100) {
+          el.style.borderColor = 'rgba(245,158,11,0.4)'; el.style.color = '#f59e0b'; el.style.background = 'rgba(245,158,11,0.08)';
+        } else {
+          el.style.borderColor = 'rgba(99,102,241,0.2)'; el.style.color = '#a78bfa'; el.style.background = 'rgba(99,102,241,0.08)';
+        }
+      } catch (e) { /* guest user or offline */ }
+    })();
   </script>
 
   <!-- ═══ OrionForge Community Links Popup ═══ -->

@@ -1690,6 +1690,10 @@ function closeMobileSidebar() {
   const bd = document.getElementById('sidebar-backdrop');
   if (bd) bd.classList.remove('open');
 }
+// Collapse the slide-in chat sidebar after picking a chat (mobile only)
+function _collapseSidebarOnMobile() {
+  if (window.matchMedia('(max-width: 768px)').matches) closeMobileSidebar();
+}
 // On mobile, default the chat sidebar to collapsed so chat is the main view
 (function initMobileSidebar() {
   if (window.matchMedia('(max-width: 768px)').matches) {
@@ -2315,6 +2319,7 @@ async function openChat(chatId) {
   const chat = await resp.json();
   loadChatIntoThread(chat);
   renderSidebar();
+  _collapseSidebarOnMobile();
 }
 
 function loadChatIntoThread(chat) {
@@ -2355,6 +2360,7 @@ function newChat() {
   setBusy(false);
   renderAll();
   renderSidebar();
+  _collapseSidebarOnMobile();
 }
 
 async function deleteChat(chatId) {
