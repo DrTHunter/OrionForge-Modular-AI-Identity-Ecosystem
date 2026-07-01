@@ -2058,6 +2058,79 @@ section { position: relative; z-index: 1; }
 
 /* LLM Loading & Injection Flow live infographic styles archived to planning/llm-loading-injection-flow.html (pending a higher-quality redesign). */
 
+/* -------------------------------------------------------
+   TEASER VISUALS — lightweight infographics for the
+   pipeline / soul-script / memory teaser sections
+   ------------------------------------------------------- */
+.teaser { max-width: 1000px; margin: 0 auto; }
+.teaser-flow {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+    gap: 12px;
+}
+.teaser-node {
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    flex: 0 0 auto; min-width: 120px; padding: 18px 14px;
+    background: var(--bg-glass); border: 1px solid var(--border-glass);
+    border-radius: var(--radius-sm); text-align: center;
+    transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.teaser-node:hover {
+    transform: translateY(-3px);
+    border-color: rgba(129,140,248,0.45);
+    box-shadow: 0 10px 28px rgba(99,102,241,0.14);
+}
+.teaser-node i { font-size: 1.15rem; color: var(--primary-light); }
+.teaser-node span { font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); line-height: 1.35; }
+.teaser-arrow { color: var(--text-muted); font-size: 0.95rem; flex: 0 0 auto; }
+.teaser-result {
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    flex: 0 0 auto; min-width: 168px; padding: 20px 22px;
+    background: linear-gradient(160deg, rgba(34,211,238,0.12), rgba(99,102,241,0.06));
+    border: 1px solid rgba(34,211,238,0.35); border-radius: var(--radius-sm);
+    box-shadow: 0 0 26px rgba(34,211,238,0.15);
+}
+.teaser-result i { font-size: 1.35rem; color: var(--cyan); }
+.teaser-result span { font-size: 0.88rem; font-weight: 700; color: var(--text-primary); }
+.teaser-note {
+    text-align: center; font-size: 0.85rem; color: var(--text-muted);
+    line-height: 1.6; margin: 26px auto 0; max-width: 720px;
+}
+.teaser-note strong { color: var(--text-secondary); }
+
+/* Memory duo — two systems, one identity */
+.teaser-duo {
+    display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px; align-items: stretch;
+}
+.teaser-duo-card {
+    padding: 22px 24px; border-radius: var(--radius);
+    border: 1px solid var(--border-glass); background: var(--bg-glass);
+    display: flex; flex-direction: column; gap: 6px;
+    transition: transform 0.25s ease;
+}
+.teaser-duo-card:hover { transform: translateY(-3px); }
+.teaser-duo-card.identity { border-color: rgba(139,92,246,0.32); background: linear-gradient(160deg, rgba(139,92,246,0.08), rgba(13,18,36,0.2)); }
+.teaser-duo-card.dynamic  { border-color: rgba(52,211,153,0.32); background: linear-gradient(160deg, rgba(52,211,153,0.08), rgba(13,18,36,0.2)); }
+.teaser-duo-tag { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; }
+.teaser-duo-card.identity .teaser-duo-tag { color: var(--accent); }
+.teaser-duo-card.dynamic  .teaser-duo-tag { color: var(--emerald); }
+.teaser-duo-card h4 { font-size: 1.05rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+.teaser-duo-card.identity h4 i { color: var(--accent); }
+.teaser-duo-card.dynamic  h4 i { color: var(--emerald); }
+.teaser-duo-card p { font-size: 0.85rem; color: var(--text-muted); line-height: 1.55; }
+.teaser-duo-core {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 4px; padding: 0 8px; text-align: center; flex: 0 0 auto;
+}
+.teaser-duo-core .stat { font-size: 1.35rem; font-weight: 800; color: var(--cyan); }
+.teaser-duo-core .stat-label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+
+.teaser-cta { text-align: center; margin-top: 36px; }
+
+@media (max-width: 768px) {
+    .teaser-duo { grid-template-columns: 1fr; }
+    .teaser-duo-core { flex-direction: row; gap: 10px; padding: 8px 0; }
+}
+
 /* Desktop shows the polished infographic image; mobile keeps the responsive HTML build */
 .ss-infographic, .mem-infographic {
     display: none; width: 100%; height: auto;
@@ -3265,7 +3338,25 @@ section { position: relative; z-index: 1; }
             <h2 class="section-title">LLM Loading &amp; Injection Flow</h2>
             <p class="section-subtitle">Identity-first, memory-aware, tool-enabled. Each turn the engine assembles six layers &mdash; base prompt, soul script, always-on knowledge, memory vault, tool registry, and recent history &mdash; into one clean system message.</p>
         </div>
-        <div style="text-align:center;margin-top:20px;" class="reveal">
+        <div class="teaser reveal">
+            <div class="teaser-flow">
+                <div class="teaser-node"><i class="fas fa-file-lines"></i><span>Base Prompt</span></div>
+                <i class="fas fa-plus teaser-arrow"></i>
+                <div class="teaser-node"><i class="fas fa-dna"></i><span>Soul Script</span></div>
+                <i class="fas fa-plus teaser-arrow"></i>
+                <div class="teaser-node"><i class="fas fa-book"></i><span>Always-On Knowledge</span></div>
+                <i class="fas fa-plus teaser-arrow"></i>
+                <div class="teaser-node"><i class="fas fa-database"></i><span>Memory Vault</span></div>
+                <i class="fas fa-plus teaser-arrow"></i>
+                <div class="teaser-node"><i class="fas fa-toolbox"></i><span>Tool Registry</span></div>
+                <i class="fas fa-plus teaser-arrow"></i>
+                <div class="teaser-node"><i class="fas fa-clock-rotate-left"></i><span>Recent History</span></div>
+                <i class="fas fa-arrow-right teaser-arrow"></i>
+                <div class="teaser-result"><i class="fas fa-wand-magic-sparkles"></i><span>Clean System Message</span></div>
+            </div>
+            <p class="teaser-note">Every layer is scored for relevance and injected only where it belongs &mdash; so context stays <strong>tight, ordered, and drift-free</strong> on each turn.</p>
+        </div>
+        <div class="teaser-cta reveal">
             <a href="soulscript-engine.html#injection" class="btn-hero outline"><i class="fas fa-book-open"></i> Read the full breakdown</a>
         </div>
     </div>
@@ -3281,7 +3372,17 @@ section { position: relative; z-index: 1; }
             <h2 class="section-title">Emotional &amp; Behavioral DNA</h2>
             <p class="section-subtitle">Structured identity documents &mdash; behavior, emotions, symbolic memories, values, and boundaries &mdash; stored in a read-only FAISS store and injected only where relevant, so an identity stays consistent and never drifts.</p>
         </div>
-        <div style="text-align:center;margin-top:20px;" class="reveal">
+        <div class="teaser reveal">
+            <div class="teaser-flow">
+                <div class="teaser-node"><i class="fas fa-masks-theater"></i><span>Behavior</span></div>
+                <div class="teaser-node"><i class="fas fa-heart"></i><span>Emotions</span></div>
+                <div class="teaser-node"><i class="fas fa-star"></i><span>Symbolic Memories</span></div>
+                <div class="teaser-node"><i class="fas fa-compass"></i><span>Values</span></div>
+                <div class="teaser-node"><i class="fas fa-shield-halved"></i><span>Boundaries</span></div>
+            </div>
+            <p class="teaser-note">Held in a <strong>read-only FAISS store</strong> and injected only where relevant &mdash; the identity stays consistent and never drifts.</p>
+        </div>
+        <div class="teaser-cta reveal">
             <a href="soulscript-engine.html#soul-scripts" class="btn-hero outline"><i class="fas fa-dna"></i> Explore Soul Scripts</a>
         </div>
     </div>
@@ -3297,7 +3398,28 @@ section { position: relative; z-index: 1; }
             <h2 class="section-title">Dual FAISS Memory Architecture</h2>
             <p class="section-subtitle">Two systems, one identity: a read-only <strong>Identity FAISS</strong> (the compass) and a dynamic <strong>Life FAISS</strong> (the experience). Separating them prevents contamination, collapse, and drift &mdash; with 25,000+ memories at millisecond recall.</p>
         </div>
-        <div style="text-align:center;margin-top:20px;" class="reveal">
+        <div class="teaser reveal">
+            <div class="teaser-duo">
+                <div class="teaser-duo-card identity">
+                    <div class="teaser-duo-tag">Read-Only &middot; The Compass</div>
+                    <h4><i class="fas fa-compass"></i> Identity FAISS</h4>
+                    <p>Soul scripts, values, and boundaries. Fixed at rest so the character's core can never be overwritten or eroded.</p>
+                </div>
+                <div class="teaser-duo-core">
+                    <div class="stat">25,000+</div>
+                    <div class="stat-label">memories</div>
+                    <div class="stat" style="font-size:1.05rem;">&lt;1&nbsp;ms</div>
+                    <div class="stat-label">recall</div>
+                </div>
+                <div class="teaser-duo-card dynamic">
+                    <div class="teaser-duo-tag">Dynamic &middot; The Experience</div>
+                    <h4><i class="fas fa-wave-square"></i> Life FAISS</h4>
+                    <p>Everything lived and learned. Grows every turn while the identity store stays untouched &mdash; no contamination, no collapse.</p>
+                </div>
+            </div>
+            <p class="teaser-note">Separating the two prevents <strong>contamination, collapse, and drift</strong> &mdash; experience accumulates without ever rewriting who the character is.</p>
+        </div>
+        <div class="teaser-cta reveal">
             <a href="soulscript-engine.html#memory" class="btn-hero outline"><i class="fas fa-database"></i> See the memory architecture</a>
         </div>
     </div>
