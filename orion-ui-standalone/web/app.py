@@ -7126,10 +7126,16 @@ async def api_stt_elevenlabs(request: Request):
     form = await request.form()
     audio_file = form.get("file")
     language = form.get("language", "en")
+    mime_type = form.get("mime_type", "") or ""
     if not audio_file:
         return JSONResponse({"error": "No audio file provided"}, 400)
     audio_bytes = await audio_file.read()
-    filename = getattr(audio_file, 'filename', 'audio.webm') or 'audio.webm'
+    filename = getattr(audio_file, 'filename', None) or 'audio.webm'
+    # Derive MIME type from filename extension if not explicitly provided
+    if not mime_type:
+        ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else 'webm'
+        mime_type = {'webm': 'audio/webm', 'ogg': 'audio/ogg', 'mp4': 'audio/mp4',
+                     'wav': 'audio/wav', 'm4a': 'audio/mp4'}.get(ext, 'audio/webm')
 
     # ── Pre-flight credit check (always metered at 2× cost) ──
     estimated_seconds = max(len(audio_bytes) / (16 * 1024), 1.0)
@@ -7155,7 +7161,7 @@ async def api_stt_elevenlabs(request: Request):
             resp = await client.post(
                 url,
                 headers=headers,
-                files={"file": (filename, audio_bytes, "audio/webm")},
+                files={"file": (filename, audio_bytes, mime_type)},
                 data={"model_id": "scribe_v1", "language_code": language},
             )
             resp.raise_for_status()
