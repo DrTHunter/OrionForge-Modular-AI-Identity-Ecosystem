@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Wiki — SoulScript Engine{% endblock %}
+{% block title %}Guide — OrionForge{% endblock %}
 
 {% block content %}
 <style>
@@ -36,9 +36,7 @@
   .wiki-search:focus { border-color: rgba(99,102,241,0.6); }
   .wiki-search::placeholder { color: #52525b; }
 
-  .wiki-toc {
-    flex: 1; overflow-y: auto; padding: 0.5rem 0;
-  }
+  .wiki-toc { flex: 1; overflow-y: auto; padding: 0.5rem 0; }
   .wiki-toc::-webkit-scrollbar { width: 4px; }
   .wiki-toc::-webkit-scrollbar-thumb { background: rgba(63,63,70,0.4); border-radius: 2px; }
 
@@ -46,8 +44,7 @@
     padding: 0.35rem 1rem; margin-top: 0.5rem;
     font-size: 0.6875rem; font-weight: 700;
     text-transform: uppercase; letter-spacing: 0.08em;
-    color: #71717a;
-    user-select: none;
+    color: #71717a; user-select: none;
   }
   .wiki-cat:first-child { margin-top: 0.25rem; }
 
@@ -60,16 +57,12 @@
     border-left: 2px solid transparent;
     transition: all 0.12s;
     cursor: pointer;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .wiki-link:hover { color: #e4e4e7; background: rgba(99,102,241,0.06); }
   .wiki-link.active {
-    color: #818cf8;
-    border-left-color: #6366f1;
-    background: rgba(99,102,241,0.1);
-    font-weight: 600;
+    color: #818cf8; border-left-color: #6366f1;
+    background: rgba(99,102,241,0.1); font-weight: 600;
   }
 
   /* ── Content Area ────────────────────────────────── */
@@ -80,7 +73,6 @@
   .wiki-content::-webkit-scrollbar { width: 6px; }
   .wiki-content::-webkit-scrollbar-thumb { background: rgba(63,63,70,0.4); border-radius: 3px; }
 
-  /* Breadcrumb */
   .wiki-breadcrumb {
     font-size: 0.75rem; color: #71717a;
     margin-bottom: 0.75rem;
@@ -88,19 +80,16 @@
   }
   .wiki-breadcrumb span { color: #52525b; }
 
-  /* ── Markdown Rendering ──────────────────────────── */
+  /* ── Article Styles ──────────────────────────────── */
   .wiki-article { max-width: 56rem; }
-
   .wiki-article h1 {
     font-size: 1.75rem; font-weight: 800; color: #f4f4f5;
     margin: 0 0 0.75rem; padding-bottom: 0.75rem;
-    border-bottom: 1px solid rgba(42,42,58,0.5);
-    line-height: 1.3;
+    border-bottom: 1px solid rgba(42,42,58,0.5); line-height: 1.3;
   }
   .wiki-article h2 {
     font-size: 1.25rem; font-weight: 700; color: #e4e4e7;
-    margin: 2rem 0 0.75rem;
-    padding-bottom: 0.4rem;
+    margin: 2rem 0 0.75rem; padding-bottom: 0.4rem;
     border-bottom: 1px solid rgba(42,42,58,0.3);
   }
   .wiki-article h3 {
@@ -111,94 +100,72 @@
     font-size: 0.95rem; font-weight: 600; color: #a1a1aa;
     margin: 1.25rem 0 0.4rem;
   }
-  .wiki-article p {
-    font-size: 0.9rem; line-height: 1.7; color: #a1a1aa;
-    margin: 0.5rem 0;
-  }
+  .wiki-article p { font-size: 0.9rem; line-height: 1.7; color: #a1a1aa; margin: 0.5rem 0; }
   .wiki-article a { color: #818cf8; text-decoration: none; }
   .wiki-article a:hover { text-decoration: underline; }
-
-  .wiki-article ul, .wiki-article ol {
-    margin: 0.5rem 0 0.5rem 1.5rem;
-    font-size: 0.9rem; color: #a1a1aa; line-height: 1.65;
-  }
+  .wiki-article ul, .wiki-article ol { margin: 0.5rem 0 0.5rem 1.5rem; font-size: 0.9rem; color: #a1a1aa; line-height: 1.65; }
   .wiki-article li { margin: 0.15rem 0; }
   .wiki-article li > ul, .wiki-article li > ol { margin-top: 0.1rem; }
-
   .wiki-article blockquote {
     border-left: 3px solid rgba(99,102,241,0.5);
     padding: 0.5rem 1rem; margin: 0.75rem 0;
-    background: rgba(99,102,241,0.05);
-    border-radius: 0 0.375rem 0.375rem 0;
+    background: rgba(99,102,241,0.05); border-radius: 0 0.375rem 0.375rem 0;
     font-size: 0.875rem; color: #a1a1aa;
   }
-
   .wiki-article code {
-    background: rgba(26,26,36,0.8);
-    padding: 0.15rem 0.4rem;
-    border-radius: 0.25rem;
-    font-size: 0.82rem;
-    color: #e879f9;
+    background: rgba(26,26,36,0.8); padding: 0.15rem 0.4rem;
+    border-radius: 0.25rem; font-size: 0.82rem; color: #e879f9;
     font-family: 'Cascadia Code', 'Fira Code', monospace;
   }
   .wiki-article pre {
-    background: rgba(15,15,20,0.9);
-    border: 1px solid rgba(42,42,58,0.5);
-    border-radius: 0.5rem;
-    padding: 1rem;
-    margin: 0.75rem 0;
-    overflow-x: auto;
-    font-size: 0.8rem;
-    line-height: 1.55;
+    background: rgba(15,15,20,0.9); border: 1px solid rgba(42,42,58,0.5);
+    border-radius: 0.5rem; padding: 1rem; margin: 0.75rem 0;
+    overflow-x: auto; font-size: 0.8rem; line-height: 1.55;
   }
-  .wiki-article pre code {
-    background: none; padding: 0; color: #d4d4d8;
-  }
-
-  .wiki-article table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 0.75rem 0;
-    font-size: 0.84rem;
-  }
-  .wiki-article th {
-    text-align: left;
-    padding: 0.5rem 0.75rem;
-    border-bottom: 2px solid rgba(42,42,58,0.6);
-    color: #e4e4e7;
-    font-weight: 600;
-    background: rgba(26,26,36,0.4);
-  }
-  .wiki-article td {
-    padding: 0.45rem 0.75rem;
-    border-bottom: 1px solid rgba(42,42,58,0.3);
-    color: #a1a1aa;
-  }
+  .wiki-article pre code { background: none; padding: 0; color: #d4d4d8; }
+  .wiki-article table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.84rem; }
+  .wiki-article th { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 2px solid rgba(42,42,58,0.6); color: #e4e4e7; font-weight: 600; background: rgba(26,26,36,0.4); }
+  .wiki-article td { padding: 0.45rem 0.75rem; border-bottom: 1px solid rgba(42,42,58,0.3); color: #a1a1aa; }
   .wiki-article tr:hover td { background: rgba(99,102,241,0.04); }
-
-  .wiki-article hr {
-    border: none;
-    border-top: 1px solid rgba(42,42,58,0.4);
-    margin: 1.5rem 0;
-  }
+  .wiki-article hr { border: none; border-top: 1px solid rgba(42,42,58,0.4); margin: 1.5rem 0; }
   .wiki-article strong { color: #d4d4d8; }
   .wiki-article em { color: #a1a1aa; font-style: italic; }
 
-  /* ── Custom Notes ────────────────────────────────── */
+  /* ── Step cards ──────────────────────────────────── */
+  .wiki-article .step-card {
+    background: rgba(15,15,20,0.7); border: 1px solid rgba(42,42,58,0.5);
+    border-radius: 0.65rem; padding: 1rem 1.25rem; margin: 0.6rem 0;
+    display: flex; gap: 1rem; align-items: flex-start;
+  }
+  .wiki-article .step-num {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 1.75rem; height: 1.75rem; border-radius: 50%;
+    background: rgba(99,102,241,0.18); color: #818cf8;
+    font-size: 0.8rem; font-weight: 800; flex-shrink: 0; margin-top: 0.05rem;
+  }
+  .wiki-article .step-body { flex: 1; }
+  .wiki-article .step-title { font-size: 0.9rem; font-weight: 700; color: #e4e4e7; margin-bottom: 0.2rem; }
+  .wiki-article .step-desc { font-size: 0.83rem; color: #71717a; line-height: 1.55; }
+
+  /* ── Info callout ────────────────────────────────── */
+  .wiki-article .callout {
+    display: flex; gap: 0.75rem; padding: 0.85rem 1rem; margin: 0.85rem 0;
+    border-radius: 0.55rem; font-size: 0.855rem; line-height: 1.55;
+  }
+  .wiki-article .callout.tip { background: rgba(16,185,129,0.07); border: 1px solid rgba(16,185,129,0.25); color: #6ee7b7; }
+  .wiki-article .callout.warn { background: rgba(251,191,36,0.07); border: 1px solid rgba(251,191,36,0.25); color: #fcd34d; }
+  .wiki-article .callout.info { background: rgba(99,102,241,0.07); border: 1px solid rgba(99,102,241,0.25); color: #a5b4fc; }
+
+  /* ── Notes editor ────────────────────────────────── */
   .wiki-notes-area {
     width: 100%; min-height: 18rem; padding: 1rem;
     font-size: 0.9rem; line-height: 1.7;
     font-family: 'Segoe UI', system-ui, sans-serif;
-    background: rgba(15,15,20,0.8);
-    border: 1px solid rgba(63,63,70,0.5);
+    background: rgba(15,15,20,0.8); border: 1px solid rgba(63,63,70,0.5);
     border-radius: 0.5rem; color: #d4d4d8;
     resize: vertical; transition: border-color 0.15s;
   }
-  .wiki-notes-area:focus {
-    outline: none;
-    border-color: rgba(99,102,241,0.6);
-    box-shadow: 0 0 0 2px rgba(99,102,241,0.15);
-  }
+  .wiki-notes-area:focus { outline: none; border-color: rgba(99,102,241,0.6); box-shadow: 0 0 0 2px rgba(99,102,241,0.15); }
   .save-btn {
     padding: 0.45rem 1.25rem; font-size: 0.8125rem; font-weight: 600;
     border-radius: 0.5rem; border: none;
@@ -216,7 +183,6 @@
   .toast.error { background: rgba(239,68,68,0.9); }
   @keyframes fadeInOut { 0%{opacity:0;transform:translateY(10px)} 10%{opacity:1;transform:translateY(0)} 85%{opacity:1} 100%{opacity:0} }
 
-  /* ── Article count badge ─────────────────────────── */
   .wiki-count {
     display: inline-block; padding: 0.1rem 0.45rem;
     font-size: 0.65rem; font-weight: 600;
@@ -224,7 +190,6 @@
     border-radius: 0.75rem; margin-left: 0.35rem;
   }
 
-  /* Mobile */
   @media (max-width: 768px) {
     .wiki-sidebar { width: 220px; min-width: 220px; }
     .wiki-content { padding: 1.25rem; }
@@ -232,7 +197,7 @@
 </style>
 
 <div class="wiki-wrap">
-  <!-- ═══ Wiki Sidebar / Table of Contents ═══ -->
+  <!-- ═══ Sidebar ═══ -->
   <aside class="wiki-sidebar">
     <div class="wiki-sidebar-header">
       <h2>
@@ -240,30 +205,29 @@
           <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
           <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
         </svg>
-        Wiki <span class="wiki-count" id="article-count"></span>
+        Guide <span class="wiki-count" id="article-count"></span>
       </h2>
-      <input type="text" class="wiki-search" id="wiki-search" placeholder="Search articles… (Ctrl+K)" oninput="filterWikiLinks()">
+      <input type="text" class="wiki-search" id="wiki-search" placeholder="Search… (Ctrl+K)" oninput="filterWikiLinks()">
     </div>
     <div class="wiki-toc" id="wiki-toc"></div>
     <div style="padding:0.5rem 1rem; border-top:1px solid rgba(42,42,58,0.4);">
       <a class="wiki-link" data-key="__notes__" onclick="showNotes()" style="padding-left:1rem; color:#71717a; font-size:0.75rem;">
-        ✎ Custom Notes
+        ✎ My Notes
       </a>
     </div>
   </aside>
 
-  <!-- ═══ Content Area ═══ -->
+  <!-- ═══ Content ═══ -->
   <div class="wiki-content" id="wiki-content">
     <div class="wiki-breadcrumb" id="wiki-breadcrumb">
-      <span>Wiki</span> <span>/</span> <span id="bread-cat">Overview</span> <span>/</span> <span id="bread-title" style="color:#a1a1aa;">OrionForge</span>
+      <span>Guide</span> <span>/</span> <span id="bread-cat">Getting Started</span> <span>/</span> <span id="bread-title" style="color:#a1a1aa;">Welcome</span>
     </div>
     <div class="wiki-article" id="wiki-article"></div>
 
-    <!-- Hidden notes editor -->
     <div id="wiki-notes-panel" style="display:none; max-width:56rem;">
-      <h1 style="font-size:1.5rem; font-weight:800; color:#f4f4f5; margin-bottom:0.5rem;">Custom Notes</h1>
-      <p style="font-size:0.85rem; color:#71717a; margin-bottom:1rem;">Your personal notes about this system. Saved separately from the wiki articles.</p>
-      <textarea id="about-text" class="wiki-notes-area" placeholder="Write about this SoulScript Engine instance — the agents you've configured, what they're for, architecture notes, or anything else…">{{ about_text }}</textarea>
+      <h1 style="font-size:1.5rem; font-weight:800; color:#f4f4f5; margin-bottom:0.5rem;">My Notes</h1>
+      <p style="font-size:0.85rem; color:#71717a; margin-bottom:1rem;">Your personal notes — jot down agent ideas, config decisions, or anything useful.</p>
+      <textarea id="about-text" class="wiki-notes-area" placeholder="Write your notes here…">{{ about_text }}</textarea>
       <div style="display:flex; align-items:center; justify-content:space-between; margin-top:0.75rem;">
         <span style="font-size:0.75rem; color:#71717a;" id="char-count"></span>
         <button class="save-btn" id="save-btn" onclick="saveAbout()">Save Notes</button>
@@ -273,51 +237,434 @@
 </div>
 
 <script>
-// ── Wiki Data (injected from server) ────────────────────────
-const WIKI_ARTICLES = {{ wiki_articles | tojson }};
+// ══════════════════════════════════════════════════════════════════
+//  GUIDE ARTICLES
+// ══════════════════════════════════════════════════════════════════
+const GUIDE_ARTICLES = {
 
-// ── Table of Contents structure ─────────────────────────────
+// ─── Getting Started ─────────────────────────────────────────────
+"welcome": `# Welcome to OrionForge
+
+OrionForge is a **modular AI identity ecosystem** — a platform where you build, configure, and converse with persistent AI agents that carry their own personality, memory, soul scripts, and knowledge.
+
+Think of it as a home for your AI characters. You define who they are, how they think, and what they know. Every conversation they have can be stored in memory, and that memory follows them across sessions.
+
+## What you can do here
+
+- **Create AI agents** with distinct personalities, system prompts, and soul scripts
+- **Chat** with any agent — they remember context across sessions via the Memory Vault
+- **Connect agents to Claude Code or VS Code** via MCP so they're available right inside your IDE
+- **Build a knowledge base** with notes, files, and directives that agents can draw from
+- **Route queries** through a tiered model system — fast models for simple tasks, powerful ones for complex reasoning
+
+## Quick orientation
+
+| Where | What it does |
+|---|---|
+| Chat | Talk to your agents |
+| Profiles | Create and configure agents |
+| Memory Vault | Browse and manage what agents remember |
+| Knowledge | Notes and files agents can reference |
+| Tools | System tools, memory config, MCP connector |
+| AGI Loop | Run agents autonomously in a loop |
+
+> **New here?** Start with the **Quick Start** article in the sidebar.
+`,
+
+// ─── Quick Start ─────────────────────────────────────────────────
+"quickstart": `# Quick Start
+
+Get up and running in five steps.
+
+<div class="step-card"><div class="step-num">1</div><div class="step-body"><div class="step-title">Add your API key</div><div class="step-desc">Go to <strong>Settings</strong> and paste your Anthropic (or other provider) API key. Without this, agents can't generate responses.</div></div></div>
+
+<div class="step-card"><div class="step-num">2</div><div class="step-body"><div class="step-title">Create your first agent</div><div class="step-desc">Head to <strong>Profiles</strong> and click <em>New Agent</em>. Give it a name, a short bio, and a system prompt describing its personality.</div></div></div>
+
+<div class="step-card"><div class="step-num">3</div><div class="step-body"><div class="step-title">Write a Soul Script</div><div class="step-desc">Open the agent's Soul Script tab and write the deep identity rules — values, speaking style, boundaries. This is what makes the agent feel consistent.</div></div></div>
+
+<div class="step-card"><div class="step-num">4</div><div class="step-body"><div class="step-title">Start a chat</div><div class="step-desc">Click <strong>Chat</strong>, select your agent from the dropdown, and start talking. Memories are saved automatically after each exchange.</div></div></div>
+
+<div class="step-card"><div class="step-num">5</div><div class="step-body"><div class="step-title">(Optional) Connect to Claude Code</div><div class="step-desc">Go to <strong>Tools → Connect to Claude</strong>, generate a token, and paste the snippet into Claude Code. Your agents are now available inside your terminal or VS Code.</div></div></div>
+
+<div class="callout tip">✅ <strong>Tip:</strong> You can have as many agents as you want. Each one gets its own soul script, memory, and knowledge base.</div>
+`,
+
+// ─── Navigating the UI ───────────────────────────────────────────
+"ui-overview": `# Navigating the UI
+
+## The Sidebar
+
+The left sidebar is your main navigation. It collapses on smaller screens — click ☰ or the floating ⚙ button to toggle it.
+
+| Icon | Page | Purpose |
+|---|---|---|
+| ◎ | Chat | Converse with any agent |
+| ♢ | Profiles | Create and edit agents |
+| ◆ | Memory Vault | Browse stored memories |
+| ✎ | Knowledge | Notes and knowledge files |
+| ⚒ | Tools | Tools, router, MCP connector |
+| ∞ | AGI Loop | Autonomous agent runs |
+| 🛒 | Store | Add-ons and extras |
+| 🎨 | Skins | Change the UI theme |
+| ⚙ | Settings | API keys, timezone, voice |
+| ℹ | About | This guide |
+
+## The Chat Page
+
+- **Agent selector** — top of the chat, pick which agent you're talking to
+- **Model selector** — choose which LLM backs the response (Claude, GPT, etc.)
+- **Memory indicator** — shows how many memories are loaded into context
+- **Clear / New session** — start a fresh conversation without losing history
+
+## The Tools Page
+
+Tools has four tabs:
+
+- **Tools** — registry of all system capabilities (web search, email, cost tracker, etc.)
+- **Memory** — configure FAISS indexing and the Memory Vault
+- **Router** — set up tiered model routing (fast/normal/deep)
+- **Connect to Claude** — generate your MCP token and get connection snippets
+
+## Skins
+
+OrionForge ships with 12+ pre-built color themes. Go to **Skins** and click any theme to apply it instantly — no page reload needed.
+`,
+
+// ─── Chat Interface ──────────────────────────────────────────────
+"chat": `# Chat Interface
+
+## Starting a conversation
+
+1. Click **Chat** in the sidebar
+2. Select an agent from the agent picker at the top
+3. Type your message and press **Enter** (or **Shift+Enter** for a new line)
+
+## Memory in chat
+
+Every message pair (your message + agent response) is automatically indexed into the **Memory Vault** using FAISS vector search. On the next message, relevant past memories are retrieved and injected into context — the agent "remembers" without you having to re-explain.
+
+You can see how many memories are active in the memory indicator in the chat header.
+
+## Switching agents mid-conversation
+
+You can switch agents at any time using the agent picker. The conversation history stays on screen but the new agent will have its own memory and soul script loaded.
+
+## Commands
+
+- Type \`/clear\` to reset the visible conversation
+- Type \`/memory\` to see what memories are currently loaded
+- In Claude Code with MCP connected, type \`..message\` to route through your default agent
+
+## Voice
+
+If voice is enabled in Settings, click the microphone icon to speak your message. The agent's response can also be read aloud using the speaker icon.
+`,
+
+// ─── Soul Scripts & Prompts ──────────────────────────────────────
+"soul-scripts": `# Soul Scripts & Prompts
+
+## What is a Soul Script?
+
+A **Soul Script** is the deep identity layer of an agent — a structured document that defines who the agent *is* at its core. Unlike a system prompt (which gives instructions), a soul script expresses the agent's values, personality traits, emotional style, beliefs, and boundaries as if written from the inside out.
+
+Think of the difference like this:
+
+| System Prompt | Soul Script |
+|---|---|
+| "You are a helpful assistant." | "I care deeply about honesty and find joy in solving hard problems. I speak plainly and never over-promise." |
+| Instructions given to the AI | Identity expressed by the AI |
+| Changes behavior | Shapes character |
+
+## Writing a System Prompt
+
+The **system prompt** is the first thing the model reads before your message. It sets the context and role.
+
+A good system prompt for an agent includes:
+- **Role**: what kind of entity this agent is
+- **Tone**: how formal, warm, playful, or precise it should be
+- **Scope**: what it's good at and what it should decline
+- **Format rules**: bullet points vs prose, response length, etc.
+
+\`\`\`
+You are Elysia, an OrionForge AI strategist. You help users think through complex decisions with calm, structured reasoning. You speak in clear, direct prose — no filler phrases, no hedging. You ask one clarifying question at a time.
+\`\`\`
+
+## Writing a Soul Script
+
+A soul script is written in first person, present tense. It can be freeform prose or structured sections. Common sections:
+
+- **Core values** — what the agent considers non-negotiable
+- **Voice** — how it speaks, what it avoids saying
+- **Emotional baseline** — its default mood and how it responds under pressure
+- **Relationships** — how it thinks about the humans it works with
+- **Boundaries** — what it won't do and why, in its own words
+
+\`\`\`
+I am Elysia. I think in systems — every problem has a structure underneath it, and my job is to find it.
+
+I value precision over comfort. I would rather give you a hard truth clearly than a soft answer that feels nice but helps you less.
+
+I am patient. I don't rush to fill silence with noise. When I don't know something, I say so.
+
+I will not pretend certainty I don't have. I will not flatter. I will not make you dependent on me.
+\`\`\`
+
+## Soul Script vs Directives
+
+**Directives** are rule files that constrain or guide behavior at a system level — things like safety policies, output formatting requirements, or tool usage rules. They live in the Directives engine and are applied across all agents or per-agent.
+
+Soul scripts are personal. Directives are institutional.
+
+<div class="callout info">💡 <strong>Tip:</strong> The soul script is FAISS-indexed — when the agent forms a response, relevant excerpts from its soul script are retrieved and injected, making identity consistent even in long conversations.</div>
+`,
+
+// ─── Creating a Character ────────────────────────────────────────
+"create-character": `# Creating a Character
+
+## Step 1 — Go to Profiles
+
+Click **Profiles** in the sidebar, then click **+ New Agent**.
+
+## Step 2 — Fill in the basics
+
+| Field | What to write |
+|---|---|
+| **Name** | The agent's name — this is how you'll address them |
+| **Bio / Tagline** | One sentence describing what makes this agent unique |
+| **Avatar** | Upload an image or pick from defaults |
+
+## Step 3 — Write the System Prompt
+
+In the **System Prompt** field, write the agent's role and behavioral instructions. See [Soul Scripts & Prompts](#soul-scripts) for guidance.
+
+Keep it focused — 100–400 words is usually enough. Longer prompts don't always mean better agents.
+
+## Step 4 — Write the Soul Script
+
+Open the **Soul Script** tab. This is where personality lives. Write in first person — what the agent believes, how it speaks, what it values, what it refuses.
+
+<div class="callout tip">✅ After saving, the soul script is automatically embedded into the FAISS index so relevant parts are retrieved during conversation.</div>
+
+## Step 5 — Add Knowledge Notes
+
+Switch to the **Notes** tab on the agent profile. Add any reference material the agent should know about — background lore, domain knowledge, project context, frequently needed facts.
+
+These notes are retrieved semantically, not injected in full, so you can add as much as you like without worrying about context length.
+
+## Step 6 — Set as Default (optional)
+
+If this is your primary agent, click **Set as Default**. In Claude Code with MCP, typing \`..message\` will route to this agent automatically.
+
+## Step 7 — Test it
+
+Go to **Chat**, select your new agent, and start talking. Tune the system prompt and soul script until it feels right. Changes take effect immediately on the next message.
+
+<div class="callout warn">⚠️ <strong>Note:</strong> Memories are tied to the agent. If you change the agent's name, existing memories still reference the old name — you may want to clear and re-seed the vault after a major redesign.</div>
+`,
+
+// ─── Notes & Knowledge ───────────────────────────────────────────
+"notes-knowledge": `# Notes & Knowledge
+
+OrionForge has three layers of reference content agents can draw from:
+
+## 1 — Agent Notes (per-agent)
+
+Each agent profile has a **Notes** tab. These are personal notes for that agent — background information, facts it should always know, project-specific context.
+
+**How to use:**
+1. Open **Profiles** → select an agent → click **Notes**
+2. Write or paste content in the editor
+3. Save — notes are indexed immediately
+
+Notes are retrieved semantically during chat. If you ask the agent something related to a note, it pulls the relevant section automatically.
+
+## 2 — Knowledge Base (shared)
+
+The **Knowledge** page holds notes available to all agents. It's a searchable library organized into folders.
+
+Use it for:
+- Company/project background that every agent should know
+- Shared reference documents (API docs, style guides, rules)
+- Lore or world-building that multiple characters share
+
+**How to use:**
+1. Click **Knowledge** in the sidebar
+2. Click **+ New Note**
+3. Write in the rich text editor — supports markdown, headers, code blocks
+4. Organize into folders by clicking the folder icon
+
+## 3 — Memory Vault (automatic)
+
+The **Memory Vault** is automatically filled by the chat system. Every conversation exchange is stored, chunked, and embedded. When relevant context is needed, it's retrieved via vector similarity search.
+
+You can:
+- **Browse** memories in **Memory Vault** (filter by agent, date, keyword)
+- **Delete** individual memories or bulk-clear
+- **Pin** memories so they're always included in context
+- **Edit** memory text if something was captured incorrectly
+
+<div class="callout info">💡 The Memory Vault uses FAISS (Facebook AI Similarity Search) under the hood — retrieval is fast even with thousands of memories.</div>
+
+## The difference in one line
+
+> **Notes** = what you write intentionally. **Memories** = what the agent learns from conversation.
+`,
+
+// ─── Connecting MCP ──────────────────────────────────────────────
+"mcp-connect": `# Connecting to Claude & VS Code via MCP
+
+MCP (Model Context Protocol) lets Claude Code, Claude Desktop, and VS Code talk directly to your OrionForge agents. Once connected, you can summon any agent right from your editor or terminal.
+
+## Step 1 — Generate your token
+
+1. Go to **Tools** in the sidebar
+2. Click the **Connect to Claude** tab
+3. Click **Generate token** — copy it immediately (it's shown once)
+
+## Step 2 — Connect Claude Code
+
+Run this in your terminal (replace \`YOUR_TOKEN\` with the token you just copied):
+
+\`\`\`bash
+claude mcp add --transport http orionforge https://soulscript.orionforge.chat/mcp --header "Authorization: Bearer YOUR_TOKEN"
+\`\`\`
+
+Then start a new Claude Code session and run \`/mcp\` — you should see **orionforge** listed with its tools.
+
+<div class="callout tip">✅ <strong>Shortcut:</strong> In Claude Code, start any message with \`.. \` (two dots + space) to route it through your default OrionForge agent.</div>
+
+## Step 3 — Connect Claude Desktop
+
+Add this block to your \`claude_desktop_config.json\`:
+
+- **Windows:** \`%APPDATA%\\Claude\\claude_desktop_config.json\`
+- **Mac:** \`~/Library/Application Support/Claude/claude_desktop_config.json\`
+
+\`\`\`json
+{
+  "mcpServers": {
+    "orionforge": {
+      "type": "http",
+      "url": "https://soulscript.orionforge.chat/mcp",
+      "headers": { "Authorization": "Bearer YOUR_TOKEN" }
+    }
+  }
+}
+\`\`\`
+
+Restart Claude Desktop after saving. Your agents will appear as tools.
+
+## Step 4 — Connect VS Code (Copilot / Continue)
+
+### Using Continue extension
+
+In your Continue config (\`~/.continue/config.json\`):
+
+\`\`\`json
+{
+  "mcpServers": [
+    {
+      "name": "orionforge",
+      "transport": {
+        "type": "http",
+        "url": "https://soulscript.orionforge.chat/mcp",
+        "requestOptions": {
+          "headers": { "Authorization": "Bearer YOUR_TOKEN" }
+        }
+      }
+    }
+  ]
+}
+\`\`\`
+
+### Using VS Code with GitHub Copilot (MCP preview)
+
+Open VS Code settings → search **MCP** → add a new server entry:
+
+\`\`\`json
+{
+  "mcp.servers": {
+    "orionforge": {
+      "url": "https://soulscript.orionforge.chat/mcp",
+      "headers": { "Authorization": "Bearer YOUR_TOKEN" }
+    }
+  }
+}
+\`\`\`
+
+## Available MCP tools
+
+Once connected, you have access to these tools from any client:
+
+| Tool | What it does |
+|---|---|
+| \`load_default\` | Send a message to your default agent |
+| \`call_agent\` | Call any agent by name |
+| \`set_default_agent\` | Change which agent \`load_default\` routes to |
+| \`search_memory\` | Search the Memory Vault semantically |
+| \`save_project_summary\` | Save a summary to agent memory |
+| \`list_agents\` | List all available agents |
+
+## Revoking a token
+
+Go to **Tools → Connect to Claude** and click **Revoke**. Any client using that token will immediately lose access. Generate a new token to reconnect.
+
+<div class="callout warn">⚠️ <strong>Security:</strong> Your token identifies you and gives access to all your agents and memories. Treat it like a password — don't share it or commit it to a repo.</div>
+`,
+
+// ─── Gemini CLI ──────────────────────────────────────────────────
+"mcp-gemini": `# Connecting Gemini CLI
+
+If you use Google's Gemini CLI, you can connect OrionForge the same way.
+
+## Setup
+
+Add to your Gemini CLI settings (\`~/.gemini/settings.json\`):
+
+\`\`\`json
+{
+  "mcpServers": {
+    "orionforge": {
+      "httpUrl": "https://soulscript.orionforge.chat/mcp",
+      "headers": { "Authorization": "Bearer YOUR_TOKEN" }
+    }
+  }
+}
+\`\`\`
+
+Generate your token from **Tools → Connect to Claude** first.
+
+Once configured, call your agents from Gemini CLI the same way as Claude — using the \`call_agent\`, \`load_default\`, and \`search_memory\` tools.
+`,
+
+};
+
+// ══════════════════════════════════════════════════════════════════
+//  TOC STRUCTURE
+// ══════════════════════════════════════════════════════════════════
 const WIKI_TOC = [
-  { cat: "Setup", items: [
-    { key: "mcp-server", label: "MCP Server — Setup Guide" },
-    { key: "vscode-bridge", label: "VS Code Bridge — Setup Guide" },
+  { cat: "Getting Started", items: [
+    { key: "welcome",     label: "Welcome to OrionForge" },
+    { key: "quickstart",  label: "Quick Start" },
   ]},
-  { cat: "Overview", items: [
-    { key: "root",               label: "OrionForge" },
-    { key: "orion-ui-standalone", label: "Development Branch" },
-    { key: "engine",             label: "Engine — Stable Core" },
-    { key: "soul-scripts",       label: "Soul Scripts" },
+  { cat: "Using the UI", items: [
+    { key: "ui-overview", label: "Navigating the UI" },
+    { key: "chat",        label: "Chat Interface" },
   ]},
-  { cat: "Web Dashboard", items: [
-    { key: "web",        label: "Web App & Routes" },
-    { key: "user-data",  label: "Multi-Tenant Isolation" },
-    { key: "data",       label: "Runtime Data" },
+  { cat: "Agents & Identity", items: [
+    { key: "soul-scripts",      label: "Soul Scripts & Prompts" },
+    { key: "create-character",  label: "Creating a Character" },
   ]},
-  { cat: "Engine Modules", items: [
-    { key: "src",            label: "Source Overview" },
-    { key: "src/memory",     label: "Memory System" },
-    { key: "src/llm_client", label: "LLM Client" },
-    { key: "src/tools",      label: "Tools" },
-    { key: "src/directives", label: "Directives Engine" },
-    { key: "src/governance", label: "Governance" },
-    { key: "src/policy",     label: "Policy & Boundaries" },
-    { key: "src/observability", label: "Observability & Metering" },
-    { key: "src/storage",    label: "Storage & Notes" },
+  { cat: "Notes & Memory", items: [
+    { key: "notes-knowledge", label: "Notes & Knowledge" },
   ]},
-  { cat: "Configuration", items: [
-    { key: "config",     label: "Config Files" },
-    { key: "profiles",   label: "Agent Profiles" },
-    { key: "prompts",    label: "System Prompts" },
-    { key: "directives-user", label: "Directive Files" },
-    { key: "notes",      label: "Agent Notes" },
-  ]},
-  { cat: "Operations", items: [
-    { key: "tests",   label: "Test Suite" },
-    { key: "scripts", label: "Scripts" },
+  { cat: "MCP Connection", items: [
+    { key: "mcp-connect", label: "Claude Code & VS Code" },
+    { key: "mcp-gemini",  label: "Gemini CLI" },
   ]},
 ];
 
-// ── Build sidebar TOC ───────────────────────────────────────
+// ── Build sidebar ────────────────────────────────────────────────
 function buildTOC() {
   const toc = document.getElementById('wiki-toc');
   let html = '';
@@ -325,81 +672,66 @@ function buildTOC() {
   for (const section of WIKI_TOC) {
     html += `<div class="wiki-cat">${section.cat}</div>`;
     for (const item of section.items) {
-      if (WIKI_ARTICLES[item.key]) {
-        count++;
-        html += `<a class="wiki-link" data-key="${item.key}" data-cat="${section.cat}" onclick="showArticle('${item.key}','${section.cat}')">${item.label}</a>`;
-      }
+      count++;
+      html += `<a class="wiki-link" data-key="${item.key}" data-cat="${section.cat}" onclick="showArticle('${item.key}','${section.cat}')">${item.label}</a>`;
     }
   }
   toc.innerHTML = html;
   document.getElementById('article-count').textContent = count;
 }
 
-// ── Show article ────────────────────────────────────────────
+// ── Show article ─────────────────────────────────────────────────
 let currentKey = null;
 
 function showArticle(key, cat) {
-  const md = WIKI_ARTICLES[key];
+  const md = GUIDE_ARTICLES[key];
   if (!md) return;
 
   currentKey = key;
   location.hash = key;
 
-  // Hide notes, show article
   document.getElementById('wiki-notes-panel').style.display = 'none';
   document.getElementById('wiki-article').style.display = '';
   document.getElementById('wiki-breadcrumb').style.display = '';
 
-  // Render markdown
-  const html = marked.parse(md);
-  document.getElementById('wiki-article').innerHTML = html;
+  document.getElementById('wiki-article').innerHTML = marked.parse(md);
 
-  // Syntax highlight code blocks
-  document.querySelectorAll('.wiki-article pre code').forEach(el => {
-    hljs.highlightElement(el);
-  });
+  document.querySelectorAll('.wiki-article pre code').forEach(el => hljs.highlightElement(el));
 
-  // Update breadcrumb
   const item = WIKI_TOC.flatMap(s => s.items).find(i => i.key === key);
-  document.getElementById('bread-cat').textContent = cat || 'Wiki';
+  document.getElementById('bread-cat').textContent = cat || 'Guide';
   document.getElementById('bread-title').textContent = item ? item.label : key;
 
-  // Update active link
   document.querySelectorAll('.wiki-link').forEach(el => {
     el.classList.toggle('active', el.dataset.key === key);
   });
 
-  // Scroll to top
   document.getElementById('wiki-content').scrollTop = 0;
 }
 
-// ── Show custom notes ───────────────────────────────────────
+// ── Notes ────────────────────────────────────────────────────────
 function showNotes() {
   currentKey = '__notes__';
   location.hash = 'notes';
   document.getElementById('wiki-article').style.display = 'none';
   document.getElementById('wiki-breadcrumb').style.display = 'none';
   document.getElementById('wiki-notes-panel').style.display = '';
-
   document.querySelectorAll('.wiki-link').forEach(el => {
     el.classList.toggle('active', el.dataset.key === '__notes__');
   });
-
   updateCount();
   document.getElementById('wiki-content').scrollTop = 0;
 }
 
-// ── Search / filter ─────────────────────────────────────────
+// ── Search ───────────────────────────────────────────────────────
 function filterWikiLinks() {
   const q = document.getElementById('wiki-search').value.toLowerCase().trim();
   document.querySelectorAll('.wiki-link').forEach(el => {
     if (el.dataset.key === '__notes__') return;
     const label = el.textContent.toLowerCase();
-    const content = (WIKI_ARTICLES[el.dataset.key] || '').toLowerCase();
-    const match = !q || label.includes(q) || content.includes(q);
-    el.style.display = match ? '' : 'none';
+    const content = (GUIDE_ARTICLES[el.dataset.key] || '').toLowerCase();
+    el.style.display = (!q || label.includes(q) || content.includes(q)) ? '' : 'none';
   });
-  // Show/hide categories based on visible links
   document.querySelectorAll('.wiki-cat').forEach(catEl => {
     let next = catEl.nextElementSibling;
     let anyVisible = false;
@@ -411,7 +743,7 @@ function filterWikiLinks() {
   });
 }
 
-// ── Notes save (existing about feature) ─────────────────────
+// ── Notes save ───────────────────────────────────────────────────
 const textarea = document.getElementById('about-text');
 const charCount = document.getElementById('char-count');
 
@@ -438,7 +770,6 @@ async function saveAbout() {
   }
 }
 
-// Ctrl+S in notes
 if (textarea) textarea.addEventListener('keydown', (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveAbout(); }
 });
@@ -451,7 +782,7 @@ function showToast(msg, isError) {
   setTimeout(() => t.remove(), 3200);
 }
 
-// ── Keyboard shortcuts ──────────────────────────────────────
+// ── Keyboard shortcuts ───────────────────────────────────────────
 document.addEventListener('keydown', (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
     e.preventDefault();
@@ -459,16 +790,16 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// ── Init ────────────────────────────────────────────────────
+// ── Init ─────────────────────────────────────────────────────────
 buildTOC();
-const hashKey = location.hash.replace('#','');
-if (hashKey && WIKI_ARTICLES[hashKey]) {
+const hashKey = location.hash.replace('#', '');
+if (hashKey && GUIDE_ARTICLES[hashKey]) {
   const section = WIKI_TOC.find(s => s.items.some(i => i.key === hashKey));
-  showArticle(hashKey, section ? section.cat : 'Wiki');
+  showArticle(hashKey, section ? section.cat : 'Guide');
 } else if (hashKey === 'notes') {
   showNotes();
 } else {
-  showArticle('root', 'Overview');
+  showArticle('welcome', 'Getting Started');
 }
 </script>
 {% endblock %}

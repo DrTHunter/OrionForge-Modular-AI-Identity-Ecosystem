@@ -155,18 +155,12 @@
         <a href="/tools" class="nav-link {% if page == 'tools' %}active{% endif %}">
           <span class="nav-icon">⚒</span><span class="nav-label">Tools</span>
         </a>
-        <a href="/agi-loop" class="nav-link {% if page == 'agi-loop' %}active{% endif %}">
-          <span class="nav-icon">∞</span><span class="nav-label">AGI Loop</span>
-        </a>
         <a href="/store" class="nav-link {% if page == 'store' %}active{% endif %}">
           <span class="nav-icon">🛒</span><span class="nav-label">Store</span>
         </a>
         <div class="border-t border-forge-border my-3 nav-divider"></div>
         <a href="/skins" class="nav-link {% if page == 'skins' %}active{% endif %}">
           <span class="nav-icon">🎨</span><span class="nav-label">Skins</span>
-        </a>
-        <a href="/connect" class="nav-link {% if page == 'connect' %}active{% endif %}">
-          <span class="nav-icon">🔌</span><span class="nav-label">Connect to Claude</span>
         </a>
         <a href="/settings" class="nav-link {% if page == 'settings' %}active{% endif %}">
           <span class="nav-icon">⚙</span><span class="nav-label">Settings</span>
@@ -192,10 +186,10 @@
         <button onclick="doLogout()" class="nav-label" style="margin-bottom:0.5rem; font-size:0.72rem; color:#ef4444; background:rgba(239,68,68,0.06); border:1px solid rgba(239,68,68,0.15); border-radius:0.4rem; cursor:pointer; padding:0.35rem 0.5rem; width:100%; text-align:center; transition:all 0.15s;" onmouseover="this.style.background='rgba(239,68,68,0.12)';this.style.color='#f87171'" onmouseout="this.style.background='rgba(239,68,68,0.06)';this.style.color='#ef4444'">
           ↪ Sign Out
         </button>
-        <!-- Support / Ko-fi -->
-        <a href="https://ko-fi.com/orionforgeecosystem" target="_blank" rel="noopener" class="nav-label" style="display:flex; align-items:center; justify-content:center; gap:0.4rem; margin-bottom:0.5rem; font-size:0.72rem; color:#06303f; background:#13C3FF; border:none; border-radius:0.4rem; padding:0.4rem 0.5rem; width:100%; text-align:center; font-weight:700; text-decoration:none; transition:filter 0.15s;" onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter='none'" title="Support OrionForge on Ko-fi">
-          ☕ Buy me a coffee
-        </a>
+        <!-- Community links -->
+        <button onclick="document.getElementById('of-links-popup').style.display='flex'" class="nav-label" style="display:flex; align-items:center; justify-content:center; gap:0.4rem; margin-bottom:0.5rem; font-size:0.72rem; color:#e4e4e7; background:rgba(99,102,241,0.15); border:1px solid rgba(99,102,241,0.35); border-radius:0.4rem; padding:0.4rem 0.5rem; width:100%; text-align:center; font-weight:700; cursor:pointer; transition:all 0.15s;" onmouseover="this.style.background='rgba(99,102,241,0.28)'" onmouseout="this.style.background='rgba(99,102,241,0.15)'" title="OrionForge Community">
+          🌐 Community &amp; Links
+        </button>
         <p class="text-xs text-forge-muted">v0.2 · SoulScript Engine</p>
       </div>
     </nav>
@@ -673,5 +667,40 @@ select optgroup{color:${tm}!important}
       }
     }
   </script>
+
+  <!-- ═══ OrionForge Community Links Popup ═══ -->
+  <div id="of-links-popup" onclick="if(event.target===this)this.style.display='none'" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:9999;align-items:center;justify-content:center;">
+    <div style="background:#0f0f14;border:1px solid rgba(99,102,241,0.35);border-radius:1rem;padding:1.75rem 2rem;max-width:380px;width:90%;position:relative;box-shadow:0 24px 64px rgba(0,0,0,0.6);">
+      <button onclick="document.getElementById('of-links-popup').style.display='none'" style="position:absolute;top:0.75rem;right:1rem;background:none;border:none;color:#71717a;font-size:1.25rem;cursor:pointer;line-height:1;" title="Close">&times;</button>
+      <div style="font-size:1.1rem;font-weight:800;color:#f4f4f5;margin-bottom:0.25rem;">OrionForge</div>
+      <div style="font-size:0.78rem;color:#71717a;margin-bottom:1.25rem;">Links, community &amp; support</div>
+      <div style="display:flex;flex-direction:column;gap:0.55rem;">
+        <a href="https://orionforge.chat" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:0.65rem;padding:0.55rem 0.85rem;border-radius:0.55rem;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:#e4e4e7;text-decoration:none;font-size:0.83rem;font-weight:600;transition:background 0.15s;" onmouseover="this.style.background='rgba(99,102,241,0.15)'" onmouseout="this.style.background='rgba(255,255,255,0.04)'">
+          <span style="font-size:1rem;">🌐</span> Website <span style="margin-left:auto;font-size:0.72rem;color:#52525b;">orionforge.chat</span>
+        </a>
+        <a href="https://soulscript.orionforge.chat" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:0.65rem;padding:0.55rem 0.85rem;border-radius:0.55rem;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:#e4e4e7;text-decoration:none;font-size:0.83rem;font-weight:600;transition:background 0.15s;" onmouseover="this.style.background='rgba(99,102,241,0.15)'" onmouseout="this.style.background='rgba(255,255,255,0.04)'">
+          <span style="font-size:1rem;">🧠</span> User Interface <span style="margin-left:auto;font-size:0.72rem;color:#52525b;">soulscript.orionforge.chat</span>
+        </a>
+        <a href="https://github.com/DrTHunter/SoulScript-Engine" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:0.65rem;padding:0.55rem 0.85rem;border-radius:0.55rem;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:#e4e4e7;text-decoration:none;font-size:0.83rem;font-weight:600;transition:background 0.15s;" onmouseover="this.style.background='rgba(99,102,241,0.15)'" onmouseout="this.style.background='rgba(255,255,255,0.04)'">
+          <span style="font-size:1rem;">⚙️</span> GitHub Repo <span style="margin-left:auto;font-size:0.72rem;color:#52525b;">SoulScript-Engine</span>
+        </a>
+        <a href="https://ko-fi.com/orionforgeecosystem" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:0.65rem;padding:0.55rem 0.85rem;border-radius:0.55rem;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:#e4e4e7;text-decoration:none;font-size:0.83rem;font-weight:600;transition:background 0.15s;" onmouseover="this.style.background='rgba(99,102,241,0.15)'" onmouseout="this.style.background='rgba(255,255,255,0.04)'">
+          <span style="font-size:1rem;">☕</span> Ko-fi <span style="margin-left:auto;font-size:0.72rem;color:#52525b;">ko-fi.com/orionforgeecosystem</span>
+        </a>
+        <a href="https://x.com/OrionForgeAI" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:0.65rem;padding:0.55rem 0.85rem;border-radius:0.55rem;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:#e4e4e7;text-decoration:none;font-size:0.83rem;font-weight:600;transition:background 0.15s;" onmouseover="this.style.background='rgba(99,102,241,0.15)'" onmouseout="this.style.background='rgba(255,255,255,0.04)'">
+          <span style="font-size:1rem;">𝕏</span> Twitter / X <span style="margin-left:auto;font-size:0.72rem;color:#52525b;">@OrionForgeAI</span>
+        </a>
+        <a href="https://www.facebook.com/profile.php?id=61591055713404" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:0.65rem;padding:0.55rem 0.85rem;border-radius:0.55rem;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:#e4e4e7;text-decoration:none;font-size:0.83rem;font-weight:600;transition:background 0.15s;" onmouseover="this.style.background='rgba(99,102,241,0.15)'" onmouseout="this.style.background='rgba(255,255,255,0.04)'">
+          <span style="font-size:1rem;">📘</span> Facebook <span style="margin-left:auto;font-size:0.72rem;color:#52525b;">OrionForge</span>
+        </a>
+        <a href="https://www.instagram.com/orionforgeecosystem?igsh=MXc3cHJoYWhkOWV1MQ==" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:0.65rem;padding:0.55rem 0.85rem;border-radius:0.55rem;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:#e4e4e7;text-decoration:none;font-size:0.83rem;font-weight:600;transition:background 0.15s;" onmouseover="this.style.background='rgba(99,102,241,0.15)'" onmouseover="this.style.background='rgba(99,102,241,0.15)'" onmouseout="this.style.background='rgba(255,255,255,0.04)'">
+          <span style="font-size:1rem;">📸</span> Instagram <span style="margin-left:auto;font-size:0.72rem;color:#52525b;">@orionforgeecosystem</span>
+        </a>
+        <a href="https://discord.gg/QvJJ3MBGc" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:0.65rem;padding:0.55rem 0.85rem;border-radius:0.55rem;background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.35);color:#a5b4fc;text-decoration:none;font-size:0.83rem;font-weight:700;transition:background 0.15s;" onmouseover="this.style.background='rgba(99,102,241,0.25)'" onmouseout="this.style.background='rgba(99,102,241,0.12)'" title="Report bugs and reach the creator on Discord">
+          <span style="font-size:1rem;">💬</span> Discord — bugs &amp; creator <span style="margin-left:auto;font-size:0.72rem;color:#818cf8;">discord.gg/QvJJ3MBGc</span>
+        </a>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

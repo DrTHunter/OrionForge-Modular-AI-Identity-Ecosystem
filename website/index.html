@@ -425,6 +425,102 @@ img { max-width: 100%; display: block; }
     margin-top: 4px;
 }
 
+/* Gradient headline shimmer */
+.hero h1 .gradient-text {
+    background-size: 200% auto;
+    animation: gradient-shift 6s ease-in-out infinite;
+}
+@keyframes gradient-shift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+
+/* Primary hero CTA light sweep */
+.btn-hero.primary::after {
+    content: '';
+    position: absolute; top: 0; left: -60%;
+    width: 40%; height: 100%;
+    background: linear-gradient(120deg, transparent, rgba(255,255,255,0.35), transparent);
+    transform: skewX(-20deg);
+    transition: left 0.6s ease;
+}
+.btn-hero.primary:hover::after { left: 130%; }
+
+/* -------------------------------------------------------
+   HERO ORBIT — animated six-layer identity centerpiece
+   ------------------------------------------------------- */
+.hero-orbit {
+    position: absolute; inset: 0;
+    z-index: 1;
+    display: none;
+    align-items: center; justify-content: center;
+    pointer-events: none;
+}
+@media (min-width: 1000px) {
+    .hero-orbit { display: flex; }
+}
+.hero-orbit-ring {
+    --r: clamp(170px, 19vw, 260px);
+    position: relative;
+    width: calc(var(--r) * 2);
+    height: calc(var(--r) * 2);
+    border-radius: 50%;
+    border: 1px solid rgba(99, 102, 241, 0.14);
+    animation: orbit-spin 90s linear infinite;
+}
+.hero-orbit-ring::before {
+    content: '';
+    position: absolute; inset: 15%;
+    border-radius: 50%;
+    border: 1px dashed rgba(139, 92, 246, 0.12);
+}
+.hero-orbit-core {
+    position: absolute; top: 50%; left: 50%;
+    width: 68px; height: 68px; margin: -34px 0 0 -34px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(circle, rgba(99,102,241,0.28) 0%, rgba(99,102,241,0.05) 60%, transparent 75%);
+    border: 1px solid rgba(99, 102, 241, 0.25);
+    color: var(--primary-light);
+    font-size: 1.4rem;
+    animation: orbit-core-spin 90s linear infinite, orbit-pulse 3.2s ease-in-out infinite;
+}
+.hero-orbit-node {
+    position: absolute; top: 50%; left: 50%;
+    transform: rotate(var(--angle)) translateY(calc(-1 * var(--r)));
+}
+.hero-orbit-node-inner {
+    position: absolute;
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 14px;
+    border-radius: 50px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-glass);
+    box-shadow: 0 0 24px rgba(99, 102, 241, 0.1);
+    white-space: nowrap;
+    animation: orbit-node-counter 90s linear infinite;
+}
+.hero-orbit-node-inner i { font-size: 0.85rem; color: var(--primary-light); }
+.hero-orbit-node-inner span {
+    font-size: 0.7rem; font-weight: 600;
+    color: var(--text-secondary);
+    letter-spacing: 0.2px;
+}
+@keyframes orbit-spin { to { transform: rotate(360deg); } }
+@keyframes orbit-core-spin { to { transform: rotate(-360deg); } }
+@keyframes orbit-node-counter {
+    from { transform: translate(-50%, -50%) rotate(calc(-1 * var(--angle))); }
+    to   { transform: translate(-50%, -50%) rotate(calc(-1 * var(--angle) - 360deg)); }
+}
+@keyframes orbit-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(99,102,241,0.25); }
+    50% { box-shadow: 0 0 0 14px rgba(99,102,241,0); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .hero h1 .gradient-text,
+    .hero-orbit-ring, .hero-orbit-core, .hero-orbit-node-inner { animation: none !important; }
+}
+
 /* -------------------------------------------------------
    SECTION COMMON
    ------------------------------------------------------- */
@@ -2784,6 +2880,29 @@ section { position: relative; z-index: 1; }
      HERO
      ------------------------------------------------------- -->
 <section class="hero" id="hero" aria-label="Orion Forge introduction">
+    <div class="hero-orbit" aria-hidden="true">
+        <div class="hero-orbit-ring">
+            <div class="hero-orbit-core"><i class="fas fa-fingerprint"></i></div>
+            <div class="hero-orbit-node" style="--angle: 0deg;">
+                <div class="hero-orbit-node-inner"><i class="fas fa-file-lines"></i><span>Base Prompt</span></div>
+            </div>
+            <div class="hero-orbit-node" style="--angle: 60deg;">
+                <div class="hero-orbit-node-inner"><i class="fas fa-scroll"></i><span>Soul Script</span></div>
+            </div>
+            <div class="hero-orbit-node" style="--angle: 120deg;">
+                <div class="hero-orbit-node-inner"><i class="fas fa-book"></i><span>Knowledge</span></div>
+            </div>
+            <div class="hero-orbit-node" style="--angle: 180deg;">
+                <div class="hero-orbit-node-inner"><i class="fas fa-database"></i><span>Memory Vault</span></div>
+            </div>
+            <div class="hero-orbit-node" style="--angle: 240deg;">
+                <div class="hero-orbit-node-inner"><i class="fas fa-toolbox"></i><span>Tool Registry</span></div>
+            </div>
+            <div class="hero-orbit-node" style="--angle: 300deg;">
+                <div class="hero-orbit-node-inner"><i class="fas fa-clock-rotate-left"></i><span>Recent History</span></div>
+            </div>
+        </div>
+    </div>
     <div class="hero-content">
         <div class="hero-badge">
             <span class="pulse"></span>
@@ -4129,8 +4248,14 @@ document.getElementById('agent-modal').addEventListener('click', function(e) {
 // -------------------------------------------------------
 function initParticles() {
     const canvas = document.getElementById('particles-canvas');
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        canvas.style.display = 'none';
+        return;
+    }
+
     const ctx = canvas.getContext('2d');
-    let w, h, particles = [];
+    let w, h, particles = [], rafId;
 
     function resize() {
         w = canvas.width = window.innerWidth;
@@ -4162,7 +4287,8 @@ function initParticles() {
         }
     }
 
-    const count = Math.min(80, Math.floor(w * h / 15000));
+    const isMobile = w < 768;
+    const count = Math.min(isMobile ? 36 : 80, Math.floor(w * h / 15000));
     for (let i = 0; i < count; i++) particles.push(new Particle());
 
     function animate() {
@@ -4185,9 +4311,18 @@ function initParticles() {
                 }
             }
         }
-        requestAnimationFrame(animate);
+        rafId = requestAnimationFrame(animate);
     }
     animate();
+
+    // Pause the animation loop while the tab is hidden to save CPU/battery.
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            cancelAnimationFrame(rafId);
+        } else {
+            animate();
+        }
+    });
 }
 
 // -------------------------------------------------------

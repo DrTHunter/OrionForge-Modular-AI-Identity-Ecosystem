@@ -2011,10 +2011,24 @@ function _toggleMicElevenLabs() {
     _sttAnalyser = analyser;
     const dataArr = new Uint8Array(analyser.frequencyBinCount);
     let lastSpeechTime = Date.now();
-    const SILENCE_MS = 1000;
-    const NOISE_THRESHOLD = 15;
+    const SILENCE_MS = 2500;
+    const NOISE_THRESHOLD = 20;
 
-    const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+    // Pick the best supported MIME type (Safari doesn't support webm)
+    const PREFERRED_MIMES = [
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/ogg;codecs=opus',
+      'audio/ogg',
+      'audio/mp4',
+    ];
+    const chosenMime = PREFERRED_MIMES.find(m => MediaRecorder.isTypeSupported(m)) || '';
+    const mimeExt = chosenMime.startsWith('audio/ogg') ? 'ogg'
+                  : chosenMime.startsWith('audio/mp4') ? 'mp4'
+                  : 'webm';
+    const recorder = chosenMime
+      ? new MediaRecorder(stream, { mimeType: chosenMime })
+      : new MediaRecorder(stream);
     _mediaRecorder = recorder;
     recorder.ondataavailable = (e) => { if (e.data.size > 0) _audioChunks.push(e.data); };
 
@@ -2026,15 +2040,17 @@ function _toggleMicElevenLabs() {
       try { audioCtx.close(); } catch(_) {}
       btn.classList.remove('recording');
 
-      const blob = new Blob(_audioChunks, { type: 'audio/webm' });
+      const actualMime = chosenMime || recorder.mimeType || 'audio/webm';
+      const blob = new Blob(_audioChunks, { type: actualMime });
       _audioChunks = []; _mediaRecorder = null;
       if (blob.size < 100) return;
 
       btn.classList.add('transcribing');
       try {
         const formData = new FormData();
-        formData.append('file', blob, 'recording.webm');
+        formData.append('file', blob, `recording.${mimeExt}`);
         formData.append('language', 'en');
+        formData.append('mime_type', actualMime);
         const resp = await fetch('/api/stt/elevenlabs', { method: 'POST', body: formData });
         if (resp.ok) {
           const data = await resp.json();

@@ -476,7 +476,7 @@ app.add_middleware(AuthMiddleware)
 # send cross-origin without a CORS preflight.  We block the dangerous
 # form content types on state-changing /api/ routes.  Stripe webhooks
 # are exempt (they use signature verification).
-_CSRF_EXEMPT = {"/api/stripe/webhook"}
+_CSRF_EXEMPT = {"/api/stripe/webhook", "/api/stt/elevenlabs"}
 
 class CSRFMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
@@ -3058,6 +3058,8 @@ async def page_tools(request: Request):
         email_config = _email_cfg(user_id=_tools_uid)
     except Exception:
         email_config = {"api_base_url": "http://127.0.0.1:8000", "timeout": 30, "require_confirmation": True, "accounts": []}
+    user = getattr(request.state, "user", None)
+    uid = user["id"] if user else ""
     return templates.TemplateResponse(request, "tools.html", {
         "page": "tools",
         "tools": _TOOL_CATALOGUE,
@@ -3073,6 +3075,11 @@ async def page_tools(request: Request):
         "router_config": _load_model_router_config(),
         "email_config": email_config,
         "is_admin": _check_admin(request),
+        "mcp_url": _mcp_public_url(request),
+        "token_status": mcp_tokens.get_token_status(uid) if uid else {"exists": False},
+        "credits": get_user_credits(uid) if uid else 0,
+        "access_allowed": _mcp_access_allowed(uid),
+        "mcp_enabled": _mcp_inner_app is not None,
     })
 
 
@@ -7119,10 +7126,16 @@ async def api_stt_elevenlabs(request: Request):
     form = await request.form()
     audio_file = form.get("file")
     language = form.get("language", "en")
+    mime_type = form.get("mime_type", "") or ""
     if not audio_file:
         return JSONResponse({"error": "No audio file provided"}, 400)
     audio_bytes = await audio_file.read()
-    filename = getattr(audio_file, 'filename', 'audio.webm') or 'audio.webm'
+    filename = getattr(audio_file, 'filename', None) or 'audio.webm'
+    # Derive MIME type from filename extension if not explicitly provided
+    if not mime_type:
+        ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else 'webm'
+        mime_type = {'webm': 'audio/webm', 'ogg': 'audio/ogg', 'mp4': 'audio/mp4',
+                     'wav': 'audio/wav', 'm4a': 'audio/mp4'}.get(ext, 'audio/webm')
 
     # ── Pre-flight credit check (always metered at 2× cost) ──
     estimated_seconds = max(len(audio_bytes) / (16 * 1024), 1.0)
@@ -7148,7 +7161,7 @@ async def api_stt_elevenlabs(request: Request):
             resp = await client.post(
                 url,
                 headers=headers,
-                files={"file": (filename, audio_bytes, "audio/webm")},
+                files={"file": (filename, audio_bytes, mime_type)},
                 data={"model_id": "scribe_v1", "language_code": language},
             )
             resp.raise_for_status()

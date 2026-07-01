@@ -956,6 +956,36 @@
     .action-bar { flex-direction: column-reverse; }
     .action-bar .btn { width: 100%; }
   }
+
+  /* ── Connect to Claude panel ── */
+  .cn-card { background:rgba(15,15,20,0.85); border:1px solid rgba(42,42,58,0.6); border-radius:0.75rem; padding:1.25rem 1.5rem; margin-bottom:1.25rem; }
+  .cn-card h2 { font-size:1.05rem; font-weight:700; color:#e4e4e7; margin:0 0 0.4rem; display:flex; align-items:center; gap:0.5rem; }
+  .cn-card p.cn-sub { font-size:0.83rem; color:#71717a; margin:0 0 1rem; line-height:1.55; }
+  .cn-step-num { display:inline-flex; align-items:center; justify-content:center; width:1.4rem; height:1.4rem; border-radius:50%; background:rgba(99,102,241,0.15); color:#818cf8; font-size:0.78rem; font-weight:700; }
+  .cn-field { display:flex; align-items:stretch; gap:0.5rem; margin:0.4rem 0; }
+  .cn-mono { flex:1; min-width:0; font-family:'Cascadia Code','Fira Code',monospace; font-size:0.8rem; color:#d4d4d8; background:rgba(10,10,14,0.9); border:1px solid rgba(63,63,70,0.5); border-radius:0.45rem; padding:0.55rem 0.75rem; overflow-x:auto; white-space:pre; line-height:1.5; }
+  .cn-btn { padding:0.5rem 1rem; font-size:0.8rem; font-weight:600; border-radius:0.5rem; border:none; cursor:pointer; transition:all 0.15s; white-space:nowrap; }
+  .cn-btn.primary { background:linear-gradient(135deg,#6366f1,#818cf8); color:#fff; }
+  .cn-btn.primary:hover { opacity:0.9; transform:translateY(-1px); }
+  .cn-btn.ghost { background:rgba(63,63,70,0.25); color:#d4d4d8; border:1px solid rgba(63,63,70,0.5); }
+  .cn-btn.ghost:hover { background:rgba(63,63,70,0.4); }
+  .cn-btn.danger { background:rgba(239,68,68,0.15); color:#f87171; border:1px solid rgba(239,68,68,0.35); }
+  .cn-btn.danger:hover { background:rgba(239,68,68,0.25); }
+  .cn-btn.copy { background:rgba(99,102,241,0.12); color:#818cf8; border:1px solid rgba(99,102,241,0.3); }
+  .cn-btn:disabled { opacity:0.45; cursor:default; transform:none; }
+  .cn-token-box { font-family:'Cascadia Code','Fira Code',monospace; font-size:0.8rem; color:#34d399; background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.3); border-radius:0.45rem; padding:0.6rem 0.75rem; word-break:break-all; line-height:1.5; }
+  .cn-note { font-size:0.78rem; color:#71717a; margin-top:0.5rem; line-height:1.5; }
+  .cn-note.warn { color:#fbbf24; }
+  .cn-banner { display:flex; align-items:flex-start; gap:0.75rem; background:rgba(251,191,36,0.08); border:1px solid rgba(251,191,36,0.3); border-radius:0.6rem; padding:0.85rem 1rem; margin-bottom:1.25rem; font-size:0.85rem; color:#fcd34d; line-height:1.55; }
+  .cn-banner a { color:#fcd34d; text-decoration:underline; font-weight:600; }
+  .cn-tabs { display:flex; gap:0.4rem; margin-bottom:0.75rem; flex-wrap:wrap; }
+  .cn-tab { padding:0.35rem 0.85rem; font-size:0.78rem; font-weight:600; border-radius:0.5rem; cursor:pointer; color:#a1a1aa; background:rgba(26,26,36,0.6); border:1px solid rgba(63,63,70,0.4); }
+  .cn-tab.active { color:#fff; background:rgba(99,102,241,0.2); border-color:rgba(99,102,241,0.5); }
+  .cn-snippet { display:none; }
+  .cn-snippet.active { display:block; }
+  .cn-status-pill { font-size:0.7rem; font-weight:600; padding:0.15rem 0.55rem; border-radius:1rem; margin-left:0.4rem; }
+  .cn-status-pill.active { background:rgba(16,185,129,0.15); color:#34d399; }
+  .cn-status-pill.none { background:rgba(113,113,122,0.2); color:#a1a1aa; }
 </style>
 
 <div class="tools-shell p-6 md:p-10">
@@ -969,6 +999,9 @@
     </button>
     <button class="tab-btn" id="tab-btn-router" onclick="showRouterPanel()">
       Router
+    </button>
+    <button class="tab-btn" id="tab-btn-connect" onclick="showConnectPanel()">
+      Connect to Claude
     </button>
   </div>
 
@@ -1013,7 +1046,7 @@
 
     <!-- Tools Grid -->
     <div class="tools-grid" id="tools-grid">
-      {% for tool in tools %}
+      {% for tool in tools %}{% if 'agi_loop' not in tool.get('tags', []) %}
       <div class="tool-card"
            data-tool-name="{{ tool.name }}"
            data-tool-desc="{{ tool.description|lower }}"
@@ -1039,7 +1072,7 @@
           </div>
         </div>
       </div>
-      {% endfor %}
+      {% endif %}{% endfor %}
     </div>
 
     {% if not tools %}
@@ -1052,7 +1085,7 @@
 
   <!-- ═══ EDITOR / DETAIL VIEWS (one per tool) ═══ -->
   {% for tool in tools %}
-  {% if tool.name != 'cost_tracker' %}
+  {% if tool.name != 'cost_tracker' and 'agi_loop' not in tool.get('tags', []) %}
   <div class="editor-view" id="editor-{{ tool.name }}">
 
     <!-- Header -->
@@ -4010,6 +4043,118 @@
     </div>
   </div>
 
+  <!-- ═══════════════════════════════════════════════════════════════
+       CONNECT TO CLAUDE PANEL
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="view-panel" id="view-connect" style="display:none;">
+    <div class="cn-wrap" style="max-width:none;height:auto;padding:0;overflow-y:visible;">
+      <h1 style="font-size:1.75rem;font-weight:800;color:#f4f4f5;margin:0 0 0.5rem;">Connect to Claude</h1>
+      <p style="font-size:0.95rem;color:#a1a1aa;line-height:1.6;margin-bottom:1.75rem;max-width:46rem;">
+        Plug your OrionForge agents into <strong>Claude Code</strong>, Claude Desktop, or any
+        MCP-capable client. Generate a personal token below, paste the snippet into your client,
+        and summon any agent — with your own soul scripts and Memory Vault — right inside that chat.
+      </p>
+
+      {% if not mcp_enabled %}
+      <div class="cn-banner">
+        <span>⚠️</span>
+        <div>The hosted MCP endpoint is currently unavailable on this server (the <code>mcp</code>
+        package isn't installed). You can still run the connector locally — see the
+        <a href="/about#mcp-server">MCP Server setup guide</a>.</div>
+      </div>
+      {% endif %}
+
+      {% if not access_allowed %}
+      <div class="cn-banner">
+        <span>💳</span>
+        <div>Connecting via MCP requires a funded account. You currently have
+        <strong>{{ credits }}</strong> credits. <a href="/tools#cost_tracker">Add credits</a>
+        to generate a token.</div>
+      </div>
+      {% endif %}
+
+      <!-- Step 1 -->
+      <div class="cn-card">
+        <h2><span class="cn-step-num">1</span> Your MCP endpoint</h2>
+        <p class="cn-sub">This is the URL your client connects to. It's the same for everyone — your token is what identifies you.</p>
+        <div class="cn-field">
+          <div class="cn-mono" id="cn-mcp-url">{{ mcp_url }}</div>
+          <button class="cn-btn copy" onclick="cnCopyText('{{ mcp_url }}', this)">Copy</button>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="cn-card">
+        <h2>
+          <span class="cn-step-num">2</span> Your personal token
+          <span class="cn-status-pill {% if token_status.exists %}active{% else %}none{% endif %}" id="cn-token-pill">
+            {% if token_status.exists %}active{% else %}none yet{% endif %}
+          </span>
+        </h2>
+        <p class="cn-sub">
+          Shown once at generation — store it like a password. Generating a new token immediately
+          revokes the old one. {% if token_status.exists %}Current token: <code>{{ token_status.prefix }}…</code>
+          (created {{ token_status.created[:10] }}).{% endif %}
+        </p>
+        <div id="cn-token-reveal" style="display:none;margin-bottom:0.75rem;">
+          <div class="cn-token-box" id="cn-token-value"></div>
+          <div class="cn-note warn">⚠️ Copy this now — it won't be shown again.</div>
+        </div>
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+          <button class="cn-btn primary" id="cn-gen-btn" onclick="cnMintToken()" {% if not access_allowed %}disabled{% endif %}>
+            {% if token_status.exists %}Regenerate token{% else %}Generate token{% endif %}
+          </button>
+          <button class="cn-btn danger" id="cn-revoke-btn" onclick="cnRevokeToken()" {% if not token_status.exists %}style="display:none;"{% endif %}>
+            Revoke
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="cn-card">
+        <h2><span class="cn-step-num">3</span> Add it to your client</h2>
+        <p class="cn-sub">Generate a token first, then copy a snippet below — your token is auto-filled.</p>
+        <div class="cn-tabs">
+          <div class="cn-tab active" data-cntab="code" onclick="cnShowTab('code')">Claude Code</div>
+          <div class="cn-tab" data-cntab="desktop" onclick="cnShowTab('desktop')">Claude Desktop</div>
+          <div class="cn-tab" data-cntab="gemini" onclick="cnShowTab('gemini')">Gemini CLI</div>
+        </div>
+        <div class="cn-snippet active" data-cntab="code">
+          <div class="cn-field">
+            <div class="cn-mono" id="cn-snip-code"></div>
+            <button class="cn-btn copy" onclick="cnCopyText(document.getElementById('cn-snip-code').textContent,this)">Copy</button>
+          </div>
+          <div class="cn-note">Then start a new Claude Code session and run <code>/mcp</code> — you should see <code>orionforge</code> with its tools.</div>
+        </div>
+        <div class="cn-snippet" data-cntab="desktop">
+          <div class="cn-field">
+            <div class="cn-mono" id="cn-snip-desktop"></div>
+            <button class="cn-btn copy" onclick="cnCopyText(document.getElementById('cn-snip-desktop').textContent,this)">Copy</button>
+          </div>
+          <div class="cn-note">Add to <code>claude_desktop_config.json</code> (Windows: <code>%APPDATA%\Claude\</code>), then restart Claude Desktop.</div>
+        </div>
+        <div class="cn-snippet" data-cntab="gemini">
+          <div class="cn-field">
+            <div class="cn-mono" id="cn-snip-gemini"></div>
+            <button class="cn-btn copy" onclick="cnCopyText(document.getElementById('cn-snip-gemini').textContent,this)">Copy</button>
+          </div>
+          <div class="cn-note">Add the same <code>mcpServers</code> block to Gemini CLI's <code>settings.json</code>.</div>
+        </div>
+      </div>
+
+      <!-- Step 4 -->
+      <div class="cn-card">
+        <h2><span class="cn-step-num">4</span> Use it</h2>
+        <p class="cn-sub" style="margin-bottom:0.5rem;">Once connected, ask Claude to call your agents:</p>
+        <div class="cn-mono" style="white-space:pre-wrap;">set_default_agent("elysia")
+load_default("what should we work on today?")
+search_memory("MCP cold start fix")
+save_project_summary("Shipped Phase 2 remote MCP", title="MCP Phase 2")</div>
+        <div class="cn-note">In Claude Code, typing <code>..</code> at the start of a message summons your default agent.</div>
+      </div>
+    </div>
+  </div>
+
   <!-- ─── Tier Edit Modal ─── -->
   <div class="rt-modal-overlay" id="rt-modal-overlay" onclick="if(event.target===this) _rtCloseModal()">
     <div class="rt-modal" id="rt-modal">
@@ -5082,11 +5227,124 @@
   }
 
   const _prevShowToolsList = showToolsList;
-  showToolsList = function() { _hideRouterPanel(); _prevShowToolsList(); };
+  showToolsList = function() { _hideRouterPanel(); _hideConnectPanel(); _prevShowToolsList(); };
   const _prevOpenToolEditor = openToolEditor;
-  openToolEditor = function(name) { _hideRouterPanel(); _prevOpenToolEditor(name); };
+  openToolEditor = function(name) { _hideRouterPanel(); _hideConnectPanel(); _prevOpenToolEditor(name); };
   const _prevShowMemoryPanel = showMemoryPanel;
-  showMemoryPanel = function() { _hideRouterPanel(); _prevShowMemoryPanel(); };
+  showMemoryPanel = function() { _hideRouterPanel(); _hideConnectPanel(); _prevShowMemoryPanel(); };
+
+  /* ── Connect to Claude panel ── */
+  const CN_MCP_URL = {{ mcp_url | tojson }};
+  let CN_CURRENT_TOKEN = null;
+
+  function _hideConnectPanel() {
+    const p = document.getElementById('view-connect');
+    if (p) { p.style.display = 'none'; p.classList.remove('active'); }
+    document.getElementById('tab-btn-connect')?.classList.remove('active');
+  }
+
+  function showConnectPanel() {
+    document.getElementById('view-tools').classList.remove('active');
+    document.querySelectorAll('.editor-view').forEach(v => v.classList.remove('active'));
+    _hideRouterPanel();
+    document.getElementById('view-memory').style.display = 'none';
+    document.getElementById('view-memory').classList.remove('active');
+    document.getElementById('tab-btn-memory').classList.remove('active');
+    const p = document.getElementById('view-connect');
+    p.style.display = 'block';
+    p.classList.add('active');
+    document.getElementById('tab-btn-tools').classList.remove('active');
+    document.getElementById('tab-btn-connect').classList.add('active');
+    cnBuildSnippets();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function cnTokenForSnippet() { return CN_CURRENT_TOKEN || 'YOUR_TOKEN'; }
+
+  function cnBuildSnippets() {
+    const tok = cnTokenForSnippet();
+    const url = CN_MCP_URL;
+    document.getElementById('cn-snip-code').textContent =
+      `claude mcp add --transport http orionforge ${url} --header "Authorization: Bearer ${tok}"`;
+    document.getElementById('cn-snip-desktop').textContent =
+`{
+  "mcpServers": {
+    "orionforge": {
+      "type": "http",
+      "url": "${url}",
+      "headers": { "Authorization": "Bearer ${tok}" }
+    }
+  }
+}`;
+    document.getElementById('cn-snip-gemini').textContent =
+`{
+  "mcpServers": {
+    "orionforge": {
+      "httpUrl": "${url}",
+      "headers": { "Authorization": "Bearer ${tok}" }
+    }
+  }
+}`;
+  }
+
+  function cnShowTab(tab) {
+    document.querySelectorAll('.cn-tab').forEach(el => el.classList.toggle('active', el.dataset.cntab === tab));
+    document.querySelectorAll('.cn-snippet').forEach(el => el.classList.toggle('active', el.dataset.cntab === tab));
+  }
+
+  async function cnMintToken() {
+    const btn = document.getElementById('cn-gen-btn');
+    btn.disabled = true; btn.textContent = 'Generating…';
+    try {
+      const res = await fetch('/api/mcp/token', { method: 'POST' });
+      if (res.status === 402) { showToast('Add credits to generate a token', true); return; }
+      if (!res.ok) throw new Error('Failed to generate token');
+      const data = await res.json();
+      CN_CURRENT_TOKEN = data.token;
+      document.getElementById('cn-token-value').textContent = data.token;
+      document.getElementById('cn-token-reveal').style.display = '';
+      document.getElementById('cn-token-pill').className = 'cn-status-pill active';
+      document.getElementById('cn-token-pill').textContent = 'active';
+      document.getElementById('cn-revoke-btn').style.display = '';
+      cnBuildSnippets();
+      showToast('Token generated — copy it now');
+    } catch (e) {
+      showToast(e.message, true);
+    } finally {
+      btn.disabled = false; btn.textContent = 'Regenerate token';
+    }
+  }
+
+  async function cnRevokeToken() {
+    if (!confirm('Revoke your MCP token? Any client using it will stop working.')) return;
+    const btn = document.getElementById('cn-revoke-btn');
+    btn.disabled = true;
+    try {
+      const res = await fetch('/api/mcp/token', { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to revoke');
+      CN_CURRENT_TOKEN = null;
+      document.getElementById('cn-token-reveal').style.display = 'none';
+      document.getElementById('cn-token-pill').className = 'cn-status-pill none';
+      document.getElementById('cn-token-pill').textContent = 'none yet';
+      btn.style.display = 'none';
+      cnBuildSnippets();
+      showToast('Token revoked');
+    } catch (e) {
+      showToast(e.message, true);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  function cnCopyText(text, btn) {
+    navigator.clipboard.writeText(text).then(() => {
+      const orig = btn.textContent;
+      btn.textContent = 'Copied!';
+      setTimeout(() => { btn.textContent = orig; }, 1400);
+    });
+  }
+
+  cnBuildSnippets();
 
   /* ── Render everything ── */
   function renderRouterPanel() {
