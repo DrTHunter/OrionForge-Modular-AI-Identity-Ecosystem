@@ -713,7 +713,7 @@ _ENV_KEY_MAP = {
 # Image/Video Generation) the operator's own key is used automatically.
 _MEDIA_PLATFORM_ENV_MAP = {
     "openai":    "OPENAI_API_KEY",
-    "google":    "GOOGLE_GEMINI_API_KEY",
+    "google":    "GOOGLE_API_KEY",
     "stability": "STABILITY_API_KEY",
 }
 
