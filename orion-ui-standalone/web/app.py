@@ -476,7 +476,7 @@ app.add_middleware(AuthMiddleware)
 # send cross-origin without a CORS preflight.  We block the dangerous
 # form content types on state-changing /api/ routes.  Stripe webhooks
 # are exempt (they use signature verification).
-_CSRF_EXEMPT = {"/api/stripe/webhook"}
+_CSRF_EXEMPT = {"/api/stripe/webhook", "/api/stt/elevenlabs"}
 
 class CSRFMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
