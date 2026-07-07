@@ -170,6 +170,10 @@ this ensures the server is fully connected before the call fires.
 | `.e` | Sets Elysia as default → loads her |
 | `.m` | Summarizes the conversation → saves to Memory Vault |
 
+> These shorthands are implemented as project instructions in the bundled
+> [`orion-ui-standalone/CLAUDE.md`](../CLAUDE.md), which Claude Code loads
+> automatically when you run `claude` from `orion-ui-standalone/`.
+
 > **Why the first summon is fast.** The heavy cost on a cold process is importing
 > torch / sentence-transformers (~25 s) plus building the soul-script FAISS index.
 > Three layers keep `..` snappy:
