@@ -23,6 +23,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
+import requests
+
 log = logging.getLogger("soulscript.stripe")
 
 _CONFIG_DIR = Path(__file__).resolve().parent.parent / "config"
@@ -64,6 +66,11 @@ STRIPE_CREDITS_PRODUCT_ID = os.environ.get(
     "STRIPE_CREDITS_PRODUCT_ID",
     _default_credits_product_id(STRIPE_SECRET_KEY),
 )
+
+# Used only to record standalone Payment Link buyers (e.g. prelaunch access)
+# who have no Orion Forge account yet, directly into Supabase.
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
+SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
 
 # ── Tier definitions ─────────────────────────────────────────────
 FREE_TIER_FEATURES = {
@@ -339,6 +346,13 @@ def handle_webhook_event(payload: bytes, sig_header: str) -> dict:
             })
             return {"ok": True, "action": "subscription_activated", "user_id": user_id}
 
+        # No app user tied to this checkout — a standalone Payment Link
+        # purchase (e.g. prelaunch access sold before the buyer has an
+        # Orion Forge account). Record the buyer in Supabase so access can
+        # be granted once they sign up.
+        record = _record_prelaunch_signup(data)
+        return {"action": "prelaunch_signup_recorded", **record}
+
     elif event_type in ("customer.subscription.updated", "customer.subscription.deleted"):
         sub_status = data.get("status", "")
         customer_id = data.get("customer", "")
@@ -410,6 +424,58 @@ def _grant_credits_for_checkout(session: dict) -> dict:
     log.info("[credits] +%d credits for user %s (purchase:%s, session=%s). Balance: %d",
              credits, user_id, pack_id, session_id or "n/a", bucket["balance"])
     return {"ok": True, "user_id": user_id, "credits": credits}
+
+
+def _record_prelaunch_signup(session: dict) -> dict:
+    """Insert a standalone Payment Link buyer into Supabase's prelaunch_signups
+    table (e.g. prelaunch access sold before the buyer has an account).
+
+    Requires SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY — the service role key
+    is needed because there is no logged-in Supabase session for this write,
+    so it must bypass row-level security.
+    """
+    customer_details = session.get("customer_details", {}) or {}
+    email = customer_details.get("email") or session.get("customer_email", "")
+    row = {
+        "stripe_session_id": session.get("id", ""),
+        "stripe_customer_id": session.get("customer", ""),
+        "email": email,
+        "name": customer_details.get("name", ""),
+        "amount_total": session.get("amount_total", 0),
+        "currency": session.get("currency", ""),
+        "payment_link": session.get("payment_link", ""),
+    }
+
+    if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
+        log.error("[stripe] Cannot record prelaunch signup (%s): "
+                   "SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY not configured", email)
+        return {"ok": False, "error": "supabase_not_configured", "email": email}
+
+    try:
+        resp = requests.post(
+            f"{SUPABASE_URL.rstrip('/')}/rest/v1/prelaunch_signups",
+            params={"on_conflict": "stripe_session_id"},
+            json=row,
+            headers={
+                "apikey": SUPABASE_SERVICE_ROLE_KEY,
+                "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
+                "Content-Type": "application/json",
+                # Row already recorded (unique stripe_session_id) -> no-op
+                # instead of erroring, so Stripe's webhook retries are safe.
+                "Prefer": "resolution=ignore-duplicates,return=minimal",
+            },
+            timeout=10,
+        )
+        if resp.status_code >= 300:
+            log.error("[stripe] Supabase insert failed (%s): %s", resp.status_code, resp.text)
+            return {"ok": False, "error": f"supabase_error_{resp.status_code}", "email": email}
+    except Exception as exc:
+        log.error("[stripe] Supabase insert failed: %s", exc)
+        return {"ok": False, "error": str(exc), "email": email}
+
+    log.info("[stripe] Recorded prelaunch signup in Supabase: %s (session=%s)",
+              email, session.get("id", ""))
+    return {"ok": True, "email": email}
 
 
 def fulfill_credits_for_session(session_id: str, expected_user_id: str = "") -> dict:

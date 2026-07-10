@@ -1,7 +1,7 @@
 {
   "timezone": "auto",
   "timezone_offset_hours": null,
-  "chat_background": "/uploads/chat_bg.jpg",
+  "chat_background": "",
   "agent_avatars": {
     "elysia": {
       "image": "/uploads/avatar_elysia_forge2026.png",

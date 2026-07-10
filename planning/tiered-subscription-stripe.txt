@@ -1,0 +1,164 @@
+TIERED MONTHLY SUBSCRIPTION — STRIPE OBJECTS CREATED (APP NOT TOUCHED)
+========================================================================
+Date: 2026-07-10
+
+WHAT WAS DONE
+- Created 2 new LIVE recurring monthly Prices in Stripe under the existing
+  product "Orion Forge Monthly Subscription" (prod_UrL9PBEuvpXrl4). A 3rd
+  price already existed on that product from an earlier session.
+- Used a scoped restricted key (Products+Prices write only) pasted by Trent
+  directly into chat for this one task. NOT saved anywhere in the repo.
+  Trent should revoke/rotate it in the Stripe dashboard (Developers > API
+  keys) once this work is confirmed done, since restricted keys pasted into
+  a chat transcript should be treated as burned.
+- Nothing in orion-ui-standalone was edited — no .env, no code, no deploy.
+
+THE 3 PRICES (all on product prod_UrL9PBEuvpXrl4, usd, recurring monthly)
+  Starter  $9.49/mo   price_1TrcTFBHYgqgi9JUSadiVGRX
+           (pre-existing; nickname "Lowest Monthly Subcritpion" [sic],
+           no lookup_key, no tier metadata — inconsistent with the two
+           below, see TODO)
+  Plus     $14.49/mo  price_1TrctNBHYgqgi9JUfXJf9I21
+           lookup_key: orionforge_plus_monthly, metadata.tier=plus
+  Pro      $24.49/mo  price_1TrctNBHYgqgi9JU51Py2R6J
+           lookup_key: orionforge_pro_monthly, metadata.tier=pro
+
+PAYMENT LINK HYPERLINKS (standalone hosted checkout, no app/website code)
+Created 2026-07-10, default settings (Stripe's default hosted "thank you"
+confirmation page after payment, no custom success/cancel redirect back to
+the site since the website wasn't touched this pass):
+  Starter $9.49/mo  https://buy.stripe.com/9B64gyeDb1MVbB43Z67AI02
+                    (plink_1TrczJBHYgqgi9JUIorzNBx6)
+  Plus    $14.49/mo https://buy.stripe.com/7sY7sK66F77fcF8dzG7AI03
+                    (plink_1TrczKBHYgqgi9JUeLZVjVF0)
+  Pro     $24.49/mo https://buy.stripe.com/7sY00i52B0IRfRkfHO7AI04
+                    (plink_1TrczKBHYgqgi9JUUxwY8lBe)
+
+NOTE: these Payment Links have NO connection to a user's Orion Forge
+account — anyone who pays through them becomes a Stripe customer/subscriber
+but the webhook handler's checkout.session.completed branch only calls
+set_user_subscription() when client_reference_id/metadata.user_id is
+present (i.e. checkout created via create_checkout_session() from inside
+the app while logged in). A bare Payment Link purchase has neither, so it
+will currently fall into the "no app user tied to this checkout" branch and
+get recorded via _record_prelaunch_signup() into Supabase's
+prelaunch_signups table instead of activating a real subscription. Fine for
+prelaunch/manual outreach use (matches the existing pattern used for the
+$29.99 one-time Payment Link), but NOT a substitute for real in-app
+Checkout once the app wires up 3-tier subscriptions — that still needs
+create_checkout_session() updated per the CODE CHANGES section below so
+purchases tie back to the logged-in user_id.
+
+BOOSTER PACKS (credit top-ups) — Price + Payment Link hyperlinks
+Added 2026-07-10. These mirror the existing in-app CREDIT_PACKS dict in
+stripe_billing.py (line ~522: pack_5/10/20/30) as real Stripe Price objects
++ standalone Payment Links, under the existing credits product
+prod_UktYCqIzyVKRzb (same product create_purchase_credit_pack_checkout()
+already rolls dynamic-priced packs under).
+  500 credits    $5   price_1Trd6NBHYgqgi9JUXqbaZE40
+                      https://buy.stripe.com/3cI4gy9iRbnv20u0MU7AI05
+                      lookup_key orionforge_booster_500
+  1,000 credits  $10  price_1Trd6OBHYgqgi9JUmqttBRsJ
+                      https://buy.stripe.com/4gM28q0Ml2QZ9sWanu7AI06
+                      lookup_key orionforge_booster_1000
+  2,100 credits  $20  price_1Trd6OBHYgqgi9JUkKjuSygO  (+100 bonus, same as
+                      https://buy.stripe.com/aFa28qgLj9fn0Wqbry7AI07  existing pack_20)
+                      lookup_key orionforge_booster_2100
+  3,200 credits  $30  price_1Trd6PBHYgqgi9JU0PheOvyu  (+200 bonus, same as
+                      https://buy.stripe.com/bJe6oG1QpdvD34ydzG7AI08  existing pack_30)
+                      lookup_key orionforge_booster_3200
+
+SAME CAVEAT AS THE SUBSCRIPTION PAYMENT LINKS ABOVE: these are standalone
+buy.stripe.com hyperlinks, not tied to a logged-in user. The existing in-app
+flow (create_purchase_credit_pack_checkout -> Checkout Session with
+metadata.type="credits" + metadata.user_id) is what actually credits a
+user's balance via _grant_credits_for_checkout() in the
+checkout.session.completed webhook branch. A purchase through one of these
+bare links has no user_id metadata, so it will NOT credit anyone's account
+automatically — it falls through to _record_prelaunch_signup() (Supabase
+prelaunch_signups table) same as the tier links. These are for
+manual/prelaunch sales only, not a self-serve in-app top-up mechanism. If
+what's actually wanted later is "user clicks a button in-app when they run
+low and buys more credits," that already exists via
+create_purchase_credit_pack_checkout() — no new Stripe objects needed for
+that, it's a UI/wiring question, not a Stripe-side gap.
+
+TODO (cosmetic, optional): give the $9.49 Starter price a matching
+lookup_key (orionforge_starter_monthly) and metadata.tier=starter so all
+three can be looked up the same way in code instead of hardcoding one price
+ID differently from the other two. Requires the restricted key again (or a
+new one) since it's a Stripe-side edit, not a code change.
+
+IMPORTANT — CURRENTLY BROKEN, UNRELATED TO THE ABOVE
+- orion-ui-standalone/.env has STRIPE_PRO_PRICE_ID=price_1T97idB7NyaYRm1xyPAJjNAL
+  — this price no longer exists in Stripe (404 on lookup). The live
+  "Subscribe" checkout button is currently broken/dead if anything still
+  calls create_checkout_session(). Needs fixing regardless of whether the
+  3-tier work proceeds.
+
+*** OPEN PRODUCT QUESTION — READ BEFORE WRITING ANY CODE ***
+web/stripe_billing.py's access model was deliberately changed on 2026-06-26
+(see planning/access-gating.txt): there is currently NO feature paywall.
+get_user_tier() is hardcoded to return 'pro' for every authenticated user;
+get_user_unlocked_agents / user_has_tool_access / user_owns_item all
+short-circuit to "everything unlocked." The whole platform is pay-per-use
+credits (2x LLM cost), not tier-gated. The single-tier Stripe subscription
+checkout (create_checkout_session, mode="subscription", STRIPE_PRO_PRICE_ID)
+is leftover code from before that pivot — it still runs and would record a
+"pro" subscription in stripe_state.json, but get_user_tier() no longer reads
+subscription status at all, so buying it currently does *nothing* for the
+buyer.
+
+So before building 3 tiers into the app, Trent needs to decide what a paid
+tier actually buys under the current pay-per-use model. Feature-gating
+(agents/tools/voice/agi_loop behind a paywall) would REVERSE the 2026-06-26
+decision — don't assume that's still the intent. Options discussed but not
+decided:
+  (a) Re-introduce feature gating per tier (Starter/Plus/Pro unlock
+      progressively more tools/agents) — undoes access-gating.txt.
+  (b) Keep everything unlocked for all users; tiers instead grant perks on
+      top of pay-per-use, e.g. a monthly bundled credit allowance, a
+      discount on the 2x credit markup, priority LLM routing, or higher
+      rate limits.
+  (c) Some hybrid (e.g. AGI Loop / API access reserved for Plus+, since
+      those are the most LLM-call-intensive features and are the ones most
+      worth protecting on cost grounds — this was my proposed split in
+      conversation before Trent redirected to "just create in Stripe first").
+
+One illustrative version of (a)/(c), NOT decided/approved, for reference only:
+  Starter $9.49  — free-tier features + unlimited messages/memory, advanced
+                   tools, internet tools, premium skins; agents capped 10,
+                   knowledge files capped 25.
+  Plus    $14.49 — Starter + image generation, voice TTS/STT, cost tracker;
+                   agents/knowledge files uncapped.
+  Pro     $24.49 — Plus + AGI Loop, priority routing, API access.
+
+CODE CHANGES NEEDED ONCE THE TIER SEMANTICS ABOVE ARE DECIDED
+  orion-ui-standalone/.env
+    - Fix or replace STRIPE_PRO_PRICE_ID (currently dangling).
+    - Add STRIPE_STARTER_PRICE_ID / STRIPE_PLUS_PRICE_ID / STRIPE_PRO_PRICE_ID
+      (3 vars instead of 1), or look prices up by lookup_key at runtime
+      (stripe.Price.list(lookup_keys=[...])) instead of hardcoding IDs.
+
+  orion-ui-standalone/web/stripe_billing.py
+    - TIER_INFO (line ~87): currently free/pro only — needs a 3rd/4th entry
+      for starter/plus/pro with the agreed price + features + limits.
+    - create_checkout_session() (line ~248): hardcodes a single
+      STRIPE_PRO_PRICE_ID line item — needs a price_id/tier param so
+      Checkout can be created for whichever tier the user picked.
+    - handle_webhook_event() checkout.session.completed branch (line ~322):
+      set_user_subscription() always writes {"plan": "pro"} — needs to read
+      the price ID from the session's line items (or metadata set at
+      Checkout-creation time) and store the actual tier purchased.
+    - get_user_tier() (line ~182): needs to actually read the stored
+      subscription tier again if going with option (a)/(c) above, instead
+      of hardcoding 'pro' for every authenticated user. If going with
+      option (b) (perks only, no gating), get_user_tier() can stay as-is
+      and a separate function should expose the subscription perk level.
+
+  Pricing/plans UI (web/templates/plans.html — trial messaging was stripped
+  from this template on 2026-06-26 per access-gating.txt) would need a
+  3-column tier picker instead of a single "Upgrade to Pro" button.
+
+Website/app NOT touched in this pass per Trent's instruction — Stripe-side
+objects only.
