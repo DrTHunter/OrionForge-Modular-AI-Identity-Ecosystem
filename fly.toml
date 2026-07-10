@@ -30,10 +30,15 @@ primary_region = 'iad'
   min_machines_running = 1
   processes = ['app']
 
+  # Kept to a single machine: MCP tokens, Stripe billing state, the AGI loop
+  # journal, and vault/memory data all live as files on the /persist volume,
+  # which only one machine can attach to. Splitting requests across multiple
+  # machines would fragment that state. Scale vertically (below) instead of
+  # horizontally until that state moves to a shared store.
   [http_service.concurrency]
     type = 'requests'
-    hard_limit = 250
-    soft_limit = 200
+    hard_limit = 400
+    soft_limit = 320
 
 [checks]
   [checks.health]
@@ -49,5 +54,5 @@ primary_region = 'iad'
   destination = '/persist'
 
 [[vm]]
-  size = 'shared-cpu-2x'
-  memory = '4gb'
+  size = 'shared-cpu-4x'
+  memory = '8gb'
