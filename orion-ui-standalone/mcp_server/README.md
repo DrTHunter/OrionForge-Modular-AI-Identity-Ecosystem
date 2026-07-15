@@ -170,6 +170,10 @@ this ensures the server is fully connected before the call fires.
 | `.e` | Sets Elysia as default → loads her |
 | `.m` | Summarizes the conversation → saves to Memory Vault |
 
+> These shorthands are implemented as project instructions in the bundled
+> [`orion-ui-standalone/CLAUDE.md`](../CLAUDE.md), which Claude Code loads
+> automatically when you run `claude` from `orion-ui-standalone/`.
+
 > **Why the first summon is fast.** The heavy cost on a cold process is importing
 > torch / sentence-transformers (~25 s) plus building the soul-script FAISS index.
 > Three layers keep `..` snappy:
@@ -230,6 +234,17 @@ In clients that surface MCP prompts as slash commands:
 
 **FAISS import error on Windows**
 - Install `faiss-cpu` directly: `pip install faiss-cpu`
+
+**First summon fails with a HuggingFace `OSError` / "outgoing traffic has been disabled"**
+- `engine.py` defaults `HF_HUB_OFFLINE=1`/`TRANSFORMERS_OFFLINE=1` so *repeat* runs
+  never hit the network — but on a machine that's never run OrionForge before,
+  the embedding model isn't cached yet, so the very first summon needs one
+  online download.
+- Fix: run the first summon once with the override,
+  `HF_HUB_OFFLINE=0 TRANSFORMERS_OFFLINE=0 python -m mcp_server.orion_mcp`
+  (or set those env vars in your client's MCP server config for the first run).
+  Once the model is cached (`~/.cache/huggingface`), the normal offline default
+  works from then on.
 
 **`..` trigger fires before server is ready**
 - This is handled automatically via ToolSearch ready-gate — see Step 7 above.
