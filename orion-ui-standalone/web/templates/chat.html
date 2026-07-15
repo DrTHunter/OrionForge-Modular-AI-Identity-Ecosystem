@@ -618,6 +618,10 @@
   .main-menu-float { left: 0.75rem; }
   .chat-sidebar.collapsed ~ .chat-main .sidebar-expand-float { display: flex; }
 
+  /* Mobile header bar holding settings + sidebar buttons — hidden until the
+     ≤768px media query below turns it on, mirroring .global-topbar */
+  .chat-mobile-topbar { display: none; }
+
   /* ── Prompt Inspector (kept from existing) ── */
   .layers-toggle {
     display:inline-flex; align-items:center; gap:0.25rem;
@@ -821,8 +825,8 @@
   .chat-sidebar-backdrop.open { display: block; }
 
   @media (max-width: 768px) {
-    /* Full-bleed layout on mobile */
-    .chat-layout { margin: -1rem -1.5rem; height: 100dvh; }
+    /* Full-bleed layout on mobile, offset below the fixed mobile header */
+    .chat-layout { margin: -1rem -1.5rem; height: 100dvh; padding-top: 3.75rem; }
     .chat-container { padding: 0 0.75rem; }
 
     /* Chat history sidebar becomes a slide-in overlay */
@@ -837,21 +841,27 @@
     .chat-sidebar:not(.collapsed) { transform: translateX(0); }
     .chat-sidebar.collapsed { width: 80vw; max-width: 320px; min-width: 0; border-right: 1px solid #2a2a3a; }
 
-    /* Prominent hamburger top-left, ChatGPT pill style */
-    .main-menu-float,
-    .sidebar-expand-float {
-      display: flex !important; align-items: center; justify-content: center;
-      top: 0.5rem; left: 0.5rem;
-      width: 2.5rem; height: 2.5rem; padding: 0;
+    /* Fixed mobile header bar — mirrors .global-topbar on the other tabs */
+    .chat-mobile-topbar {
+      display: flex; align-items: center; gap: 0.5rem;
+      position: fixed; top: 0; left: 0; right: 0; z-index: 20;
+      padding: 0.5rem 0.75rem;
+      background: rgba(19,19,26,0.95);
+      border-bottom: 1px solid rgba(99,102,241,0.15);
+      backdrop-filter: blur(6px);
+    }
+    .chat-mobile-topbar .main-menu-float,
+    .chat-mobile-topbar .sidebar-expand-float {
+      display: flex; position: static; align-items: center; justify-content: center;
+      width: 2.25rem; height: 2.25rem; padding: 0; flex-shrink: 0;
       border-radius: 999px;
       background: rgba(24,24,27,0.92); color: #e4e4e7;
       border: 1px solid rgba(99,102,241,0.25);
-      font-size: 1.1rem;
+      font-size: 1.05rem;
     }
-    .sidebar-expand-float { left: 3.25rem; }
 
-    /* Topbar: give room for hamburger + compact */
-    .chat-topbar { padding: 0.5rem 0 0.5rem 6rem; gap: 0.25rem; }
+    /* Topbar no longer needs to dodge floating buttons */
+    .chat-topbar { padding: 0.5rem 0; gap: 0.25rem; }
     .chat-topbar h1 { font-size: 1rem; }
     #cost-ticker, #credit-balance { font-size: 0.6875rem; padding: 0.125rem 0.4rem; }
 
@@ -992,8 +1002,10 @@
 
   <!-- ═══ MAIN CHAT ═══ -->
   <div class="chat-main">
-    <button class="main-menu-float" onclick="openMainMenu()" title="Open main menu">⚙</button>
-    <button class="sidebar-expand-float" onclick="toggleSidebar()" title="Show sidebar">☰</button>
+    <div class="chat-mobile-topbar">
+      <button class="main-menu-float" onclick="openMainMenu()" title="Open main menu">⚙</button>
+      <button class="sidebar-expand-float" onclick="toggleSidebar()" title="Show sidebar">☰</button>
+    </div>
     {% if chat_background %}
     <div class="chat-bg-overlay" style="background-image: url('{{ chat_background }}');"></div>
     {% endif %}
