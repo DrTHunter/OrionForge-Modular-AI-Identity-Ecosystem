@@ -3296,8 +3296,29 @@ def _save_agi_loop_config(data: dict):
     _write_json(AGI_LOOP_FILE, data)
 
 
+# ── AGI loop access gate ─────────────────────────────────────────
+# The autonomous loop is unlocked only for admin accounts
+# (ADMIN_EMAILS / ADMIN_USER_IDS). When auth is disabled — a local
+# single-user install — there is only the owner, so it stays open.
+
+def _agi_loop_unlocked_user(user: dict | None) -> bool:
+    """True if this user may see or drive the AGI loop."""
+    if not get_auth_config().get("auth_enabled", False):
+        return True
+    return _user_is_admin(user)
+
+
+def _agi_loop_unlocked(request: Request) -> bool:
+    return _agi_loop_unlocked_user(getattr(request.state, "user", None))
+
+
+_AGI_LOOP_LOCKED_MSG = "The AGI Loop is restricted to admin accounts"
+
+
 @app.get("/agi-loop", response_class=HTMLResponse)
 async def page_agi_loop(request: Request):
+    if not _agi_loop_unlocked(request):
+        return JSONResponse({"error": _AGI_LOOP_LOCKED_MSG}, status_code=403)
     agents = _list_agents()
     config = _load_agi_loop_config()
     connections = _load_connections().get("connections", [])
@@ -3343,12 +3364,16 @@ class AGILoopConfigUpdate(BaseModel):
 
 
 @app.get("/api/agi-loop/config")
-async def api_agi_loop_config_get():
+async def api_agi_loop_config_get(request: Request):
+    if not _agi_loop_unlocked(request):
+        return JSONResponse({"error": _AGI_LOOP_LOCKED_MSG}, status_code=403)
     return JSONResponse(_load_agi_loop_config())
 
 
 @app.post("/api/agi-loop/config")
-async def api_agi_loop_config_save(body: AGILoopConfigUpdate):
+async def api_agi_loop_config_save(body: AGILoopConfigUpdate, request: Request):
+    if not _agi_loop_unlocked(request):
+        return JSONResponse({"error": _AGI_LOOP_LOCKED_MSG}, status_code=403)
     data = body.dict()
     _save_agi_loop_config(data)
     return JSONResponse({"ok": True, "config": data})
@@ -3852,7 +3877,9 @@ async def _agi_loop_runner():
 
 
 @app.post("/api/agi-loop/start")
-async def api_agi_loop_start():
+async def api_agi_loop_start(request: Request):
+    if not _agi_loop_unlocked(request):
+        return JSONResponse({"error": _AGI_LOOP_LOCKED_MSG}, status_code=403)
     from src.tools.agi_loop import get_loop_state
     state = get_loop_state()
     if state.running:
@@ -3863,7 +3890,9 @@ async def api_agi_loop_start():
 
 
 @app.post("/api/agi-loop/stop")
-async def api_agi_loop_stop():
+async def api_agi_loop_stop(request: Request):
+    if not _agi_loop_unlocked(request):
+        return JSONResponse({"error": _AGI_LOOP_LOCKED_MSG}, status_code=403)
     from src.tools.agi_loop import get_loop_state
     state = get_loop_state()
     if not state.running:
@@ -3875,7 +3904,9 @@ async def api_agi_loop_stop():
 
 
 @app.post("/api/agi-loop/pause")
-async def api_agi_loop_pause():
+async def api_agi_loop_pause(request: Request):
+    if not _agi_loop_unlocked(request):
+        return JSONResponse({"error": _AGI_LOOP_LOCKED_MSG}, status_code=403)
     from src.tools.agi_loop import get_loop_state
     state = get_loop_state()
     if not state.running:
@@ -3885,7 +3916,9 @@ async def api_agi_loop_pause():
 
 
 @app.post("/api/agi-loop/resume")
-async def api_agi_loop_resume():
+async def api_agi_loop_resume(request: Request):
+    if not _agi_loop_unlocked(request):
+        return JSONResponse({"error": _AGI_LOOP_LOCKED_MSG}, status_code=403)
     from src.tools.agi_loop import get_loop_state
     state = get_loop_state()
     if not state.paused:
@@ -3895,13 +3928,17 @@ async def api_agi_loop_resume():
 
 
 @app.get("/api/agi-loop/status")
-async def api_agi_loop_status():
+async def api_agi_loop_status(request: Request):
+    if not _agi_loop_unlocked(request):
+        return JSONResponse({"error": _AGI_LOOP_LOCKED_MSG}, status_code=403)
     from src.tools.agi_loop import get_loop_state
     return JSONResponse(get_loop_state().to_dict())
 
 
 @app.get("/api/agi-loop/history")
-async def api_agi_loop_history(limit: int = Query(50)):
+async def api_agi_loop_history(request: Request, limit: int = Query(50)):
+    if not _agi_loop_unlocked(request):
+        return JSONResponse({"error": _AGI_LOOP_LOCKED_MSG}, status_code=403)
     from src.tools.agi_loop import get_loop_state
     state = get_loop_state()
     # Reload from disk if memory is empty (e.g. after process restart)
@@ -3914,8 +3951,10 @@ async def api_agi_loop_history(limit: int = Query(50)):
 
 
 @app.get("/api/agi-loop/journal")
-async def api_agi_loop_journal(limit: int = Query(500)):
+async def api_agi_loop_journal(request: Request, limit: int = Query(500)):
     """Return recent narrative journal entries."""
+    if not _agi_loop_unlocked(request):
+        return JSONResponse({"error": _AGI_LOOP_LOCKED_MSG}, status_code=403)
     from src.tools.agi_loop import get_loop_state
     state = get_loop_state()
     # Reload from disk if memory is empty (e.g. after process restart)
@@ -3929,8 +3968,10 @@ async def api_agi_loop_journal(limit: int = Query(500)):
 
 
 @app.delete("/api/agi-loop/journal")
-async def api_agi_loop_journal_clear():
+async def api_agi_loop_journal_clear(request: Request):
     """Clear all journal entries."""
+    if not _agi_loop_unlocked(request):
+        return JSONResponse({"error": _AGI_LOOP_LOCKED_MSG}, status_code=403)
     from src.tools.agi_loop import get_loop_state
     state = get_loop_state()
     state.clear_journal()
@@ -4233,6 +4274,10 @@ async def api_chat_send(req: ChatRequest, request: Request):
         _build_chat_messages, req.agent, chat_data["messages"]
     )
 
+    # The agi_loop tool is admin-only — don't advertise it to other accounts
+    if tool_defs and not _agi_loop_unlocked_user(user):
+        tool_defs = [t for t in tool_defs if t.get("function", {}).get("name") != "agi_loop"]
+
     # Resolve model (with model router task-tier mapping)
     profile = _load_profile(req.agent)
     agent_cfg = _get_agent_config(req.agent)
@@ -4424,6 +4469,8 @@ async def api_chat_send(req: ChatRequest, request: Request):
                 # Execute (authorization is enforced inside execute_tool)
                 log.info("[tools] Round %d — %s calling %s(%s)", _round + 1, req.agent, fn_name, fn_args)
                 try:
+                    if fn_name == "agi_loop" and not _agi_loop_unlocked_user(user):
+                        raise PermissionError(_AGI_LOOP_LOCKED_MSG)
                     _user_id = user["id"] if user else ""
                     result = execute_tool(fn_name, fn_args, agent_name=req.agent, user_id=_user_id)
                 except PermissionError as exc:
@@ -4716,6 +4763,10 @@ async def _stream_chat_generator(req: ChatRequest, request: Request, user, conn,
         _build_chat_messages, req.agent, chat_data["messages"]
     )
 
+    # The agi_loop tool is admin-only — don't advertise it to other accounts
+    if tool_defs and not _agi_loop_unlocked_user(user):
+        tool_defs = [t for t in tool_defs if t.get("function", {}).get("name") != "agi_loop"]
+
     profile = _load_profile(req.agent)
     agent_cfg = _get_agent_config(req.agent)
 
@@ -4969,6 +5020,8 @@ async def _stream_chat_generator(req: ChatRequest, request: Request, user, conn,
                 yield _sse({"type": "tool_start", "tool": fn_name, "arguments": fn_args})
 
                 try:
+                    if fn_name == "agi_loop" and not _agi_loop_unlocked_user(user):
+                        raise PermissionError(_AGI_LOOP_LOCKED_MSG)
                     result = execute_tool(fn_name, fn_args, agent_name=req.agent)
                 except PermissionError as exc:
                     result = f"BLOCKED: {exc}"
