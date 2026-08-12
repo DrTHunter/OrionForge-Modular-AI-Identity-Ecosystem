@@ -22,4 +22,5 @@ faiss-cpu>=1.7.4
 sentence-transformers>=2.2.0
 
 # MCP — hosted per-user connector (remote streamable-HTTP transport at /mcp)
-mcp>=1.12
+# <2 pin: mcp 2.0.0 removed mcp.server.fastmcp, which remote.py/orion_mcp.py import
+mcp>=1.12,<2

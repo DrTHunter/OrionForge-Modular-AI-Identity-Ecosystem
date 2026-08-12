@@ -3296,8 +3296,24 @@ def _save_agi_loop_config(data: dict):
     _write_json(AGI_LOOP_FILE, data)
 
 
+def _check_agi_loop_access(request: Request) -> bool:
+    """AGI loop page/APIs are owner-only on hosted (auth-enabled) deploys.
+
+    Local single-user mode (auth disabled) keeps full access, since there is
+    no logged-in user to check against ADMIN_EMAILS / ADMIN_USER_IDS.
+    """
+    if not get_auth_config().get("auth_enabled", False):
+        return True
+    return _check_admin(request)
+
+
+_AGI_LOOP_DENIED = {"error": "Admin access required"}
+
+
 @app.get("/agi-loop", response_class=HTMLResponse)
 async def page_agi_loop(request: Request):
+    if not _check_agi_loop_access(request):
+        return JSONResponse(_AGI_LOOP_DENIED, status_code=403)
     agents = _list_agents()
     config = _load_agi_loop_config()
     connections = _load_connections().get("connections", [])
@@ -3343,12 +3359,16 @@ class AGILoopConfigUpdate(BaseModel):
 
 
 @app.get("/api/agi-loop/config")
-async def api_agi_loop_config_get():
+async def api_agi_loop_config_get(request: Request):
+    if not _check_agi_loop_access(request):
+        return JSONResponse(_AGI_LOOP_DENIED, status_code=403)
     return JSONResponse(_load_agi_loop_config())
 
 
 @app.post("/api/agi-loop/config")
-async def api_agi_loop_config_save(body: AGILoopConfigUpdate):
+async def api_agi_loop_config_save(body: AGILoopConfigUpdate, request: Request):
+    if not _check_agi_loop_access(request):
+        return JSONResponse(_AGI_LOOP_DENIED, status_code=403)
     data = body.dict()
     _save_agi_loop_config(data)
     return JSONResponse({"ok": True, "config": data})
@@ -3852,7 +3872,9 @@ async def _agi_loop_runner():
 
 
 @app.post("/api/agi-loop/start")
-async def api_agi_loop_start():
+async def api_agi_loop_start(request: Request):
+    if not _check_agi_loop_access(request):
+        return JSONResponse(_AGI_LOOP_DENIED, status_code=403)
     from src.tools.agi_loop import get_loop_state
     state = get_loop_state()
     if state.running:
@@ -3863,7 +3885,9 @@ async def api_agi_loop_start():
 
 
 @app.post("/api/agi-loop/stop")
-async def api_agi_loop_stop():
+async def api_agi_loop_stop(request: Request):
+    if not _check_agi_loop_access(request):
+        return JSONResponse(_AGI_LOOP_DENIED, status_code=403)
     from src.tools.agi_loop import get_loop_state
     state = get_loop_state()
     if not state.running:
@@ -3875,7 +3899,9 @@ async def api_agi_loop_stop():
 
 
 @app.post("/api/agi-loop/pause")
-async def api_agi_loop_pause():
+async def api_agi_loop_pause(request: Request):
+    if not _check_agi_loop_access(request):
+        return JSONResponse(_AGI_LOOP_DENIED, status_code=403)
     from src.tools.agi_loop import get_loop_state
     state = get_loop_state()
     if not state.running:
@@ -3885,7 +3911,9 @@ async def api_agi_loop_pause():
 
 
 @app.post("/api/agi-loop/resume")
-async def api_agi_loop_resume():
+async def api_agi_loop_resume(request: Request):
+    if not _check_agi_loop_access(request):
+        return JSONResponse(_AGI_LOOP_DENIED, status_code=403)
     from src.tools.agi_loop import get_loop_state
     state = get_loop_state()
     if not state.paused:
@@ -3895,13 +3923,17 @@ async def api_agi_loop_resume():
 
 
 @app.get("/api/agi-loop/status")
-async def api_agi_loop_status():
+async def api_agi_loop_status(request: Request):
+    if not _check_agi_loop_access(request):
+        return JSONResponse(_AGI_LOOP_DENIED, status_code=403)
     from src.tools.agi_loop import get_loop_state
     return JSONResponse(get_loop_state().to_dict())
 
 
 @app.get("/api/agi-loop/history")
-async def api_agi_loop_history(limit: int = Query(50)):
+async def api_agi_loop_history(request: Request, limit: int = Query(50)):
+    if not _check_agi_loop_access(request):
+        return JSONResponse(_AGI_LOOP_DENIED, status_code=403)
     from src.tools.agi_loop import get_loop_state
     state = get_loop_state()
     # Reload from disk if memory is empty (e.g. after process restart)
@@ -3914,8 +3946,10 @@ async def api_agi_loop_history(limit: int = Query(50)):
 
 
 @app.get("/api/agi-loop/journal")
-async def api_agi_loop_journal(limit: int = Query(500)):
+async def api_agi_loop_journal(request: Request, limit: int = Query(500)):
     """Return recent narrative journal entries."""
+    if not _check_agi_loop_access(request):
+        return JSONResponse(_AGI_LOOP_DENIED, status_code=403)
     from src.tools.agi_loop import get_loop_state
     state = get_loop_state()
     # Reload from disk if memory is empty (e.g. after process restart)
@@ -3929,8 +3963,10 @@ async def api_agi_loop_journal(limit: int = Query(500)):
 
 
 @app.delete("/api/agi-loop/journal")
-async def api_agi_loop_journal_clear():
+async def api_agi_loop_journal_clear(request: Request):
     """Clear all journal entries."""
+    if not _check_agi_loop_access(request):
+        return JSONResponse(_AGI_LOOP_DENIED, status_code=403)
     from src.tools.agi_loop import get_loop_state
     state = get_loop_state()
     state.clear_journal()

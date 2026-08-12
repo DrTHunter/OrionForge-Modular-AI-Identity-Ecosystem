@@ -178,6 +178,10 @@
         <a href="/admin/keys" id="nav-admin-link" class="nav-link {% if page == 'admin' %}active{% endif %}" style="display:none;">
           <span class="nav-icon">🔑</span><span class="nav-label">Admin</span>
         </a>
+        <!-- AGI Loop — revealed by JS only for the owner account -->
+        <a href="/agi-loop" id="nav-agi-loop-link" class="nav-link {% if page == 'agi-loop' %}active{% endif %}" style="display:none;">
+          <span class="nav-icon">♾</span><span class="nav-label">AGI Loop</span>
+        </a>
       </div>
 
       <div class="nav-footer">
@@ -664,6 +668,8 @@ select optgroup{color:${tm}!important}
           if (d.is_admin || (d.user.email || '').toLowerCase() === _adminEmail || d.user.id === _adminUid) {
             const adminLink = document.getElementById('nav-admin-link');
             if (adminLink) adminLink.style.display = '';
+            const agiLink = document.getElementById('nav-agi-loop-link');
+            if (agiLink) agiLink.style.display = '';
           }
         }
       }).catch(() => {});

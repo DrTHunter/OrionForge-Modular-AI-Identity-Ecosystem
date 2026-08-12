@@ -19,8 +19,9 @@ log = logging.getLogger("soulscript.auth")
 _CONFIG_DIR = Path(__file__).resolve().parent.parent / "config"
 _AUTH_FILE = _CONFIG_DIR / "auth.json"
 
-# ── Cached Supabase JWKS (RS256 public keys) ────────────────────
+# ── Cached Supabase JWKS (asymmetric public keys) ───────────────
 _jwks_cache: dict | None = None
+_ASYMMETRIC_ALGS = ("ES256", "RS256", "EdDSA")
 
 
 def _load_auth_config() -> dict:
@@ -52,29 +53,93 @@ def get_auth_config() -> dict:
     }
 
 
-async def _fetch_jwks(supabase_url: str) -> dict:
-    """Fetch Supabase JWKS for token verification (RS256)."""
+def _fetch_jwks(supabase_url: str, force_refresh: bool = False) -> dict:
+    """Fetch (and cache) the Supabase JWKS for asymmetric verification."""
     global _jwks_cache
-    if _jwks_cache:
+    if _jwks_cache and not force_refresh:
         return _jwks_cache
-    url = f"{supabase_url}/auth/v1/.well-known/jwks.json"
+    url = f"{supabase_url.rstrip('/')}/auth/v1/.well-known/jwks.json"
     try:
-        async with httpx.AsyncClient() as client:
-            resp = await client.get(url, timeout=10)
-            resp.raise_for_status()
-            _jwks_cache = resp.json()
-            return _jwks_cache
+        resp = httpx.get(url, timeout=10)
+        resp.raise_for_status()
+        _jwks_cache = resp.json()
+        return _jwks_cache
     except Exception as exc:
         log.warning("[auth] Failed to fetch JWKS: %s", exc)
-        return {}
+        return _jwks_cache or {}
+
+
+def _verify_with_jwks(token: str, alg: str, kid: str) -> Optional[dict]:
+    """Verify an asymmetrically-signed Supabase JWT against the project JWKS.
+
+    Supabase projects migrated off the legacy HS256 shared secret sign
+    access tokens with ES256/RS256; the public keys live at
+    /auth/v1/.well-known/jwks.json. Refetches once on an unknown kid so
+    key rotation doesn't require a restart.
+    """
+    cfg = _load_auth_config()
+    supabase_url = cfg.get("supabase_url", "")
+    if not supabase_url:
+        log.warning("[auth] Cannot verify %s token — no supabase_url configured", alg)
+        return None
+
+    def _find_key(jwks: dict):
+        for k in jwks.get("keys", []):
+            if not kid or k.get("kid") == kid:
+                return k
+        return None
+
+    key_data = _find_key(_fetch_jwks(supabase_url))
+    if key_data is None:
+        key_data = _find_key(_fetch_jwks(supabase_url, force_refresh=True))
+    if key_data is None:
+        log.warning("[auth] No JWKS key found for kid=%s", kid)
+        return None
+
+    try:
+        public_key = jwt.PyJWK(key_data, algorithm=alg).key
+        return jwt.decode(
+            token,
+            public_key,
+            algorithms=[alg],
+            audience="authenticated",
+            options={"verify_exp": True},
+        )
+    except jwt.ExpiredSignatureError:
+        log.debug("[auth] Token expired")
+        return None
+    except jwt.InvalidTokenError as exc:
+        log.debug("[auth] Invalid token: %s", exc)
+        return None
+    except Exception as exc:
+        # e.g. PyJWKError or a missing `cryptography` backend — treat as
+        # verification failure rather than a 500.
+        log.warning("[auth] JWKS verification error: %s", exc)
+        return None
 
 
 def verify_supabase_token(token: str) -> Optional[dict]:
     """Verify a Supabase JWT and return the decoded payload.
 
-    Supabase uses HS256 with the JWT secret by default.
+    Handles both signing schemes:
+      - ES256/RS256/EdDSA (current Supabase asymmetric keys) via JWKS
+      - HS256 (legacy shared jwt_secret)
     Falls back to unverified decode if no secret configured (dev mode).
     """
+    if not token:
+        return None
+
+    # Route on the token's own algorithm so logins keep working across a
+    # Supabase signing-key migration (HS256 secret -> ES256 JWKS).
+    try:
+        header = jwt.get_unverified_header(token)
+    except jwt.InvalidTokenError as exc:
+        log.debug("[auth] Malformed token: %s", exc)
+        return None
+    alg = header.get("alg", "")
+    if alg in _ASYMMETRIC_ALGS:
+        return _verify_with_jwks(token, alg, header.get("kid", ""))
+
     cfg = _load_auth_config()
     jwt_secret = cfg.get("jwt_secret", "")
 
