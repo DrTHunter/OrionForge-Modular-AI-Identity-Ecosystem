@@ -6525,6 +6525,25 @@ def _trial_provider_sort_key(p: dict) -> tuple:
     return (0 if has_deepseek else 1, min_cost)
 
 
+# Curated "Recommended" group shown at the top of the platform model picker;
+# the full catalog sits behind a "Show all models" toggle. Ids are OpenRouter
+# model ids — any not in a connection's live model list are skipped, so a
+# retired model simply drops out. Review when vendors ship new flagships.
+PREFERRED_PLATFORM_MODELS = [
+    "openai/gpt-6-sol",
+    "openai/gpt-6-luna",
+    "anthropic/claude-opus-5.5",
+    "anthropic/claude-sonnet-5",
+    "google/gemini-3.8-flash",
+    "google/gemini-3.1-pro-preview",
+    "deepseek/deepseek-v4.1-flash",
+    "deepseek/deepseek-v4-pro",
+    "x-ai/grok-4.7",
+    "moonshotai/kimi-k2.6",
+    "qwen/qwen3.8-flash",
+]
+
+
 @app.get("/api/platform/models")
 async def api_platform_models(request: Request):
     """Public endpoint: Return available platform models for the chat dropdown.
@@ -6572,8 +6591,16 @@ async def api_platform_models(request: Request):
     # On trial, float providers that carry DeepSeek / the cheapest models first.
     if on_trial:
         providers.sort(key=_trial_provider_sort_key)
+    # Recommended picks, as "<connection_id>::<model>" values in curated order.
+    preferred = []
+    for model_id in PREFERRED_PLATFORM_MODELS:
+        for p in providers:
+            if any(m["model"] == model_id for m in p["models"]):
+                preferred.append(f'{p["connection_id"]}::{model_id}')
+                break
     return JSONResponse({
         "providers": providers,
+        "preferred": preferred,
         "credits_balance": credits,
         "trial": on_trial,
         "markup": LLM_MARKUP_MULTIPLIER,
