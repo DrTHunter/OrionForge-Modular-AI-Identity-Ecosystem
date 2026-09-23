@@ -925,6 +925,12 @@ def _load_settings(user_id: str | None = None) -> dict:
     # Fallback to global settings (for backward compat / local dev)
     data = _read_json(SETTINGS_FILE, {})
     data = decrypt_settings_secrets(data)
+    if uid and uid != "__local__":
+        # A cloud user with no settings file of their own starts from the
+        # global defaults, but the chat background is personal: every user
+        # begins blank and uploads their own (see _resolve_chat_background).
+        data = dict(data)
+        data["chat_background"] = ""
     _cache_set(cache_key, data)
     return data
 
@@ -936,6 +942,29 @@ def _save_settings(data: dict, user_id: str | None = None):
     else:
         _write_json(SETTINGS_FILE, encrypt_settings_secrets(data))
     _cache_invalidate(f"settings:{uid}", "settings:")
+
+
+def _resolve_chat_background(request: Request, settings: dict) -> str:
+    """Return the chat background URL the current user is allowed to see.
+
+    * Local single-user mode (no accounts): the global setting applies as-is.
+    * Cloud users: only a background they uploaded themselves (a file in
+      their own uploads dir) is shown, served via the per-user route.
+    * Admins: may additionally use the shared/global background.
+    * Everyone else starts blank until they upload their own image.
+    """
+    bg = (settings.get("chat_background") or "").strip()
+    if not bg:
+        return ""
+    uid = _get_user_id(request)
+    if not uid or uid == "__local__":
+        return bg
+    fname = os.path.basename(bg.split("?", 1)[0])
+    if fname and (user_uploads_dir(uid) / fname).is_file():
+        return f"/api/uploads/{fname}"
+    if _check_admin(request):
+        return bg
+    return ""
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -2269,7 +2298,7 @@ async def page_chat(request: Request):
         "agent_connections": store.get("agent_connections", {}),
         "avatar_map": avatar_map,
         "user_profile": settings.get("user_profile", {}),
-        "chat_background": settings.get("chat_background") or "",
+        "chat_background": _resolve_chat_background(request, settings),
         "pinned_models": settings.get("pinned_models", []),
         "stt_provider": stt_cfg.get("provider", "elevenlabs"),
         "chat_defaults": settings.get("chat_defaults", {}),
@@ -2466,12 +2495,14 @@ async def page_settings(request: Request, tab: str = "api_keys"):
     store = _load_connections()
     agents = _list_unlocked_agents(request)
     # Strip all secret key values before passing to template
-    safe_settings = strip_secrets_for_template(_load_settings())
+    settings = _load_settings()
+    safe_settings = strip_secrets_for_template(settings)
     return templates.TemplateResponse(request, "settings.html", {
         "page": "settings",
         "connections": store.get("connections", []),
         "settings": safe_settings, "tab": tab,
         "agents": agents,
+        "chat_background": _resolve_chat_background(request, settings),
     })
 
 # ── Connect to Claude (hosted MCP) ────────────────────────────────
@@ -7305,7 +7336,10 @@ async def api_upload_chat_background(request: Request, file: UploadFile = File(.
     with open(dest, "wb") as f:
         f.write(content)
     settings = _load_settings(user_id=uid)
-    settings["chat_background"] = f"/uploads/{filename}"
+    if uid and uid != "__local__":
+        settings["chat_background"] = f"/api/uploads/{filename}"
+    else:
+        settings["chat_background"] = f"/uploads/{filename}"
     _save_settings(settings, user_id=uid)
     return JSONResponse({"url": settings["chat_background"], "status": "ok"})
 
@@ -7317,11 +7351,14 @@ async def api_delete_chat_background(request: Request):
     settings = _load_settings(user_id=uid)
     old_bg = settings.get("chat_background")
     if old_bg:
+        fname = os.path.basename(old_bg.split("?", 1)[0])
         if uid and uid != "__local__":
-            old_path = user_uploads_dir(uid) / os.path.basename(old_bg)
+            # Only ever remove the user's own file; the shared global
+            # background is not theirs to delete.
+            old_path = user_uploads_dir(uid) / fname
         else:
-            old_path = _UPLOADS_DIR / os.path.basename(old_bg)
-        if old_path.exists():
+            old_path = _UPLOADS_DIR / fname
+        if fname and old_path.exists():
             old_path.unlink()
     settings["chat_background"] = None
     _save_settings(settings, user_id=uid)

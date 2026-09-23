@@ -618,10 +618,10 @@
       <div class="settings-section-title">Chat Background</div>
       <div class="settings-section-desc">Set a custom background image for the chat view. Supported: PNG, JPG, WebP, GIF</div>
 
-      <div class="bg-preview-zone {{ 'has-image' if settings.get('chat_background') }}"
+      <div class="bg-preview-zone {{ 'has-image' if chat_background }}"
            id="bg-preview-zone" onclick="document.getElementById('bg-file-input').click()">
-        {% if settings.get('chat_background') %}
-        <img src="{{ settings.chat_background }}" alt="Chat background" id="bg-preview-img">
+        {% if chat_background %}
+        <img src="{{ chat_background }}" alt="Chat background" id="bg-preview-img">
         <span class="bg-overlay-text">Click to change</span>
         {% else %}
         <span style="font-size:2rem; opacity:0.3;">🖼️</span>
@@ -635,7 +635,7 @@
         <button class="filter-btn" onclick="document.getElementById('bg-file-input').click()" style="cursor:pointer;">
           📷 Upload Image
         </button>
-        {% if settings.get('chat_background') %}
+        {% if chat_background %}
         <button class="filter-btn" onclick="removeChatBg()" style="cursor:pointer; color:#fca5a5;">
           ✕ Remove Background
         </button>
