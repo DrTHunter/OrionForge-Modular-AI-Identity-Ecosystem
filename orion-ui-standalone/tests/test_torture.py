@@ -8843,14 +8843,15 @@ def test_credit_checkout_and_webhook():
                     "metadata": {
                         "type": "credits",
                         "pack_id": "pack_20",
-                        "credits": "2100",
+                        "credits": "21000",
+                        "credit_scale": str(billing.CREDIT_SCALE),
                     },
                 }
             },
         }).encode("utf-8")
         webhook_result = billing.handle_webhook_event(webhook_payload, "")
         check("credits webhook action", webhook_result.get("action") == "credits_purchased")
-        check("credits webhook grants balance", billing.get_user_credits("test_checkout_user") == 2100)
+        check("credits webhook grants balance", billing.get_user_credits("test_checkout_user") == 21000)
 
         try:
             import stripe  # noqa: F401
@@ -8872,7 +8873,8 @@ def test_credit_checkout_and_webhook():
                         "metadata": {
                             "type": "credits",
                             "pack_id": "pack_10",
-                            "credits": "1000",
+                            "credits": "10000",
+                            "credit_scale": str(billing.CREDIT_SCALE),
                         },
                     }
                 },
@@ -8891,7 +8893,7 @@ def test_credit_checkout_and_webhook():
             signed_header = f"t={timestamp},v1={signature}"
             signed_result = billing.handle_webhook_event(signed_payload, signed_header)
             check("signed webhook action", signed_result.get("action") == "credits_purchased")
-            check("signed webhook grants balance", billing.get_user_credits("signed_checkout_user") == 1000)
+            check("signed webhook grants balance", billing.get_user_credits("signed_checkout_user") == 10000)
 
     finally:
         billing._get_stripe = orig_get_stripe
@@ -8933,14 +8935,15 @@ def test_credit_fulfillment_idempotent():
         session = {
             "id": "cs_test_idem_1",
             "client_reference_id": "idem_user",
-            "metadata": {"type": "credits", "pack_id": "pack_10", "credits": "1000"},
+            "metadata": {"type": "credits", "pack_id": "pack_10", "credits": "10000",
+                         "credit_scale": str(billing.CREDIT_SCALE)},
         }
         r1 = billing._grant_credits_for_checkout(session)
         check("first grant ok", r1.get("ok") is True and not r1.get("already_fulfilled"))
-        check("balance after first grant", billing.get_user_credits("idem_user") == 1000)
+        check("balance after first grant", billing.get_user_credits("idem_user") == 10000)
         r2 = billing._grant_credits_for_checkout(session)
         check("replay flagged already_fulfilled", r2.get("already_fulfilled") is True)
-        check("balance unchanged after replay", billing.get_user_credits("idem_user") == 1000)
+        check("balance unchanged after replay", billing.get_user_credits("idem_user") == 10000)
 
         # ── 2. Webhook replay of the SAME session does not double-credit ──
         payload = json.dumps({
@@ -8948,22 +8951,24 @@ def test_credit_fulfillment_idempotent():
             "data": {"object": session},
         }).encode("utf-8")
         billing.handle_webhook_event(payload, "")
-        check("webhook replay no double-credit", billing.get_user_credits("idem_user") == 1000)
+        check("webhook replay no double-credit", billing.get_user_credits("idem_user") == 10000)
 
         # ── 3. A DIFFERENT session id for the same user adds again ──
         session2 = dict(session, id="cs_test_idem_2")
         billing._grant_credits_for_checkout(session2)
-        check("new session id adds credits", billing.get_user_credits("idem_user") == 2000)
+        check("new session id adds credits", billing.get_user_credits("idem_user") == 20000)
 
         # ── 4. fulfill_credits_for_session only fulfills PAID sessions ──
         class _FakeSessionRetrieve:
             store = {
                 "cs_paid": {"id": "cs_paid", "payment_status": "paid",
                             "client_reference_id": "fallback_user",
-                            "metadata": {"type": "credits", "pack_id": "pack_5", "credits": "500"}},
+                            "metadata": {"type": "credits", "pack_id": "pack_5", "credits": "5000",
+                                         "credit_scale": str(billing.CREDIT_SCALE)}},
                 "cs_unpaid": {"id": "cs_unpaid", "payment_status": "unpaid",
                               "client_reference_id": "fallback_user",
-                              "metadata": {"type": "credits", "pack_id": "pack_5", "credits": "500"}},
+                              "metadata": {"type": "credits", "pack_id": "pack_5", "credits": "5000",
+                                         "credit_scale": str(billing.CREDIT_SCALE)}},
             }
 
             @classmethod
@@ -8984,16 +8989,40 @@ def test_credit_fulfillment_idempotent():
 
         paid = billing.fulfill_credits_for_session("cs_paid", expected_user_id="fallback_user")
         check("paid session fulfilled", paid.get("ok") is True)
-        check("paid grants credits", billing.get_user_credits("fallback_user") == 500)
+        check("paid grants credits", billing.get_user_credits("fallback_user") == 5000)
 
         # ── 5. Fallback is idempotent with itself / the webhook ──
         replay = billing.fulfill_credits_for_session("cs_paid", expected_user_id="fallback_user")
         check("fallback replay already_fulfilled", replay.get("already_fulfilled") is True)
-        check("fallback replay no double-credit", billing.get_user_credits("fallback_user") == 500)
+        check("fallback replay no double-credit", billing.get_user_credits("fallback_user") == 5000)
 
         # ── 6. A session belonging to another user is refused ──
         mismatch = billing.fulfill_credits_for_session("cs_paid", expected_user_id="someone_else")
         check("user mismatch refused", mismatch.get("ok") is False and mismatch.get("reason") == "user_mismatch")
+
+        # ── 7. A checkout opened before the credit unit changed (no
+        #       credit_scale tag, old 500-credit count) is scaled up ──
+        legacy = {"id": "cs_legacy", "client_reference_id": "legacy_user",
+                  "metadata": {"type": "credits", "pack_id": "pack_5", "credits": "500"}}
+        billing._grant_credits_for_checkout(legacy)
+        check("legacy checkout scaled to new unit", billing.get_user_credits("legacy_user") == 5000)
+
+        # ── 8. Stored balances convert exactly once ──
+        state = billing._load_stripe_state()
+        state.pop("credit_scale", None)
+        state["credits"]["old_user"] = {"balance": 150, "history": [
+            {"type": "credit", "amount": 200, "reason": "welcome", "timestamp": 0},
+            {"type": "debit", "amount": 50, "reason": "chat", "timestamp": 1}]}
+        billing._save_stripe_state(state)
+        before_idem = billing.get_user_credits("idem_user")
+        converted = billing.migrate_credit_scale()
+        check("migration converts accounts", converted >= 1)
+        check("migration scales balance", billing.get_user_credits("old_user") == 1500)
+        hist = billing._load_stripe_state()["credits"]["old_user"]["history"]
+        check("migration scales history", [h["amount"] for h in hist] == [2000, 500])
+        check("migration second run is no-op", billing.migrate_credit_scale() == 0)
+        check("migration not applied twice", billing.get_user_credits("old_user") == 1500
+              and billing.get_user_credits("idem_user") == before_idem * billing.CREDIT_SCALE)
     finally:
         billing._STRIPE_STATE_FILE = orig_state_file
         billing._stripe_state_cache = None  # reset cache
@@ -9014,12 +9043,16 @@ def test_credit_cost_estimators():
     # ── LLM credits ──
     check("llm $0 → 0 credits", billing.estimate_llm_credit_cost(0) == 0)
     check("llm negative → 0 credits", billing.estimate_llm_credit_cost(-1) == 0)
-    check("llm $0.01 → 2 credits (2x markup)",
-          billing.estimate_llm_credit_cost(0.01) == 2)
-    check("llm $0.10 → 20 credits (2x markup)",
-          billing.estimate_llm_credit_cost(0.10) == 20)
-    check("llm $1.00 → 200 credits (2x markup)",
-          billing.estimate_llm_credit_cost(1.0) == 200)
+    check("llm $0.01 → 20 credits (2x markup)",
+          billing.estimate_llm_credit_cost(0.01) == 20)
+    check("llm $0.10 → 200 credits (2x markup)",
+          billing.estimate_llm_credit_cost(0.10) == 200)
+    check("llm $1.00 → 2000 credits (2x markup)",
+          billing.estimate_llm_credit_cost(1.0) == 2000)
+    check("llm $0.0012 → 3 credits (sub-cent precision)",
+          billing.estimate_llm_credit_cost(0.0012) == 3)
+    check("llm exact value not bumped by float noise",
+          billing.estimate_llm_credit_cost(0.003) == 6)
     check("llm minimum 1 credit",
           billing.estimate_llm_credit_cost(0.0001) >= 1)
 
@@ -9027,7 +9060,7 @@ def test_credit_cost_estimators():
     check("llm safe: $0 cost + 0 tokens → 0",
           billing.estimate_llm_credit_cost_safe(0, 0) == 0)
     check("llm safe: priced cost passes through",
-          billing.estimate_llm_credit_cost_safe(1.0, 5000) == 200)
+          billing.estimate_llm_credit_cost_safe(1.0, 5000) == 2000)
     check("llm safe: unpriced ($0) but tokens used → charged",
           billing.estimate_llm_credit_cost_safe(0, 100000) > 0)
 

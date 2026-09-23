@@ -17,6 +17,7 @@ Flow:
 
 import json
 import logging
+import math
 import os
 import time
 from datetime import datetime
@@ -393,6 +394,9 @@ def _grant_credits_for_checkout(session: dict) -> dict:
     user_id = session.get("client_reference_id") or metadata.get("user_id")
     session_id = session.get("id", "") or ""
     credits = int(metadata.get("credits", 0) or 0)
+    # A checkout opened before the credit unit changed carries the old count.
+    if metadata.get("credit_scale") != str(CREDIT_SCALE):
+        credits *= CREDIT_SCALE
     pack_id = metadata.get("pack_id", "unknown")
     if not user_id or credits <= 0:
         return {"ok": False, "reason": "missing_user_or_credits", "user_id": user_id}
@@ -514,16 +518,27 @@ def fulfill_credits_for_session(session_id: str, expected_user_id: str = "") -> 
 #  CREDIT SYSTEM — per-tool metered billing
 # ═══════════════════════════════════════════════════════════════════
 
+# ── Credit unit ──────────────────────────────────────────────────
+# 1 credit = $0.001. This was $0.01 until CREDIT_SCALE 10; the finer unit
+# lets a sub-cent chat message bill close to its real cost instead of
+# rounding up to a whole cent. Balances stored before the change are
+# multiplied up once by migrate_credit_scale().
+CREDITS_PER_USD = 1000
+CREDIT_SCALE = 10
+
+# Free credits granted to every new account ($2).
+WELCOME_CREDITS = 2 * CREDITS_PER_USD
+
 # ── Per-use credit costs (only for tools that charge per-use) ────
 # Web Search & Image Generation are FREE and don't appear here.
 TOOL_CREDIT_COSTS = {}
 
 # Credit packs users can purchase ($5, $10, $20, $30)
 CREDIT_PACKS = {
-    "pack_5":   {"credits": 500,   "price":  5.00, "label": "500 credits",    "price_label": "$5",   "bonus": ""},
-    "pack_10":  {"credits": 1000,  "price": 10.00, "label": "1,000 credits",  "price_label": "$10",  "bonus": ""},
-    "pack_20":  {"credits": 2100,  "price": 20.00, "label": "2,100 credits",  "price_label": "$20",  "bonus": "+100 bonus"},
-    "pack_30":  {"credits": 3200,  "price": 30.00, "label": "3,200 credits",  "price_label": "$30",  "bonus": "+200 bonus"},
+    "pack_5":   {"credits": 5000,  "price":  5.00, "label": "5,000 credits",  "price_label": "$5",   "bonus": ""},
+    "pack_10":  {"credits": 10000, "price": 10.00, "label": "10,000 credits", "price_label": "$10",  "bonus": ""},
+    "pack_20":  {"credits": 21000, "price": 20.00, "label": "21,000 credits", "price_label": "$20",  "bonus": "+1,000 bonus"},
+    "pack_30":  {"credits": 32000, "price": 30.00, "label": "32,000 credits", "price_label": "$30",  "bonus": "+2,000 bonus"},
 }
 
 # LLM markup multiplier: users pay 2× the actual token cost when using platform keys.
@@ -581,35 +596,35 @@ VIDEO_COST_PER_SECOND = {
 }
 
 # Skin catalog — cosmetic UI themes, free for every user
-# "default" is free; all others cost 75 credits ($0.75)
+# "default" is free; all others cost 750 credits ($0.75)
 SKIN_PRICES = {
     "default":         0,
-    "cyberpunk_neon":  75,
-    "retro_terminal":  75,
-    "dark_forest":     75,
-    "paper_white":     75,
-    "midnight_ocean":  75,
-    "blood_moon":      75,
-    "aurora_borealis": 75,
-    "solarized_dark":  75,
-    "frost_glass":     75,
-    "synthwave_84":    75,
-    "dracula":         75,
-    "neon_abyss":      75,
+    "cyberpunk_neon":  750,
+    "retro_terminal":  750,
+    "dark_forest":     750,
+    "paper_white":     750,
+    "midnight_ocean":  750,
+    "blood_moon":      750,
+    "aurora_borealis": 750,
+    "solarized_dark":  750,
+    "frost_glass":     750,
+    "synthwave_84":    750,
+    "dracula":         750,
+    "neon_abyss":      750,
 }
 
 
 def estimate_llm_credit_cost(usd_cost: float) -> int:
     """Convert a USD token cost to credits at 2× markup.
 
-    1 credit ≈ $0.01 base value. With 2× markup:
-      $0.01 actual cost → 2 credits
+    1 credit = $0.001 base value. With 2× markup:
+      $0.001 actual cost → 2 credits
     """
     if usd_cost <= 0:
         return 0
-    # Convert USD to credits: $0.01 = 1 credit base
-    # Apply the LLM markup multiplier, then round up to whole credits
-    credits = int((usd_cost * 100) * LLM_MARKUP_MULTIPLIER + 0.99)  # round up
+    # Apply the markup, then round up to whole credits. The small epsilon keeps
+    # float noise (e.g. 2.0000000001) from rounding an exact value up by one.
+    credits = math.ceil(usd_cost * CREDITS_PER_USD * LLM_MARKUP_MULTIPLIER - 1e-9)
     return max(credits, 1)  # minimum 1 credit
 
 
@@ -690,6 +705,29 @@ def estimate_video_credit_cost(provider: str = "default", duration_seconds: int 
         secs = 8
     usd_cost = rate * secs
     return estimate_llm_credit_cost(usd_cost)
+
+
+def migrate_credit_scale() -> int:
+    """One-time conversion of stored balances to the current credit unit.
+
+    Multiplies every balance and credit-history amount by CREDIT_SCALE and
+    stamps the state file, so it is a no-op on every later startup. Returns
+    the number of accounts converted.
+    """
+    state = _load_stripe_state()
+    if state.get("credit_scale", 1) >= CREDIT_SCALE:
+        return 0
+    converted = 0
+    for bucket in state.get("credits", {}).values():
+        bucket["balance"] = bucket.get("balance", 0) * CREDIT_SCALE
+        for entry in bucket.get("history", []):
+            if isinstance(entry.get("amount"), (int, float)):
+                entry["amount"] = entry["amount"] * CREDIT_SCALE
+        converted += 1
+    state["credit_scale"] = CREDIT_SCALE
+    _save_stripe_state(state)
+    log.info("[credits] Converted %d balances to credit scale %d", converted, CREDIT_SCALE)
+    return converted
 
 
 def get_user_credits(user_id: str) -> int:
@@ -822,6 +860,7 @@ def create_credits_checkout_session(
                 "type": "credits",
                 "pack_id": pack_id,
                 "credits": str(pack["credits"]),
+                "credit_scale": str(CREDIT_SCALE),
             },
         )
         return {"url": session.url, "session_id": session.id}

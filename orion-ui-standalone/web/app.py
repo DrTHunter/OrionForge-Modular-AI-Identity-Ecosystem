@@ -66,6 +66,7 @@ from web.stripe_billing import (
     estimate_llm_credit_cost_safe, estimate_image_credit_cost, estimate_video_credit_cost,
     estimate_tts_credit_cost, estimate_stt_credit_cost,
     get_credit_history, get_trial_status, FREE_TRIAL_DAYS, user_has_purchased_credits,
+    WELCOME_CREDITS, migrate_credit_scale,
     touch_user_activity, wipe_user_data, wipe_user_by_email,
     purge_inactive_users, list_all_users, INACTIVE_ACCOUNT_DAYS,
 )
@@ -206,6 +207,11 @@ async def _lifespan_body():
         _seed_platform_keys_from_env()
     except Exception as exc:
         log.warning("[startup] Platform-key seeding failed: %s", exc)
+    # Convert stored balances to the current credit unit (no-op once done).
+    try:
+        migrate_credit_scale()
+    except Exception as exc:
+        log.error("[startup] Credit scale migration failed: %s", exc)
     # Refresh platform-hosted connections' model lists (e.g. OpenRouter's
     # full catalog) so the chat model picker doesn't go stale between
     # manual admin refreshes — this used to only happen on-demand, which is
@@ -440,10 +446,12 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 is_new = ensure_user_dirs(user_id)
                 seed_user_vault(user_id)
                 seed_user_chats(user_id)
-                # Seed welcome credits ($2 = 200 credits) on first ever login
-                if get_user_credits(user_id) == 0:
-                    add_user_credits(user_id, 200, reason="welcome_grant:new_user_$2")
-                    log.info("[auth] Seeded 200 welcome credits for new user %s", user_id[:8])
+                # Seed welcome credits ($2) on first ever login. Keyed on the
+                # user having no credit history at all — a zero balance alone
+                # would re-grant every time someone spends down to 0.
+                if get_user_credits(user_id) == 0 and not get_credit_history(user_id, limit=1):
+                    add_user_credits(user_id, WELCOME_CREDITS, reason="welcome_grant:new_user_$2")
+                    log.info("[auth] Seeded %d welcome credits for new user %s", WELCOME_CREDITS, user_id[:8])
             except Exception as exc:
                 log.warning("[auth] Failed to create user dirs for %s: %s", user_id, exc)
 
