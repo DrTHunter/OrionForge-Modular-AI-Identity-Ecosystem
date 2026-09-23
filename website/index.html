@@ -361,131 +361,96 @@ img { max-width: 100%; display: block; }
 .hero {
     position: relative;
     min-height: 100vh;
-    display: flex; align-items: center; justify-content: center;
-    text-align: center;
+    display: flex; align-items: center;
     padding: 120px 24px 80px;
     overflow: hidden;
 }
-.hero::before {
-    content: ''; position: absolute; inset: 0;
-    background: var(--gradient-mesh);
-    z-index: 1;
+.hero-content {
+    position: relative; z-index: 2;
+    width: 100%; max-width: 1120px; margin: 0 auto;
+    display: grid; grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center; gap: 72px;
 }
-.hero-content { position: relative; z-index: 2; max-width: 900px; }
-
-.hero-badge {
-    display: inline-flex; align-items: center; gap: 8px;
-    padding: 6px 16px; border-radius: 50px;
-    background: rgba(99, 102, 241, 0.1);
-    border: 1px solid rgba(99, 102, 241, 0.2);
-    font-size: 0.8rem; font-weight: 500;
-    color: var(--primary-light);
-    margin-bottom: 28px;
-    animation: fadeInUp 0.8s ease-out;
+.hero-kicker {
+    font-size: 0.875rem; font-weight: 500;
+    color: var(--text-muted);
+    margin-bottom: 20px;
 }
-.hero-badge .pulse {
-    width: 6px; height: 6px; border-radius: 50%;
-    background: var(--emerald);
-    animation: pulse-dot 2s infinite;
-}
-
 .hero h1 {
-    font-size: clamp(2.5rem, 6vw, 4.5rem);
-    font-weight: 900; line-height: 1.1;
+    font-size: clamp(2.25rem, 4vw, 3.25rem);
+    font-weight: 800; line-height: 1.08;
+    letter-spacing: -0.02em;
     margin-bottom: 24px;
-    animation: fadeInUp 0.8s ease-out 0.1s backwards;
 }
+.hero h1 .hero-h1-soft { color: var(--text-secondary); }
 .hero h1 .gradient-text {
     background: var(--gradient-primary);
+    background-size: 200% auto;
     -webkit-background-clip: text; background-clip: text;
     color: transparent;
+    animation: gradient-shift 6s ease-in-out infinite;
 }
-.hero h1 .typing-cursor {
-    display: inline-block; width: 3px; height: 0.9em;
-    background: var(--primary); margin-left: 4px;
-    animation: blink 1s step-end infinite;
-    vertical-align: text-bottom;
+@media (prefers-reduced-motion: reduce) {
+    .hero h1 .gradient-text { animation: none; }
 }
-
 .hero p {
-    font-size: clamp(1rem, 2vw, 1.25rem);
+    font-size: 1.125rem;
     color: var(--text-secondary);
-    max-width: 680px; margin: 0 auto 40px;
-    line-height: 1.8;
-    animation: fadeInUp 0.8s ease-out 0.2s backwards;
+    max-width: 540px; margin-bottom: 36px;
+    line-height: 1.65;
 }
-
 .hero-actions {
-    display: flex; align-items: center; justify-content: center;
-    gap: 16px; flex-wrap: wrap;
-    animation: fadeInUp 0.8s ease-out 0.3s backwards;
+    display: flex; align-items: center;
+    gap: 28px; flex-wrap: wrap;
 }
 .btn-hero {
-    padding: 14px 32px; border-radius: var(--radius-sm);
+    padding: 14px 28px; border-radius: var(--radius-xs);
     font-size: 1rem; font-weight: 600;
-    cursor: pointer; transition: var(--transition);
+    cursor: pointer; transition: background 0.15s, border-color 0.15s;
     display: inline-flex; align-items: center; gap: 10px;
-    border: none; position: relative; overflow: hidden;
+    border: none;
 }
-.btn-hero.primary {
-    background: var(--gradient-primary); color: #fff;
-}
-.btn-hero.primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 40px rgba(99, 102, 241, 0.4);
-}
+.btn-hero.primary { background: var(--gradient-primary); color: #fff; }
+.btn-hero.primary:hover { filter: brightness(1.08); }
 .btn-hero.outline {
     background: transparent; color: var(--text-primary);
     border: 1px solid rgba(255,255,255,0.15);
-    backdrop-filter: blur(10px);
 }
-.btn-hero.outline:hover {
-    border-color: var(--primary);
-    background: rgba(99, 102, 241, 0.08);
-    transform: translateY(-2px);
+.btn-hero.outline:hover { border-color: rgba(255,255,255,0.35); }
+.hero-link {
+    color: var(--text-primary); font-weight: 500;
+    border-bottom: 1px solid rgba(255,255,255,0.25);
+    padding-bottom: 2px;
 }
-
-.hero-stats {
-    display: flex; justify-content: center; gap: 48px;
-    margin-top: 64px;
-    animation: fadeInUp 0.8s ease-out 0.4s backwards;
+.hero-link:hover { border-color: var(--text-primary); }
+.hero-facts {
+    margin-top: 48px;
+    font-size: 0.875rem; color: var(--text-primary);
 }
-.hero-stat-value {
-    font-size: 2rem; font-weight: 800;
+.hero-facts b {
     background: var(--gradient-primary);
     -webkit-background-clip: text; background-clip: text;
-    color: transparent;
-}
-.hero-stat-label {
-    font-size: 0.8rem; color: var(--text-muted);
-    text-transform: uppercase; letter-spacing: 1px;
-    margin-top: 4px;
+    color: transparent; font-weight: 700;
 }
 
-/* Gradient headline shimmer */
-.hero h1 .gradient-text {
-    background-size: 200% auto;
-    animation: gradient-shift 6s ease-in-out infinite;
+.hero-video {
+    position: relative;
+    width: 300px; aspect-ratio: 9 / 16;
+    border-radius: 28px; overflow: hidden;
+    background: #0b0f1c;
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 30px 60px -20px rgba(0,0,0,0.7);
 }
-@keyframes gradient-shift {
-    0%, 100% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
+.hero-video video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.hero-video-sound {
+    position: absolute; right: 12px; bottom: 12px;
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 12px; border-radius: 999px;
+    background: rgba(0,0,0,0.6); color: #fff;
+    border: 1px solid rgba(255,255,255,0.15);
+    font-size: 0.8rem; font-weight: 500; cursor: pointer;
 }
-
-/* Primary hero CTA light sweep */
-.btn-hero.primary::after {
-    content: '';
-    position: absolute; top: 0; left: -60%;
-    width: 40%; height: 100%;
-    background: linear-gradient(120deg, transparent, rgba(255,255,255,0.35), transparent);
-    transform: skewX(-20deg);
-    transition: left 0.6s ease;
-}
-.btn-hero.primary:hover::after { left: 130%; }
-
-@media (prefers-reduced-motion: reduce) {
-    .hero h1 .gradient-text { animation: none !important; }
-}
+.hero-video-sound:hover { background: rgba(0,0,0,0.8); }
 
 /* -------------------------------------------------------
    SECTION COMMON
@@ -2658,6 +2623,8 @@ section { position: relative; z-index: 1; }
     #vision, #ui-access, #agents, #tools, #marketplace,
     #pipeline, #soulscript, #pricing, #cta { padding: 80px 0; }
     .hero { padding: 100px 24px 60px; }
+    .hero-content { grid-template-columns: 1fr; gap: 48px; }
+    .hero-video { width: min(280px, 100%); justify-self: center; }
 }
 
 @media (max-width: 768px) {
@@ -2706,17 +2673,9 @@ section { position: relative; z-index: 1; }
     /* --- HERO --- */
     .hero { padding: 100px 20px 56px; min-height: auto; }
     .hero h1 { font-size: 2rem; }
-    .hero p { font-size: 0.95rem; margin-bottom: 28px; }
-    .hero-actions { flex-direction: column; width: 100%; }
+    .hero p { font-size: 1rem; margin-bottom: 28px; }
     .hero-actions .btn-hero { width: 100%; justify-content: center; }
-    .hero-stats {
-        flex-direction: row; flex-wrap: wrap;
-        gap: 20px; justify-content: center;
-        margin-top: 40px;
-    }
-    .hero-stats > div { min-width: 90px; }
-    .hero-stat-value { font-size: 1.5rem; }
-    .hero-stat-label { font-size: 0.7rem; }
+    .hero-facts { margin-top: 32px; }
 
     /* --- ALL GRIDS → SINGLE COLUMN --- */
     .agents-grid { grid-template-columns: 1fr; }
@@ -2816,9 +2775,6 @@ section { position: relative; z-index: 1; }
 @media (max-width: 480px) {
     /* --- HERO --- */
     .hero h1 { font-size: 1.7rem; }
-    .hero-badge { font-size: 0.7rem; padding: 5px 12px; }
-    .hero-stats { gap: 14px; }
-    .hero-stat-value { font-size: 1.25rem; }
 
     /* --- NAV --- */
     .nav-inner { padding: 0 12px; }
@@ -2943,51 +2899,38 @@ section { position: relative; z-index: 1; }
      ------------------------------------------------------- -->
 <section class="hero" id="hero" aria-label="Orion Forge introduction">
     <div class="hero-content">
-        <div class="hero-badge">
-            <span class="pulse"></span>
-            Soul Script Engine v2.0
+        <div class="hero-copy">
+            <div class="hero-kicker">Orion Forge &middot; SoulScript Engine</div>
+
+            <h1>
+                Build an AI <span class="gradient-text">character</span> once.<br>
+                <span class="hero-h1-soft">Run it on any model.</span>
+            </h1>
+
+            <p>
+                Write a character's personality, emotional range, rules, and memory into a single
+                Soul Script. Load it into GPT, Claude, Gemini, or Llama and it's the same
+                character every session, with no re-prompting from scratch.
+            </p>
+
+            <div class="hero-actions">
+                <button class="btn-hero primary" onclick="trackConversion('hero_get_started'); openAuth()">
+                    Start free
+                </button>
+                <a href="#agents" class="hero-link">See the agents &rarr;</a>
+            </div>
+
+            <div class="hero-facts">
+                <b>16</b> ready-made agents &nbsp;&middot;&nbsp; <b>11</b> built-in tools &nbsp;&middot;&nbsp; <b>6</b> identity layers &nbsp;&middot;&nbsp; <b>300+</b> models
+            </div>
         </div>
 
-        <h1>
-            Create AI Characters<br>
-            With <span class="gradient-text">Identity</span><span class="typing-cursor"></span>
-        </h1>
-
-        <p>
-            Not just prompts. Not just chatbots. <strong>Persistent, evolving digital characters</strong>
-            with layered identity, powerful memory, and behavioral continuity that endures.
-        </p>
-
-        <div class="hero-actions">
-            <button class="btn-hero primary" onclick="trackConversion('hero_get_started'); openAuth()">
-                <i class="fas fa-bolt"></i> Get Started Free
+        <div class="hero-video">
+            <video id="hero-video" src="/videos/orion-forge-ad.mp4" autoplay muted loop playsinline preload="metadata"
+                   aria-label="Orion Forge product video"></video>
+            <button type="button" class="hero-video-sound" id="hero-video-sound" onclick="toggleHeroSound()">
+                <i class="fas fa-volume-xmark"></i> <span>Unmute</span>
             </button>
-            <a href="#agents" class="btn-hero outline">
-                <i class="fas fa-users"></i> Meet the Agents
-            </a>
-        </div>
-
-        <div class="hero-stats">
-            <div>
-                <div class="hero-stat-value" data-count="16">0</div>
-                <div class="hero-stat-label">Core Agents</div>
-            </div>
-            <div>
-                <div class="hero-stat-value" data-count="11">0</div>
-                <div class="hero-stat-label">Runtime Tools</div>
-            </div>
-            <div>
-                <div class="hero-stat-value" data-count="9">0</div>
-                <div class="hero-stat-label">Image Providers</div>
-            </div>
-            <div>
-                <div class="hero-stat-value" data-count="6">0</div>
-                <div class="hero-stat-label">Identity Layers</div>
-            </div>
-            <div>
-                <div class="hero-stat-value">300+</div>
-                <div class="hero-stat-label">Integrated LLMs</div>
-            </div>
         </div>
     </div>
 </section>
@@ -4454,6 +4397,21 @@ function initNavScroll() {
         const scrolled = (window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100;
         progress.style.width = scrolled + '%';
     });
+}
+
+// -------------------------------------------------------
+// HERO VIDEO
+// -------------------------------------------------------
+function toggleHeroSound() {
+    const video = document.getElementById('hero-video');
+    const btn = document.getElementById('hero-video-sound');
+    video.muted = !video.muted;
+    if (!video.muted) {
+        video.currentTime = 0;
+        video.play();
+    }
+    btn.querySelector('i').className = video.muted ? 'fas fa-volume-xmark' : 'fas fa-volume-high';
+    btn.querySelector('span').textContent = video.muted ? 'Unmute' : 'Mute';
 }
 
 // -------------------------------------------------------
