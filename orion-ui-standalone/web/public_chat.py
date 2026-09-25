@@ -38,6 +38,12 @@ _PROMPT_FILE = Path(__file__).resolve().parent.parent / "prompts" / "k_os.system
 _OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 MODEL = os.environ.get("KOS_PUBLIC_MODEL", "openai/gpt-4o-mini").strip()
+# Cheap alternates the widget can request via ?kos=<alias> for side-by-side
+# previews. Allowlist only — clients can never pick an arbitrary model.
+MODEL_ALIASES = {
+    "gpt": "openai/gpt-4o-mini",
+    "deepseek": "deepseek/deepseek-v4-flash",
+}
 DAILY_CAP = int(os.environ.get("KOS_PUBLIC_DAILY_CAP", "1500"))
 
 MAX_INPUT_CHARS = 600
@@ -194,13 +200,17 @@ async def kos_chat(request: Request):
     messages += _clean_history(body.get("history"))
     messages.append({"role": "user", "content": message})
 
+    model = MODEL_ALIASES.get(str(body.get("model") or ""), MODEL)
     payload = {
-        "model": MODEL,
+        "model": model,
         "messages": messages,
         "temperature": 0.85,
         "max_tokens": MAX_REPLY_TOKENS,
         "stream": True,
     }
+    if model.startswith("deepseek/"):
+        # Hybrid thinking model — skip the reasoning pass so replies start instantly.
+        payload["reasoning"] = {"enabled": False}
     headers = {
         "Authorization": f"Bearer {api_key}",
         "HTTP-Referer": "https://orionforge.chat",
@@ -235,5 +245,6 @@ async def kos_chat(request: Request):
     return StreamingResponse(
         stream(),
         media_type="text/plain; charset=utf-8",
-        headers={**cors, "Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        headers={**cors, "Cache-Control": "no-cache", "X-Accel-Buffering": "no", "X-Kos-Model": model,
+                 **({"Access-Control-Expose-Headers": "X-Kos-Model"} if cors else {})},
     )

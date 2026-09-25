@@ -4630,7 +4630,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="kos-avatar"><i class="fas fa-robot"></i></div>
             <div class="kos-head-text">
                 <strong>K-OS // Unit 000</strong>
-                <span><i class="fas fa-circle"></i>Online. Unfortunately for you.</span>
+                <span><i class="fas fa-circle"></i><span id="kos-status">Online. Unfortunately for you.</span></span>
             </div>
             <button class="kos-icon-btn" id="kos-reset" title="New conversation" aria-label="New conversation"><i class="fas fa-rotate-right"></i></button>
             <button class="kos-icon-btn" id="kos-close" title="Close" aria-label="Close chat"><i class="fas fa-xmark"></i></button>
@@ -4655,6 +4655,8 @@ document.addEventListener('DOMContentLoaded', () => {
         ? window.KOS_ENDPOINT
         : 'https://soulscript.orionforge.chat/api/public/kos-chat';
     const STORE_KEY = 'kos_chat_v1';
+    // Preview a different model with ?kos=deepseek (server allowlists aliases).
+    const MODEL_ALIAS = new URLSearchParams(location.search).get('kos') || '';
     const GREETING = "*clank clank* Well, well. Another visitor wandering into my website. Don't say it — I already know I'm magnificent. What do you want?";
     const CHIPS = ['Who are you?', 'Roast me', "What's the meaning of life?", 'Why should I use Orion Forge?'];
     const TEASERS = [
@@ -4740,8 +4742,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const res = await fetch(ENDPOINT, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: text, history: prior }),
+                body: JSON.stringify({ message: text, history: prior, model: MODEL_ALIAS || undefined }),
             });
+            if (MODEL_ALIAS && res.headers.get('X-Kos-Model')) {
+                $('kos-status').textContent = 'Model: ' + res.headers.get('X-Kos-Model');
+            }
             if (!res.ok) {
                 let msg = 'K-OS is ignoring you right now. Try again in a minute.';
                 try { msg = (await res.json()).error || msg; } catch {}
