@@ -283,8 +283,9 @@ if _mcp_inner_app is not None:
     app.mount("/mcp", _MCPAuthASGI(_mcp_inner_app))
 
 # Public character chats: the orionforge.chat K-OS widget and demo.orionforge.chat.
-from web.public_chat import router as _public_chat_router, DemoHostMiddleware
+from web.public_chat import router as _public_chat_router, DemoHostMiddleware, warm_soul_index
 app.include_router(_public_chat_router)
+warm_soul_index()  # background build of the public characters' soul-script FAISS
 
 # ── Auth file path ───────────────────────────────────────────────
 _AUTH_FILE = _CONFIG_DIR / "auth.json"

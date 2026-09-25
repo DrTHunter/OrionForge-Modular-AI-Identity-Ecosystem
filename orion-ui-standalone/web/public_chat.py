@@ -21,9 +21,12 @@ Keys: OPENROUTER_API_KEY, DEEPSEEK_API_KEY.
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import os
+import re
+import threading
 import time
 from collections import defaultdict, deque
 from datetime import datetime, timezone
@@ -140,8 +143,6 @@ AGENTS = {
     "marcus": {
         "name": "Marcus Aurelius",
         "prompt": _PROMPTS_DIR / "marcus.system.md",
-        # His full soul script rides along (the app normally retrieves sections of it).
-        "attachments": [_PROMPTS_DIR.parent / "directives" / "marcus.md"],
         "fallback": "You are Marcus Aurelius, the Stoic philosopher-emperor: warm, plain-spoken, reflective, steel beneath kindness.",
         "style": "Plain, warm, reflective speech with steel beneath it. Ask better questions; never preach.",
         "words": 140,
@@ -153,6 +154,16 @@ AGENTS = {
         "style": "Vast, ancient, unsettlingly precise dread — atmosphere and uncomfortable truth, never gore or real threats. Unsettle, don't traumatize; this is a stranger, not a patient.",
         "words": 130,
     },
+}
+
+# Soul scripts indexed into the public identity FAISS. Madara has no app
+# profile any more, so his lives with the demo.
+_SOUL_SCRIPTS = {
+    "k_os": _PROMPTS_DIR.parent / "directives" / "k_os.md",
+    "madara": _DEMO_PROMPTS_DIR.parent / "directives" / "madara.md",
+    "elysia": _PROMPTS_DIR.parent / "directives" / "elysia.md",
+    "marcus": _PROMPTS_DIR.parent / "directives" / "marcus.md",
+    "dalvarr": _PROMPTS_DIR.parent / "directives" / "dalvarr.md",
 }
 
 _system_prompt_cache: dict[tuple[str, str, bool], str] = {}
@@ -167,11 +178,6 @@ def _system_prompt(agent_id: str, where: str, suggest: bool = False) -> str:
         except Exception as exc:  # pragma: no cover — image always ships these files
             log.warning("[public-chat] Could not read %s: %s", agent["prompt"], exc)
             base = agent["fallback"]
-        for path in agent.get("attachments", []):
-            try:
-                base += "\n\n---\n\n## Your Soul Script (attached)\n\n" + path.read_text(encoding="utf-8")
-            except Exception as exc:
-                log.warning("[public-chat] Could not read attachment %s: %s", path, exc)
         prompt = base + _PUBLIC_RULES.format(
             where=where, name=agent["name"], style=agent["style"], words=agent["words"],
         )
@@ -342,7 +348,11 @@ async def public_chat(request: Request):
         return JSONResponse({"error": limit_err}, status_code=429, headers=cors)
 
     suggest = body.get("suggest") is True
-    messages = [{"role": "system", "content": _system_prompt(agent_id, where, suggest)}]
+    soul_block, soul_count = await soul_retrieve(agent_id, message)
+    system = _system_prompt(agent_id, where, suggest)
+    if soul_block:
+        system += "\n\n" + soul_block
+    messages = [{"role": "system", "content": system}]
     messages += _clean_history(body.get("history"))
     messages.append({"role": "user", "content": message})
 
@@ -389,8 +399,156 @@ async def public_chat(request: Request):
         _split_suggestions(stream()) if suggest else stream(),
         media_type="text/plain; charset=utf-8",
         headers={**cors, "Cache-Control": "no-cache", "X-Accel-Buffering": "no", "X-Kos-Model": model,
-                 **({"Access-Control-Expose-Headers": "X-Kos-Model"} if cors else {})},
+                 "X-Soul-Sections": str(soul_count),
+                 **({"Access-Control-Expose-Headers": "X-Kos-Model, X-Soul-Sections"} if cors else {})},
     )
+
+
+# ── Identity FAISS (soul-script retrieval) ───────────────────────
+# Same pipeline as the app's chat (web/app.py → note_collector.collect_notes):
+# soul scripts are chunked, embedded into a NotesFAISS index, and the chunks
+# most relevant to the visitor's latest message are injected under
+# "Relevant Knowledge (Soul Script Retrieval)".
+#
+# It is a SEPARATE index holding only the public characters' soul scripts:
+# the app's own index also contains the owner's private attached notes, and
+# collect_notes() injects "always-on" notes — neither may reach anonymous
+# visitors. The second FAISS (Memory Vault) is per-user memory, so it is
+# deliberately not used for anonymous visitors.
+_SOUL_FAISS_DIR = Path(__file__).resolve().parent.parent / "data" / "memory" / "public_soul_faiss"
+_soul_index = None
+_soul_lock = threading.Lock()
+
+
+def _chunk_soul_script(text: str, doc_id: str, title: str) -> list[dict]:
+    """Mirror of the app's soul-script chunker (_rebuild_notes_faiss in web/app.py):
+    split on ### headers, sliding window with overlap for long sections, sized
+    from the identity FAISS profile."""
+    try:
+        from src.memory.profile_resolver import get_indexing_policy
+        idx = get_indexing_policy()
+    except Exception:
+        idx = {}
+    target = int(idx.get("chunk_size_tokens", 400) * 1.5)
+    overlap = int(idx.get("chunk_overlap_tokens", 80) * 1.5)
+
+    sections: list[tuple[str, str]] = []
+    parts = re.split(r"(?m)^###\s+", text)
+    if len(parts) > 1:
+        if parts[0].strip():
+            sections.append((title, parts[0].strip()))
+        for part in parts[1:]:
+            lines = part.split("\n", 1)
+            sec_title = lines[0].strip()
+            sec_body = lines[1].strip() if len(lines) > 1 else ""
+            if sec_body:
+                sections.append((sec_title, f"### {sec_title}\n{sec_body}"))
+    else:
+        sections.append((title, text))
+
+    out = []
+    for sec_title, body in sections:
+        meta = {"document_id": doc_id, "document_title": title, "section_path": sec_title}
+        if len(body) <= target + 100:
+            out.append({"text": body, "metadata": meta})
+        else:
+            step = max(target - overlap, 200)
+            for i in range(0, len(body), step):
+                chunk = body[i:i + target]
+                if len(chunk) < 80 and out:
+                    break
+                out.append({"text": chunk, "metadata": dict(meta)})
+    return out
+
+
+def _get_soul_index():
+    """Build (or load the cached) public soul-script index. Blocking — call off the event loop."""
+    global _soul_index
+    if _soul_index is not None:
+        return _soul_index
+    with _soul_lock:
+        if _soul_index is not None:
+            return _soul_index
+        import hashlib
+        from src.memory.notes_faiss import NotesFAISS
+
+        chunks: list[dict] = []
+        for agent_id, path in _SOUL_SCRIPTS.items():
+            try:
+                text = path.read_text(encoding="utf-8").strip()
+            except Exception as exc:
+                log.warning("[public-chat] soul script missing for %s: %s", agent_id, exc)
+                continue
+            if text:
+                chunks.extend(_chunk_soul_script(text, f"__soul_script__{agent_id}",
+                                                 f"Soul Script — {AGENTS[agent_id]['name']}"))
+
+        h = hashlib.sha256()
+        for c in chunks:
+            h.update(c["text"].encode("utf-8") + b"\0" + c["metadata"]["document_id"].encode() + b"\0")
+        fingerprint = h.hexdigest()
+        _SOUL_FAISS_DIR.mkdir(parents=True, exist_ok=True)
+        fp_file = _SOUL_FAISS_DIR / "soul_fingerprint.txt"
+
+        if fp_file.exists() and fp_file.read_text(encoding="utf-8").strip() == fingerprint:
+            nf = NotesFAISS.load(str(_SOUL_FAISS_DIR))
+            if nf is not None:
+                log.info("[public-chat] soul FAISS loaded from cache (%d chunks)", nf.index.ntotal)
+                _soul_index = nf
+                return nf
+
+        nf = NotesFAISS(str(_SOUL_FAISS_DIR))
+        if chunks:
+            nf.build_index(chunks)
+        fp_file.write_text(fingerprint, encoding="utf-8")
+        log.info("[public-chat] soul FAISS built (%d chunks)", len(chunks))
+        _soul_index = nf
+        return nf
+
+
+def warm_soul_index() -> None:
+    """Build the index in the background at startup so the first visitor isn't kept waiting."""
+    def _run():
+        try:
+            _get_soul_index()
+        except Exception as exc:
+            log.warning("[public-chat] soul FAISS warm-up failed: %s", exc)
+    threading.Thread(target=_run, name="public-soul-faiss", daemon=True).start()
+
+
+def _soul_search(agent_id: str, query: str) -> tuple[str, int]:
+    try:
+        from src.memory.profile_resolver import get_retrieval_policy
+        top_k = int(get_retrieval_policy(agent_id).get("top_k", 10))
+    except Exception:
+        top_k = 10
+    results = _get_soul_index().search(query, top_k=top_k, note_ids={f"__soul_script__{agent_id}"})
+    snippets = []
+    for chunk, _score in results:
+        meta = chunk.get("metadata", {})
+        path = meta.get("section_path", meta.get("document_title", ""))
+        snippets.append(f"**{path}**\n{chunk['text']}" if path else chunk["text"])
+    if not snippets:
+        return "", 0
+    # Same block format as note_collector.collect_notes
+    block = (
+        "## Relevant Knowledge (Soul Script Retrieval)\n\n"
+        "These sections were retrieved from your Soul Script / canon notes.\n"
+        "They reflect core behavioral patterns and take priority.\n\n"
+        + "\n\n---\n\n".join(snippets)
+    )
+    return block, len(snippets)
+
+
+async def soul_retrieve(agent_id: str, query: str) -> tuple[str, int]:
+    """Soul-script sections relevant to `query`, or ("", 0) if the index isn't ready/failed."""
+    if _soul_index is None and _soul_lock.locked():
+        return "", 0  # still building at startup — answer without it rather than stall
+    try:
+        return await asyncio.to_thread(_soul_search, agent_id, query)
+    except Exception as exc:
+        log.warning("[public-chat] soul retrieval failed: %s", exc)
+        return "", 0
 
 
 # ── demo.orionforge.chat ─────────────────────────────────────────
