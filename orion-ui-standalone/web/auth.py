@@ -339,6 +339,8 @@ PUBLIC_PATHS = {
     "/mcp",
     # Anonymous K-OS chat on the landing page — rate-limited in web/public_chat.py.
     "/api/public",
+    # Public character demo page (also served at demo.orionforge.chat).
+    "/demo",
 }
 
 

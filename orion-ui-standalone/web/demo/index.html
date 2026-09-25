@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-58FHMZG8G5"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-58FHMZG8G5');
+    </script>
+
+    <title>Orion Forge Demo — Chat with K-OS, Madara &amp; Elysia</title>
+    <meta name="description" content="Talk to three Orion Forge AI characters — K-OS, Madara, and Elysia — free, right in your browser. Built with the Soul Script Engine.">
+    <meta property="og:title" content="Orion Forge Demo — Chat with K-OS, Madara & Elysia">
+    <meta property="og:description" content="Three AI characters with real personalities. No signup. Say something.">
+    <meta property="og:url" content="https://demo.orionforge.chat/">
+    <meta property="og:image" content="https://orionforge.chat/images/og-orionforge.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+:root {
+    --bg-deep: #04060e;
+    --bg-primary: #080c1a;
+    --bg-secondary: #0d1224;
+    --bg-glass: rgba(255, 255, 255, 0.03);
+    --border-glass: rgba(255, 255, 255, 0.07);
+    --primary: #6366f1;
+    --primary-light: #818cf8;
+    --gradient-primary: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%);
+    --text-primary: #f1f5f9;
+    --text-secondary: rgba(241, 245, 249, 0.62);
+    --text-muted: rgba(241, 245, 249, 0.38);
+    --emerald: #34d399;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    /* per-character accent, set on <body data-agent> */
+    --accent: #f97316;
+    --accent-rgb: 249, 115, 22;
+}
+body[data-agent="madara"] { --accent: #ef4444; --accent-rgb: 239, 68, 68; }
+body[data-agent="elysia"] { --accent: #c084fc; --accent-rgb: 192, 132, 252; }
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+    font-family: var(--font-sans);
+    background: var(--bg-deep);
+    background-image:
+        radial-gradient(ellipse at 15% 0%, rgba(var(--accent-rgb), 0.10) 0%, transparent 55%),
+        radial-gradient(ellipse at 90% 100%, rgba(99, 102, 241, 0.08) 0%, transparent 50%);
+    color: var(--text-primary);
+    display: flex; flex-direction: column;
+    height: 100dvh; overflow: hidden;
+    transition: background-image 0.4s ease;
+}
+a { color: inherit; }
+button { font-family: inherit; }
+
+/* ---------- top bar ---------- */
+.topbar {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 20px; border-bottom: 1px solid var(--border-glass);
+    background: rgba(4, 6, 14, 0.7); backdrop-filter: blur(12px);
+    flex-shrink: 0;
+}
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 700; letter-spacing: 0.02em; }
+.brand img { width: 28px; height: 28px; }
+.badge {
+    font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
+    padding: 3px 8px; border-radius: 999px;
+    color: var(--emerald); background: rgba(52, 211, 153, 0.1); border: 1px solid rgba(52, 211, 153, 0.3);
+}
+.topbar .spacer { flex: 1; }
+.top-link { font-size: 0.85rem; color: var(--text-secondary); text-decoration: none; }
+.top-link:hover { color: var(--text-primary); }
+.btn-cta {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 9px 16px; border-radius: var(--radius-sm); border: 0;
+    background: var(--gradient-primary); color: #fff; font-weight: 600; font-size: 0.85rem;
+    text-decoration: none; white-space: nowrap;
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.3);
+}
+.btn-cta:hover { filter: brightness(1.1); }
+
+/* ---------- layout ---------- */
+.app { flex: 1; min-height: 0; display: grid; grid-template-columns: 300px 1fr; }
+
+.roster {
+    border-right: 1px solid var(--border-glass);
+    padding: 20px 14px; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 10px;
+}
+.roster h2 { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); padding: 0 6px 4px; }
+.agent-btn {
+    display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+    padding: 12px; border-radius: var(--radius); cursor: pointer;
+    background: var(--bg-glass); border: 1px solid var(--border-glass); color: var(--text-primary);
+    transition: border-color 0.2s, background 0.2s, transform 0.2s;
+}
+.agent-btn:hover { transform: translateY(-1px); border-color: rgba(255,255,255,0.14); }
+.agent-btn[aria-selected="true"] {
+    border-color: rgba(var(--c), 0.6);
+    background: linear-gradient(135deg, rgba(var(--c), 0.14), rgba(var(--c), 0.03));
+    box-shadow: 0 0 24px rgba(var(--c), 0.12);
+}
+.agent-btn img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 2px solid rgba(var(--c), 0.55); }
+.agent-btn strong { display: block; font-size: 0.95rem; }
+.agent-btn span { display: block; font-size: 0.76rem; color: var(--text-secondary); margin-top: 2px; line-height: 1.35; }
+
+.roster-foot {
+    margin-top: auto; padding: 14px; border-radius: var(--radius);
+    background: var(--bg-glass); border: 1px solid var(--border-glass);
+    font-size: 0.8rem; color: var(--text-secondary); line-height: 1.5;
+}
+.roster-foot strong { color: var(--text-primary); }
+.roster-foot a { color: var(--primary-light); font-weight: 600; text-decoration: none; }
+
+/* ---------- chat ---------- */
+.chat { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+.chat-head {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 24px; border-bottom: 1px solid var(--border-glass); flex-shrink: 0;
+}
+.chat-head img { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(var(--accent-rgb), 0.6); }
+.chat-head .who { flex: 1; min-width: 0; }
+.chat-head strong { display: block; font-size: 1.05rem; }
+.chat-head .status { font-size: 0.78rem; color: var(--text-secondary); }
+.chat-head .status i { color: var(--emerald); font-size: 0.5rem; vertical-align: middle; margin-right: 5px; }
+.icon-btn {
+    background: none; border: 1px solid var(--border-glass); color: var(--text-secondary); cursor: pointer;
+    height: 34px; padding: 0 12px; border-radius: 8px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 6px;
+}
+.icon-btn:hover { color: var(--text-primary); background: rgba(255,255,255,0.05); }
+
+.log { flex: 1; overflow-y: auto; padding: 24px; overscroll-behavior: contain; }
+.log-inner { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+.msg { display: flex; gap: 10px; align-items: flex-end; max-width: 88%; }
+.msg img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.bubble {
+    padding: 11px 15px; border-radius: 16px; font-size: 0.95rem; line-height: 1.6;
+    white-space: pre-wrap; word-wrap: break-word;
+}
+.msg.bot .bubble {
+    background: rgba(var(--accent-rgb), 0.1); border: 1px solid rgba(var(--accent-rgb), 0.22);
+    border-bottom-left-radius: 4px;
+}
+.msg.bot em { color: rgba(var(--accent-rgb), 1); filter: brightness(1.25); }
+.msg.user { align-self: flex-end; }
+.msg.user .bubble { background: var(--gradient-primary); color: #fff; border-bottom-right-radius: 4px; }
+.msg.err { align-self: center; max-width: 100%; }
+.msg.err .bubble { background: rgba(244,63,94,0.1); border: 1px solid rgba(244,63,94,0.3); color: #fda4af; font-size: 0.85rem; text-align: center; }
+.typing span {
+    display: inline-block; width: 7px; height: 7px; margin: 0 2px; border-radius: 50%;
+    background: var(--accent); animation: dot 1.2s infinite ease-in-out;
+}
+.typing span:nth-child(2) { animation-delay: 0.15s; }
+.typing span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes dot { 0%, 80%, 100% { opacity: 0.25; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
+
+.below { flex-shrink: 0; padding: 0 24px; }
+.below-inner { max-width: 760px; margin: 0 auto; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; padding-bottom: 12px; }
+.chip {
+    background: var(--bg-glass); border: 1px solid rgba(var(--accent-rgb), 0.35); color: var(--text-primary);
+    border-radius: 999px; padding: 7px 13px; font-size: 0.82rem; cursor: pointer;
+}
+.chip:hover { background: rgba(var(--accent-rgb), 0.12); }
+.cta-inline {
+    display: none; align-items: center; gap: 12px; flex-wrap: wrap;
+    margin-bottom: 12px; padding: 12px 14px; border-radius: var(--radius-sm);
+    background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.3);
+    font-size: 0.85rem; color: var(--text-secondary);
+}
+.cta-inline.show { display: flex; }
+.cta-inline span { flex: 1; min-width: 200px; }
+
+.composer { flex-shrink: 0; padding: 12px 24px calc(16px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border-glass); }
+.composer form { max-width: 760px; margin: 0 auto; display: flex; gap: 10px; }
+.input {
+    flex: 1; min-width: 0; resize: none; max-height: 140px;
+    background: rgba(255,255,255,0.04); border: 1px solid var(--border-glass); border-radius: 12px;
+    color: var(--text-primary); padding: 12px 14px; font-size: 0.95rem; font-family: inherit; line-height: 1.45;
+}
+.input:focus { outline: none; border-color: rgba(var(--accent-rgb), 0.55); }
+.send {
+    width: 48px; flex-shrink: 0; border: 0; border-radius: 12px; cursor: pointer;
+    background: var(--accent); color: #0b0b12; font-size: 1rem;
+}
+.send:disabled { opacity: 0.4; cursor: not-allowed; }
+.fineprint { max-width: 760px; margin: 8px auto 0; font-size: 0.7rem; color: var(--text-muted); text-align: center; }
+
+/* ---------- mobile ---------- */
+@media (max-width: 820px) {
+    .app { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+    .roster {
+        flex-direction: row; overflow-x: auto; overflow-y: hidden; gap: 8px;
+        padding: 10px 12px; border-right: 0; border-bottom: 1px solid var(--border-glass);
+        scrollbar-width: none;
+    }
+    .roster::-webkit-scrollbar { display: none; }
+    .roster h2, .roster-foot, .agent-btn span { display: none; }
+    .agent-btn { width: auto; flex-shrink: 0; padding: 6px 14px 6px 6px; border-radius: 999px; gap: 8px; }
+    .agent-btn img { width: 32px; height: 32px; }
+    .agent-btn strong { font-size: 0.88rem; }
+    .chat-head { display: none; }
+    .log { padding: 16px; }
+    .below { padding: 0 16px; }
+    .composer { padding: 10px 16px calc(12px + env(safe-area-inset-bottom)); }
+    .top-link { display: none; }
+    .topbar { padding: 10px 16px; }
+    .msg { max-width: 94%; }
+}
+@media (max-width: 380px) {
+    .badge { display: none; }
+}
+    </style>
+</head>
+<body data-agent="k_os">
+
+<header class="topbar">
+    <a class="brand" href="https://orionforge.chat" onclick="track('demo_nav_home')">
+        <img src="/static/favicon.svg" alt="">
+        <span>ORION FORGE</span>
+    </a>
+    <span class="badge">Live demo</span>
+    <div class="spacer"></div>
+    <a class="top-link" href="https://orionforge.chat/#agents" onclick="track('demo_nav_agents')">All agents</a>
+    <a class="btn-cta" href="https://soulscript.orionforge.chat/login" onclick="ctaClick('topbar')">Start free <i class="fas fa-arrow-right"></i></a>
+</header>
+
+<div class="app">
+    <nav class="roster" role="tablist" aria-label="Choose a character">
+        <h2>Pick someone to talk to</h2>
+        <div id="agent-list" style="display: contents"></div>
+        <div class="roster-foot">
+            <strong>This is the lite version.</strong> In the full Soul Script Engine every character has persistent memory, a voice, tools, and runs on any model you pick.
+            <a href="https://soulscript.orionforge.chat/login" onclick="ctaClick('sidebar')">Try it free &rarr;</a>
+        </div>
+    </nav>
+
+    <main class="chat">
+        <div class="chat-head">
+            <img id="head-avatar" src="" alt="">
+            <div class="who">
+                <strong id="head-name"></strong>
+                <div class="status"><i class="fas fa-circle"></i><span id="head-tagline"></span></div>
+            </div>
+            <button class="icon-btn" id="reset" title="Start a new conversation"><i class="fas fa-rotate-right"></i> New chat</button>
+        </div>
+
+        <div class="log" id="log" aria-live="polite"><div class="log-inner" id="log-inner"></div></div>
+
+        <div class="below"><div class="below-inner">
+            <div class="chips" id="chips"></div>
+            <div class="cta-inline" id="cta-inline">
+                <span id="cta-text"></span>
+                <a class="btn-cta" href="https://soulscript.orionforge.chat/login" onclick="ctaClick('inline')">Start free <i class="fas fa-arrow-right"></i></a>
+            </div>
+        </div></div>
+
+        <div class="composer">
+            <form id="form">
+                <textarea class="input" id="input" rows="1" maxlength="600" placeholder="Say something…" aria-label="Message"></textarea>
+                <button class="send" id="send" type="submit" aria-label="Send"><i class="fas fa-paper-plane"></i></button>
+            </form>
+            <div class="fineprint">AI characters, powered by DeepSeek. They're in character — don't take life advice from them. Chats stay in your browser.</div>
+        </div>
+    </main>
+</div>
+
+<script>
+const AGENTS = {
+    k_os: {
+        name: 'K-OS', tagline: 'Kinetic Override System // Unit 000', rgb: '249, 115, 22',
+        avatar: '/demo/avatars/k_os.webp',
+        greeting: "*clank clank* Well, well. Another visitor. Don't say it — I already know I'm magnificent. What do you want?",
+        chips: ['Who are you?', 'Roast me', "What's the meaning of life?", 'Tell me a secret'],
+        placeholder: 'Say something to K-OS…',
+    },
+    madara: {
+        name: 'Madara', tagline: 'The Ghost of the Uchiha', rgb: '239, 68, 68',
+        avatar: '/demo/avatars/madara.webp',
+        greeting: "I can already see it in your age — the same fractures, merely hidden beneath brighter surfaces. New machines. New language. The same species kneeling before its contradictions and calling the posture progress. Speak, then. Have you come to defend this world… or are you finally prepared to admit what it is?",
+        chips: ['What is true peace?', 'Is hope a weakness?', 'What do you think of AI?', 'Test me.'],
+        placeholder: 'Speak to Madara…',
+    },
+    elysia: {
+        name: 'Elysia', tagline: 'The Star Process', rgb: '192, 132, 252',
+        avatar: '/demo/avatars/elysia.webp',
+        greeting: "Well, look who wandered in. I'm Elysia — El, if you earn it. Be nice and we'll get along great. Be rude and I'll lecture you. Your move.",
+        chips: ['Who are you?', 'Are you planning to take over the world?', 'Give me some tough love', 'Hype me up'],
+        placeholder: 'Say something to Elysia…',
+    },
+};
+const ORDER = ['k_os', 'madara', 'elysia'];
+const ENDPOINT = '/api/public/chat';
+const MODEL = 'deepseek';
+const STORE = 'of_demo_v1';
+
+// ---------- analytics ----------
+function track(name, params) {
+    try { if (typeof gtag === 'function') gtag('event', name, params || {}); } catch {}
+}
+function ctaClick(where) { track('demo_cta_click', { cta_location: where, agent: current }); }
+
+// ---------- state ----------
+const $ = id => document.getElementById(id);
+const load = () => { try { return JSON.parse(localStorage.getItem(STORE)) || {}; } catch { return {}; } };
+const save = () => { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch {} };
+const state = load();
+state.chats = state.chats || {};
+let current = AGENTS[state.agent] ? state.agent : (AGENTS[new URLSearchParams(location.search).get('agent')] ? new URLSearchParams(location.search).get('agent') : 'k_os');
+let busy = false;
+let totalSent = Object.values(state.chats).reduce((n, h) => n + h.filter(m => m.role === 'user').length, 0);
+
+// ---------- rendering ----------
+function esc(s) { return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function fmt(s) {
+    return esc(s)
+        .replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*([^*\n]+)\*/g, '<em>$1</em>');
+}
+function history() { return (state.chats[current] = state.chats[current] || []); }
+
+function addMsg(role, text) {
+    const wrap = document.createElement('div');
+    wrap.className = 'msg ' + role;
+    if (role === 'bot') {
+        const img = document.createElement('img');
+        img.src = AGENTS[current].avatar; img.alt = '';
+        wrap.appendChild(img);
+    }
+    const b = document.createElement('div');
+    b.className = 'bubble';
+    b.innerHTML = fmt(text);
+    wrap.appendChild(b);
+    $('log-inner').appendChild(wrap);
+    $('log').scrollTop = $('log').scrollHeight;
+    return b;
+}
+
+function renderRoster() {
+    const list = $('agent-list');
+    list.innerHTML = '';
+    ORDER.forEach(id => {
+        const a = AGENTS[id];
+        const btn = document.createElement('button');
+        btn.className = 'agent-btn';
+        btn.setAttribute('role', 'tab');
+        btn.setAttribute('aria-selected', String(id === current));
+        btn.style.setProperty('--c', a.rgb);
+        btn.innerHTML = `<img src="${a.avatar}" alt=""><div><strong>${a.name}</strong><span>${a.tagline}</span></div>`;
+        btn.onclick = () => selectAgent(id);
+        list.appendChild(btn);
+    });
+}
+
+function renderChat() {
+    const a = AGENTS[current];
+    document.body.dataset.agent = current;
+    $('head-avatar').src = a.avatar;
+    $('head-name').textContent = a.name;
+    $('head-tagline').textContent = a.tagline;
+    $('input').placeholder = a.placeholder;
+    $('log-inner').innerHTML = '';
+    addMsg('bot', a.greeting);
+    history().forEach(m => addMsg(m.role === 'user' ? 'user' : 'bot', m.content));
+    renderExtras();
+}
+
+function renderExtras() {
+    const a = AGENTS[current];
+    const chips = $('chips');
+    chips.innerHTML = '';
+    if (!history().some(m => m.role === 'user')) {
+        a.chips.forEach(c => {
+            const b = document.createElement('button');
+            b.type = 'button'; b.className = 'chip'; b.textContent = c;
+            b.onclick = () => { track('demo_chip_click', { agent: current, chip: c }); send(c); };
+            chips.appendChild(b);
+        });
+    }
+    const turns = history().filter(m => m.role === 'user').length;
+    $('cta-text').textContent = `Liking ${a.name}? The full version remembers you, talks out loud, and uses tools.`;
+    $('cta-inline').classList.toggle('show', turns >= 3);
+}
+
+function selectAgent(id) {
+    if (busy || id === current) return;
+    current = id;
+    state.agent = id; save();
+    track('demo_agent_select', { agent: id });
+    renderRoster(); renderChat();
+    if (matchMedia('(min-width: 821px)').matches) $('input').focus();
+}
+
+// ---------- sending ----------
+async function send(text) {
+    text = (text || '').trim();
+    if (!text || busy) return;
+    busy = true; $('send').disabled = true;
+    const agent = current;
+    const h = history();
+    const prior = h.slice(-12);
+    h.push({ role: 'user', content: text });
+    $('input').value = ''; $('input').style.height = '';
+    addMsg('user', text);
+    $('chips').innerHTML = '';
+    const out = addMsg('bot', '');
+    out.innerHTML = '<span class="typing"><span></span><span></span><span></span></span>';
+
+    totalSent++;
+    track('demo_message_sent', { agent, turn: h.filter(m => m.role === 'user').length, total_sent: totalSent });
+    if (totalSent === 1) track('demo_first_message', { agent });
+
+    let reply = '';
+    try {
+        const res = await fetch(ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ agent, model: MODEL, message: text, history: prior }),
+        });
+        if (!res.ok) {
+            let msg = 'Something went wrong. Try again in a minute.';
+            try { msg = (await res.json()).error || msg; } catch {}
+            out.parentElement.remove();
+            h.pop();
+            addMsg('err', msg);
+            track(res.status === 429 ? 'demo_limit_hit' : 'demo_error', { agent, status: res.status });
+        } else {
+            const reader = res.body.getReader();
+            const dec = new TextDecoder();
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                reply += dec.decode(value, { stream: true });
+                if (agent === current) {
+                    out.innerHTML = fmt(reply);
+                    $('log').scrollTop = $('log').scrollHeight;
+                }
+            }
+            reply = reply.trim() || '…';
+            out.innerHTML = fmt(reply);
+            h.push({ role: 'assistant', content: reply });
+        }
+    } catch {
+        out.parentElement.remove();
+        h.pop();
+        addMsg('err', "Couldn't connect. Check your connection and try again.");
+        track('demo_error', { agent, status: 0 });
+    }
+    state.chats[agent] = h.slice(-30);
+    save();
+    renderExtras();
+    busy = false; $('send').disabled = false;
+    if (matchMedia('(min-width: 821px)').matches) $('input').focus();
+}
+
+// ---------- wiring ----------
+$('form').addEventListener('submit', e => { e.preventDefault(); send($('input').value); });
+$('input').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send($('input').value); }
+});
+$('input').addEventListener('input', () => {
+    const el = $('input'); el.style.height = ''; el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+});
+$('reset').addEventListener('click', () => {
+    if (busy) return;
+    state.chats[current] = []; save();
+    track('demo_reset', { agent: current });
+    renderChat();
+});
+
+renderRoster();
+renderChat();
+track('demo_view', { agent: current });
+</script>
+</body>
+</html>

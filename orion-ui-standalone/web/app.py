@@ -282,8 +282,8 @@ templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 if _mcp_inner_app is not None:
     app.mount("/mcp", _MCPAuthASGI(_mcp_inner_app))
 
-# Public "Talk to K-OS" chat used by the orionforge.chat landing page.
-from web.public_chat import router as _public_chat_router
+# Public character chats: the orionforge.chat K-OS widget and demo.orionforge.chat.
+from web.public_chat import router as _public_chat_router, DemoHostMiddleware
 app.include_router(_public_chat_router)
 
 # ── Auth file path ───────────────────────────────────────────────
@@ -510,6 +510,9 @@ class CSRFMiddleware(BaseHTTPMiddleware):
         return await call_next(request)
 
 app.add_middleware(CSRFMiddleware)
+
+# Added last = outermost: fences demo.orionforge.chat off from the rest of the app.
+app.add_middleware(DemoHostMiddleware)
 
 # ── Uploads directory (chat backgrounds, etc.) ──────────────────
 _UPLOADS_DIR = _DATA_DIR / "uploads"
