@@ -4676,6 +4676,8 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     let history = store.get(STORE_KEY) || [];
+    let suggestions = store.get('kos_chat_suggest') || [];
+    const SEP = '';  // server separates reply text from suggested replies with this
     let busy = false;
 
     function esc(s) { return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
@@ -4695,14 +4697,13 @@ document.addEventListener('DOMContentLoaded', () => {
     function userTurns() { return history.filter(m => m.role === 'user').length; }
     function refreshExtras() {
         chips.innerHTML = '';
-        if (userTurns() === 0) {
-            CHIPS.forEach(c => {
-                const b = document.createElement('button');
-                b.type = 'button'; b.className = 'kos-chip'; b.textContent = c;
-                b.onclick = () => sendMsg(c);
-                chips.appendChild(b);
-            });
-        }
+        // Openers before the first message; afterwards, K-OS's own suggested replies.
+        (userTurns() === 0 ? CHIPS : suggestions).forEach(c => {
+            const b = document.createElement('button');
+            b.type = 'button'; b.className = 'kos-chip'; b.textContent = c;
+            b.onclick = () => { trackConversion(userTurns() === 0 ? 'kos_chat_opener' : 'kos_chat_suggestion'); sendMsg(c); };
+            chips.appendChild(b);
+        });
         cta.classList.toggle('show', userTurns() >= 3);
     }
     function renderAll() {
@@ -4737,12 +4738,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const out = bubble('bot', '');
         out.innerHTML = '<span class="kos-typing"><span></span><span></span><span></span></span>';
 
-        let reply = '';
+        let reply = '', raw = '';
+        suggestions = [];
         try {
             const res = await fetch(ENDPOINT, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: text, history: prior, model: MODEL_ALIAS || undefined }),
+                body: JSON.stringify({ message: text, history: prior, model: MODEL_ALIAS || undefined, suggest: true }),
             });
             if (MODEL_ALIAS && res.headers.get('X-Kos-Model')) {
                 $('kos-status').textContent = 'Model: ' + res.headers.get('X-Kos-Model');
@@ -4759,11 +4761,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 while (true) {
                     const { done, value } = await reader.read();
                     if (done) break;
-                    reply += dec.decode(value, { stream: true });
+                    raw += dec.decode(value, { stream: true });
+                    reply = raw.split(SEP)[0];
                     out.innerHTML = fmt(reply);
                     log.scrollTop = log.scrollHeight;
                 }
-                reply = reply.trim() || '...';
+                const parts = raw.split(SEP);
+                reply = parts[0].trim() || '...';
+                try { suggestions = JSON.parse(parts[1] || '[]').filter(x => typeof x === 'string').slice(0, 3); }
+                catch { suggestions = []; }
                 out.innerHTML = fmt(reply);
                 history.push({ role: 'assistant', content: reply });
                 if (userTurns() === 1) trackConversion('kos_chat_first_message');
@@ -4775,6 +4781,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         history = history.slice(-30);
         store.set(STORE_KEY, history);
+        store.set('kos_chat_suggest', suggestions);
         refreshExtras();
         busy = false; send.disabled = false;
         input.focus();
@@ -4796,7 +4803,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     launcher.addEventListener('click', () => root.classList.contains('open') ? closeChat() : openChat());
     $('kos-close').addEventListener('click', closeChat);
-    $('kos-reset').addEventListener('click', () => { if (busy) return; history = []; store.set(STORE_KEY, history); renderAll(); input.focus(); });
+    $('kos-reset').addEventListener('click', () => { if (busy) return; history = []; suggestions = []; store.set(STORE_KEY, history); store.set('kos_chat_suggest', suggestions); renderAll(); input.focus(); });
     teaser.addEventListener('click', e => { if (e.target.id !== 'kos-teaser-close') openChat(); });
     teaser.addEventListener('keydown', e => { if (e.key === 'Enter') openChat(); });
     $('kos-teaser-close').addEventListener('click', e => { e.stopPropagation(); hideTeaser(true); root.classList.add('seen'); });

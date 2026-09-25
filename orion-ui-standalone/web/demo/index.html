@@ -306,6 +306,7 @@ const ORDER = ['k_os', 'madara', 'elysia'];
 const ENDPOINT = '/api/public/chat';
 const MODEL = 'deepseek';
 const STORE = 'of_demo_v1';
+const SEP = '';  // server separates reply text from suggested replies with this
 
 // ---------- analytics ----------
 function track(name, params) {
@@ -319,6 +320,7 @@ const load = () => { try { return JSON.parse(localStorage.getItem(STORE)) || {};
 const save = () => { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch {} };
 const state = load();
 state.chats = state.chats || {};
+state.suggest = state.suggest || {};  // last suggested replies per agent
 let current = AGENTS[state.agent] ? state.agent : (AGENTS[new URLSearchParams(location.search).get('agent')] ? new URLSearchParams(location.search).get('agent') : 'k_os');
 let busy = false;
 let totalSent = Object.values(state.chats).reduce((n, h) => n + h.filter(m => m.role === 'user').length, 0);
@@ -382,14 +384,18 @@ function renderExtras() {
     const a = AGENTS[current];
     const chips = $('chips');
     chips.innerHTML = '';
-    if (!history().some(m => m.role === 'user')) {
-        a.chips.forEach(c => {
-            const b = document.createElement('button');
-            b.type = 'button'; b.className = 'chip'; b.textContent = c;
-            b.onclick = () => { track('demo_chip_click', { agent: current, chip: c }); send(c); };
-            chips.appendChild(b);
-        });
-    }
+    const started = history().some(m => m.role === 'user');
+    // Openers before the first message; afterwards, the character's own suggestions.
+    const list = started ? (state.suggest[current] || []) : a.chips;
+    list.forEach(c => {
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'chip'; b.textContent = c;
+        b.onclick = () => {
+            track('demo_chip_click', { agent: current, chip: c, kind: started ? 'suggested' : 'opener' });
+            send(c);
+        };
+        chips.appendChild(b);
+    });
     const turns = history().filter(m => m.role === 'user').length;
     $('cta-text').textContent = `Liking ${a.name}? The full version remembers you, talks out loud, and uses tools.`;
     $('cta-inline').classList.toggle('show', turns >= 3);
@@ -423,12 +429,13 @@ async function send(text) {
     track('demo_message_sent', { agent, turn: h.filter(m => m.role === 'user').length, total_sent: totalSent });
     if (totalSent === 1) track('demo_first_message', { agent });
 
-    let reply = '';
+    let reply = '', raw = '';
+    state.suggest[agent] = [];
     try {
         const res = await fetch(ENDPOINT, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ agent, model: MODEL, message: text, history: prior }),
+            body: JSON.stringify({ agent, model: MODEL, message: text, history: prior, suggest: true }),
         });
         if (!res.ok) {
             let msg = 'Something went wrong. Try again in a minute.';
@@ -443,15 +450,19 @@ async function send(text) {
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
-                reply += dec.decode(value, { stream: true });
+                raw += dec.decode(value, { stream: true });
+                reply = raw.split(SEP)[0];
                 if (agent === current) {
                     out.innerHTML = fmt(reply);
                     $('log').scrollTop = $('log').scrollHeight;
                 }
             }
-            reply = reply.trim() || '…';
+            const [text_, sug] = raw.split(SEP);
+            reply = text_.trim() || '…';
             out.innerHTML = fmt(reply);
             h.push({ role: 'assistant', content: reply });
+            try { state.suggest[agent] = JSON.parse(sug || '[]').filter(x => typeof x === 'string').slice(0, 3); }
+            catch { state.suggest[agent] = []; }
         }
     } catch {
         out.parentElement.remove();
@@ -476,7 +487,7 @@ $('input').addEventListener('input', () => {
 });
 $('reset').addEventListener('click', () => {
     if (busy) return;
-    state.chats[current] = []; save();
+    state.chats[current] = []; state.suggest[current] = []; save();
     track('demo_reset', { agent: current });
     renderChat();
 });
