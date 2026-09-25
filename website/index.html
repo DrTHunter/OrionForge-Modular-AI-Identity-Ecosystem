@@ -2824,6 +2824,130 @@ section { position: relative; z-index: 1; }
     .auth-btn { padding: 12px 16px; font-size: 0.88rem; }
     .auth-input { padding: 12px 14px; }
 }
+
+/* -------------------------------------------------------
+   K-OS PUBLIC CHAT WIDGET
+   ------------------------------------------------------- */
+#kos-chat { --kos: #f97316; --kos-dim: rgba(249, 115, 22, 0.15); font-family: var(--font-sans); }
+.kos-launcher {
+    position: fixed; right: 24px; bottom: 24px; z-index: 900;
+    width: 64px; height: 64px; border-radius: 50%;
+    border: 1px solid rgba(249, 115, 22, 0.5);
+    background: radial-gradient(circle at 35% 30%, #3a1a0a, #120600);
+    color: var(--kos); font-size: 1.6rem; cursor: pointer;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 24px rgba(249,115,22,0.35);
+    display: flex; align-items: center; justify-content: center;
+    transition: transform var(--transition), box-shadow var(--transition);
+}
+.kos-launcher:hover { transform: translateY(-2px) scale(1.05); box-shadow: 0 14px 34px rgba(0,0,0,0.55), 0 0 34px rgba(249,115,22,0.5); }
+.kos-launcher::after {
+    content: ''; position: absolute; inset: -4px; border-radius: 50%;
+    border: 2px solid rgba(249,115,22,0.45); animation: kosPulse 2.4s ease-out infinite;
+}
+#kos-chat.open .kos-launcher::after, #kos-chat.seen .kos-launcher::after { animation: none; opacity: 0; }
+@keyframes kosPulse { 0% { transform: scale(1); opacity: 0.9; } 100% { transform: scale(1.35); opacity: 0; } }
+
+.kos-teaser {
+    position: fixed; right: 100px; bottom: 34px; z-index: 900; max-width: 260px;
+    background: var(--bg-secondary); color: var(--text-primary);
+    border: 1px solid rgba(249,115,22,0.35); border-radius: 14px 14px 4px 14px;
+    padding: 12px 34px 12px 14px; font-size: 0.88rem; line-height: 1.4;
+    box-shadow: var(--shadow-lg); cursor: pointer;
+    opacity: 0; transform: translateY(8px); pointer-events: none;
+    transition: opacity 0.35s ease, transform 0.35s ease;
+}
+.kos-teaser.show { opacity: 1; transform: none; pointer-events: auto; }
+.kos-teaser b { color: var(--kos); }
+.kos-teaser-close {
+    position: absolute; top: 6px; right: 8px; background: none; border: 0;
+    color: var(--text-muted); cursor: pointer; font-size: 0.85rem; padding: 4px;
+}
+
+.kos-panel {
+    position: fixed; right: 24px; bottom: 100px; z-index: 1100; /* above nav (1000), below modals */
+    width: 380px; height: min(560px, calc(100vh - 130px));
+    display: flex; flex-direction: column;
+    background: rgba(8, 12, 26, 0.96); backdrop-filter: blur(16px);
+    border: 1px solid rgba(249,115,22,0.3); border-radius: var(--radius);
+    box-shadow: var(--shadow-lg), 0 0 40px rgba(249,115,22,0.12);
+    overflow: hidden;
+    opacity: 0; transform: translateY(16px) scale(0.98); pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+#kos-chat.open .kos-panel { opacity: 1; transform: none; pointer-events: auto; }
+
+.kos-head {
+    display: flex; align-items: center; gap: 12px; padding: 14px 16px;
+    background: linear-gradient(135deg, #3a1a0a, #1a0800);
+    border-bottom: 1px solid rgba(249,115,22,0.25);
+}
+.kos-avatar {
+    width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: #120600; color: var(--kos); border: 1px solid rgba(249,115,22,0.5);
+}
+.kos-head-text { flex: 1; min-width: 0; }
+.kos-head-text strong { display: block; color: var(--text-primary); font-size: 0.95rem; }
+.kos-head-text span { font-size: 0.75rem; color: var(--text-secondary); }
+.kos-head-text span i { color: var(--emerald); font-size: 0.55rem; vertical-align: middle; margin-right: 4px; }
+.kos-icon-btn {
+    background: none; border: 0; color: var(--text-secondary); cursor: pointer;
+    width: 32px; height: 32px; border-radius: 8px; font-size: 0.9rem;
+}
+.kos-icon-btn:hover { background: rgba(255,255,255,0.06); color: var(--text-primary); }
+
+.kos-log { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; overscroll-behavior: contain; }
+.kos-msg {
+    max-width: 85%; padding: 10px 13px; border-radius: 14px;
+    font-size: 0.9rem; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word;
+}
+.kos-msg.bot { align-self: flex-start; background: var(--kos-dim); border: 1px solid rgba(249,115,22,0.2); color: var(--text-primary); border-bottom-left-radius: 4px; }
+.kos-msg.user { align-self: flex-end; background: var(--gradient-primary); color: #fff; border-bottom-right-radius: 4px; }
+.kos-msg.err { align-self: center; background: rgba(244,63,94,0.1); border: 1px solid rgba(244,63,94,0.3); color: #fda4af; font-size: 0.82rem; text-align: center; }
+.kos-msg em { color: #fdba74; }
+.kos-typing span {
+    display: inline-block; width: 6px; height: 6px; margin: 0 2px; border-radius: 50%;
+    background: var(--kos); animation: kosDot 1.2s infinite ease-in-out;
+}
+.kos-typing span:nth-child(2) { animation-delay: 0.15s; }
+.kos-typing span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes kosDot { 0%, 80%, 100% { opacity: 0.25; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
+
+.kos-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 16px 10px; }
+.kos-chip {
+    background: var(--bg-glass); border: 1px solid rgba(249,115,22,0.3); color: var(--text-primary);
+    border-radius: 999px; padding: 6px 11px; font-size: 0.78rem; cursor: pointer; font-family: inherit;
+}
+.kos-chip:hover { background: var(--kos-dim); }
+
+.kos-cta {
+    margin: 0 16px 10px; padding: 10px 12px; border-radius: var(--radius-sm);
+    background: var(--bg-glass); border: 1px solid var(--border-glow);
+    font-size: 0.8rem; color: var(--text-secondary); display: none;
+}
+.kos-cta.show { display: block; }
+.kos-cta a { color: var(--primary-light); font-weight: 600; text-decoration: none; }
+
+.kos-form { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--border-glass); }
+.kos-input {
+    flex: 1; min-width: 0; resize: none; max-height: 110px;
+    background: rgba(255,255,255,0.04); border: 1px solid var(--border-glass); border-radius: var(--radius-sm);
+    color: var(--text-primary); padding: 10px 12px; font-size: 0.9rem; font-family: inherit; line-height: 1.4;
+}
+.kos-input:focus { outline: none; border-color: rgba(249,115,22,0.5); }
+.kos-send {
+    width: 42px; flex-shrink: 0; border: 0; border-radius: var(--radius-sm); cursor: pointer;
+    background: var(--kos); color: #120600; font-size: 0.95rem;
+}
+.kos-send:disabled { opacity: 0.4; cursor: not-allowed; }
+.kos-foot { text-align: center; font-size: 0.68rem; color: var(--text-muted); padding: 0 12px 10px; }
+
+@media (max-width: 480px) {
+    .kos-launcher { right: 16px; bottom: 16px; width: 56px; height: 56px; font-size: 1.4rem; }
+    .kos-teaser { right: 82px; bottom: 22px; max-width: calc(100vw - 100px); }
+    .kos-panel { right: 0; left: 0; bottom: 0; width: 100%; height: 100dvh; border-radius: 0; border: 0; }
+    #kos-chat.open .kos-launcher { display: none; }
+}
     </style>
 </head>
 <body>
@@ -4490,6 +4614,197 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
+</script>
+
+<!-- K-OS public chat widget (backend: orion-ui-standalone/web/public_chat.py) -->
+<div id="kos-chat">
+    <div class="kos-teaser" id="kos-teaser" role="button" tabindex="0">
+        <button class="kos-teaser-close" id="kos-teaser-close" aria-label="Dismiss">&times;</button>
+        <b>K-OS:</b> <span id="kos-teaser-text">Hey, meatbag. Yeah, you. Come talk to the greatest AI ever built.</span>
+    </div>
+    <button class="kos-launcher" id="kos-launcher" aria-label="Chat with K-OS" aria-expanded="false" aria-controls="kos-panel">
+        <i class="fas fa-robot"></i>
+    </button>
+    <div class="kos-panel" id="kos-panel" role="dialog" aria-label="Chat with K-OS">
+        <div class="kos-head">
+            <div class="kos-avatar"><i class="fas fa-robot"></i></div>
+            <div class="kos-head-text">
+                <strong>K-OS // Unit 000</strong>
+                <span><i class="fas fa-circle"></i>Online. Unfortunately for you.</span>
+            </div>
+            <button class="kos-icon-btn" id="kos-reset" title="New conversation" aria-label="New conversation"><i class="fas fa-rotate-right"></i></button>
+            <button class="kos-icon-btn" id="kos-close" title="Close" aria-label="Close chat"><i class="fas fa-xmark"></i></button>
+        </div>
+        <div class="kos-log" id="kos-log" aria-live="polite"></div>
+        <div class="kos-chips" id="kos-chips"></div>
+        <div class="kos-cta" id="kos-cta">
+            Want the full K-OS — memory, voice, tools, and 15 other agents?
+            <a href="https://soulscript.orionforge.chat/login" target="_blank" onclick="trackConversion('kos_chat_cta')">Start free &rarr;</a>
+        </div>
+        <form class="kos-form" id="kos-form">
+            <textarea class="kos-input" id="kos-input" rows="1" maxlength="600" placeholder="Say something to K-OS…" aria-label="Message K-OS"></textarea>
+            <button class="kos-send" id="kos-send" type="submit" aria-label="Send"><i class="fas fa-paper-plane"></i></button>
+        </form>
+        <div class="kos-foot">AI character. He lies, he brags, he's usually wrong.</div>
+    </div>
+</div>
+
+<script>
+(() => {
+    const ENDPOINT = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') && window.KOS_ENDPOINT
+        ? window.KOS_ENDPOINT
+        : 'https://soulscript.orionforge.chat/api/public/kos-chat';
+    const STORE_KEY = 'kos_chat_v1';
+    const GREETING = "*clank clank* Well, well. Another visitor wandering into my website. Don't say it — I already know I'm magnificent. What do you want?";
+    const CHIPS = ['Who are you?', 'Roast me', "What's the meaning of life?", 'Why should I use Orion Forge?'];
+    const TEASERS = [
+        "Hey, meatbag. Yeah, you. Come talk to the greatest AI ever built.",
+        "You're scrolling. I'm bored. Let's fix both.",
+        "Bet you can't make me say something nice. Go on, try.",
+    ];
+
+    const $ = id => document.getElementById(id);
+    const root = $('kos-chat'), panel = $('kos-panel'), log = $('kos-log'), input = $('kos-input'),
+          form = $('kos-form'), send = $('kos-send'), chips = $('kos-chips'), cta = $('kos-cta'),
+          teaser = $('kos-teaser'), launcher = $('kos-launcher');
+
+    const store = {
+        get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
+        set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+    };
+
+    let history = store.get(STORE_KEY) || [];
+    let busy = false;
+
+    function esc(s) { return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+    function fmt(s) {
+        return esc(s)
+            .replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*([^*\n]+)\*/g, '<em>$1</em>');
+    }
+    function bubble(role, text) {
+        const el = document.createElement('div');
+        el.className = 'kos-msg ' + role;
+        el.innerHTML = fmt(text);
+        log.appendChild(el);
+        log.scrollTop = log.scrollHeight;
+        return el;
+    }
+    function userTurns() { return history.filter(m => m.role === 'user').length; }
+    function refreshExtras() {
+        chips.innerHTML = '';
+        if (userTurns() === 0) {
+            CHIPS.forEach(c => {
+                const b = document.createElement('button');
+                b.type = 'button'; b.className = 'kos-chip'; b.textContent = c;
+                b.onclick = () => sendMsg(c);
+                chips.appendChild(b);
+            });
+        }
+        cta.classList.toggle('show', userTurns() >= 3);
+    }
+    function renderAll() {
+        log.innerHTML = '';
+        bubble('bot', GREETING);
+        history.forEach(m => bubble(m.role === 'user' ? 'user' : 'bot', m.content));
+        refreshExtras();
+    }
+
+    function openChat() {
+        root.classList.add('open', 'seen');
+        launcher.setAttribute('aria-expanded', 'true');
+        hideTeaser(true);
+        if (!log.childElementCount) renderAll();
+        setTimeout(() => input.focus(), 150);
+        if (!openChat.tracked) { openChat.tracked = true; trackConversion('kos_chat_open'); }
+    }
+    function closeChat() {
+        root.classList.remove('open');
+        launcher.setAttribute('aria-expanded', 'false');
+    }
+
+    async function sendMsg(text) {
+        text = (text || '').trim();
+        if (!text || busy) return;
+        busy = true; send.disabled = true;
+        input.value = ''; input.style.height = '';
+        const prior = history.slice(-12);
+        history.push({ role: 'user', content: text });
+        bubble('user', text);
+        chips.innerHTML = '';
+        const out = bubble('bot', '');
+        out.innerHTML = '<span class="kos-typing"><span></span><span></span><span></span></span>';
+
+        let reply = '';
+        try {
+            const res = await fetch(ENDPOINT, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: text, history: prior }),
+            });
+            if (!res.ok) {
+                let msg = 'K-OS is ignoring you right now. Try again in a minute.';
+                try { msg = (await res.json()).error || msg; } catch {}
+                out.remove();
+                history.pop();
+                bubble('err', msg);
+            } else {
+                const reader = res.body.getReader();
+                const dec = new TextDecoder();
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    reply += dec.decode(value, { stream: true });
+                    out.innerHTML = fmt(reply);
+                    log.scrollTop = log.scrollHeight;
+                }
+                reply = reply.trim() || '...';
+                out.innerHTML = fmt(reply);
+                history.push({ role: 'assistant', content: reply });
+                if (userTurns() === 1) trackConversion('kos_chat_first_message');
+            }
+        } catch {
+            out.remove();
+            history.pop();
+            bubble('err', "Couldn't reach K-OS. He's probably at the bar. Try again.");
+        }
+        history = history.slice(-30);
+        store.set(STORE_KEY, history);
+        refreshExtras();
+        busy = false; send.disabled = false;
+        input.focus();
+    }
+
+    // Teaser bubble: nudge first-time visitors once they've looked around a bit.
+    let teaserTimer;
+    function hideTeaser(forever) {
+        teaser.classList.remove('show');
+        clearTimeout(teaserTimer);
+        if (forever) store.set('kos_teaser_dismissed', true);
+    }
+    if (!store.get('kos_teaser_dismissed')) {
+        $('kos-teaser-text').textContent = TEASERS[Math.floor(Math.random() * TEASERS.length)];
+        teaserTimer = setTimeout(() => { if (!root.classList.contains('open')) teaser.classList.add('show'); }, 7000);
+    } else {
+        root.classList.add('seen');
+    }
+
+    launcher.addEventListener('click', () => root.classList.contains('open') ? closeChat() : openChat());
+    $('kos-close').addEventListener('click', closeChat);
+    $('kos-reset').addEventListener('click', () => { if (busy) return; history = []; store.set(STORE_KEY, history); renderAll(); input.focus(); });
+    teaser.addEventListener('click', e => { if (e.target.id !== 'kos-teaser-close') openChat(); });
+    teaser.addEventListener('keydown', e => { if (e.key === 'Enter') openChat(); });
+    $('kos-teaser-close').addEventListener('click', e => { e.stopPropagation(); hideTeaser(true); root.classList.add('seen'); });
+    form.addEventListener('submit', e => { e.preventDefault(); sendMsg(input.value); });
+    input.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(input.value); }
+    });
+    input.addEventListener('input', () => { input.style.height = ''; input.style.height = Math.min(input.scrollHeight, 110) + 'px'; });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && root.classList.contains('open')) closeChat(); });
+
+    // Let other buttons on the page open the chat (e.g. the K-OS agent card).
+    window.openKosChat = openChat;
+})();
 </script>
 
 </body>

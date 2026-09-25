@@ -282,6 +282,10 @@ templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 if _mcp_inner_app is not None:
     app.mount("/mcp", _MCPAuthASGI(_mcp_inner_app))
 
+# Public "Talk to K-OS" chat used by the orionforge.chat landing page.
+from web.public_chat import router as _public_chat_router
+app.include_router(_public_chat_router)
+
 # ── Auth file path ───────────────────────────────────────────────
 _AUTH_FILE = _CONFIG_DIR / "auth.json"
 

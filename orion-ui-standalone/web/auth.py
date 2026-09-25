@@ -337,6 +337,8 @@ PUBLIC_PATHS = {
     # Hosted MCP endpoint — does its own bearer-token auth (web/app.py mount).
     # Must bypass the cookie AuthMiddleware, which would 302-redirect to /login.
     "/mcp",
+    # Anonymous K-OS chat on the landing page — rate-limited in web/public_chat.py.
+    "/api/public",
 }
 
 
