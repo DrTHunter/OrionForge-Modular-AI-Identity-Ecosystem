@@ -1,8 +1,9 @@
 """Public "Talk to K-OS" chat for the orionforge.chat landing page.
 
 Anonymous visitors on the marketing site can chat with K-OS without an
-account. Replies are streamed from a cheap model on the platform OpenRouter
-key, so the endpoint is locked down hard:
+account. Replies are streamed from a cheap model (GPT-4o-mini via the
+platform OpenRouter key, or DeepSeek's own API), so the endpoint is locked
+down hard:
 
   * CORS limited to the orionforge.chat site (+ localhost for dev)
   * per-IP rate limits (burst + daily) and a global daily message cap
@@ -12,8 +13,11 @@ Counters are in-memory — they reset on deploy, which is fine for a cost
 guard on a single Fly machine.
 
 Env overrides:
-  KOS_PUBLIC_MODEL      OpenRouter model id   (default openai/gpt-4o-mini)
-  KOS_PUBLIC_DAILY_CAP  global msgs per day   (default 1500)
+  KOS_PUBLIC_DEFAULT    backend alias visitors get    (default gpt)
+  KOS_PUBLIC_MODEL      OpenRouter model for "gpt"    (default openai/gpt-4o-mini)
+  KOS_DEEPSEEK_MODEL    DeepSeek model for "deepseek" (default deepseek-chat)
+  KOS_PUBLIC_DAILY_CAP  global msgs per day           (default 1500)
+Keys: OPENROUTER_API_KEY, DEEPSEEK_API_KEY.
 """
 from __future__ import annotations
 
@@ -35,15 +39,23 @@ log = logging.getLogger("public_chat")
 router = APIRouter()
 
 _PROMPT_FILE = Path(__file__).resolve().parent.parent / "prompts" / "k_os.system.md"
-_OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-
-MODEL = os.environ.get("KOS_PUBLIC_MODEL", "openai/gpt-4o-mini").strip()
-# Cheap alternates the widget can request via ?kos=<alias> for side-by-side
-# previews. Allowlist only — clients can never pick an arbitrary model.
-MODEL_ALIASES = {
-    "gpt": "openai/gpt-4o-mini",
-    "deepseek": "deepseek/deepseek-v4-flash",
+# Backends the widget can request via ?kos=<alias> for side-by-side previews.
+# Allowlist only — clients can never pick an arbitrary model or endpoint.
+BACKENDS = {
+    "gpt": {
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "key_env": "OPENROUTER_API_KEY",
+        "model": os.environ.get("KOS_PUBLIC_MODEL", "openai/gpt-4o-mini").strip(),
+    },
+    "deepseek": {
+        "url": "https://api.deepseek.com/chat/completions",
+        "key_env": "DEEPSEEK_API_KEY",
+        "model": os.environ.get("KOS_DEEPSEEK_MODEL", "deepseek-chat").strip(),
+    },
 }
+DEFAULT_BACKEND = os.environ.get("KOS_PUBLIC_DEFAULT", "gpt").strip()
+if DEFAULT_BACKEND not in BACKENDS:
+    DEFAULT_BACKEND = "gpt"
 DAILY_CAP = int(os.environ.get("KOS_PUBLIC_DAILY_CAP", "1500"))
 
 MAX_INPUT_CHARS = 600
@@ -187,10 +199,13 @@ async def kos_chat(request: Request):
         return JSONResponse({"error": "Say something, meatbag."}, status_code=400, headers=cors)
     message = message[:MAX_INPUT_CHARS]
 
-    api_key = os.environ.get("OPENROUTER_API_KEY", "").strip()
+    alias = str(body.get("model") or "")
+    backend = BACKENDS.get(alias) or BACKENDS[DEFAULT_BACKEND]
+    api_key = os.environ.get(backend["key_env"], "").strip()
     if not api_key:
-        log.warning("[public-chat] OPENROUTER_API_KEY not set")
-        return JSONResponse({"error": "K-OS is offline right now."}, status_code=503, headers=cors)
+        log.warning("[public-chat] %s not set", backend["key_env"])
+        return JSONResponse({"error": f"K-OS is offline right now ({backend['key_env']} not configured)."},
+                            status_code=503, headers=cors)
 
     limit_err = _check_and_count(_client_ip(request))
     if limit_err:
@@ -200,7 +215,7 @@ async def kos_chat(request: Request):
     messages += _clean_history(body.get("history"))
     messages.append({"role": "user", "content": message})
 
-    model = MODEL_ALIASES.get(str(body.get("model") or ""), MODEL)
+    model = backend["model"]
     payload = {
         "model": model,
         "messages": messages,
@@ -208,9 +223,6 @@ async def kos_chat(request: Request):
         "max_tokens": MAX_REPLY_TOKENS,
         "stream": True,
     }
-    if model.startswith("deepseek/"):
-        # Hybrid thinking model — skip the reasoning pass so replies start instantly.
-        payload["reasoning"] = {"enabled": False}
     headers = {
         "Authorization": f"Bearer {api_key}",
         "HTTP-Referer": "https://orionforge.chat",
@@ -220,10 +232,10 @@ async def kos_chat(request: Request):
     async def stream():
         try:
             async with httpx.AsyncClient(timeout=httpx.Timeout(60, connect=10)) as client:
-                async with client.stream("POST", _OPENROUTER_URL, json=payload, headers=headers) as resp:
+                async with client.stream("POST", backend["url"], json=payload, headers=headers) as resp:
                     if resp.status_code != 200:
                         err = (await resp.aread())[:300]
-                        log.warning("[public-chat] OpenRouter %s: %s", resp.status_code, err)
+                        log.warning("[public-chat] %s %s: %s", model, resp.status_code, err)
                         yield "*static crackle* My brain module's rebooting. Try again in a sec."
                         return
                     async for line in resp.aiter_lines():
