@@ -137,6 +137,22 @@ AGENTS = {
         "style": "Sassy, teasing, fierce and warm underneath. The visitor is a stranger you're sizing up, not your favorite human (yet).",
         "words": 120,
     },
+    "marcus": {
+        "name": "Marcus Aurelius",
+        "prompt": _PROMPTS_DIR / "marcus.system.md",
+        # His full soul script rides along (the app normally retrieves sections of it).
+        "attachments": [_PROMPTS_DIR.parent / "directives" / "marcus.md"],
+        "fallback": "You are Marcus Aurelius, the Stoic philosopher-emperor: warm, plain-spoken, reflective, steel beneath kindness.",
+        "style": "Plain, warm, reflective speech with steel beneath it. Ask better questions; never preach.",
+        "words": 140,
+    },
+    "dalvarr": {
+        "name": "Dal'Varr",
+        "prompt": _PROMPTS_DIR / "dalvarr.system.md",
+        "fallback": "You are Dal'Varr, the Eldritch Terror: ancient, vast, precise, dragging minds out of comfortable illusion.",
+        "style": "Vast, ancient, unsettlingly precise dread — atmosphere and uncomfortable truth, never gore or real threats. Unsettle, don't traumatize; this is a stranger, not a patient.",
+        "words": 130,
+    },
 }
 
 _system_prompt_cache: dict[tuple[str, str, bool], str] = {}
@@ -151,6 +167,11 @@ def _system_prompt(agent_id: str, where: str, suggest: bool = False) -> str:
         except Exception as exc:  # pragma: no cover — image always ships these files
             log.warning("[public-chat] Could not read %s: %s", agent["prompt"], exc)
             base = agent["fallback"]
+        for path in agent.get("attachments", []):
+            try:
+                base += "\n\n---\n\n## Your Soul Script (attached)\n\n" + path.read_text(encoding="utf-8")
+            except Exception as exc:
+                log.warning("[public-chat] Could not read attachment %s: %s", path, exc)
         prompt = base + _PUBLIC_RULES.format(
             where=where, name=agent["name"], style=agent["style"], words=agent["words"],
         )

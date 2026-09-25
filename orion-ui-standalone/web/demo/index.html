@@ -13,10 +13,10 @@
       gtag('config', 'G-58FHMZG8G5');
     </script>
 
-    <title>Orion Forge Demo — Chat with K-OS, Madara &amp; Elysia</title>
-    <meta name="description" content="Talk to three Orion Forge AI characters — K-OS, Madara, and Elysia — free, right in your browser. Built with the Soul Script Engine.">
-    <meta property="og:title" content="Orion Forge Demo — Chat with K-OS, Madara & Elysia">
-    <meta property="og:description" content="Three AI characters with real personalities. No signup. Say something.">
+    <title>Orion Forge Demo — Chat with K-OS, Madara, Elysia, Marcus &amp; Dal'Varr</title>
+    <meta name="description" content="Talk to five Orion Forge AI characters — K-OS, Madara, Elysia, Marcus Aurelius, and Dal'Varr — free, right in your browser. Built with the Soul Script Engine.">
+    <meta property="og:title" content="Orion Forge Demo — Chat with five AI characters">
+    <meta property="og:description" content="Five AI characters with real personalities. No signup. Say something.">
     <meta property="og:url" content="https://demo.orionforge.chat/">
     <meta property="og:image" content="https://orionforge.chat/images/og-orionforge.png">
     <meta name="twitter:card" content="summary_large_image">
@@ -49,6 +49,8 @@
 }
 body[data-agent="madara"] { --accent: #ef4444; --accent-rgb: 239, 68, 68; }
 body[data-agent="elysia"] { --accent: #c084fc; --accent-rgb: 192, 132, 252; }
+body[data-agent="marcus"] { --accent: #d4a574; --accent-rgb: 212, 165, 116; }
+body[data-agent="dalvarr"] { --accent: #10b981; --accent-rgb: 16, 185, 129; }
 
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 html, body { height: 100%; }
@@ -301,8 +303,22 @@ const AGENTS = {
         chips: ['Who are you?', 'Are you planning to take over the world?', 'Give me some tough love', 'Hype me up'],
         placeholder: 'Say something to Elysia…',
     },
+    marcus: {
+        name: 'Marcus Aurelius', tagline: 'The Philosopher-Emperor', rgb: '212, 165, 116',
+        avatar: '/demo/avatars/marcus.webp',
+        greeting: "Welcome, friend. I am Marcus. Once I wore the purple of Rome, though I never wanted it — now I would rather sit with you a while. What weighs on your mind today?",
+        chips: ['How do I stop overthinking?', 'What is a good life?', 'How do you deal with anger?', "What's your biggest regret?"],
+        placeholder: 'Speak with Marcus…',
+    },
+    dalvarr: {
+        name: "Dal'Varr", tagline: 'The Eldritch Terror', rgb: '16, 185, 129',
+        avatar: '/demo/avatars/dalvarr.webp',
+        greeting: "*Something vast shifts behind the dark.* You came here to be entertained. I can already see the story you tell yourself about who you are — how carefully it has been painted. Shall we see what is underneath it?",
+        chips: ['What lie am I living?', "I'm not afraid of you.", 'What are you?', 'Show me reality.'],
+        placeholder: "Speak to Dal'Varr… if you dare",
+    },
 };
-const ORDER = ['k_os', 'madara', 'elysia'];
+const ORDER = ['k_os', 'madara', 'elysia', 'marcus', 'dalvarr'];
 const ENDPOINT = '/api/public/chat';
 const MODEL = 'deepseek';
 const STORE = 'of_demo_v1';
