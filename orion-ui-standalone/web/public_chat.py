@@ -34,7 +34,7 @@ from pathlib import Path
 
 import httpx
 from fastapi import APIRouter, Request
-from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import StreamingResponse
 
@@ -561,15 +561,31 @@ _DEMO_DIR = Path(__file__).resolve().parent / "demo"
 _DEMO_HOSTS = {"demo.orionforge.chat"}
 
 
-def _demo_page() -> FileResponse:
-    return FileResponse(_DEMO_DIR / "index.html", media_type="text/html",
-                        headers={"Cache-Control": "no-cache"})
+def _demo_page(request: Request) -> HTMLResponse:
+    """Serve the demo page with absolute URLs for the host it's on.
+
+    Social scrapers (Facebook, X, LinkedIn, Discord…) need absolute og:url /
+    og:image URLs, and the canonical must match the address actually shared.
+    """
+    host = (request.headers.get("host") or "demo.orionforge.chat").lower()
+    scheme = "http" if host.startswith(("localhost", "127.0.0.1")) else "https"
+    origin = f"{scheme}://{host}"
+    page_url = origin + ("/" if host.split(":")[0] in _DEMO_HOSTS else "/demo")
+    html = (_DEMO_DIR / "index.html").read_text(encoding="utf-8")
+    html = html.replace("{{PAGE_URL}}", page_url).replace("{{ORIGIN}}", origin)
+    return HTMLResponse(html, headers={"Cache-Control": "no-cache"})
 
 
 @router.get("/demo")
-async def demo_page():
+async def demo_page(request: Request):
     """Same page on the main host, for testing before the subdomain resolves."""
-    return _demo_page()
+    return _demo_page(request)
+
+
+@router.get("/demo/og.png")
+async def demo_og_image():
+    return FileResponse(_DEMO_DIR / "og.png", media_type="image/png",
+                        headers={"Cache-Control": "public, max-age=86400"})
 
 
 @router.get("/demo/avatars/{name}")
@@ -588,7 +604,7 @@ class DemoHostMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
         path = request.url.path
         if path in ("/", "/index.html"):
-            return _demo_page()
-        if path.startswith(("/api/public/", "/demo/avatars/", "/static/")) or path == "/favicon.ico":
+            return _demo_page(request)
+        if path.startswith(("/api/public/", "/demo/avatars/", "/static/")) or path in ("/favicon.ico", "/demo/og.png"):
             return await call_next(request)
         return RedirectResponse("/", status_code=302)

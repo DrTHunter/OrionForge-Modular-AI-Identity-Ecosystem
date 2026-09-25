@@ -13,13 +13,53 @@
       gtag('config', 'G-674PQ1X5G6');
     </script>
 
-    <title>Orion Forge Demo — Chat with K-OS, Madara, Elysia, Marcus &amp; Dal'Varr</title>
-    <meta name="description" content="Talk to five Orion Forge AI characters — K-OS, Madara, Elysia, Marcus Aurelius, and Dal'Varr — free, right in your browser. Built with the Soul Script Engine.">
-    <meta property="og:title" content="Orion Forge Demo — Chat with five AI characters">
-    <meta property="og:description" content="Five AI characters with real personalities. No signup. Say something.">
-    <meta property="og:url" content="https://demo.orionforge.chat/">
-    <meta property="og:image" content="https://orionforge.chat/images/og-orionforge.png">
+    <!-- SEO + social previews. {{ORIGIN}} / {{PAGE_URL}} are filled in by the server
+         (web/public_chat.py) so previews work on whichever domain serves the page. -->
+    <title>Talk to AI Characters Free — K-OS, Madara, Elysia, Marcus Aurelius &amp; Dal'Varr | Orion Forge</title>
+    <meta name="description" content="Chat free with five AI characters that have real personalities — K-OS, Madara, Elysia, Marcus Aurelius and Dal'Varr. No signup. Built with Orion Forge's Soul Script Engine.">
+    <meta name="keywords" content="AI character chat, talk to AI characters, AI companion, free AI chat, Marcus Aurelius AI, stoic AI, AI personality, character AI alternative, Soul Script Engine, Orion Forge">
+    <meta name="author" content="Orion Forge">
+    <meta name="robots" content="index, follow, max-image-preview:large">
+    <meta name="theme-color" content="#04060e">
+    <link rel="canonical" href="{{PAGE_URL}}">
+
+    <!-- Open Graph (Facebook, LinkedIn, Discord, iMessage, WhatsApp, Slack) -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Orion Forge">
+    <meta property="og:locale" content="en_US">
+    <meta property="og:url" content="{{PAGE_URL}}">
+    <meta property="og:title" content="Talk to 5 AI characters with real personalities">
+    <meta property="og:description" content="K-OS, Madara, Elysia, Marcus Aurelius and Dal'Varr are waiting. Free in your browser, no signup — say something.">
+    <meta property="og:image" content="{{ORIGIN}}/demo/og.png">
+    <meta property="og:image:secure_url" content="{{ORIGIN}}/demo/og.png">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Orion Forge live demo: portraits of K-OS, Madara, Elysia, Marcus and Dal'Varr under the headline 'Talk to 5 AI characters with real personalities'">
+
+    <!-- Twitter / X -->
     <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Talk to 5 AI characters with real personalities">
+    <meta name="twitter:description" content="K-OS, Madara, Elysia, Marcus Aurelius and Dal'Varr. Free in your browser, no signup.">
+    <meta name="twitter:image" content="{{ORIGIN}}/demo/og.png">
+    <meta name="twitter:image:alt" content="Portraits of five Orion Forge AI characters">
+
+    <!-- Structured data (Google rich results) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Orion Forge Character Chat Demo",
+      "url": "{{PAGE_URL}}",
+      "image": "{{ORIGIN}}/demo/og.png",
+      "description": "Chat free with five AI characters with persistent personalities: K-OS, Madara, Elysia, Marcus Aurelius and Dal'Varr.",
+      "applicationCategory": "EntertainmentApplication",
+      "operatingSystem": "Any (web browser)",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+      "publisher": { "@type": "Organization", "name": "Orion Forge", "url": "https://orionforge.chat" }
+    }
+    </script>
+
     <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
