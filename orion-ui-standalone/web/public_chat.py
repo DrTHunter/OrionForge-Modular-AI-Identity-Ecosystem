@@ -314,7 +314,9 @@ def _clean_history(raw) -> list[dict]:
 async def public_chat(request: Request):
     cors = _cors_headers(request)
     origin = request.headers.get("origin", "")
-    if origin and not cors:
+    # Same-site requests (e.g. the /demo page on soulscript.orionforge.chat) need no CORS entry.
+    same_site = origin.split("://", 1)[-1] == (request.headers.get("host") or "")
+    if origin and not cors and not same_site:
         return JSONResponse({"error": "Origin not allowed"}, status_code=403)
 
     try:
